@@ -1,0 +1,2067 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DES flow</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--band:#eef3fa;
+  --cL:#2f6fd0;--cR:#e5892a;--cK1:#7d55c7;--cK2:#a688e3;--xor:#c8372d;--okBg:#e3f2e8;--par:#c9c6bc;
+  --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;--g4:#c7a020;--g5:#19a2b5;--g6:#e374a8;--g7:#8a6a4d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--band:#1a2330;
+  --cL:#4a87e6;--cR:#ee9a40;--cK1:#9068dc;--cK2:#b49aec;--xor:#f07a70;--okBg:#173323;--par:#4a4a51;
+  --g0:#5a8fe8;--g1:#f09a45;--g2:#45b882;--g3:#e46464;--g4:#d9b43a;--g5:#35b9cb;--g6:#ee8cba;--g7:#a5876a;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:8px}
+.vp{max-height:calc(100vh - 150px);overflow:auto;border-radius:8px;scrollbar-width:thin}
+.vp svg{width:100%;height:auto;display:block;margin:0 auto}
+#vp-feistel svg{max-width:880px}
+@media (min-width:1001px){main.layout.wide{grid-template-columns:minmax(0,1fr) 340px}}
+#vp-f,#vp-e,#vp-s,#vp-ip,#vp-fc{max-height:none;overflow:visible}
+#vp-ip svg{max-width:1100px}
+#svg-ip .ipc rect{stroke:rgba(0,0,0,.22);stroke-width:1}
+#svg-ip .ipc.emp rect{fill:none;stroke:var(--line2);stroke-dasharray:4 3}
+#svg-ip .ipc.clk{cursor:pointer}
+#svg-ip .ipc.ex rect,#svg-ip .ipc.hl rect{stroke:var(--ink);stroke-width:3}
+#svg-ip .ipn{font-size:10px;fill:var(--faint)}
+#svg-ip .ipn.w{fill:#fff;opacity:.9;paint-order:stroke;stroke:rgba(0,0,0,.4);stroke-width:2px}
+#svg-ip .ipv{font:700 19px var(--mono);fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.45);stroke-width:2.5px;pointer-events:none}
+#svg-ip .ipl{stroke:var(--ink);stroke-width:2.4}
+#svg-ip .iplh{stroke:var(--panel);stroke-width:4.5;opacity:.6}
+#svg-ip .ipd{fill:var(--ink)}
+#svg-ip .ipd.hl{fill:var(--accent)}
+#svg-ip .iplines,#ip-hl{pointer-events:none}
+#svg-ip .ipl.hl{stroke:var(--accent);stroke-width:3;opacity:1}
+#svg-ip .ipar{stroke:var(--muted);stroke-width:3}
+#svg-ip .ipah{fill:var(--muted)}
+#svg-ip .ipop{font-size:26px;font-weight:700;fill:var(--ink)}
+#svg-ip .ipsub{font-size:12.5px;fill:var(--muted)}
+#svg-ip .ipcol{font-size:11px;fill:var(--faint)}
+#svg-ip .ipcol.L{fill:var(--cL);font-weight:700}
+#svg-ip .ipcol.R{fill:var(--cR);font-weight:700}
+#svg-ip .iprow{font-size:11.5px;fill:var(--muted)}
+#svg-ip .ipbr{fill:none;stroke-width:2.5}
+#svg-ip .ipbt{font-size:18px;font-weight:700}
+#svg-ip .iphex{font:15px var(--mono);fill:var(--ink)}
+#svg-ip .ipbox{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-dasharray:6 4}
+#svg-ip .lbl{font-size:14px}
+.iptabs{display:flex;gap:10px;flex-wrap:wrap}
+.iptab{border-collapse:collapse;font:12.5px var(--mono)}
+.iptab th{font:italic 700 13px var(--sans);padding:3px 0;border:1px solid var(--line2)}
+.iptab td{width:21px;text-align:center;padding:2px 0;border:1px solid var(--line)}
+.iptab td.on{background:var(--ink);color:var(--bg);font-weight:700}
+#vp-fc svg{max-width:900px}
+.fcbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;padding:4px 4px 0}
+.fccap{margin:8px 4px 4px;font-size:15px;font-weight:600;color:var(--muted)}
+#svg-fc .fcb{cursor:pointer}
+#svg-fc .fcb:hover rect,#svg-fc .fcb:hover circle{stroke-width:2.8}
+#svg-fc .fcflow{stroke-dasharray:9 6;animation:flow .55s linear infinite}
+#vp-e svg{max-width:1100px}
+/* tab 3: expansion */
+#svg-e .ec rect{stroke:rgba(0,0,0,.25);stroke-width:1}
+#svg-e .ev{font:700 17px var(--mono);fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.45);stroke-width:2.5px;pointer-events:none}
+#svg-e .ec.clk{cursor:pointer}
+#svg-e .ec.src rect{stroke:var(--accent);stroke-width:3}
+#svg-e .ec.twice rect{stroke:var(--xor);stroke-width:3.2}
+#svg-e .ec.edge rect{stroke:var(--xor);stroke-width:2;stroke-dasharray:4 3}
+#svg-e .ec.now rect{animation:pop .5s ease-out}
+@keyframes pop{from{transform:scale(1.25)}to{transform:scale(1)}}
+#svg-e .ec rect,#svg-e .eghost rect{transform-box:fill-box;transform-origin:center}
+#svg-e .ec.hl rect,#svg-e .eghost.hl rect.egd{stroke:var(--ink);stroke-width:3.5;stroke-dasharray:none}
+#svg-e .eghost rect:first-child{opacity:.5}
+#svg-e .egd{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:4 3}
+#svg-e .egc{font-size:12.5px;font-weight:700;fill:var(--xor)}
+#svg-e .egc2{font-size:11.5px;fill:var(--muted)}
+#svg-e .enum{font-size:11.5px;fill:var(--muted)}
+#svg-e .enum.off{fill:var(--faint);opacity:.7}
+#svg-e .enum.cpn{fill:var(--xor);font-weight:700}
+#svg-e .egl{font-size:13px;fill:var(--muted)}
+#svg-e .egl.on,#svg-e .egs.on{fill:var(--accent);font-weight:700}
+#svg-e .egs{font-size:14px;font-weight:700;fill:var(--ink)}
+#svg-e .egs.off{fill:var(--faint);font-weight:400}
+#svg-e .esum{font-size:15px;font-weight:700;fill:var(--ink)}
+#svg-e .ew{stroke:var(--line2);stroke-width:2.2}
+#svg-e .ew.cp{stroke:var(--xor);stroke-dasharray:6 4;opacity:.8}
+#svg-e .ew.on{stroke:var(--accent);stroke-width:3;stroke-dasharray:9 6;animation:flow .55s linear infinite;opacity:1}
+#svg-e .ew.cp.on{stroke:var(--xor)}
+#svg-e .ew.hl{stroke:var(--ink);stroke-width:3.5;stroke-dasharray:none;opacity:1}
+#svg-e .hid{opacity:0!important;pointer-events:none}
+#svg-e .lbl{font-size:14px}
+#svg-e .eghost{transition:opacity .3s}
+#svg-e .tokr{fill:none;stroke:rgba(0,0,0,.35);stroke-width:1.2}
+#svg-e .cpt .tokr{stroke:var(--xor);stroke-width:3}
+.etools{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-top:8px;padding:0 4px}
+.einfo{flex:1 1 360px;margin:0;min-height:42px;padding:9px 12px;border-radius:8px;background:var(--accentBg);font-size:15px}
+.etab{border-collapse:collapse;font:14px var(--mono);width:100%}
+.etab th,.etab td{padding:3px 4px;text-align:center;border-bottom:1px solid var(--line)}
+.etab th{font-family:var(--sans);font-size:13px;color:var(--muted);text-align:left}
+.etab td.cp{color:var(--xor);font-weight:700}
+.etab tr.cur td,.etab tr.cur th{background:var(--accentBg)}
+/* tab 4: S-boxes */
+#vp-s{padding:6px 8px}
+.sbbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;margin-bottom:4px}
+#vp-s .fxflow{margin:10px auto 0}
+#vp-s .fxfin{min-width:min(100%,420px)}
+.fxq{background:var(--line);color:var(--faint)}
+.fxbin{font:15px var(--mono);color:var(--muted)}
+.fxarr2 span,.fxarr1{transition:color .3s}
+.fxarr2 span.on,.fxarr1.on{color:var(--ink)}
+.appear{animation:appear .5s ease-out}
+@keyframes appear{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+td.appear{animation:hitpop .5s ease-out}
+@keyframes hitpop{from{transform:scale(1.6)}to{transform:scale(1)}}
+.sbh{font-size:16px;color:var(--ink);margin:22px 0 6px}
+.sbh span{font-weight:400;color:var(--muted);font-size:14px}
+.sbflip{border-collapse:collapse;font-size:14.5px}
+.sbflip th{font-size:12.5px;color:var(--muted);font-weight:600;text-align:left;padding:4px 14px 4px 0;border-bottom:1px solid var(--line2)}
+.sbflip td{padding:5px 14px 5px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.sbflip tr[data-sx]{cursor:pointer}
+.sbflip tr[data-sx]:hover td{background:var(--accentBg)}
+.sbflip u{text-decoration:none;background:var(--xor);color:#fff;border-radius:3px;padding:0 2px}
+.sbflip .chg{color:var(--xor)}
+.sbflip .bar{display:inline-block;height:10px;border-radius:3px;background:var(--accent);vertical-align:middle;margin-right:4px}
+.fxfacts.sm{font-size:13.5px;padding-left:18px}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}.c-leg{order:4}.c-extra{order:5}.vp{max-height:none}}
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+.row:empty{display:none}
+[hidden]{display:none!important}
+select{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.lg{display:flex;align-items:center;gap:8px;font-size:14px;margin:4px 0}
+.sw{width:16px;height:16px;border-radius:4px;flex:none}
+.sws{display:flex;gap:2px;flex:none}
+.sws i{width:13px;height:16px;border-radius:3px;display:block}
+.mix{width:100%;border-collapse:collapse;font-size:13px}
+.mix td,.mix th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.mix th{color:var(--muted);font-weight:600}
+.mix .rn{color:var(--muted);white-space:nowrap}
+.dots{display:flex;flex-wrap:wrap;gap:2px}
+.dots i{width:11px;height:11px;border-radius:2px;display:block}
+.mix .unk{color:var(--faint)}
+.mix tr.cur td{background:var(--accentBg)}
+.small{font-size:13px;color:var(--muted);margin:8px 0 0}
+.shifts{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.shifts span{display:inline-flex;flex-direction:column;align-items:center;min-width:19px;padding:2px 0;border:1px solid var(--line);border-radius:4px;font-size:12px;line-height:1.2}
+.shifts span small{font-size:9px;color:var(--faint)}
+.shifts span.done{background:var(--dimBg,var(--line))}
+.shifts span.cur{border-color:var(--accent);background:var(--accentBg);font-weight:700}
+.kv{font-family:var(--mono);font-size:13px}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* ---------- svg shared ---------- */
+svg text{font-family:var(--sans)}
+.w{stroke:var(--line2);stroke-width:2.2;fill:none}
+.w.on{stroke:var(--accent);stroke-width:3;stroke-dasharray:9 6;animation:flow .55s linear infinite}
+.w.k.on{stroke:var(--cK1)}
+@keyframes flow{to{stroke-dashoffset:-15}}
+.mk{fill:var(--line2)}
+.mk.on{fill:var(--accent)}
+.mk.k{fill:var(--cK1)}
+.band{fill:var(--band)}
+.rl{font-size:14px;fill:var(--muted)}
+.lbl{font-size:13px;fill:var(--muted)}
+.lbl b,.lbl .b{font-weight:700;fill:var(--ink)}
+.tok text{font-size:16px;font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:3.5px;stroke-linejoin:round}
+.tok .edge{fill:none;stroke:rgba(0,0,0,.45);stroke-width:1.5}
+.cedge{fill:none;stroke:rgba(0,0,0,.28);stroke-width:1}
+.segt{font-size:11.5px;font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.35);stroke-width:2px}
+.num{font-size:9px;font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.5);stroke-width:2.2px}
+.emp{fill:none;stroke:var(--line2);stroke-dasharray:3 2}
+.grow{transform-box:fill-box;transform-origin:left center;animation:grow .55s ease-out}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.dimmed{opacity:.13}
+.clickable{cursor:pointer}
+/* feistel */
+.bx{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
+.bx.full{stroke:var(--ink);stroke-opacity:.55}
+.bx.empty{stroke-dasharray:5 4;fill:none}
+.bt{font-size:16px;fill:var(--ink)}
+.bt.dim{fill:var(--faint)}
+.q{font-size:18px;fill:var(--faint)}
+.fb{fill:var(--panel);stroke:var(--line2);stroke-width:2}
+.fb.on{stroke:var(--accent);fill:var(--accentBg)}
+.fb.pulse{animation:pulse .45s ease-in-out infinite alternate}
+@keyframes pulse{from{fill:var(--accentBg)}to{fill:var(--panel)}}
+.ft{font-size:18px;font-weight:700;fill:var(--ink)}
+.xo{fill:var(--panel);stroke:var(--line2);stroke-width:2.2}
+.xo.on{stroke:var(--xor);stroke-width:3}
+.kc{fill:var(--cK1)}
+.kct{font-size:15px;font-weight:700;fill:#fff}
+.hint{font-size:12.5px;fill:var(--muted)}
+/* inside f */
+.sbx{fill:var(--panel);stroke:var(--line2);stroke-width:1.6}
+.sbx.act{stroke:var(--ink);stroke-opacity:.6}
+.sbx.pulse{fill:var(--accentBg);stroke:var(--accent);stroke-opacity:1}
+.sbt{font-size:14px;font-weight:700;fill:var(--ink)}
+.pl{stroke:var(--line2);stroke-width:1;opacity:.75}
+.trl{stroke:var(--accent);stroke-width:2}
+#svg-f .lbl{font-size:15px;paint-order:stroke;stroke:var(--panel);stroke-width:6px;stroke-linejoin:round}
+#svg-f .sbt{font-size:17px}
+#svg-f .hint{font-size:13px}
+.gnum{font-size:11px;fill:var(--faint)}
+.zsel{fill:var(--band)}
+.sbx.zon{stroke:var(--accent);stroke-opacity:1;stroke-width:2.2}
+.stp circle{fill:var(--panel);stroke:var(--line2);stroke-width:1.6}
+.stp text{font-size:13px;font-weight:700;fill:var(--muted)}
+.stp.done circle{fill:var(--line)}
+.stp.cur circle{fill:var(--accent);stroke:var(--accent)}
+.stp.cur text{fill:var(--onAccent)}
+/* inside f: up close */
+.mono{font-family:var(--mono)}
+.fz{margin-top:14px;border-top:1px solid var(--line);padding:16px 8px 4px}
+.zhead{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.zt{font-size:18px;color:var(--ink);margin:0 0 4px}
+.zs{margin:0;font-size:14px;color:var(--muted);max-width:640px}
+.zpick{flex-wrap:wrap}
+.zpick button{padding:6px 10px;font-size:13.5px}
+.zrow{display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;align-items:start;padding:14px 0;border-bottom:1px dashed var(--line)}
+.zrow:last-child{border-bottom:0}
+.zrow.zoff{opacity:.45}
+.zl{display:flex;gap:10px;align-items:flex-start}
+.zl b{display:block;font-size:17px}
+.zl small{display:block;font-size:13px;color:var(--muted);line-height:1.35}
+.zn{flex:none;width:26px;height:26px;border-radius:50%;border:1.6px solid var(--line2);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--muted)}
+.zc{min-width:0}
+.zb{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:40px;height:48px;padding:0 4px;margin:0 3px 3px 0;border-radius:8px;background:var(--c);color:#fff;vertical-align:middle;text-shadow:0 0 3px rgba(0,0,0,.55)}
+.zb b{font:700 21px/1 var(--mono)}
+.zb small{font-size:10.5px;margin-top:3px;opacity:.95;white-space:nowrap}
+.zb.znb{opacity:.6}
+.zb[style*="--ink"]{color:var(--bg);text-shadow:none}
+.zb.zrowb{box-shadow:0 0 0 3px var(--xor)}
+.zb.zcolb{box-shadow:0 0 0 3px var(--accent)}
+.zsep{display:inline-block;width:10px}
+.zops{display:flex;align-items:center;margin-bottom:2px}
+.zop{display:inline-block;width:26px;font-size:20px;font-weight:700;color:var(--muted);text-align:center}
+.zsum{margin-top:8px}
+.zx{margin:8px 0 0;font-size:14.5px;color:var(--muted);max-width:720px}
+.zline{margin:6px 0;font-size:15px}
+.zline .zb{min-width:30px;height:36px}.zline .zb b{font-size:17px}
+.zchip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:13px;font-weight:700;color:#fff}
+.zchip.zrowb{background:var(--xor)}.zchip.zcolb{background:var(--accent);color:var(--onAccent)}
+.zsw{overflow-x:auto;margin:8px 0}
+.zst{border-collapse:collapse;font:13px var(--mono)}
+.zst th,.zst td{padding:4px 0;width:30px;text-align:center;border:1px solid var(--line)}
+.zst th{color:var(--faint);font-weight:600;background:var(--bg)}
+.zst th.zcc{color:var(--ink);background:var(--accentBg)}
+.zst td.zr{background:color-mix(in srgb,var(--xor) 14%,transparent)}
+.zst td.zcl{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.zst td.zhit{background:var(--ink);color:var(--bg);font-weight:700}
+.zdest{display:flex;flex-wrap:wrap;gap:8px 18px}
+.zd{display:flex;align-items:center;gap:4px}
+.zd>small{font-size:12px;color:var(--muted);margin-left:2px}
+.zarr{font-size:20px;color:var(--muted);padding:0 4px}
+.zq{font-size:14px;color:var(--faint)}
+.zhint{margin-top:10px!important;padding:8px 10px;border-radius:7px;background:var(--accentBg);font-size:14.5px}
+.fx{scroll-margin-top:12px}
+.fxnav{margin-bottom:6px!important}
+a{color:var(--accent)}
+button.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;font-size:inherit}
+.fxsteps{margin:10px 0;padding-left:22px;font-size:15.5px;max-width:820px}
+.fxsteps li{margin:6px 0}
+.fxlab{font-size:15px;margin:14px 0 6px}
+.fxlab span{color:var(--muted);font-size:13.5px}
+.fxr{display:flex;flex-wrap:wrap;gap:6px 10px}
+.fxr .fxb{width:24px}
+.fxg{display:flex;flex-direction:column;align-items:center}
+.fxg>small{font-size:11.5px;color:var(--faint)}
+.fxg>div{display:flex}
+.fxb{position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:30px;height:40px;margin:0 2px 2px 0;border-radius:6px;background:var(--c);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55);transition:transform .12s,box-shadow .12s}
+.fxb b{font:700 17px/1 var(--mono)}
+.fxb small{font-size:10px;margin-top:2px}
+.fxb.clk{cursor:pointer}
+.fxb.fx2::after{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 2px rgba(0,0,0,.6)}
+.fxb.fxedge{outline:2px dashed var(--ink);outline-offset:-2px;opacity:.85}
+.fxb.fxh{box-shadow:0 0 0 3px var(--ink);transform:translateY(-3px);opacity:1}
+.fxe{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 34px}
+.fxer{display:flex;align-items:center}
+.fxto{width:44px;font-size:13px;font-weight:700;color:var(--muted)}
+.fxinfo{min-height:24px;margin:10px 0 0;padding:8px 10px;border-radius:7px;background:var(--accentBg);font-size:15px;max-width:820px}
+.fxin{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:42px;height:50px;margin:0 3px;padding:0;vertical-align:middle;border:0;border-radius:8px;background:var(--ink);color:var(--bg)}
+.fxin b{font:700 21px/1 var(--mono)}
+.fxin small{font-size:10px;margin-top:3px}
+.fxin.zrowb{box-shadow:0 0 0 3px var(--xor)}
+.fxin.zcolb{box-shadow:0 0 0 3px var(--accent)}
+.fxst td{cursor:pointer}
+.fxst td:hover{outline:2px solid var(--ink);outline-offset:-2px}
+.fxst th small{display:block;font-size:9px;font-weight:400;color:var(--faint)}
+.fxdiff{margin:8px 0;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:15px;max-width:820px}
+.fxfacts{margin:6px 0 0;padding-left:20px;font-size:15px;max-width:820px}
+.fxfacts li{margin:5px 0}
+.fxflow{display:flex;flex-direction:column;align-items:stretch;max-width:860px;margin-top:10px}
+.fxbox{border:1.5px solid var(--line2);border-radius:12px;padding:10px 14px;background:var(--panel);transition:opacity .3s}
+.fxbox.fxwait{opacity:.25}
+.fxfin{align-self:center;text-align:center}
+.fxbt{font-size:14px;font-weight:700;margin-bottom:6px}
+.fxbt span{font-weight:400;color:var(--muted)}
+.fxtwo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fxrow{border-color:var(--xor)}.fxcol{border-color:var(--accent)}
+.fxtwo .fxbox{text-align:center}
+.fxtwo small{display:block;color:var(--muted);font-size:12.5px;margin-top:4px}
+.fxbig{font-size:22px;display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}
+.fxbig i{font-style:normal;color:var(--muted);padding:0 6px}
+.fxbig b{font-size:26px}
+.fxsm{display:inline-flex;align-items:center;justify-content:center;width:30px;height:36px;border-radius:7px;background:var(--c);color:#fff;font:700 19px var(--mono)}
+.fxarr2{display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:26px;line-height:1.2;color:var(--muted)}
+.fxarr1{text-align:center;font-size:26px;line-height:1.2;color:var(--muted)}
+.fxout{align-self:center}
+.fxtab .zsw{margin:4px 0 0}
+.fxall{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px;margin-top:8px}
+.fxmini{border:1.5px solid var(--line);border-radius:9px;padding:6px 8px;cursor:pointer;overflow-x:auto}
+.fxmini:hover{border-color:var(--line2)}
+.fxmini.on{border-color:var(--accent);background:var(--accentBg)}
+.fxmt{font-weight:700;font-size:13px;margin-bottom:3px}
+.fxmini table{border-collapse:collapse;font:11px var(--mono)}
+.fxmini td{width:19px;padding:2px 0;text-align:center;color:var(--muted)}
+.fxmini.on td{color:var(--ink)}
+.fxmini td.hit{background:var(--ink);color:var(--bg);font-weight:700;border-radius:3px}
+@media (max-width:640px){.fxtwo{grid-template-columns:1fr;gap:8px}.fxarr2{display:none}}
+@media (max-width:900px){.fxe{grid-template-columns:max-content}}
+@media (max-width:640px){.zrow{grid-template-columns:minmax(0,1fr);gap:8px}.zb{min-width:34px;height:44px}}
+.hlbox{fill:none;stroke:var(--accent);stroke-width:2.2}
+/* key schedule */
+.ring{fill:none;stroke:var(--line);stroke-width:30}
+.ringc{fill:none;stroke:var(--line2);stroke-width:1;stroke-dasharray:2 3}
+.tick{stroke:var(--ink);stroke-width:2.2;stroke-linecap:round}
+.xm{stroke:var(--faint);stroke-width:1.6;stroke-linecap:round}
+.ctr{font-size:30px;font-weight:700;fill:var(--ink)}
+.ctr2{font-size:12px;fill:var(--muted)}
+.rot{font-size:34px;fill:var(--accent)}
+.strk{stroke:var(--faint);stroke-width:1.4}
+/* ---------- tab 4: encrypt / decrypt ---------- */
+:root{--key:#b46a08;--keyBg:#fcefd9;--dim:#f0eee8;--hl:#ffe08a;--ok:#2b7a4b}
+@media (prefers-color-scheme:dark){:root{--key:#f0b25a;--keyBg:#3a2a12;--dim:#25252a;--hl:#6b5512;--ok:#6cc290}}
+#t4 .xrow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;justify-content:space-between}
+#t4 .xgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,.9fr);gap:12px 16px;margin-top:12px}
+@media (max-width:900px){#t4 .xgrid{grid-template-columns:minmax(0,1fr)}}
+#t4 .fld{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);min-width:0}
+#t4 .flh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:28px}
+#t4 .flh>b{font-size:14px;color:var(--ink)}
+#t4 .seg.sm button{padding:3px 11px;font-size:13px}
+#t4 .seg.sm button:disabled{opacity:.35}
+#t4 .cnt{margin-left:auto;font-size:12px;color:var(--muted)}
+#t4 textarea,#t4 .fld input{font:15px var(--mono);padding:8px 10px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);width:100%;resize:vertical;min-height:40px}
+#t4 select{width:100%}
+#t4 .bad{border-color:var(--xor)!important;outline:1px solid var(--xor)}
+#t4 .err{color:var(--xor);font-size:14px;margin-top:10px}
+#t4 .err:empty{display:none}
+#t4 .card+.card,#t4 .card+nav,#t4 nav+section{margin-top:12px}
+#t4 h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#t4 .blkwrap{overflow-x:auto}
+#t4 .blk{border-collapse:collapse;font-size:14px;width:100%}
+#t4 .blk th,#t4 .blk td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+#t4 .blk th{color:var(--muted);font-weight:600;font-size:12px}
+#t4 .blk tr.sel td{background:var(--accentBg)}
+#t4 .blk .m{font-family:var(--mono)}
+#t4 .blk button{padding:3px 10px;font-size:13px}
+#t4 .padb{background:var(--keyBg);color:var(--key);border-radius:3px;padding:0 1px}
+#t4 .out{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:15px}
+#t4 .out .mono{word-break:break-all}
+#t4 .okline{color:var(--ok);font-weight:600}
+#t4 .xnote{font-size:13px;color:var(--muted);margin:10px 0 0}
+#t4 .xctl .row2{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+#t4 .btns{display:flex;flex-wrap:wrap;gap:6px}
+#t4 .stepLbl{font-size:14px;color:var(--muted)}
+#t4 .phase{display:flex;gap:2px;margin-top:10px}
+#t4 .phs{flex:1 1 0;min-width:0;cursor:pointer}
+#t4 .phs.wide{flex:1.7 1 0}
+#t4 .phs .bar{height:8px;background:var(--dim);border-radius:2px;overflow:hidden}
+#t4 .phs .fill{height:100%;background:var(--accent)}
+#t4 .phs .pl{font-size:11px;color:var(--faint);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden}
+#t4 .phs.act .pl{color:var(--ink);font-weight:700}
+#t4 .split{display:grid;grid-template-columns:310px minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:980px){#t4 .split{grid-template-columns:minmax(0,1fr)}}
+#t4 .mainc{display:flex;flex-direction:column;gap:12px;min-width:0}
+#t4 .explain p{margin:0 0 8px}
+#t4 .explain p:last-child{margin-bottom:0}
+#t4 .mono{font-family:var(--mono)}
+#t4 .kcol{color:var(--key);font-weight:600}
+#t4 .note{margin-top:10px;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+#t4 .ladder{padding:10px}
+#t4 .ladder h3{font-size:13px;color:var(--muted);margin:0 4px 6px}
+#t4 .lr{display:grid;grid-template-columns:88px 1fr 1fr;gap:6px;align-items:center;padding:3px 6px;border-radius:6px;cursor:pointer}
+#t4 .lr:hover{background:var(--dim)}
+#t4 .lr .hx{font:14px var(--mono)}
+#t4 .lr .lab{font-size:13px;color:var(--muted);white-space:nowrap}
+#t4 .lr .rk{font-size:11px;color:var(--key);margin-left:3px}
+#t4 .lr .unk{color:var(--faint)}
+#t4 .lr.head{cursor:default;font-size:12px;color:var(--faint)}
+#t4 .lr.head:hover{background:none}
+#t4 .lr.inp{background:var(--dim)}
+#t4 .lr.cur{background:var(--accentBg);box-shadow:inset 0 0 0 1px var(--accent)}
+#t4 .lr .span2{grid-column:2 / 4}
+#t4 .lsep{border-top:1px dashed var(--line2);margin:4px 6px}
+#t4 .pair{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center}
+#t4 .cap{font-size:13px;color:var(--muted);margin-bottom:4px}
+#t4 .g64wrap{display:flex;gap:6px;align-items:stretch}
+#t4 .g64{display:grid;grid-template-columns:repeat(8,26px);gap:3px}
+#t4 .g64 .c{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font:14px var(--mono);border:1px solid var(--line2);border-radius:4px;background:var(--panel);cursor:pointer;user-select:none}
+#t4 .c.par{background:var(--dim);color:var(--faint);text-decoration:line-through}
+#t4 .c.Lh{background:var(--accentBg)}
+#t4 .c.Rh{background:var(--okBg)}
+#t4 .side{display:flex;flex-direction:column;justify-content:space-around;font-size:12px;color:var(--muted)}
+#t4 .bigarrow{font-size:15px;color:var(--muted);text-align:center}
+#t4 .hinfo{margin-top:10px;font-size:14px;min-height:21px}
+#t4 .hl{background:var(--hl)!important;box-shadow:0 0 0 2px var(--key);color:var(--ink)!important;text-decoration:none!important}
+#t4 .rtop{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+#t4 .rsvg{width:100%;max-width:470px;display:block}
+#t4 .rsvg .box{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
+#t4 .rsvg .box.on{stroke:var(--accent);fill:var(--accentBg)}
+#t4 .rsvg .w{stroke:var(--line2);stroke-width:2;fill:none;stroke-dasharray:none;animation:none}
+#t4 .rsvg .w.on{stroke:var(--accent);stroke-width:2.6}
+#t4 .rsvg .w.k{stroke:var(--key)}
+#t4 .rsvg text{font-family:var(--mono);font-size:13px;fill:var(--ink)}
+#t4 .rsvg tspan.sl{font-family:var(--sans)}
+#t4 .rsvg text.kt{font-family:var(--sans);font-weight:700;fill:var(--key)}
+#t4 .rsvg text.ft{font-family:var(--sans);font-weight:700;font-size:16px}
+#t4 .rsvg text.fv{font-size:11px;fill:var(--accent)}
+#t4 .rsvg .xo{fill:var(--panel);stroke:var(--line2);stroke-width:2}
+#t4 .rsvg .xo.on{stroke:var(--xor);stroke-width:2.6}
+#t4 .rsvg .mk{fill:var(--line2)}
+#t4 .rsvg .mk.on{fill:var(--accent)}
+#t4 .legend{font-size:13px;color:var(--muted);max-width:320px}
+#t4 .legend div{margin:2px 0}
+#t4 .legend .sw2{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px;border:1px solid var(--line2)}
+#t4 .pipewrap{overflow-x:auto;margin-top:14px;padding-bottom:4px}
+#t4 .pipe{min-width:660px;display:grid;grid-template-columns:132px repeat(8,minmax(0,1fr));gap:5px 6px;align-items:center}
+#t4 .pipe .lab{font-size:13px;color:var(--muted);text-align:right;padding-right:4px;line-height:1.25}
+#t4 .pipe .lab b{color:var(--ink);font-weight:600}
+#t4 .lane{display:flex;justify-content:center;gap:1px;font:14px var(--mono);padding:3px 0;border-radius:5px;background:var(--dim)}
+#t4 .lane.key{background:var(--keyBg)}
+#t4 .lane .b{padding:0 1px;border-radius:2px}
+#t4 .b.bor{color:var(--faint)}
+#t4 .b.bph{color:var(--faint)}
+#t4 .xdim{opacity:.3}
+#t4 .schip{font-size:12px;text-align:center;padding:4px 2px;border:1px solid var(--line2);border-radius:6px;background:var(--panel);cursor:pointer;line-height:1.3;color:var(--ink)}
+#t4 .schip b{font-size:13px}
+#t4 .schip.sel{border-color:var(--accent);background:var(--accentBg);box-shadow:inset 0 0 0 1px var(--accent)}
+#t4 .sboxw{margin-top:14px}
+#t4 .tblwrap{overflow-x:auto}
+#t4 .stab{border-collapse:collapse;font:13px var(--mono)}
+#t4 .stab th,#t4 .stab td{border:1px solid var(--line);padding:3px 5px;text-align:center;min-width:27px}
+#t4 .stab th{color:var(--muted);font-weight:500;background:var(--dim)}
+#t4 .stab .rw,#t4 .stab .cl{background:var(--accentBg)}
+#t4 .stab .hit{background:var(--accent);color:var(--onAccent);font-weight:700}
+#t4 .swapv{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font:16px var(--mono)}
+#t4 .hbox{padding:8px 12px;border-radius:7px;border:1px solid var(--line2)}
+#t4 .hbox.L{background:var(--accentBg)}
+#t4 .hbox.R{background:var(--okBg)}
+#t4 .hbox small{display:block;font:12px var(--sans);color:var(--muted)}
+#t4 .kt{border-collapse:collapse;font-size:13px}
+#t4 .kt td,#t4 .kt th{padding:4px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+#t4 .kt th{color:var(--muted);font-weight:600}
+#t4 .kt .m{font-family:var(--mono)}
+#t4 .kt tr.cur td{background:var(--accentBg)}
+#t4 .rotb{color:var(--key);font-weight:700}
+#t4 .bits{font:14px var(--mono);word-break:break-all}
+#t4 .sl{font-family:var(--sans)}
+#t4 .avc{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:10px 0 14px}
+#t4 .avc input{font:15px var(--mono);width:64px;padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+#t4 .av{display:grid;grid-template-columns:86px minmax(0,1fr) 34px;gap:4px 10px;align-items:center;font-size:13px;max-width:760px}
+#t4 .avbar{height:15px;background:var(--dim);border-radius:3px;position:relative;overflow:hidden}
+#t4 .avbar i{display:block;height:100%;background:var(--accent)}
+#t4 .avbar::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed var(--muted)}
+#t4 .avn{font-family:var(--mono);text-align:right}
+#t4 .dbits{font:14px var(--mono);word-break:break-all;line-height:1.7}
+#t4 .dbits .d{background:var(--hl);border-radius:2px}
+#t4>*+*{margin-top:12px}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>DES, the flow</h1>
+  <p class="sub">How data moves through DES: the Feistel rounds, the inside of f, and the key schedule</p>
+  <p class="by">Fundamentals of Cryptography · Lecture 04 · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="feistel" class="on">1 · Feistel rounds</button>
+    <button data-tab="f">2 · Inside f</button>
+    <button data-tab="e">3 · Expansion E</button>
+    <button data-tab="s">4 · S-boxes</button>
+    <button data-tab="ks">5 · Key schedule</button>
+    <button data-tab="des">6 · Encrypt / Decrypt</button>
+    <button data-tab="ip">7 · IP and IP⁻¹</button>
+    <button data-tab="fc">8 · DES flowcharts</button>
+  </nav>
+</header>
+<main class="wrap layout">
+  <div class="card stage">
+    <div class="vp" id="vp-feistel"><svg id="svg-feistel" role="img" aria-label="Feistel network animation"></svg></div>
+    <div class="vp" id="vp-f" hidden><svg id="svg-f" role="img" aria-label="Inside the f-function"></svg><div class="fz" id="fz"></div></div>
+    <div class="vp" id="vp-e" hidden><svg id="svg-e" role="img" aria-label="Expansion E"></svg><div class="etools"><p class="einfo" id="eInfo"></p><div class="row"><button data-eset="ex" title="Use R₀ of the textbook example">Example R₀</button><button data-eset="rand">Random R</button></div></div></div>
+    <div class="vp" id="vp-s" hidden><div id="sb-main"></div></div>
+    <div class="vp" id="vp-ip" hidden><svg id="svg-ip" role="img" aria-label="Initial and final permutation"></svg><div class="etools"><p class="einfo" id="ipInfo"></p><div class="row"><button data-ipset="ex" title="x = 0123456789ABCDEF">Example x</button><button data-ipset="rand">Random x</button></div></div></div>
+    <div class="vp" id="vp-fc" hidden><div class="fcbar"><div class="seg"><button data-fch="A" class="on">A · Whole DES</button><button data-fch="B">B · Function f</button><button data-fch="C">C · Key schedule</button></div><button data-fcpng title="Save this chart as a PNG picture (white background)">⤓ Save as PNG</button></div><p class="fccap" id="fcCap"></p><svg id="svg-fc" role="img" aria-label="DES flowchart"></svg></div>
+    <div class="vp" id="vp-ks" hidden><svg id="svg-ks" role="img" aria-label="DES key schedule"></svg></div>
+  </div>
+  <aside class="panel">
+    <div class="card c-ctrl">
+      <div class="row">
+        <div class="seg" id="mode"><button data-m="enc" class="on">Encrypt</button><button data-m="dec">Decrypt</button></div>
+        <label class="inl" id="nrWrap">Rounds <select id="nr"><option>2</option><option>3</option><option selected>4</option><option>6</option><option>8</option><option>16</option></select></label>
+      </div>
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label>
+        <label class="inl" id="followWrap"><input type="checkbox" id="follow" checked> follow</label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card c-leg" id="legend"></div>
+    <div class="card c-extra" id="extra"></div>
+  </aside>
+</main>
+<section class="wrap" id="t4" hidden>
+  <div class="card">
+    <div class="xrow">
+      <div class="seg" id="xMode"><button data-mode="enc" class="on">Encrypt</button><button data-mode="dec">Decrypt</button></div>
+      <label class="inl">Example
+        <select id="xPreset" style="width:auto">
+          <option value="hello">Text: “Hello world!”</option>
+          <option value="book">Textbook example (hex)</option>
+          <option value="ecb">Same blocks → same ciphertext</option>
+          <option value="zero">Ciphertext becomes all zeros (hex)</option>
+          <option value="custom" disabled>Your own input</option>
+        </select>
+      </label>
+    </div>
+    <div class="xgrid">
+      <div class="fld">
+        <div class="flh"><b id="xMsgLbl">Plaintext</b><span class="seg sm" id="xMsgFmt"><button data-f="text" class="on">Text</button><button data-f="hex">Hex</button></span><span class="cnt" id="xMsgCnt"></span></div>
+        <textarea id="xMsg" rows="2" spellcheck="false" autocomplete="off"></textarea>
+      </div>
+      <div class="fld">
+        <div class="flh"><b>Key</b><span class="seg sm" id="xKeyFmt"><button data-f="text" class="on">Text</button><button data-f="hex">Hex</button></span><span class="cnt" id="xKeyCnt"></span></div>
+        <input id="xKey" spellcheck="false" autocomplete="off">
+      </div>
+      <div class="fld">
+        <div class="flh"><b>Padding</b></div>
+        <select id="xPad">
+          <option value="pkcs">PKCS#5 / PKCS#7</option>
+          <option value="bit">Bit padding (80 00 …)</option>
+          <option value="none">None (exact 8-byte blocks)</option>
+        </select>
+      </div>
+    </div>
+    <div class="err" id="xErr"></div>
+  </div>
+
+  <div class="card" id="xRes"></div>
+
+  <div class="card xctl">
+    <div class="row2">
+      <div class="btns">
+        <button id="xReset" title="Back to the start">⟲ Reset</button>
+        <button id="xBack" title="One step back (← key)">◀ Back</button>
+        <button id="xStep" class="pri" title="One step forward (→ key)">Step ▶</button>
+        <button id="xRound" title="Jump to the next round">Next round ⏭</button>
+        <button id="xPlay">▶ Play</button>
+        <button id="xEnd" title="Jump to the result">End</button>
+      </div>
+      <div id="xStepLbl" class="stepLbl"></div>
+    </div>
+    <div id="xPhase" class="phase"></div>
+  </div>
+
+  <nav class="tabs" id="xTabs">
+    <button data-xtab="rounds" class="on">Rounds</button>
+    <button data-xtab="keys">Key schedule</button>
+    <button data-xtab="aval">Avalanche</button>
+  </nav>
+  <section id="x-tab-rounds">
+    <div class="split">
+      <aside class="card ladder" id="xLadder"></aside>
+      <div class="mainc">
+        <div class="card explain" id="xExplain"></div>
+        <div class="card" id="xVisual"></div>
+      </div>
+    </div>
+  </section>
+  <section id="x-tab-keys" hidden><div class="card" id="xKeys"></div></section>
+  <section id="x-tab-aval" hidden><div class="card" id="xAval"></div></section>
+</section>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline.</footer>
+
+<script>
+'use strict';
+/* ================= DES tables (FIPS 46-3) ================= */
+const E=[32,1,2,3,4,5,4,5,6,7,8,9,8,9,10,11,12,13,12,13,14,15,16,17,16,17,18,19,20,21,20,21,22,23,24,25,24,25,26,27,28,29,28,29,30,31,32,1];
+const P=[16,7,20,21,29,12,28,17,1,15,23,26,5,18,31,10,2,8,24,14,32,27,3,9,19,13,30,6,22,11,4,25];
+const PC1=[57,49,41,33,25,17,9,1,58,50,42,34,26,18,10,2,59,51,43,35,27,19,11,3,60,52,44,36,63,55,47,39,31,23,15,7,62,54,46,38,30,22,14,6,61,53,45,37,29,21,13,5,28,20,12,4];
+const PC2=[14,17,11,24,1,5,3,28,15,6,21,10,23,19,12,4,26,8,16,7,27,20,13,2,41,52,31,37,47,55,30,40,51,45,33,48,44,49,39,56,34,53,46,42,50,36,29,32];
+const SHIFTS=[1,1,2,2,2,2,2,2,1,2,2,2,2,2,2,1];
+const DSHIFTS=[0,1,2,2,2,2,2,2,1,2,2,2,2,2,2,1];
+const S=[
+[14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7, 0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8, 4,1,14,8,13,6,2,11,15,12,9,7,3,10,5,0, 15,12,8,2,4,9,1,7,5,11,3,14,10,0,6,13],
+[15,1,8,14,6,11,3,4,9,7,2,13,12,0,5,10, 3,13,4,7,15,2,8,14,12,0,1,10,6,9,11,5, 0,14,7,11,10,4,13,1,5,8,12,6,9,3,2,15, 13,8,10,1,3,15,4,2,11,6,7,12,0,5,14,9],
+[10,0,9,14,6,3,15,5,1,13,12,7,11,4,2,8, 13,7,0,9,3,4,6,10,2,8,5,14,12,11,15,1, 13,6,4,9,8,15,3,0,11,1,2,12,5,10,14,7, 1,10,13,0,6,9,8,7,4,15,14,3,11,5,2,12],
+[7,13,14,3,0,6,9,10,1,2,8,5,11,12,4,15, 13,8,11,5,6,15,0,3,4,7,2,12,1,10,14,9, 10,6,9,0,12,11,7,13,15,1,3,14,5,2,8,4, 3,15,0,6,10,1,13,8,9,4,5,11,12,7,2,14],
+[2,12,4,1,7,10,11,6,8,5,3,15,13,0,14,9, 14,11,2,12,4,7,13,1,5,0,15,10,3,9,8,6, 4,2,1,11,10,13,7,8,15,9,12,5,6,3,0,14, 11,8,12,7,1,14,2,13,6,15,0,9,10,4,5,3],
+[12,1,10,15,9,2,6,8,0,13,3,4,14,7,5,11, 10,15,4,2,7,12,9,5,6,1,13,14,0,11,3,8, 9,14,15,5,2,8,12,3,7,0,4,10,1,13,11,6, 4,3,2,12,9,5,15,10,11,14,1,7,6,0,8,13],
+[4,11,2,14,15,0,8,13,3,12,9,7,5,10,6,1, 13,0,11,7,4,9,1,10,14,3,5,12,2,15,8,6, 1,4,11,13,12,3,7,14,10,15,6,8,0,5,9,2, 6,11,13,8,1,4,10,7,9,5,0,15,14,2,3,12],
+[13,2,8,4,6,15,11,1,10,9,3,14,5,0,12,7, 1,15,13,8,10,3,7,4,12,5,6,11,0,14,9,2, 7,11,4,1,9,12,14,2,0,6,10,13,15,3,5,8, 2,1,14,7,4,10,8,13,15,12,9,0,3,5,6,11]];
+
+/* ================= shared helpers ================= */
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const SUBD='₀₁₂₃₄₅₆₇₈₉';
+const sb=n=>String(n).split('').map(d=>SUBD[+d]).join('');
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const mod=(a,n)=>((a%n)+n)%n;
+let UID=0;
+function along(pts,t){
+  const seg=[];let tot=0;for(let j=1;j<pts.length;j++){const d=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);seg.push(d);tot+=d;}
+  if(tot===0)return pts[0];let d=t*tot;
+  for(let j=0;j<seg.length;j++){if(d<=seg[j]||j===seg.length-1){const u=seg[j]?Math.min(1,d/seg[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u];}d-=seg[j];}
+}
+function stripes(x,y,w,h,colors,rx){
+  const id='c'+(++UID);let s=`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><g clip-path="url(#${id})">`;
+  const sw=w/colors.length;colors.forEach((c,j)=>{s+=`<rect x="${(x+j*sw).toFixed(2)}" y="${y}" width="${(sw+0.6).toFixed(2)}" height="${h}" fill="${c}"/>`;});
+  return s+'</g>';
+}
+function cellSVG(cx,cy,colors,o={}){
+  const w=o.w||14,h=o.h||18,x=cx-w/2,y=cy-h/2;
+  let s=`<g${o.cls?` class="${o.cls}"`:''}${o.attr||''}>`;
+  if(!colors)s+=`<rect class="emp" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/>`;
+  else{s+=stripes(x,y,w,h,colors,3)+`<rect class="cedge" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/>`;
+    if(o.txt!==undefined)s+=`<text class="num" x="${cx}" y="${cy+3.2}" text-anchor="middle">${o.txt}</text>`;}
+  return s+'</g>';
+}
+function node(layer,inner,cls){const g=document.createElementNS(NS,'g');if(cls)g.setAttribute('class',cls);g.innerHTML=inner;g.style.opacity=0;layer.appendChild(g);return g;}
+/* moves: {node, pts, a, b, hold, fadeIn, fadeEnd, morph} -> tick(p) */
+function mover(moves){
+  return p=>{for(const m of moves){
+    const A=m.a||0,B=m.b===undefined?1:m.b,lp=clamp((p-A)/(B-A),0,1),hold=m.hold||0;
+    const mv=hold?clamp((lp-hold)/(1-hold),0,1):lp;const pt=along(m.pts,ease(mv));
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
+    let op=p<A?0:1;if(m.fadeIn&&p>=A)op=clamp(lp*4,0,1);if(m.fadeEnd&&lp>0.88)op=clamp((1-lp)*8,0,1);
+    m.node.style.opacity=op;
+    if(m.morph&&!m.morphed&&lp>=hold){m.morphed=true;m.morph(m.node);}
+  }};
+}
+const lineSVG=(id,x1,y1,x2,y2,arrow,extra)=>`<line id="${id}" class="w${extra?' '+extra:''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"${arrow?` marker-end="url(#m-${id})"`:''}/>`+(arrow?`<marker id="m-${id}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="mk${extra?' '+extra:''}" d="M0,0 L10,5 L0,10 z"/></marker>`:'');
+function setOn(ids,on){ids.forEach(id=>{const e=$(id);if(!e)return;e.classList.toggle('on',on);const m=$('m-'+id);if(m)m.querySelector('path').classList.toggle('on',on);});}
+
+/* ================= engine ================= */
+const ENG={tab:'feistel',playing:false,anim:null,playT:null,speed:1};
+const SC={};
+const cur=()=>SC[ENG.tab];
+function startStage(to){
+  const s=cur();stopAnim(true);
+  if(to<1||to>s.total())return;
+  const pl=s.plan(to);
+  s.k=to-1;s.render();
+  const tick=pl.start();
+  ENG.anim={s,to,pl,tick,t0:performance.now(),dur:pl.dur/ENG.speed};
+  panel(to);
+  if(pl.focus!==undefined&&s.focus)s.focus(pl.focus);
+  requestAnimationFrame(loop);
+}
+function loop(now){const a=ENG.anim;if(!a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(loop);else finish();}
+function finish(){
+  const a=ENG.anim;if(!a)return;ENG.anim=null;a.s.k=a.to;a.s.render();panel();
+  if(ENG.playing){if(a.s.k<a.s.total())ENG.playT=setTimeout(()=>startStage(a.s.k+1),380/ENG.speed);else setPlaying(false);}
+}
+function stopAnim(complete){
+  if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null;}
+  const a=ENG.anim;if(!a)return;ENG.anim=null;a.s.k=complete?a.to:a.to-1;a.s.render();panel();
+}
+function setPlaying(on){ENG.playing=on;$('bPlay').textContent=on?'❚❚ Pause':'▶ Play';}
+function panel(kText){
+  const s=cur(),k=kText===undefined?s.k:kText;
+  $('prog').textContent=s.progress(k);
+  $('pfill').style.width=(k/s.total()*100)+'%';
+  $('explain').innerHTML=s.explain(k);
+  $('legend').innerHTML=s.legend();
+  $('extra').innerHTML=s.extra(s.k);
+  $('bBack').disabled=s.k===0&&!ENG.anim;$('bStep').disabled=s.k>=s.total()&&!ENG.anim;
+  $('mode').hidden=!s.modes;$('nrWrap').hidden=s.id!=='feistel';$('followWrap').hidden=s.id!=='feistel';
+  if(s.modes)document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===s.mode));
+}
+function switchTab(t){
+  if(ENG.anim)stopAnim(true);setPlaying(false);
+  ENG.tab=t;
+  for(const id of ['feistel','f','e','s','ks','ip','fc'])$('vp-'+id).hidden=id!==t;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  const des=t==='des';document.querySelector('main.layout').hidden=des;document.querySelector('main.layout').classList.toggle('wide',['f','e','s','ip','fc'].includes(t));$('t4').hidden=!des;
+  if(des){if(window.T4)T4.show();return;}
+  cur().render();panel();
+}
+
+/* ================= scene 1: Feistel ================= */
+const FE={id:'feistel',k:0,mode:'enc',N:4,modes:true,prev:new Set()};
+const fW=820,xL=205,xR=615,BW=250,BH=54,xF=410,FW=112,FH=46,fTOP=24,RH=300,KCY=78;
+const fby=r=>fTOP+r*RH;
+function fG(i){const y0=fby(i-1)+BH,yt=y0+122;return{y0,yt,ycs:yt+52,yce:fby(i)-14,top:fby(i-1),bot:fby(i)};}
+const rankI=id=>id==='L0'?0:id==='R0'?1:1+(+id.slice(1));
+const uni=(...a)=>[...new Set(a.flat())].sort((x,y)=>rankI(x)-rankI(y));
+function feModel(N){
+  const L=[['L0']],R=[['R0']],F=[null];
+  for(let i=1;i<=N;i++){F[i]=uni(R[i-1],['k'+i]);L[i]=R[i-1];R[i]=uni(L[i-1],F[i]);}
+  let both=0;const h=s=>s.includes('L0')&&s.includes('R0');for(let i=1;i<=N;i++)if(h(L[i])&&h(R[i])){both=i;break;}
+  return{L,R,F,both};
+}
+const feColor=id=>id==='L0'?css('--cL'):id==='R0'?css('--cR'):((+id.slice(1))%2?css('--cK1'):css('--cK2'));
+const feName=id=>id==='L0'?'L₀':id==='R0'?'R₀':'k'+sb(id.slice(1));
+const xoT=t=>t.replace(/⊕/g,'<tspan font-size="13">⊕</tspan>');
+const tokW=label=>Math.max(50,28+[...label].reduce((a,c)=>a+(c==='⊕'?19:10.2),0));
+function feTok(set,label){const w=tokW(label),h=30;return `${stripes(-w/2,-h/2,w,h,set.map(feColor),15)}<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="15"/><text x="0" y="5.5" text-anchor="middle">${xoT(label)}</text>`;}
+FE.total=()=>4*FE.N;
+FE.stageOf=k=>{const j=Math.floor((k-1)/4),s=(k-1)%4;return{i:FE.mode==='enc'?j+1:FE.N-j,s};};
+FE.filled=(r,side)=>{
+  if(FE.mode==='enc')return r===0||FE.k>=4*r;
+  if(r===FE.N)return true;
+  const base=4*(FE.N-(r+1));return side==='R'?FE.k>=base+2:FE.k>=base+4;
+};
+FE.init=()=>{
+  FE.M=feModel(FE.N);FE.prev=new Set();
+  const N=FE.N,H=fby(N)+BH+16,dec=FE.mode==='dec',svg=$('svg-feistel');
+  svg.setAttribute('viewBox',`0 0 ${fW} ${H}`);
+  let h='<g id="fe-bands"></g><g id="fe-wires">';
+  for(let i=1;i<=N;i++){
+    const g=fG(i),id=n=>`fe-${n}-${i}`;
+    h+=`<text class="rl" x="12" y="${g.yt+4}">round ${i}</text>`;
+    h+=dec?lineSVG(id('lw1'),xL,g.yt-15,xL,g.y0+2,true):lineSVG(id('lw1'),xL,g.y0,xL,g.yt-15,true);
+    h+=dec?lineSVG(id('lw2'),xL,g.ycs,xL,g.yt+15,true):lineSVG(id('lw2'),xL,g.yt+15,xL,g.ycs,false);
+    h+=dec?lineSVG(id('rw1'),xR,g.yt,xR,g.y0+2,true):lineSVG(id('rw1'),xR,g.y0,xR,g.yt,false);
+    h+=dec?lineSVG(id('rw2'),xR,g.ycs,xR,g.yt,false):lineSVG(id('rw2'),xR,g.yt,xR,g.ycs,false);
+    h+=lineSVG(id('tap'),xR,g.yt,xF+FW/2,g.yt,true);
+    h+=lineSVG(id('key'),xF,g.yt-KCY+14,xF,g.yt-FH/2-1,true,'k');
+    h+=lineSVG(id('fout'),xF-FW/2,g.yt,xL+15,g.yt,true);
+    h+=dec?lineSVG(id('ca'),xR,g.yce,xL,g.ycs,false):lineSVG(id('ca'),xL,g.ycs,xR,g.yce,true);
+    h+=dec?lineSVG(id('cb'),xL,g.yce,xR,g.ycs,false):lineSVG(id('cb'),xR,g.ycs,xL,g.yce,true);
+    h+=`<circle cx="${xR}" cy="${g.yt}" r="4" class="mk" id="${id('dot')}"/>`;
+    h+=`<circle id="${id('xo')}" class="xo" cx="${xL}" cy="${g.yt}" r="15"/><line class="w" x1="${xL-9}" y1="${g.yt}" x2="${xL+9}" y2="${g.yt}"/><line class="w" x1="${xL}" y1="${g.yt-9}" x2="${xL}" y2="${g.yt+9}"/>`;
+    h+=`<g class="clickable" data-goto="f"><title>Open "Inside f"</title><rect id="${id('f')}" class="fb" x="${xF-FW/2}" y="${g.yt-FH/2}" width="${FW}" height="${FH}" rx="8"/><text class="ft" x="${xF}" y="${g.yt+6}" text-anchor="middle">f</text></g>`;
+    h+=`<g class="clickable" data-goto="ks" data-round="${i}"><title>Where does k${sb(i)} come from?</title><rect class="kc" x="${xF-28}" y="${g.yt-KCY-14}" width="56" height="28" rx="14"/><text class="kct" x="${xF}" y="${g.yt-KCY+5.5}" text-anchor="middle">k${sb(i)}</text></g>`;
+  }
+  h+=`<text class="hint" x="${xF+FW/2+8}" y="${fG(1).yt+FH/2+14}">click f or k</text>`;
+  h+='</g><g id="fe-boxes"></g><g id="fe-anim"></g>';
+  svg.innerHTML=h;
+};
+FE.boxLabel=(r,side)=>{
+  if(r===0)return side==='L'?'<tspan font-weight="700">L₀</tspan> · left half of x':'<tspan font-weight="700">R₀</tspan> · right half of x';
+  return side==='L'?`<tspan font-weight="700">L${sb(r)}</tspan> = R${sb(r-1)}`:`<tspan font-weight="700">R${sb(r)}</tspan> = L${sb(r-1)} <tspan font-size="12">⊕</tspan> f${sb(r)}`;
+};
+FE.render=()=>{
+  document.querySelectorAll('#fe-wires .on').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('#fe-wires .pulse').forEach(e=>e.classList.remove('pulse'));
+  $('fe-anim').innerHTML='';
+  let h='';const now=new Set();
+  for(let r=0;r<=FE.N;r++)for(const side of ['L','R']){
+    const cx=side==='L'?xL:xR,x=cx-BW/2,y=fby(r),f=FE.filled(r,side),set=(side==='L'?FE.M.L:FE.M.R)[r],key=r+side;
+    h+=`<rect class="bx ${f?'full':'empty'}" x="${x}" y="${y}" width="${BW}" height="${BH}" rx="8"/>`;
+    h+=`<text class="bt${f?'':' dim'}" x="${x+12}" y="${y+21}">${FE.boxLabel(r,side)}</text>`;
+    if(f){now.add(key);
+      const sw=(BW-24)/set.length;let st=stripes(x+12,y+29,BW-24,18,set.map(feColor),4);
+      set.forEach((ing,j)=>{if(sw>=24)st+=`<text class="segt" x="${x+12+j*sw+sw/2}" y="${y+42.5}" text-anchor="middle">${feName(ing)}</text>`;});
+      h+=`<g${FE.prev.size&&!FE.prev.has(key)?' class="grow"':''}>${st}</g>`;
+    }else h+=`<text class="q" x="${cx}" y="${y+44}" text-anchor="middle">?</text>`;
+  }
+  FE.prev=now;
+  $('fe-boxes').innerHTML=h;
+  const k=FE.k;
+  if(k>0){const g=fG(FE.stageOf(k).i);$('fe-bands').innerHTML=`<rect class="band" x="4" y="${g.top+BH+4}" width="${fW-8}" height="${g.bot-g.top-BH-8}" rx="10"/>`;}
+  else $('fe-bands').innerHTML='';
+  if(k>0){const pl=FE.raw(k);for(const m of pl.moves){if(m.fadeEnd)continue;const set=m.morph?m.morph.set:m.set,lab=m.morph?m.morph.label:m.label;const n=node($('fe-anim'),feTok(set,lab),'tok');n.style.opacity=1;const pt=m.pts[m.pts.length-1];n.setAttribute('transform',`translate(${pt[0]},${pt[1]})`);}}
+};
+FE.raw=k=>{
+  const {i,s}=FE.stageOf(k),g=fG(i),M=FE.M,p=i-1,id=n=>`fe-${n}-${i}`;
+  const lab={L:'L'+sb(p),R:'R'+sb(p),f:'f'+sb(i),k:'k'+sb(i),Ln:'L'+sb(i),Rn:'R'+sb(i)};
+  const nearX=w=>xL+15+w/2+4;
+  if(FE.mode==='enc'){
+    if(s===0)return{i,s,dur:1500,f:'on',wires:[id('rw1'),id('tap'),id('key'),id('dot')],moves:[
+      {set:M.R[p],label:lab.R,pts:[[xR,g.y0-6],[xR,g.yt],[xF+FW/2+tokW(lab.R)/2-6,g.yt]],fadeEnd:true},
+      {set:['k'+i],label:lab.k,pts:[[xF,g.yt-KCY],[xF,g.yt-FH/2-8]],a:.35,fadeEnd:true,fadeIn:true}]};
+    if(s===1)return{i,s,dur:1400,f:'pulse',wires:[],moves:[
+      {set:M.F[i],label:lab.f,pts:[[xF,g.yt],[xF-FW/2-tokW(lab.f)/2-10,g.yt]],a:.45,fadeIn:true}]};
+    if(s===2){const fw=tokW(lab.f);return{i,s,dur:1500,wires:[id('fout'),id('lw1'),id('xo')],moves:[
+      {set:M.F[i],label:lab.f,pts:[[xF-FW/2-fw/2-10,g.yt],[nearX(fw),g.yt]]},
+      {set:M.L[p],label:lab.L,pts:[[xL,g.y0-6],[xL,g.yt-15-17]]}]};}
+    return{i,s,dur:2000,wires:[id('lw2'),id('ca'),id('cb'),id('rw2'),id('xo')],moves:[
+      {set:M.R[i],label:`L${sb(p)}⊕f${sb(i)}`,pts:[[xL,g.yt],[xL,g.ycs],[xR,g.yce],[xR,fby(i)+BH/2]],hold:.12,fadeEnd:true},
+      {set:M.R[p],label:lab.R,pts:[[xR,g.y0-6],[xR,g.ycs],[xL,g.yce],[xL,fby(i)+BH/2]],a:.12,fadeEnd:true}]};
+  }
+  if(s===0)return{i,s,dur:1700,wires:[id('cb'),id('rw2')],moves:[
+    {set:M.L[i],label:lab.Ln,pts:[[xL,fby(i)+6],[xL,g.yce],[xR,g.ycs],[xR,g.yt]]}]};
+  if(s===1){const w=tokW(lab.R);return{i,s,dur:1600,f:'on',wires:[id('rw1'),id('tap'),id('key'),id('dot')],moves:[
+    {set:M.R[p],label:lab.R,pts:[[xR,g.yt],[xR,fby(p)+BH/2]],fadeEnd:true},
+    {set:M.R[p],label:lab.R,pts:[[xR,g.yt],[xF+FW/2+w/2-6,g.yt]],fadeEnd:true},
+    {set:['k'+i],label:lab.k,pts:[[xF,g.yt-KCY],[xF,g.yt-FH/2-8]],a:.35,fadeEnd:true,fadeIn:true}]};}
+  if(s===2){const fw=tokW(lab.f);return{i,s,dur:1900,f:'pulse',wires:[id('fout'),id('ca'),id('lw2'),id('xo')],moves:[
+    {set:M.F[i],label:lab.f,pts:[[xF,g.yt],[nearX(fw),g.yt]],a:.3,fadeIn:true},
+    {set:M.R[i],label:lab.Rn,pts:[[xR,fby(i)+6],[xR,g.yce],[xL,g.ycs],[xL,g.yt+15+17]]}]};}
+  return{i,s,dur:2400,wires:[id('lw1'),id('xo')],moves:[
+    {set:M.R[i],label:`L${sb(p)}⊕f${sb(i)}⊕f${sb(i)}`,morph:{set:M.L[p],label:lab.L},pts:[[xL,g.yt],[xL,g.y0-6],[xL,fby(p)+BH/2]],hold:.45,fadeEnd:true}]};
+};
+FE.plan=k=>{
+  const pl=FE.raw(k);
+  return{dur:pl.dur,focus:pl.i,start:()=>{
+    $('fe-anim').innerHTML='';
+    setOn(pl.wires,true);
+    const f=$(`fe-f-${pl.i}`);if(pl.f==='on')f.classList.add('on');if(pl.f==='pulse')f.classList.add('on','pulse');
+    const moves=pl.moves.map(m=>{const mm=Object.assign({},m);mm.node=node($('fe-anim'),feTok(m.set,m.label),'tok');
+      if(m.morph)mm.morph=n=>{n.innerHTML=feTok(m.morph.set,m.morph.label);};return mm;});
+    return mover(moves);
+  }};
+};
+FE.focus=i=>{
+  if(!$('follow').checked)return;
+  const vp=$('vp-feistel'),svg=$('svg-feistel');if(vp.scrollHeight<=vp.clientHeight+4)return;
+  const sc=svg.clientWidth/fW,g=fG(i);
+  const top=(g.top-10)*sc,h=(g.bot+BH+10-g.top+10)*sc;
+  vp.scrollTo({top:Math.max(0,top-(vp.clientHeight-h)/2),behavior:'smooth'});
+};
+FE.progress=k=>k===0?'Ready':(()=>{const {i,s}=FE.stageOf(k);return `Round ${i}${FE.mode==='enc'?'':' (backwards)'} · step ${s+1} of 4`;})();
+FE.explain=k=>{
+  const N=FE.N,enc=FE.mode==='enc';
+  if(k===0)return enc?`<p class="step">Start</p><p>The block is cut into two halves: <b style="color:var(--cL)">L₀</b> (blue) and <b style="color:var(--cR)">R₀</b> (orange).</p><p>Watch the colours: they show which inputs each half depends on. At the start, each half knows only itself.</p><p>Tip: click an <b>f</b> box to look inside it, or a <b>k</b> chip to see where that round key comes from.</p>`
+    :`<p class="step">Start (decryption)</p><p>We start at the bottom with L${sb(N)} and R${sb(N)} and walk back up the ladder.</p><p>We use the <b>same f</b> and the same round keys, in reverse order: k${sb(N)} first. Nothing is computed backwards.</p>`;
+  const {i,s}=FE.stageOf(k),p=i-1;
+  const T=enc?[
+    `<p class="step">Round ${i} · step 1 of 4</p><p><b>Copy R${sb(p)} into f.</b> The round key k${sb(i)} goes into f too.</p><p>R${sb(p)} itself does not change: it also goes straight down its own wire.</p>`,
+    `<p class="step">Round ${i} · step 2 of 4</p><p><b>f mixes R${sb(p)} with k${sb(i)}.</b> The output f${sb(i)} carries the colours of R${sb(p)} and of k${sb(i)}.</p><p>What happens inside f: see tab 2.</p>`,
+    `<p class="step">Round ${i} · step 3 of 4</p><p><b>XOR f${sb(i)} into the left half.</b> L${sb(p)} comes down to ⊕ and meets f${sb(i)}: L${sb(p)} ⊕ f${sb(i)}.</p>`,
+    `<p class="step">Round ${i} · step 4 of 4</p><p><b>Swap.</b> The mixed half L${sb(p)} ⊕ f${sb(i)} becomes the new right half R${sb(i)}. The old R${sb(p)} becomes the new left half L${sb(i)}, unchanged.</p><p>So in one round only one half gets new colours. The other half gets them in the next round.</p>`
+  ]:[
+    `<p class="step">Round ${i} backwards · step 1 of 4</p><p><b>L${sb(i)} is R${sb(p)}.</b> In encryption L${sb(i)} was only a copy of R${sb(p)}, so we already have R${sb(p)}. Send it back up.</p>`,
+    `<p class="step">Round ${i} backwards · step 2 of 4</p><p><b>R${sb(p)} is back</b> (box above). Its copy goes into f together with k${sb(i)}: the same inputs as in encryption, so f gives the same f${sb(i)} again.</p>`,
+    `<p class="step">Round ${i} backwards · step 3 of 4</p><p><b>f${sb(i)} goes to ⊕.</b> From below comes R${sb(i)}, which is L${sb(p)} ⊕ f${sb(i)}.</p>`,
+    `<p class="step">Round ${i} backwards · step 4 of 4</p><p><b>L${sb(p)} ⊕ f${sb(i)} ⊕ f${sb(i)} = L${sb(p)}</b>, because x ⊕ x = 0. The colours of f${sb(i)} disappear and L${sb(p)} is back.</p><p>We never computed f backwards. That is why f in a Feistel cipher does not need an inverse.</p>`
+  ];
+  let h=T[s];
+  if(enc&&s===3&&i===FE.M.both)h+=`<p class="note">After round ${i}, <b>both</b> halves contain blue and orange: each half now depends on the whole plaintext.</p>`;
+  if(k===FE.total())h+=enc?`<p class="note">Done: after ${N} rounds both halves depend on both halves of the plaintext and on the round keys. DES does 16 rounds. (In DES the halves are swapped once more at the end, so that decryption can use the same circuit. Press <b>Decrypt</b> to walk back up.)</p>`
+                         :`<p class="note">Back at L₀ and R₀: the plaintext. Encryption mixed the colours; decryption removed them again, round by round.</p>`;
+  return h;
+};
+FE.legend=()=>`<h3>Colours</h3>
+  <div class="lg"><span class="sw" style="background:var(--cL)"></span>L₀, the left half of the plaintext</div>
+  <div class="lg"><span class="sw" style="background:var(--cR)"></span>R₀, the right half of the plaintext</div>
+  <div class="lg"><span class="sw" style="background:linear-gradient(90deg,var(--cK1) 50%,var(--cK2) 50%)"></span>round keys k₁, k₂, …</div>
+  <p class="small">fᵢ = f(Rᵢ₋₁, kᵢ). A coloured stripe means “this half depends on that input”.</p>`;
+FE.extra=k=>{
+  const N=FE.N,cr=k>0?(FE.mode==='enc'?FE.stageOf(k).i:FE.stageOf(k).i-1):-1;
+  let t='<h3>What each half depends on</h3><table class="mix"><tr><th></th><th>L</th><th>R</th></tr>';
+  for(let r=0;r<=N;r++){
+    const cell=side=>FE.filled(r,side)?`<div class="dots">${(side==='L'?FE.M.L:FE.M.R)[r].map(x=>`<i style="background:${feColor(x)}" title="${feName(x)}"></i>`).join('')}</div>`:'<span class="unk">?</span>';
+    t+=`<tr class="${r===cr?'cur':''}"><td class="rn">${r===0?'start':'after '+r}</td><td>${cell('L')}</td><td>${cell('R')}</td></tr>`;
+  }
+  return t+'</table><p class="small">This shows which inputs each half depends on. How well the bits inside are mixed depends on f: in DES, after round 5 every bit depends on every plaintext bit and every key bit (slide 20).</p>';
+};
+SC.feistel=FE;
+
+/* ================= scene 2: inside f ================= */
+const FS={id:'f',k:0,trace:0,level:4,modes:false,zj:0,zk:0};
+const sW=1000,sH=700,CW=16,CH=22,BP=18;
+const gx=j=>12+j*124,gc=j=>gx(j)+53;
+const xE=e=>gx(Math.floor(e/6))+(e%6)*BP+8;
+const x4=r=>gc(Math.floor(r/4))+((r%4)-1.5)*BP;
+const YF={R:76,E:186,K:260,X:334,SB:428,SO:522,F:664};
+const cell=(cx,cy,c,o={})=>cellSVG(cx,cy,c,Object.assign({w:CW,h:CH},o));
+const laneOf=r=>Math.floor(r/4);
+const laneC=j=>css('--g'+mod(j,8));
+const keyC=()=>css('--cK1');
+const sval=(box,x)=>box[(((x>>5)&1)<<1|(x&1))*16+((x>>1)&15)];
+const SDEP=S.map(box=>[0,1,2,3].map(b=>[0,1,2,3,4,5].filter(q=>{for(let x=0;x<64;x++){const y=x^(1<<(5-q));if(((sval(box,x)>>(3-b))&1)!==((sval(box,y)>>(3-b))&1))return true;}return false;})));
+const ALLDEP=SDEP.every(bx=>bx.every(d=>d.length===6));
+const PDIST=[0,1,2,3,4,5,6,7].every(g=>new Set([0,1,2,3].map(q=>Math.floor((P[4*g+q]-1)/4))).size===4);
+const cR=r=>[laneC(laneOf(r))];
+const cE=e=>[laneC(laneOf(E[e]-1))];
+const cX=e=>[laneC(laneOf(E[e]-1)),keyC()];
+function cSO(o){const j=Math.floor(o/4),b=o%4,qs=SDEP[j][b];const lanes=[];qs.forEach(q=>{const l=laneOf(E[6*j+q]-1);if(!lanes.includes(l))lanes.push(l);});return lanes.map(laneC).concat(qs.length?[keyC()]:[]);}
+const cF=p=>cSO(P[p]-1);
+FS.total=()=>5;
+FS.traceSets=()=>{
+  const p=FS.trace,o=P[p]-1,j=Math.floor(o/4),b=o%4,qs=SDEP[j][b],es=qs.map(q=>6*j+q),rs=[...new Set(es.map(e=>E[e]-1))].sort((a,c)=>a-c);
+  return{p,o,j,b,es,rs};
+};
+FS.zg=()=>FS.k===5?FS.traceSets().j:FS.zj;
+FS.render=()=>{
+  const k=FS.k,svg=$('svg-f');
+  svg.setAttribute('viewBox',`0 0 ${sW} ${sH}`);
+  const tr=k===5?FS.traceSets():null,L=FS.level,zg=FS.zg();
+  const dim=(ok)=>tr&&!ok?'dimmed':'';
+  let h='',lh='';
+  if(!tr)h+=`<rect class="zsel" x="${gx(zg)-6}" y="${YF.R-16}" width="118" height="${YF.SO-YF.R+32}" rx="10"/>`;
+  const stp=n=>`<g class="stp${k===n?' cur':k>n?' done':''}"><circle cx="24" cy="-5" r="12"/><text x="24" y="0" text-anchor="middle">${n}</text></g>`;
+  const lab=(y,t,n)=>n?`<g transform="translate(0,${y})">${stp(n)}<text class="lbl" x="44" y="0">${t}</text></g>`:`<text class="lbl" x="14" y="${y}">${t}</text>`;
+  lh+=lab(YF.R-26,'<tspan class="b">R</tspan> · right half, 32 bits = 8 groups of 4');
+  lh+=lab(YF.E-26,'<tspan class="b">E(R)</tspan> · expansion, 32 → 48 bits',1);
+  lh+=lab(YF.K-26,'<tspan class="b">kᵢ</tspan> · round key, 48 bits, XORed bit by bit',2);
+  lh+=lab(YF.X-26,'<tspan class="b">E(R) ⊕ kᵢ</tspan> · 48 bits = 8 groups of 6');
+  lh+=lab(YF.SB-38,'<tspan class="b">S-boxes</tspan> · 6 bits in → 4 bits out',3);
+  lh+=lab(YF.SO-26,'<tspan class="b">S-box outputs</tspan> · 32 bits');
+  lh+=lab(YF.F-26,'<tspan class="b">f(R, kᵢ)</tspan> = P(S-box outputs) · 32 bits → goes to ⊕ with L',4);
+  lh+=`<text class="hint" x="${sW-12}" y="${YF.R-26}" text-anchor="end">click an S-box to see it up close below</text>`;
+  for(let j=0;j<8;j++)h+=`<text class="gnum" x="${gc(j)}" y="${YF.R+27}" text-anchor="middle">bits ${4*j+1}–${4*j+4}</text>`;
+  if(tr){
+    if(L>=4)tr.es.forEach(e=>{h+=`<line class="trl" x1="${x4(E[e]-1)}" y1="${YF.R+12}" x2="${xE(e)}" y2="${YF.E-12}"/>`;});
+    if(L>=3)tr.es.forEach(e=>{h+=`<line class="trl" x1="${xE(e)}" y1="${YF.E+12}" x2="${xE(e)}" y2="${YF.X-12}"/><line class="trl" x1="${xE(e)}" y1="${YF.X+12}" x2="${gc(tr.j)}" y2="${YF.SB-26}"/>`;});
+    if(L>=2)h+=`<line class="trl" x1="${gc(tr.j)}" y1="${YF.SB+26}" x2="${x4(tr.o)}" y2="${YF.SO-12}"/>`;
+  }
+  for(let r=0;r<32;r++)h+=cell(x4(r),YF.R,cR(r),{cls:dim(L>=4&&tr&&tr.rs.includes(r))});
+  for(let e=0;e<48;e++){const ok=L>=3&&tr&&tr.es.includes(e);
+    h+=cell(xE(e),YF.E,k>=1?cE(e):null,{cls:dim(ok)});
+    h+=cell(xE(e),YF.K,k>=2?[keyC()]:null,{cls:dim(ok)});
+    h+=cell(xE(e),YF.X,k>=2?cX(e):null,{cls:dim(ok)});}
+  for(let j=0;j<8;j++){const ok=L>=2&&tr&&tr.j===j;
+    h+=`<g class="clickable ${dim(ok)}" data-zj="${j}"><title>See S${j+1} up close</title><rect id="fs-sb-${j}" class="sbx${k>=3?' act':''}${j===zg&&!tr?' zon':''}" x="${gc(j)-48}" y="${YF.SB-26}" width="96" height="52" rx="9"/><text class="sbt" x="${gc(j)}" y="${YF.SB+6}" text-anchor="middle">S${j+1}</text></g>`;}
+  for(let o=0;o<32;o++)h+=cell(x4(o),YF.SO,k>=3?cSO(o):null,{cls:dim(L>=2&&tr&&tr.o===o)});
+  if(k>=4)for(let p=0;p<32;p++){const o=P[p]-1,ok=tr&&tr.p===p;
+    h+=`<line class="${ok?'trl':'pl'}${tr&&!ok?' dimmed':''}" x1="${x4(o)}" y1="${YF.SO+13}" x2="${x4(p)}" y2="${YF.F-13}"/>`;}
+  for(let p=0;p<32;p++){const ok=tr&&tr.p===p;
+    h+=cell(x4(p),YF.F,k>=4?cF(p):null,{cls:(k>=4?'clickable ':'')+dim(ok),attr:k>=4?` data-fbit="${p}"`:''});
+    if(ok)h+=`<rect class="hlbox" x="${x4(p)-12}" y="${YF.F-15}" width="24" height="30" rx="5"/>`;}
+  if(k>=4)h+=`<text class="hint" x="${sW-12}" y="${YF.F+34}" text-anchor="end">click a bit of f to follow it back</text>`;
+  h+=lh+'<g id="fs-anim"></g>';
+  svg.innerHTML=h;
+  FS.zoom(k);
+};
+FS.plan=k=>{
+  const pl=FS.plan0(k),st=pl.start;
+  pl.start=()=>{FS.zoom(k);return st();};
+  return pl;
+};
+FS.plan0=k=>{
+  const A=()=>$('fs-anim');
+  if(k===1)return{dur:2400,start:()=>mover([...Array(48).keys()].map(e=>{const j=Math.floor(e/6),src=E[e]-1,edge=e%6===0||e%6===5;
+    return{node:node(A(),cell(0,0,cE(e))),pts:[[x4(src),YF.R],[x4(src),YF.R+40],[xE(e),YF.E-40],[xE(e),YF.E]],a:edge?.35+.04*j:.04*j,b:(edge?.35+.04*j:.04*j)+.5};}))};
+  if(k===2)return{dur:2600,start:()=>{const mv=[];
+    for(let e=0;e<48;e++){const a=e*.004;
+      mv.push({node:node(A(),cell(0,0,[keyC()])),pts:[[xE(e)+sW,YF.K],[xE(e),YF.K]],a,b:a+.42});
+      mv.push({node:node(A(),cell(0,0,[keyC()])),pts:[[xE(e),YF.K],[xE(e),YF.X]],a:.55,b:.95,fadeEnd:true});
+      mv.push({node:node(A(),cell(0,0,cE(e))),pts:[[xE(e),YF.E],[xE(e),YF.X]],a:.55,b:.95,fadeEnd:true});}
+    return mover(mv);}};
+  if(k===3)return{dur:2800,start:()=>{const mv=[];
+    for(let e=0;e<48;e++){const j=Math.floor(e/6),a=.03*j;mv.push({node:node(A(),cell(0,0,cX(e))),pts:[[xE(e),YF.X],[gc(j),YF.SB]],a,b:a+.32,fadeEnd:true});}
+    for(let o=0;o<32;o++){const j=Math.floor(o/4),a=.62+.02*j;mv.push({node:node(A(),cell(0,0,cSO(o))),pts:[[gc(j),YF.SB],[x4(o),YF.SO]],a,b:1,fadeIn:true});}
+    const t=mover(mv);
+    return p=>{t(p);for(let j=0;j<8;j++){const on=p>.3+.03*j&&p<.62+.02*j;$('fs-sb-'+j).classList.toggle('pulse',on);$('fs-sb-'+j).classList.toggle('act',p>.3+.03*j);}};}};
+  if(k===4)return{dur:2600,start:()=>{const mv=[];
+    const lg=document.createElementNS(NS,'g');lg.style.opacity=0;A().appendChild(lg);
+    let ls='';for(let p=0;p<32;p++){const o=P[p]-1;ls+=`<line class="pl" x1="${x4(o)}" y1="${YF.SO+13}" x2="${x4(p)}" y2="${YF.F-13}"/>`;}lg.innerHTML=ls;
+    for(let p=0;p<32;p++){const o=P[p]-1,a=.18+.04*Math.floor(o/4);mv.push({node:node(A(),cell(0,0,cSO(o))),pts:[[x4(o),YF.SO],[x4(p),YF.F]],a,b:a+.5});}
+    const t=mover(mv);return p=>{lg.style.opacity=clamp(p*4,0,1);t(p);};}};
+  return{dur:2000,start:()=>{let last=-1;return p=>{const lv=Math.min(4,1+Math.floor(p*4));if(lv!==last){last=lv;FS.level=lv;FS.k=5;FS.render();FS.k=4;}};}};
+};
+/* up-close view of one S-box, with the real bits of round 1 of the textbook example */
+const ZPT='0123456789ABCDEF',ZKEY='133457799BBCDFF1';
+FS.data=()=>{
+  if(!FS.zd){const hb=h=>[...h].flatMap(c=>{const v=parseInt(c,16);return[(v>>3)&1,(v>>2)&1,(v>>1)&1,v&1];});
+    const r=T4.runDES(hb(ZPT),hb(ZKEY),false),fd=r.rounds[1].fd;
+    const hex=b=>b.reduce((s,_,i)=>i%4?s:s+((b[i]<<3)|(b[i+1]<<2)|(b[i+2]<<1)|b[i+3]).toString(16).toUpperCase(),'');
+    FS.zd={R:r.R[0],k:r.ks.K[1],fd,hR:hex(r.R[0]),hk:hex(r.ks.K[1]),hf:hex(fd.p)};}
+  return FS.zd;
+};
+FS.zinfo=j=>{
+  const d=FS.data(),sbj=d.fd.sb[j],dest=[0,1,2,3].map(b=>P.indexOf(4*j+b+1));
+  return{d,sbj,dest,ePos:[0,1,2,3,4,5].map(q=>E[6*j+q]),kPos:[0,1,2,3,4,5].map(q=>6*j+q+1),
+    lanes:[0,1,2,3,4,5].map(q=>laneOf(E[6*j+q]-1)),bin:(v,n)=>v.toString(2).padStart(n,'0')};
+};
+FS.zoom=lv=>{
+  const box=$('fz');if(!box)return;FS.zk=lv;
+  const j=FS.zg(),z=FS.zinfo(j),d=z.d,s=z.sbj,L=j=>`var(--g${mod(j,8)})`;
+  const bit=(v,c,pos,cls)=>`<span class="zb${cls?' '+cls:''}" style="--c:${c}"><b>${v}</b>${pos!==undefined?`<small>${pos}</small>`:''}</span>`;
+  const row=(n,title,sub,body,on)=>`<div class="zrow${on?'':' zoff'}"><div class="zl">${n?`<span class="zn">${n}</span>`:''}<div><b>${title}</b><small>${sub}</small></div></div><div class="zc">${on?body:'<span class="zq">waits for step '+n+'</span>'}</div></div>`;
+  let h=`<div class="zhead"><div><h3 class="zt">Up close: group ${j+1} → S-box S${j+1}</h3>
+    <p class="zs fxnav">Step by step: <button class="lnk" data-goto="e" data-eg="${j}">tab 3 · Expansion E</button> · <button class="lnk" data-goto="s" data-sbj="${j}" data-six="${s.six.join('')}">tab 4 · S-boxes</button></p>
+    <p class="zs">Real bits from round 1 of the textbook example: plaintext <span class="mono">${ZPT}</span>, key <span class="mono">${ZKEY}</span>. So R₀ = <span class="mono">${d.hR}</span> and k₁ = <span class="mono">${d.hk}</span>.</p></div>
+    <div class="seg zpick">${[0,1,2,3,4,5,6,7].map(i=>`<button data-zj="${i}" class="${i===j?'on':''}">S${i+1}</button>`).join('')}</div></div>`;
+  // R: the group and its two neighbour bits
+  const own=[0,1,2,3].map(q=>4*j+q),nl=mod(4*j-1,32),nr=mod(4*j+4,32);
+  h+=row(0,'R',`group ${j+1} = bits ${4*j+1}–${4*j+4}`,
+    `${bit(d.R[nl],L(j-1),nl+1,'znb')}<span class="zsep"></span>${own.map(r=>bit(d.R[r],L(j),r+1)).join('')}<span class="zsep"></span>${bit(d.R[nr],L(j+1),nr+1,'znb')}
+     <p class="zx">The 4 bits of group ${j+1}, plus its neighbours: the last bit of group ${mod(j-1,8)+1} (bit ${nl+1}) and the first bit of group ${mod(j+1,8)+1} (bit ${nr+1}).</p>`,true);
+  h+=row(1,'E','4 bits → 6 bits',
+    `${z.ePos.map((p,q)=>bit(d.fd.e[6*j+q],L(z.lanes[q]),p)).join('')}
+     <p class="zx">E puts a copy of the neighbour bits at the two ends. Nothing new is added: bit ${nl+1} and bit ${nr+1} are now used twice (here and in the neighbour groups).</p>`,lv>=1);
+  h+=row(2,'⊕ k₁',`key bits ${6*j+1}–${6*j+6}`,
+    `<div class="zops"><span class="zop"></span>${z.ePos.map((p,q)=>bit(d.fd.e[6*j+q],L(z.lanes[q]))).join('')}</div>
+     <div class="zops"><span class="zop">⊕</span>${z.kPos.map((p,q)=>bit(d.k[6*j+q],'var(--cK1)',p)).join('')}</div>
+     <div class="zops zsum"><span class="zop">=</span>${[0,1,2,3,4,5].map(q=>bit(s.six[q],'var(--ink)',undefined,q===0||q===5?'zrowb':'zcolb')).join('')}</div>
+     <p class="zx">Each bit is XORed with one key bit: 0⊕0 = 0, 1⊕1 = 0, otherwise 1. This is the only place where the key enters f.</p>`,lv>=2);
+  const tbl=()=>{let t='<div class="zsw"><table class="zst"><tr><th></th>';for(let c=0;c<16;c++)t+=`<th class="${c===s.col?'zcc':''}">${c}</th>`;t+='</tr>';
+    for(let r=0;r<4;r++){t+=`<tr><th class="${r===s.row?'zcc':''}">${r}</th>`;for(let c=0;c<16;c++){const v=S[j][16*r+c];t+=`<td class="${r===s.row&&c===s.col?'zhit':r===s.row?'zr':c===s.col?'zcl':''}">${v}</td>`;}t+='</tr>';}
+    return t+'</table></div>';};
+  h+=row(3,`S${j+1}`,'6 bits → 4 bits',
+    `<p class="zline"><span class="zchip zrowb">row</span> = first and last bit = <span class="mono">${s.six[0]}${s.six[5]}</span>₂ = <b>${s.row}</b>
+     &nbsp;&nbsp;<span class="zchip zcolb">column</span> = middle 4 bits = <span class="mono">${s.six.slice(1,5).join('')}</span>₂ = <b>${s.col}</b></p>
+     ${tbl()}
+     <p class="zline">S${j+1}, row ${s.row}, column ${s.col} → <b>${s.val}</b> = ${s.out.map(v=>bit(v,L(j))).join('')}</p>
+     <p class="zx">The two outer bits (they came from the neighbours) choose the row. The 4 middle bits (the group's own bits) choose the column. Each row of an S-box holds the numbers 0–15 once, so 4 different inputs give the same output: f loses information here, and that is fine in a Feistel cipher.</p>`,lv>=3);
+  const dg=z.dest.map(p=>laneOf(p)),dd=new Set(dg).size===4;
+  h+=row(4,'P','4 bits → 4 places in f',
+    `<div class="zdest">${s.out.map((v,b)=>`<div class="zd">${bit(v,L(j),'out '+(b+1))}<span class="zarr">→</span>${bit(v,L(dg[b]),'f bit '+(z.dest[b]+1))}<small>group ${dg[b]+1}</small></div>`).join('')}</div>
+     <p class="zx">P sends the 4 bits of S${j+1} to ${dd?'4 <b>different</b> groups':'other groups'}. In the next round each of those groups goes into a different S-box, so the effect of this one S-box spreads to ${dd?'4':'several'} S-boxes.</p>
+     <p class="zline">All 8 S-boxes together, after P: f₁ = f(R₀, k₁) = <span class="mono"><b>${d.hf}</b></span></p>`,lv>=4);
+  box.innerHTML=h;
+};
+FS.render0=FS.render;
+FS.render=()=>{if(FS.k<5)FS.level=4;FS.render0();};
+FS.progress=k=>['Ready','Step 1 of 4 · expansion E','Step 2 of 4 · XOR with the key','Step 3 of 4 · S-boxes','Step 4 of 4 · permutation P','Follow one bit back'][k];
+FS.explain=k=>{
+  const j=FS.zg(),z=FS.zinfo(j),s=z.sbj,n=j+1;
+  const up=t=>`<p class="zhint"><b>Up close (S${n}):</b> ${t}</p>`;
+  if(k===0)return `<p class="step">Inside f · start</p><p>f takes two inputs: the right half <b>R</b> (32 bits) and the round key <b>kᵢ</b> (48 bits). It gives back 32 bits.</p><p>Four steps: <b>1</b> expand, <b>2</b> add the key, <b>3</b> S-boxes, <b>4</b> permute.</p><p>Each colour is one group of 4 bits of R. Watch where the colours go.</p>`+up('below the picture you see one group with its real bits. Click any S-box to choose another one.');
+  if(k===1)return `<p class="step">Step 1 of 4 · expansion E</p><p><b>32 → 48 bits.</b> Each group of 4 gets a copy of one bit from each neighbour: the last bit of the group on the left and the first bit of the group on the right.</p><p>Why? The key has 48 bits, and each S-box needs 6 bits. Neighbouring groups now share bits, so one bit of R can reach two S-boxes.</p>`+up(`bits ${z.ePos.join(', ')} of R.`)+'<p class="small">Step by step: <button class="lnk" data-goto="e">tab 3 · Expansion E</button></p>';
+  if(k===2)return `<p class="step">Step 2 of 4 · XOR with the round key</p><p>The 48 key bits (purple) are XORed with the 48 bits, one by one. This is the <b>only</b> place where the key enters f.</p><p>Every cell now carries its own colour plus the key.</p>`+up(`the 6 bits going into S${n} are <span class="mono">${s.six.join('')}</span>.`);
+  if(k===3)return `<p class="step">Step 3 of 4 · S-boxes</p><p>Each group of 6 goes into its own S-box: <b>6 bits in, 4 bits out</b>. The outer 2 bits choose the row of the table, the middle 4 bits choose the column.</p><p>${ALLDEP?'In every DES S-box each output bit depends on all 6 input bits, so the':'The'} outputs carry the group's own colour, both neighbours' colours, and the key.</p><p>This is the non-linear step (confusion). Without the S-boxes, DES would be a set of linear equations.</p>`+up(`row ${s.row}, column ${s.col} → ${s.val} = <span class="mono">${s.out.join('')}</span>.`)+'<p class="small">Step by step: <button class="lnk" data-goto="s">tab 4 · S-boxes</button></p>';
+  if(k===4)return `<p class="step">Step 4 of 4 · permutation P</p><p>The 32 bits change places. Look at any group of 4 now: ${PDIST?'its 4 bits come from 4 <b>different</b> S-boxes':'its bits come from different S-boxes'}.</p><p>So in the next round every S-box gets bits from several S-boxes of this round, and the mixing spreads fast (diffusion). The result f(R, kᵢ) goes to ⊕ with L (tab 1).</p>`+up(`the 4 bits go to f bits ${z.dest.map(p=>p+1).join(', ')}.`);
+  const t=FS.traceSets();
+  return `<p class="step">Follow one bit back</p><p>Bit ${t.p+1} of f comes from <b>S-box ${t.j+1}</b> (its output bit ${t.b+1}). That S-box used R bits <b>${t.rs.map(r=>r+1).join(', ')}</b> and 6 bits of the round key.</p><p>So one output bit of f depends on 6 of the 32 bits of R. After a few rounds, these dependencies cover everything.</p><p>Click any bit of f to follow it back.</p>`;
+};
+FS.legend=()=>`<h3>Colours</h3>
+  <div class="lg"><span class="sws">${[0,1,2,3,4,5,6,7].map(j=>`<i style="background:var(--g${j})"></i>`).join('')}</span>groups 1–8 of R (4 bits each)</div>
+  <div class="lg"><span class="sw" style="background:var(--cK1)"></span>round key bits</div>
+  <p class="small">A cell with several colours depends on all of them. The light column marks the group shown up close.</p>`;
+FS.extra=()=>`<h3>Sizes</h3><p class="small" style="margin-top:0">R 32 → E 48 → ⊕ kᵢ 48 → S-boxes 32 → P 32 bits.</p><p class="small">f does not need an inverse: decryption computes the same f again, and L ⊕ f ⊕ f = L (tab 1, Decrypt).</p><p class="small">The exact tables (E, S1–S8, P) are on slides 17–20.</p>`;
+SC.f=FS;
+/* ================= shared facts for tabs 3 and 4 (computed, not typed) ================= */
+const pop4=v=>((v>>3)&1)+((v>>2)&1)+((v>>1)&1)+(v&1);
+const EUSE=[...Array(32).keys()].map(r=>E.filter(v=>v===r+1).length);
+const ROWPERM=S.every(b=>[0,1,2,3].every(r=>new Set(b.slice(16*r,16*r+16)).size===16));
+const EACH4=S.every(b=>[...Array(16).keys()].every(v=>b.filter(w=>w===v).length===4));
+const MIN2=S.every(b=>{for(let x=0;x<64;x++)for(let q=0;q<6;q++)if(pop4(sval(b,x)^sval(b,x^(1<<q)))<2)return false;return true;});
+
+/* ================= scene 3: expansion E ================= */
+const EX={id:'e',k:0,modes:false,R:null};
+const xB=30,xCW=26,xCH=34,xGP=214,xML=100,eW=1030,eH=640;
+const xBlk=j=>j<4?0:1;
+const xgx=j=>xML+(j%4)*xGP;
+const xYR=b=>92+b*300,xYE=b=>xYR(b)+150;
+const eRp=r=>[xgx(Math.floor(r/4))+15+((r%4)+1)*xB,xYR(xBlk(Math.floor(r/4)))];
+const xEp=e=>[xgx(Math.floor(e/6))+15+(e%6)*xB,xYE(xBlk(Math.floor(e/6)))];
+/* where the wire into E position e starts: the R bit itself, or a dashed "copy" cell at the end of the row */
+const xSrc=e=>{const j=Math.floor(e/6),q=e%6,r=E[e]-1,sj=Math.floor(r/4);
+  if(xBlk(sj)===xBlk(j)&&Math.abs(sj-j)<=1)return{pt:eRp(r),ghost:false};
+  return{pt:[q===0?xgx(j)-79:xgx(j)+259,xYR(xBlk(j))],ghost:true,why:j===0||j===7?'wraps around':j===3?'from the row below':'from the row above'};};
+const xGroupOf=r=>Math.floor(r/4);
+EX.total=()=>9;
+EX.cur=()=>EX.k>=1&&EX.k<=8?EX.k-1:-1;
+EX.ensure=()=>{if(!EX.R)EX.R=FS.data().R.slice();};
+EX.render=()=>{
+  EX.ensure();
+  const k=EX.k,R=EX.R,cur=EX.cur(),built=j=>j<Math.min(k,8),svg=$('svg-e');
+  svg.setAttribute('viewBox',`0 0 ${eW} ${eH}`);
+  const box=(x,y,v,col,attr,cls)=>`<g class="ec${cls?' '+cls:''}"${attr||''}><rect x="${x-xCW/2}" y="${y-xCH/2}" width="${xCW}" height="${xCH}" rx="6" fill="${col}"/><text class="ev" x="${x}" y="${y+6}" text-anchor="middle">${v}</text></g>`;
+  let w='',c='',t='';
+  for(const b of [0,1]){
+    t+=`<text class="lbl" x="8" y="${xYR(b)-62}"><tspan class="b">Groups ${4*b+1}–${4*b+4}</tspan> · top: <tspan class="b">R</tspan>, bits ${16*b+1}–${16*b+16} · bottom: <tspan class="b">E(R)</tspan>, the 6 bits for S${4*b+1}–S${4*b+4}</text>`;
+    for(let jj=0;jj<4;jj++){const j=4*b+jj,cx=xgx(j)+90;
+      t+=`<text data-g="${j}" class="egl${j===cur?' on':''}" x="${cx}" y="${xYR(b)-40}" text-anchor="middle">group ${j+1}</text>`;
+      t+=`<text data-g="${j}" class="egs${j===cur?' on':''}${built(j)?'':' off'}" x="${cx}" y="${xYE(b)+xCH/2+38}" text-anchor="middle">↓ S${j+1}</text>`;}
+  }
+  // wires (hidden until their group is built)
+  for(let e=0;e<48;e++){const j=Math.floor(e/6),q=e%6,r=E[e]-1,s=xSrc(e),[tx,ty]=xEp(e),own=q>=1&&q<=4;
+    w+=`<line id="ew-${e}" data-er="${r}" class="ew${own?'':' cp'}${built(j)?'':' hid'}${j===cur?' on':''}" x1="${s.pt[0]}" y1="${s.pt[1]+xCH/2+1}" x2="${tx}" y2="${ty-xCH/2-1}"/>`;
+    if(s.ghost){const gx0=s.pt[0],gy=s.pt[1],lft=q===0;
+      c+=`<g id="eg-${e}" class="eghost${built(j)?'':' hid'}" data-er="${r}"><rect x="${gx0-xCW/2}" y="${gy-xCH/2}" width="${xCW}" height="${xCH}" rx="6" fill="${laneC(xGroupOf(r))}"/><rect class="egd" x="${gx0-xCW/2}" y="${gy-xCH/2}" width="${xCW}" height="${xCH}" rx="6"/><text class="ev" x="${gx0}" y="${gy+6}" text-anchor="middle">${R[r]}</text>
+        <text class="egc" x="${lft?4:eW-4}" y="${gy-40}" text-anchor="${lft?'start':'end'}">copy of bit ${r+1}</text><text class="egc2" x="${lft?4:eW-4}" y="${gy-26}" text-anchor="${lft?'start':'end'}">${s.why}</text></g>`;}
+  }
+  // R cells
+  const srcSet=cur>=0?new Set(E.slice(6*cur,6*cur+6).map(v=>v-1)):new Set();
+  for(let r=0;r<32;r++){const [x,y]=eRp(r);
+    c+=`<text class="enum" x="${x}" y="${y-xCH/2-6}" text-anchor="middle">${r+1}</text>`;
+    c+=box(x,y,R[r],laneC(xGroupOf(r)),` data-er="${r}" data-eflip="${r}"`,'clk'+(k>=9&&EUSE[r]===2?' twice':'')+(srcSet.has(r)?' src':''));}
+  // E cells, with the E table entry under each cell
+  for(let e=0;e<48;e++){const j=Math.floor(e/6),q=e%6,r=E[e]-1,[x,y]=xEp(e);
+    if(built(j))c+=box(x,y,R[r],laneC(xGroupOf(r)),` data-er="${r}"`,(q===0||q===5?'edge':'')+(j===cur?' now':''));
+    else c+=`<rect class="emp" x="${x-xCW/2}" y="${y-xCH/2}" width="${xCW}" height="${xCH}" rx="6"/>`;
+    c+=`<text class="enum${built(j)?'':' off'}${q===0||q===5?' cpn':''}" x="${x}" y="${y+xCH/2+14}" text-anchor="middle">${E[e]}</text>`;}
+  if(k>=9)t+=`<text class="esum" x="${eW/2}" y="${eH-8}" text-anchor="middle">32 bits in → 48 bits out: the ${EUSE.filter(n=>n===2).length} bits with a red ring are used twice, the other ${EUSE.filter(n=>n===1).length} once.</text>`;
+  svg.innerHTML=`<g>${w}</g><g>${c}</g><g>${t}</g><g id="e-anim"></g>`;
+  $('eInfo').innerHTML=EX.info(-1);
+};
+EX.info=r=>{
+  if(r<0)return EX.k===0?'Press <b>Step</b> (or →) to build the first group. Point at any bit to see where it goes.':'Point at any bit to see all its copies. Click a bit of R to flip it.';
+  const ps=E.map((v,i)=>v===r+1?i:-1).filter(i=>i>=0);
+  return `Bit ${r+1} of R (group ${xGroupOf(r)+1}) = <b>${EX.R[r]}</b> is used <b>${ps.length===2?'twice':'once'}</b>: `+ps.map(i=>`position ${i+1} of E(R) → <b>S${Math.floor(i/6)+1}</b>`).join(' and ')+'.';
+};
+EX.hl=r=>{document.querySelectorAll('#svg-e .hl').forEach(e=>e.classList.remove('hl'));
+  if(r>=0)document.querySelectorAll(`#svg-e [data-er="${r}"]`).forEach(e=>{if(!e.classList.contains('hid'))e.classList.add('hl');});
+  $('eInfo').innerHTML=EX.info(r);};
+EX.plan=k=>{
+  if(k===9)return{dur:700,start:()=>p=>{}};
+  const j=k-1;
+  return{dur:2600,start:()=>{
+    document.querySelectorAll('#svg-e .ew.on,#svg-e .egl.on,#svg-e .egs.on').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('#svg-e .ec.src').forEach(x=>x.classList.remove('src'));
+    document.querySelectorAll(`#svg-e [data-g="${j}"]`).forEach(x=>x.classList.add('on'));
+    E.slice(6*j,6*j+6).forEach(v=>{const c=document.querySelector(`#svg-e [data-eflip="${v-1}"]`);if(c)c.classList.add('src');});
+    const A=$('e-anim'),mv=[];
+    for(let q=0;q<6;q++){const e=6*j+q,r=E[e]-1,s=xSrc(e),own=q>=1&&q<=4;
+      $('ew-'+e).classList.remove('hid');$('ew-'+e).classList.add('on');
+      if(s.ghost)$('eg-'+e).classList.remove('hid');
+      const a=own?0.04+0.05*(q-1):(q===0?0.46:0.58),tok=`<rect x="${-xCW/2}" y="${-xCH/2}" width="${xCW}" height="${xCH}" rx="6" fill="${laneC(xGroupOf(r))}"/><rect class="tokr" x="${-xCW/2}" y="${-xCH/2}" width="${xCW}" height="${xCH}" rx="6"/><text class="ev" x="0" y="6" text-anchor="middle">${EX.R[r]}</text>`;
+      mv.push({node:node(A,tok,own?'':'cpt'),pts:s.ghost?[eRp(r),s.pt,xEp(e)]:[eRp(r),xEp(e)],a,b:a+(s.ghost?0.42:0.34)});
+    }
+    return mover(mv);
+  }};
+};
+EX.progress=k=>k===0?'Ready':k<=8?`Group ${k} of 8 → S${k}`:'Summary';
+EX.explain=k=>{
+  EX.ensure();const R=EX.R;
+  if(k===0)return `<p class="step">Expansion E · start</p><p><b>The problem:</b> R has 32 bits, but the round key has 48. To XOR them, R must become 48 bits.</p><p><b>E does not compute anything.</b> It only copies bits. In hardware, E is just wires.</p><p>Top rows: R, cut into 8 groups of 4. Bottom rows: 8 empty groups of 6, one for each S-box. The small numbers under them are the E table: they say which bit of R goes there.</p><p>Press <b>Step</b> to fill the groups one by one.</p>`;
+  if(k===9)return `<p class="step">Summary</p><p><b>8 groups × 6 bits = 48 bits.</b></p><p>Count: the ${EUSE.filter(n=>n===2).length} edge bits of the groups (red ring) are used <b>twice</b>, the ${EUSE.filter(n=>n===1).length} middle bits once: 16 × 2 + 16 × 1 = 48.</p><p>No new information is added. E(R) still holds only the 32 bits of R.</p><p class="note"><b>Why?</b> (1) 48 = the size of the round key, so the two can be XORed. (2) Each S-box needs 6 bits. (3) An edge bit goes into <b>two</b> S-boxes, so one changed bit changes two S-boxes (faster avalanche). (4) The copies sit at the two ends of each 6-bit group, and in the S-box the two end bits choose the <b>row</b> (tab 4).</p>`;
+  const j=k-1,own=[0,1,2,3].map(q=>4*j+q),l=E[6*j]-1,r=E[6*j+5]-1,v=i=>R[i];
+  const lNote=j===0?' Group 1 has no group on its left, so E wraps around to the end of R.':j===4?' Group 4 is in the row above, so a dashed copy cell is drawn at the start of this row.':'';
+  const rNote=j===7?' Group 8 has no group on its right, so E wraps around to the start of R.':j===3?' Group 5 is in the row below, so a dashed copy cell is drawn at the end of this row.':'';
+  return `<p class="step">Group ${k} of 8 → S${k}</p>
+  <p><b>1. Own bits.</b> Bits ${own[0]+1}–${own[3]+1} = <span class="mono">${own.map(v).join(' ')}</span> go straight down into the 4 middle places.</p>
+  <p><b>2. Left end.</b> A copy of bit ${l+1} = <b>${v(l)}</b>, the <b>last</b> bit of group ${xGroupOf(l)+1}.${lNote}</p>
+  <p><b>3. Right end.</b> A copy of bit ${r+1} = <b>${v(r)}</b>, the <b>first</b> bit of group ${xGroupOf(r)+1}.${rNote}</p>
+  <p class="note">6 bits for S${k}: <span class="mono"><b style="color:var(--xor)">${v(l)}</b> ${own.map(v).join('')} <b style="color:var(--xor)">${v(r)}</b></span><br>E table, row ${k}: ${E.slice(6*j,6*j+6).join(' ')}</p>${j===0?'<p class="small">The bits of R are not moved: they stay where they are. E only makes copies.</p>':''}`;
+};
+EX.legend=()=>`<h3>How to read the picture</h3>
+  <div class="lg"><span class="sws">${[0,1,2,3,4,5,6,7].map(j=>`<i style="background:var(--g${j})"></i>`).join('')}</span>groups 1–8 of R</div>
+  <div class="lg"><svg width="30" height="14"><line x1="2" y1="7" x2="28" y2="7" stroke="var(--line2)" stroke-width="2.5"/></svg>own bit, goes straight down</div>
+  <div class="lg"><svg width="30" height="14"><line x1="2" y1="7" x2="28" y2="7" stroke="var(--xor)" stroke-width="2.5" stroke-dasharray="6 4"/></svg>copy of a neighbour's edge bit</div>
+  <div class="lg"><span class="sw" style="border:2px dashed var(--ink);background:transparent"></span>copy that comes from the other row or wraps around</div>
+  <p class="small">Point at a bit to see all its copies. Click a bit of R to flip it.</p>`;
+EX.extra=()=>{const cur=EX.cur();let t='<h3>The E table</h3><table class="etab">';
+  for(let j=0;j<8;j++){t+=`<tr class="${j===cur?'cur':''}"><th>S${j+1}</th>${E.slice(6*j,6*j+6).map((v,q)=>`<td class="${q===0||q===5?'cp':''}">${v}</td>`).join('')}</tr>`;}
+  return t+'</table><p class="small">Row 1 says: bits 32, 1, 2, 3, 4, 5 of R go to S1. The red numbers are the copied neighbour bits.</p>';};
+SC.e=EX;
+
+/* ================= scene 4: S-boxes ================= */
+const SB={id:'s',k:0,modes:false,j:5,x:[1,1,0,0,1,1],prev:null};
+const sbCalc=(j,x)=>{const row=(x[0]<<1)|x[5],col=(x[1]<<3)|(x[2]<<2)|(x[3]<<1)|x[4],val=S[j][16*row+col];return{row,col,val,out:[3,2,1,0].map(s=>(val>>s)&1)};};
+const bin=(v,n)=>v.toString(2).padStart(n,'0');
+SB.total=()=>4;
+SB.render=(lv,anim)=>{
+  const k=lv===undefined?SB.k:lv,j=SB.j,x=SB.x,c=sbCalc(j,x),RC='var(--xor)',CC='var(--accent)';
+  const ap=n=>anim&&k===n?' appear':'';
+  const ib=q=>`<button class="fxin${k>=1&&(q===0||q===5)?' zrowb':''}${k>=2&&q>=1&&q<=4?' zcolb':''}" data-sx="${q}" title="Flip bit ${q+1}"><b>${x[q]}</b><small>bit ${q+1}</small></button>`;
+  const sm=(v,col)=>`<span class="fxsm" style="--c:${col}">${v}</span>`;
+  const qm=n=>Array(n).fill('<span class="fxsm fxq">?</span>').join('');
+  let tbl='<div class="zsw"><table class="zst fxst"><tr><th></th>';for(let cc=0;cc<16;cc++)tbl+=`<th class="${k>=2&&cc===c.col?'zcc':''}">${cc}<small>${bin(cc,4)}</small></th>`;tbl+='</tr>';
+  for(let r=0;r<4;r++){tbl+=`<tr><th class="${k>=1&&r===c.row?'zcc':''}">${r}<small>${bin(r,2)}</small></th>`;for(let cc=0;cc<16;cc++){const hr=k>=1&&r===c.row,hc=k>=2&&cc===c.col;tbl+=`<td data-cell="${r},${cc}" class="${k>=3&&hr&&hc?'zhit'+ap(3):hr?'zr':hc?'zcl':''}">${S[j][16*r+cc]}</td>`;}tbl+='</tr>';}
+  tbl+='</table></div>';
+  const flow=`<div class="fxflow">
+    <div class="fxbox fxfin"><div class="fxbt">Input · 6 bits <span>(click a bit to flip it)</span></div><div>${[0,1,2,3,4,5].map(ib).join('')}</div></div>
+    <div class="fxarr2"><span class="${k>=1?'on':''}">↙</span><span class="${k>=2?'on':''}">↘</span></div>
+    <div class="fxtwo">
+      <div class="fxbox fxrow${k>=1?'':' fxwait'}${ap(1)}"><div class="fxbt" style="color:${RC}">ROW = bit 1 and bit 6</div><div class="fxbig">${k>=1?`${sm(x[0],RC)}${sm(x[5],RC)} <i>→</i> <span class="fxbin">${x[0]}${x[5]}₂ =</span> <b>${c.row}</b>`:qm(2)}</div><small>2 bits → one of 4 rows (0–3)</small></div>
+      <div class="fxbox fxcol${k>=2?'':' fxwait'}${ap(2)}"><div class="fxbt" style="color:${CC}">COLUMN = bits 2, 3, 4, 5</div><div class="fxbig">${k>=2?`${x.slice(1,5).map(v=>sm(v,CC)).join('')} <i>→</i> <span class="fxbin">${x.slice(1,5).join('')}₂ =</span> <b>${c.col}</b>`:qm(4)}</div><small>4 bits → one of 16 columns (0–15)</small></div>
+    </div>
+    <div class="fxarr2"><span class="${k>=3?'on':''}">↘</span><span class="${k>=3?'on':''}">↙</span></div>
+    <div class="fxbox fxtab"><div class="fxbt">S${j+1} ${k>=3?`· row ${c.row}, column ${c.col} → <span style="color:var(--ink)">${c.val}</span>`:k>=1?`· row ${c.row}${k>=2?`, column ${c.col}`:''} …`:'· 4 rows × 16 columns'} <span>(you can also click any cell)</span></div>${tbl}</div>
+    <div class="fxarr1${k>=4?' on':''}">↓</div>
+    <div class="fxbox fxout${k>=4?'':' fxwait'}${ap(4)}"><div class="fxbt">Output · 4 bits</div><div class="fxbig">${k>=4?`<b>${c.val}</b> <i>=</i> ${c.out.map(v=>`<span class="zb" style="--c:var(--g${j})"><b>${v}</b></span>`).join('')}`:qm(4)}</div></div>
+  </div>`;
+  let diff='';
+  if(SB.prev&&k>=4){const p=SB.prev,pc=sbCalc(j,p),nIn=p.reduce((s,v,i)=>s+(v^x[i]),0),nOut=pop4(pc.val^c.val);
+    if(nIn)diff=`<p class="fxdiff">Before: <span class="mono">${p.join('')}</span> → ${pc.val} = <span class="mono">${bin(pc.val,4)}</span> · now: <span class="mono">${x.join('')}</span> → ${c.val} = <span class="mono">${bin(c.val,4)}</span>. <b>${nIn} input bit${nIn>1?'s':''} changed → ${nOut} of 4 output bits changed.</b></p>`;}
+  let flips='';
+  if(k>=4){let mn=4;flips=`<h3 class="sbh">What if one input bit is flipped?</h3><div class="zsw"><table class="sbflip"><tr><th>flip</th><th>new input</th><th>row, column</th><th>output</th><th>output bits changed</th></tr>`;
+    for(let q=0;q<6;q++){const y=x.slice();y[q]^=1;const d=sbCalc(j,y),n=pop4(d.val^c.val);mn=Math.min(mn,n);
+      flips+=`<tr data-sx="${q}" title="Apply this flip"><td>bit ${q+1}</td><td class="mono">${y.map((v,i)=>i===q?`<u>${v}</u>`:v).join('')}</td><td>${d.row}, ${d.col}</td><td class="mono">${d.val} = ${bin(d.val,4).split('').map((v,i)=>v!==String(c.out[i])?`<b class="chg">${v}</b>`:v).join('')}</td><td><span class="bar" style="width:${n*18}px"></span> ${n}</td></tr>`;}
+    flips+=`</table></div><p class="small">For this input, every single flip changes at least <b>${mn}</b> output bits${MIN2?' (for all 64 inputs of all 8 S-boxes it is at least 2: a design rule of DES)':''}. Click a row to apply that flip.</p>`;}
+  const all=`<h3 class="sbh">All 8 S-boxes of DES <span>(click one to use it)</span></h3><div class="fxall">${[0,1,2,3,4,5,6,7].map(b=>{let t=`<div class="fxmini${b===j?' on':''}" data-sj="${b}" title="Use S${b+1}"><div class="fxmt">S${b+1}</div><table>`;
+    for(let r=0;r<4;r++){t+='<tr>';for(let cc=0;cc<16;cc++)t+=`<td class="${b===j&&k>=3&&r===c.row&&cc===c.col?'hit':''}">${S[b][16*r+cc]}</td>`;t+='</tr>';}
+    return t+'</table></div>';}).join('')}</div><p class="small">All 8 have the same shape (4 rows × 16 columns, numbers 0–15), but different numbers. S1 gets bits 1–6 of E(R) ⊕ k, S2 bits 7–12, and so on.</p>`;
+  $('sb-main').innerHTML=`<div class="sbbar"><div class="seg zpick">${[0,1,2,3,4,5,6,7].map(i=>`<button data-sj="${i}" class="${i===j?'on':''}">S${i+1}</button>`).join('')}</div>
+    <div class="row"><button class="pri" data-sgo>▶ Step by step</button><button data-spre="slide">Example: S6, 110011</button><button data-spre="f">From tab 2: S1, round 1</button><button data-spre="rand">Random input</button></div></div>
+    ${flow}${diff}${flips}${all}`;
+};
+SB.plan=k=>({dur:650,start:()=>{SB.render(k,true);return p=>{};}});
+SB.progress=k=>['Ready','Step 1 of 4 · row','Step 2 of 4 · column','Step 3 of 4 · look up','Step 4 of 4 · output'][k];
+SB.explain=k=>{
+  const j=SB.j,x=SB.x,c=sbCalc(j,x),n=j+1;
+  if(k===0)return `<p class="step">S-box · start</p><p>An S-box is a <b>fixed table</b>: 4 rows × 16 columns, filled with the numbers 0–15.</p><p>It takes <b>6 bits</b> and gives back <b>4 bits</b>. Nothing is computed: we only <b>look up</b> one number in the table.</p><p>Now: S${n} gets <span class="mono"><b>${x.join('')}</b></span>. Press <b>Step</b>.</p>`;
+  if(k===1)return `<p class="step">Step 1 of 4 · row</p><p>Take the <b>first and the last</b> bit: <span class="mono">${x[0]}</span> and <span class="mono">${x[5]}</span>.</p><p>Together <span class="mono">${x[0]}${x[5]}</span> in binary = <b>${c.row}</b>. So we use <b>row ${c.row}</b>. 2 bits can give 4 rows: 0, 1, 2, 3.</p><p class="small">In DES these two bits are the neighbour copies made by E (tab 3), XORed with the key.</p>`;
+  if(k===2)return `<p class="step">Step 2 of 4 · column</p><p>Take the <b>4 middle</b> bits: <span class="mono">${x.slice(1,5).join('')}</span>.</p><p>In binary that is <b>${c.col}</b>. So we use <b>column ${c.col}</b>. 4 bits can give 16 columns: 0 to 15.</p>`;
+  if(k===3)return `<p class="step">Step 3 of 4 · look up</p><p>In S${n}, go to <b>row ${c.row}</b> and <b>column ${c.col}</b>. The number there is <b>${c.val}</b>.</p><p>That is the whole S-box: one table lookup.</p>`;
+  return `<p class="step">Step 4 of 4 · output</p><p>Write ${c.val} with 4 bits: <span class="mono"><b>${c.out.join('')}</b></span>.</p><p>So S${n}(<span class="mono">${x.join('')}</span>) = <span class="mono">${c.out.join('')}</span>: 6 bits in, 4 bits out.</p><p>In f, all 8 S-boxes do this at the same time: 8 × 4 = 32 bits, which then go to P (tab 2).</p><p class="note">Try it: click an input bit, or a row of the table “What if one input bit is flipped?”.</p>`;
+};
+SB.legend=()=>`<h3>Colours</h3>
+  <div class="lg"><span class="sw" style="background:var(--xor)"></span>bit 1 and bit 6 → the row</div>
+  <div class="lg"><span class="sw" style="background:var(--accent)"></span>bits 2–5 → the column</div>
+  <div class="lg"><span class="sw" style="background:var(--ink)"></span>the number found in the table</div>`;
+SB.extra=()=>`<h3>What makes the DES S-boxes good</h3><p class="small" style="margin-top:0">Checked in this page for all 8 S-boxes:</p><ul class="fxfacts sm">
+  ${ROWPERM?'<li><b>Each row holds 0–15 exactly once.</b></li>':''}
+  ${EACH4?'<li><b>64 inputs, 16 outputs:</b> each output appears 4 times, so you cannot go back from output to input. In a Feistel cipher that is fine: f is never inverted.</li>':''}
+  ${MIN2?'<li><b>Flip 1 input bit → at least 2 output bits change.</b></li>':''}
+  ${ALLDEP?'<li><b>Every output bit depends on all 6 input bits.</b></li>':''}
+  <li><b>Not linear.</b> The S-boxes are the only non-linear part of DES. Without them, DES could be solved as a set of linear equations.</li></ul>`;
+SC.s=SB;
+/* ================= scene 8: DES flowcharts ================= */
+const FC={id:'fc',k:0,modes:false,ch:'A'};
+const FCFONT='system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';
+/* colours are written into the SVG as attributes, so the same drawing can be saved as a PNG */
+function fcPal(forFile){
+  if(forFile)return{ink:'#1c1b19',muted:'#5f5e58',stroke:'#55534d',fill:'#ffffff',op:'#f3f1ea',accent:'#1d5fa6',accentBg:'#e8f0fa',key:'#7d55c7',keyBg:'#f3eefc'};
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  return{ink:css('--ink'),muted:css('--muted'),stroke:css('--muted'),fill:css('--panel'),op:css('--bg'),accent:css('--accent'),accentBg:css('--accentBg'),key:css('--cK1'),keyBg:dark?'#2a2338':'#f3eefc'};
+}
+function fcDraw(ch,P,k){
+  const isOn=s=>k>0&&s.includes(k),fut=s=>k>0&&Math.min(...s)>k;
+  const dimA=s=>fut(s)?' opacity="0.3"':'';
+  const T=(x,y,str,o={})=>`<text x="${x}" y="${y}" text-anchor="${o.a||'middle'}" font-size="${o.fs||15}" font-weight="${o.fw||400}" fill="${o.c||P.ink}"${o.it?' font-style="italic"':''}>${String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+  const box=(x,y,w,h,l1,l2,s,kind,o={})=>{kind=kind||'data';const on=isOn(s),fill=kind==='op'?P.op:kind==='key'?P.keyBg:P.fill,st=on?P.accent:kind==='key'?P.key:P.stroke,rx=kind==='op'?Math.min(22,h/2):5,cx=x+w/2;
+    let g=`<g class="fcb${on?' fcon':''}" data-fcs="${s[0]}"${dimA(s)}><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${on?P.accentBg:fill}" stroke="${st}" stroke-width="${on?2.8:1.6}"${o.dash?' stroke-dasharray="6 4"':''}/>`;
+    g+=l2?T(cx,y+h/2-3,l1,{fw:700,fs:o.fs||15})+T(cx,y+h/2+14,l2,{fs:12,c:P.muted}):T(cx,y+h/2+5,l1,{fw:700,fs:o.fs||15});
+    return g+'</g>';};
+  const arr=(pts,s,o={})=>{const on=isOn(s),c=on?P.accent:o.key?P.key:P.stroke,m=o.noHead?'':` marker-end="url(#fcm-${on?'a':o.key?'k':'n'})"`;
+    return `<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${c}" stroke-width="${on?2.6:1.7}" stroke-linejoin="round"${o.dash?' stroke-dasharray="5 4"':''}${on?' class="fcflow fcon"':''}${m}${dimA(s)}/>`;};
+  const dot=(x,y,s,key)=>`<circle cx="${x}" cy="${y}" r="3.5" fill="${isOn(s)?P.accent:key?P.key:P.stroke}"${dimA(s)}/>`;
+  const xor=(x,y,s,o={})=>{const on=isOn(s),c=on?P.accent:P.stroke;return `<g class="fcb${on?' fcon':''}" data-fcs="${s[0]}"${dimA(s)}><circle cx="${x}" cy="${y}" r="15" fill="${on?P.accentBg:P.fill}" stroke="${c}" stroke-width="${on?2.6:1.7}"${o.dash?' stroke-dasharray="4 3"':''}/><path d="M${x-9},${y} H${x+9} M${x},${y-9} V${y+9}" stroke="${c}" stroke-width="${on?2.6:1.7}"/></g>`;};
+  const fcirc=(x,y,s,o={})=>{const on=isOn(s);return `<g class="fcb${on?' fcon':''}" data-fcs="${s[0]}"${dimA(s)}><circle cx="${x}" cy="${y}" r="22" fill="${on?P.accentBg:P.op}" stroke="${on?P.accent:P.stroke}" stroke-width="${on?2.8:1.7}"${o.dash?' stroke-dasharray="5 4"':''}/>${T(x,y+7,'f',{fs:21,fw:700,it:true})}</g>`;};
+  const lab=(x,y,str,s,o={})=>`<g${dimA(s)}>${T(x,y,str,Object.assign({fs:12.5,c:P.muted},o))}</g>`;
+  const defs=`<defs>${[['n',P.stroke],['k',P.key],['a',P.accent]].map(([id,c])=>`<marker id="fcm-${id}" viewBox="0 0 10 10" refX="9.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`).join('')}</defs>`;
+  let h='',W=860,H;
+  if(ch==='A'){
+    const xL=230,xR=530,xF=380,hw=110,BH=48,xK=770;
+    h+=box(230,20,300,BH,'Plaintext x','64 bits',[1]);
+    h+=box(695,20,150,BH,'Key K','64 bits',[1],'key');
+    h+=arr([[380,68],[380,100]],[2])+lab(390,89,'64',[2],{a:'start'});
+    h+=box(230,100,300,44,'IP','initial permutation',[2],'op');
+    h+=arr([[xK,68],[xK,100]],[4],{key:true});
+    h+=box(695,100,150,44,'Key schedule','chart C',[4,5,6,7],'op');
+    h+=arr([[380,144],[380,166],[xL,166],[xL,196]],[3])+arr([[380,166],[xR,166],[xR,196]],[3]);
+    h+=box(xL-hw,196,2*hw,BH,'L₀','left 32 bits',[3])+box(xR-hw,196,2*hw,BH,'R₀','right 32 bits',[3]);
+    h+=arr([[xK,144],[xK,810]],[4,5,6,7],{key:true,noHead:true});
+    const R=[{y0:196,s:4,lab:'round 1',ki:'K₁',nx:['L₁ = R₀','R₁ = L₀ ⊕ f(R₀, K₁)']},
+             {y0:382,s:5,lab:'round 2',ki:'K₂',nx:['L₂ = R₁','R₂ = L₁ ⊕ f(R₁, K₂)']},
+             {y0:568,s:6,lab:'rounds 3–15',ki:'K₃ … K₁₅',nx:['L₁₅ = R₁₄','R₁₅ = L₁₄ ⊕ f(R₁₄, K₁₅)'],dash:true},
+             {y0:754,s:7,lab:'round 16',ki:'K₁₆',last:true}];
+    for(const r of R){const yt=r.y0+BH+52,s=[r.s],d={dash:r.dash};
+      h+=T(12,yt+5,r.lab,{a:'start',fs:13.5,c:P.muted,fw:600});
+      h+=arr([[xL,r.y0+BH],[xL,yt-15]],s,d);
+      h+=arr([[xR,r.y0+BH],[xR,yt]],s,Object.assign({noHead:true},d))+arr([[xR,yt],[xF+22,yt]],s,d)+dot(xR,yt,s);
+      h+=arr([[xK,yt-44],[xF,yt-44],[xF,yt-22]],s,{key:true,dash:r.dash})+dot(xK,yt-44,s,true)+lab(xK-8,yt-51,r.ki,s,{a:'end',c:P.key,fw:700,fs:13.5});
+      if(r.s===4)h+=lab(xF+8,yt-28,'48 bits',s,{a:'start',c:P.key});
+      h+=fcirc(xF,yt,s,d)+arr([[xF-22,yt],[xL+15,yt]],s,d)+xor(xL,yt,s,d);
+      if(!r.last){const ycs=yt+38,y1=r.y0+186;
+        h+=arr([[xL,yt+15],[xL,ycs],[xR,y1]],s,d)+arr([[xR,yt],[xR,ycs],[xL,y1]],s,d);
+        h+=box(xL-hw,y1,2*hw,BH,r.nx[0],null,s,'data',{fs:14.5})+box(xR-hw,y1,2*hw,BH,r.nx[1],null,s,'data',{fs:14.5});}
+      else{h+=arr([[xL,yt+15],[xL,922]],s)+arr([[xR,yt],[xR,922]],s);
+        h+=lab(xF,yt+48,'no swap after round 16',s,{it:true,fs:13});
+        h+=box(xL-hw,922,2*hw,BH,'R₁₆ = L₁₅ ⊕ f(R₁₅, K₁₆)',null,s,'data',{fs:14})+box(xR-hw,922,2*hw,BH,'L₁₆ = R₁₅',null,s,'data',{fs:14.5});
+        h+=T(12,951,'pre-output',{a:'start',fs:13.5,c:P.muted,fw:600});}
+    }
+    h+=arr([[xL,970],[xL,990],[380,990],[380,1012]],[8])+arr([[xR,970],[xR,990],[380,990]],[8],{noHead:true});
+    h+=box(230,1012,300,44,'IP⁻¹','inverse of IP',[8],'op');
+    h+=arr([[380,1056],[380,1084]],[9])+lab(390,1075,'64',[9],{a:'start'});
+    h+=box(230,1084,300,BH,'Ciphertext y','64 bits',[9]);
+    H=1152;
+  }else if(ch==='B'){
+    const cx=j=>115+90*j;
+    h+=box(120,20,200,48,'R','32 bits (right half)',[1]);
+    h+=box(540,20,200,48,'Kᵢ','round key, 48 bits',[1],'key');
+    h+=arr([[220,68],[220,100]],[2])+lab(230,89,'32',[2],{a:'start'});
+    h+=box(120,100,200,44,'E','expansion 32 → 48',[2],'op');
+    h+=arr([[220,144],[220,172]],[2]);
+    h+=box(120,172,200,48,'E(R)','48 bits',[2]);
+    h+=arr([[220,220],[220,276],[414,276]],[3])+arr([[640,68],[640,276],[446,276]],[3],{key:true})+lab(650,180,'48',[3],{a:'start',c:P.key});
+    h+=xor(430,276,[3]);
+    h+=arr([[430,291],[430,330]],[3]);
+    h+=box(300,330,260,48,'E(R) ⊕ Kᵢ','48 bits',[3]);
+    h+=arr([[430,378],[430,406]],[4])+lab(440,398,'cut into 8 blocks of 6 bits',[4],{a:'start'});
+    for(let j=0;j<8;j++)h+=box(70+90*j,406,90,40,'B'+(j+1),null,[4],'data',{fs:14.5});
+    for(let j=0;j<8;j++){h+=arr([[cx(j),446],[cx(j),490]],[5]);h+=box(cx(j)-35,490,70,44,'S'+(j+1),null,[5],'op',{fs:15});h+=arr([[cx(j),534],[cx(j),574]],[5]);}
+    h+=lab(cx(0)+8,472,'6',[5],{a:'start'})+lab(cx(0)+8,560,'4',[5],{a:'start'});
+    h+=box(70,574,720,40,'S-box outputs: 8 × 4 = 32 bits',null,[5],'data',{fs:14.5});
+    h+=arr([[430,614],[430,646]],[6])+lab(440,635,'32',[6],{a:'start'});
+    h+=box(300,646,260,44,'P','permutation 32 → 32',[6],'op');
+    h+=arr([[430,690],[430,722]],[7]);
+    h+=box(300,722,260,48,'f(R, Kᵢ)','32 bits',[7]);
+    h+=arr([[430,770],[430,804]],[7])+lab(440,798,'to ⊕ with L (chart A)',[7],{a:'start'});
+    H=820;
+  }else{
+    const xc=170,xd=520,xp=345;
+    h+=box(230,20,300,48,'Key K','64 bits · 8 of them are parity bits',[1],'key');
+    h+=arr([[380,68],[380,100]],[2],{key:true})+lab(390,89,'64',[2],{a:'start'});
+    h+=box(195,100,370,44,'PC-1 · permuted choice 1','drops the 8 parity bits: 64 → 56',[2],'op');
+    h+=arr([[380,144],[380,166],[xc,166],[xc,190]],[3])+arr([[380,166],[xd,166],[xd,190]],[3])+lab(390,160,'56',[3],{a:'start'});
+    h+=box(xc-75,190,150,48,'C₀','28 bits',[3])+box(xd-75,190,150,48,'D₀','28 bits',[3]);
+    const R=[{y0:262,lab:'round 1',ls:'<<< 1',C:'C₁',D:'D₁',K:'K₁',s:4,s2:5},
+             {y0:450,lab:'round 2',ls:'<<< 1',C:'C₂',D:'D₂',K:'K₂',s:6,s2:6},
+             {y0:638,lab:'rounds 3–15',ls:'<<< 2',sub:'round 9: <<< 1',C:'C₃ … C₁₅',D:'D₃ … D₁₅',K:'K₃ … K₁₅',s:7,s2:7,dash:true},
+             {y0:826,lab:'round 16',ls:'<<< 1',C:'C₁₆ = C₀',D:'D₁₆ = D₀',K:'K₁₆',s:8,s2:8}];
+    let yp=238;
+    for(const r of R){const s=[r.s],s2=[r.s2],d={dash:r.dash},y0=r.y0;
+      h+=T(8,y0+22,r.lab,{a:'start',fs:13.5,c:P.muted,fw:600});
+      h+=arr([[xc,yp],[xc,y0]],s,d)+arr([[xd,yp],[xd,y0]],s,d);
+      h+=box(xc-62,y0,124,36,r.ls,r.sub,s,'op',{fs:14,dash:r.dash})+box(xd-62,y0,124,36,r.ls,r.sub,s,'op',{fs:14,dash:r.dash});
+      h+=arr([[xc,y0+36],[xc,y0+58]],s,d)+arr([[xd,y0+36],[xd,y0+58]],s,d);
+      h+=box(xc-75,y0+58,150,44,r.C,null,s,'data',{fs:14.5,dash:r.dash})+box(xd-75,y0+58,150,44,r.D,null,s,'data',{fs:14.5,dash:r.dash});
+      h+=arr([[xc+45,y0+102],[xp-40,y0+124]],s2,d)+arr([[xd-45,y0+102],[xp+40,y0+124]],s2,d);
+      h+=box(xp-102,y0+124,204,40,'PC-2','permuted choice 2 · 56 → 48',s2,'op',{fs:14,dash:r.dash});
+      h+=arr([[xp+102,y0+144],[690,y0+144]],s2,{key:true,dash:r.dash});
+      h+=box(690,y0+124,140,40,r.K,'48 bits',s2,'key',{fs:14.5,dash:r.dash});
+      yp=y0+102;}
+    const n1=SHIFTS.filter(v=>v===1).length,n2=SHIFTS.filter(v=>v===2).length,tot=SHIFTS.reduce((a,b)=>a+b,0);
+    h+=lab(430,1016,`After 16 rounds C and D are back at the start: ${n1} × 1 + ${n2} × 2 = ${tot} shifts = one full turn of 28 bits.`,[8],{fs:13.5});
+    h+=T(8,1052,'round',{a:'start',fs:12.5,c:P.muted})+T(8,1076,'shift',{a:'start',fs:12.5,c:P.muted});
+    for(let i=0;i<16;i++){const st=[i===0?4:i===1?6:i===15?8:7],on=isOn(st),x=130+i*44;
+      h+=`<g${dimA(st)}><rect x="${x}" y="${1036}" width="40" height="50" rx="5" fill="${on?P.accentBg:P.fill}" stroke="${on?P.accent:P.stroke}" stroke-width="${on?2.4:1.2}"/>${T(x+20,1052,String(i+1),{fs:11.5,c:P.muted})}${T(x+20,1077,String(SHIFTS[i]),{fs:16,fw:700})}</g>`;}
+    H=1100;
+  }
+  return{w:W,h:H,body:`<g font-family="${FCFONT}">${defs}${h}</g>`};
+}
+const FCT={
+ A:['Whole DES','Input','IP','Split into halves','Round 1','Round 2','Rounds 3–15','Round 16','IP⁻¹','Output'],
+ B:['Function f','Inputs','Expansion E','XOR with the key','8 blocks of 6','S-boxes','Permutation P','Output'],
+ C:['Key schedule','Key','PC-1','Split into C and D','Round 1: shift','Round 1: PC-2 → K₁','Round 2','Rounds 3–15','Round 16']};
+const FCX={
+ A:[`<p class="step">Chart A · whole DES</p><p>The whole cipher on one page. The data goes down the middle. The round keys come from the key schedule on the right.</p><p>Press <b>Step</b> to walk through it, or click any block.</p>`,
+  `<p><b>Two inputs.</b> The plaintext x is one block of <b>64 bits</b>. The key K also has 64 bits, but only 56 of them are used (chart C).</p><p class="small">A longer message is cut into 64-bit blocks (tab 6).</p>`,
+  `<p><b>IP, the initial permutation.</b> It only changes the order of the 64 bits. It adds no security. IP⁻¹ at the end puts the bits back.</p><p class="small">Step by step: <button class="lnk" data-goto="ip">tab 7</button></p>`,
+  `<p><b>Split.</b> L₀ = the left 32 bits, R₀ = the right 32 bits.</p>`,
+  `<p><b>Round 1.</b> R₀ goes into f together with the round key K₁ (48 bits). The output f(R₀, K₁) has 32 bits and is XORed into L₀.</p><p>Then the halves swap: <b>L₁ = R₀</b> and <b>R₁ = L₀ ⊕ f(R₀, K₁)</b>.</p><p class="small">Inside f: <button class="lnk" data-fch="B">chart B</button> · animation: <button class="lnk" data-goto="feistel">tab 1</button></p>`,
+  `<p><b>Round 2.</b> The same, with K₂: L₂ = R₁, R₂ = L₁ ⊕ f(R₁, K₂).</p>`,
+  `<p><b>Rounds 3–15.</b> The same round 13 more times, each with its own key K₃ … K₁₅.</p><p class="note">Every round: Lᵢ = Rᵢ₋₁ and Rᵢ = Lᵢ₋₁ ⊕ f(Rᵢ₋₁, Kᵢ).</p>`,
+  `<p><b>Round 16.</b> The same round, but the halves are <b>not swapped</b> at the end. So the pre-output is R₁₆L₁₆.</p><p>Why? Then decryption is the same chart: only the keys go in the order K₁₆ … K₁.</p>`,
+  `<p><b>IP⁻¹</b> undoes IP: every bit goes back to the place it had before IP.</p><p class="small">Step by step: <button class="lnk" data-goto="ip">tab 7</button></p>`,
+  `<p><b>Ciphertext y</b>, 64 bits.</p><p class="note">DES = IP, 16 rounds, IP⁻¹. Decryption: the same steps with the keys K₁₆ … K₁. Try it in <button class="lnk" data-goto="des">tab 6</button>.</p>`],
+ B:[`<p class="step">Chart B · the function f</p><p>f(R, Kᵢ) is used once in every round. It takes 32 bits of data and a 48-bit round key, and gives back 32 bits.</p><p>Press <b>Step</b>, or click any block.</p>`,
+  `<p><b>Inputs:</b> the right half R (32 bits) and the round key Kᵢ (48 bits, from chart C).</p>`,
+  `<p><b>Expansion E: 32 → 48 bits.</b> E only copies bits: each group of 4 also gets one bit from each neighbour.</p><p class="small">Step by step: <button class="lnk" data-goto="e">tab 3</button></p>`,
+  `<p><b>XOR with the key.</b> E(R) ⊕ Kᵢ, bit by bit, 48 bits. This is the only place where the key enters f.</p>`,
+  `<p><b>Cut into 8 blocks</b> B1 … B8 of 6 bits each: one block for each S-box.</p>`,
+  `<p><b>S-boxes.</b> Sj takes Bj (6 bits) and gives 4 bits by a table lookup: the outer bits choose the row, the middle bits the column. 8 × 4 = 32 bits.</p><p class="small">Step by step: <button class="lnk" data-goto="s">tab 4</button></p>`,
+  `<p><b>Permutation P.</b> The 32 bits change places. ${PDIST?'The 4 bits of every S-box go to 4 different S-boxes in the next round.':''}</p><p class="small">Some textbook figures stop after the S-boxes. In the standard (FIPS 46-3), P comes after them.</p>`,
+  `<p><b>Output f(R, Kᵢ)</b>, 32 bits. It goes to ⊕ with the left half L (<button class="lnk" data-fch="A">chart A</button>).</p><p class="small">f never has to be inverted. Decryption computes the same f again.</p>`],
+ C:[`<p class="step">Chart C · key schedule</p><p>From one 64-bit key K, DES makes 16 round keys K₁ … K₁₆ of 48 bits each.</p><p>Press <b>Step</b>, or click any block.</p>`,
+  `<p><b>Key K, 64 bits.</b> Bits 8, 16, …, 64 are parity bits. They are not used for encryption.</p>`,
+  `<p><b>PC-1</b> (permuted choice 1) drops the 8 parity bits and mixes the order: 64 → 56 bits. PC-1 is used <b>once</b>.</p>`,
+  `<p><b>Split.</b> C₀ = the first 28 bits, D₀ = the last 28 bits.</p>`,
+  `<p><b>Round 1: rotate.</b> C and D are rotated left by 1 (<<< 1): the first bit goes to the end. This gives C₁ and D₁.</p>`,
+  `<p><b>PC-2</b> (permuted choice 2) takes 48 of the 56 bits of C₁D₁, in a new order. The result is the round key <b>K₁</b>.</p><p>C₁ and D₁ themselves go on to round 2 unchanged. PC-2 is the <b>same table</b> in every round.</p>`,
+  `<p><b>Round 2.</b> Rotate by 1 again → C₂, D₂ → PC-2 → K₂.</p>`,
+  `<p><b>Rounds 3–15.</b> Rotate by 2 (round 9: by 1) → PC-2 → K₃ … K₁₅. Because the rings turn, PC-2 picks different key bits every time.</p>`,
+  `<p><b>Round 16.</b> Rotate by 1 → PC-2 → K₁₆. Now C₁₆ = C₀ and D₁₆ = D₀.</p><p class="note">For decryption the same keys are used in the order K₁₆ … K₁ (<button class="lnk" data-goto="ks">tab 5</button>).</p>`]};
+FC.total=()=>FCT[FC.ch].length-1;
+FC.render=lv=>{
+  const k=lv===undefined?FC.k:lv,d=fcDraw(FC.ch,fcPal(false),k),svg=$('svg-fc');
+  svg.setAttribute('viewBox',`0 0 ${d.w} ${d.h}`);svg.innerHTML=d.body;
+  document.querySelectorAll('#vp-fc [data-fch]').forEach(b=>b.classList.toggle('on',b.dataset.fch===FC.ch));
+  $('fcCap').textContent={A:'Chart A · the whole of DES (encryption)',B:'Chart B · the function f(R, Kᵢ) inside every round',C:'Chart C · the key schedule: 16 round keys from one key'}[FC.ch];
+};
+FC.focusOn=()=>{const el=document.querySelector('#svg-fc .fcon');if(!el)return;const r=el.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-30)el.scrollIntoView({block:'center',behavior:'smooth'});};
+FC.plan=k=>({dur:450,start:()=>{FC.render(k);FC.focusOn();return p=>{};}});
+FC.progress=k=>k===0?`Chart ${FC.ch} · ready`:`Chart ${FC.ch} · step ${k} of ${FC.total()} · ${FCT[FC.ch][k]}`;
+FC.explain=k=>(k>0?`<p class="step">Chart ${FC.ch} · step ${k} of ${FC.total()} · ${FCT[FC.ch][k]}</p>`:'')+FCX[FC.ch][k];
+FC.legend=()=>`<h3>Shapes</h3><p class="small" style="margin-top:0"><b>PC</b> = <b>permuted choice</b>: a permutation that also leaves some bits out. PC-1: 64 → 56, PC-2: 56 → 48.</p>
+  <div class="lg"><span class="sw" style="border:1.6px solid var(--muted);border-radius:3px"></span>data, with its size in bits</div>
+  <div class="lg"><span class="sw" style="border:1.6px solid var(--muted);border-radius:8px;background:var(--bg)"></span>a fixed step (permutation, E, S-box, shift)</div>
+  <div class="lg"><span class="sw" style="border:1.6px solid var(--cK1);border-radius:3px;background:color-mix(in srgb,var(--cK1) 12%,transparent)"></span>key and round keys</div>
+  <div class="lg"><span class="sw" style="border:1.6px solid var(--muted);border-radius:50%;text-align:center;line-height:12px;font-size:13px">+</span>XOR (⊕)</div>
+  <div class="lg"><span class="sw" style="border:1.6px solid var(--muted);border-radius:50%;text-align:center;line-height:13px;font-size:12px;font-style:italic;font-weight:700">f</span>the round function (chart B)</div>`;
+FC.extra=()=>`<h3>For your slides</h3><p class="small" style="margin-top:0"><b>Save as PNG</b> (above the chart) makes a sharp picture with a white background, for Google Slides or PowerPoint.</p><p class="small">The three charts follow the standard, FIPS 46-3: P after the S-boxes, PC-1 used once, PC-2 in every round, no swap after round 16.</p>`;
+FC.png=()=>{
+  const d=fcDraw(FC.ch,fcPal(true),-1),sc=2;
+  const src=`<svg xmlns="http://www.w3.org/2000/svg" width="${d.w*sc}" height="${d.h*sc}" viewBox="0 0 ${d.w} ${d.h}"><rect width="${d.w}" height="${d.h}" fill="#ffffff"/>${d.body}</svg>`;
+  const img=new Image();
+  img.onload=()=>{const c=document.createElement('canvas');c.width=d.w*sc;c.height=d.h*sc;c.getContext('2d').drawImage(img,0,0);
+    c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`DES_chart_${FC.ch}.png`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);},'image/png');};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(src);
+};
+SC.fc=FC;
+
+/* ================= scene 7: IP and IP⁻¹ ================= */
+const IPX={id:'ip',k:0,modes:false,x:null};
+const ipW=1000,ipH=500,ipC=40,ipP=44,ipGX=[56,600],ipGY=86;
+const ipXY=(g,i)=>[ipGX[g]+(i%8)*ipP+ipC/2,ipGY+Math.floor(i/8)*ipP+ipC/2];
+const ipT=()=>({IP:T4.IP,FP:T4.FP});
+IPX.total=()=>5;
+IPX.ensure=()=>{if(!IPX.x){const hb=h=>[...h].flatMap(c=>{const v=parseInt(c,16);return[(v>>3)&1,(v>>2)&1,(v>>1)&1,v&1];});IPX.x=hb('0123456789ABCDEF');}};
+IPX.hex=b=>{let s='';for(let i=0;i<b.length;i+=4)s+=((b[i]<<3)|(b[i+1]<<2)|(b[i+2]<<1)|b[i+3]).toString(16).toUpperCase();return s;};
+IPX.facts=()=>{const {IP,FP}=ipT();
+  const inv=IP.every((v,i)=>FP[v-1]===i+1);
+  const rows=[...Array(8).keys()].map(r=>{const row=IP.slice(8*r,8*r+8),cols=new Set(row.map(v=>(v-1)%8+1)),bys=row.map(v=>Math.floor((v-1)/8)+1);return{col:[...cols][0],one:cols.size===1,up:bys.every((b,i)=>b===8-i)};});
+  return{inv,rows,pattern:rows.every(r=>r.one&&r.up)};};
+/* state of the two grids for step lv: which table maps left → right, values, colours */
+IPX.state=lv=>{
+  IPX.ensure();const {IP,FP}=ipT(),x=IPX.x,inv=lv>=4,M=inv?FP:IP;
+  const z=IP.map(v=>x[v-1]);
+  const left=inv?z:x,right=M.map(v=>left[v-1]);
+  const byByte=xi=>laneC(Math.floor(xi/8));
+  const byCol=xi=>((xi%8)%2===1)?css('--cL'):css('--cR');
+  const colX=lv===3?byCol:byByte;
+  const lc=j=>inv?colX(IP[j]-1):colX(j);         // colour = where the bit was in x
+  const rc=i=>inv?colX(i):colX(IP[i]-1);
+  return{IP,FP,M,inv,left,right,lc,rc};
+};
+IPX.render=(lv,o={})=>{
+  const k=lv===undefined?IPX.k:lv,st=IPX.state(k),svg=$('svg-ip');
+  svg.setAttribute('viewBox',`0 0 ${ipW} ${ipH}`);
+  const cell=(g,i,val,col,num,attr,cls)=>{const [cx,cy]=ipXY(g,i),x0=cx-ipC/2,y0=cy-ipC/2;
+    if(val===null)return `<g class="ipc emp"${attr}><rect x="${x0}" y="${y0}" width="${ipC}" height="${ipC}" rx="6"/><text class="ipn" x="${x0+4}" y="${y0+12}">${num}</text></g>`;
+    return `<g class="ipc${cls?' '+cls:''}"${attr}><rect x="${x0}" y="${y0}" width="${ipC}" height="${ipC}" rx="6" fill="${col}"/><text class="ipn w" x="${x0+4}" y="${y0+12}">${num}</text><text class="ipv" x="${cx}" y="${cy+11}" text-anchor="middle">${val}</text></g>`;};
+  const ex=k===1?[0,1,39]:k===4?[0,49,57]:[];
+  let h='',lines='';
+  const t1=st.inv?'z · input of IP⁻¹ (here z = IP(x))':'x · input, 64 bits = 8 bytes (one byte per row)';
+  const t2=st.inv?'IP⁻¹(z) · the small number = which bit of z lands here':'IP(x) · the small number = which bit of x lands here';
+  h+=`<text class="lbl" x="${ipGX[0]}" y="40"><tspan class="b">${t1.split(' · ')[0]}</tspan> · ${t1.split(' · ')[1]}</text>`;
+  h+=`<text class="lbl" x="${ipGX[1]}" y="40"><tspan class="b">${t2.split(' · ')[0]}</tspan> · ${t2.split(' · ')[1]}</text>`;
+  for(let c=0;c<8;c++){const [cx]=ipXY(0,c);h+=`<text class="ipcol${k===3?(c%2?' L':' R'):''}" x="${cx}" y="${ipGY-10}" text-anchor="middle">${k===3?'col '+(c+1):c+1}</text>`;}
+  for(let r=0;r<8;r++){const [,cy]=ipXY(0,8*r);h+=`<text class="iprow" x="${ipGX[0]-8}" y="${cy+4}" text-anchor="end">${st.inv?'row '+(r+1):'byte '+(r+1)}</text>`;}
+  // left grid
+  for(let j=0;j<64;j++)h+=cell(0,j,st.left[j],st.lc(j),j+1,` data-gi="L${j}" data-ipflip="${j}"`,'clk');
+  // right grid
+  for(let i=0;i<64;i++){const filled=!o.empty&&(k>=2||(k===1&&ex.includes(i)));
+    h+=cell(1,i,filled?st.right[i]:null,st.rc(i),st.M[i],` data-gi="R${i}"`,ex.includes(i)&&!o.empty?'ex':'');}
+  for(const i of o.empty?[]:ex){const s=st.M[i]-1,[x1,y1]=ipXY(0,s),[x2,y2]=ipXY(1,i);lines+=`<line class="iplh" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="ipl ex" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><circle class="ipd" cx="${x1}" cy="${y1}" r="4"/><circle class="ipd" cx="${x2}" cy="${y2}" r="4"/>`;}
+  // middle arrow
+  const my=ipGY+4*ipP-2,ax0=ipGX[0]+8*ipP+14,ax1=ipGX[1]-18;
+  h+=`<line class="ipar" x1="${ax0}" y1="${my}" x2="${ax1-8}" y2="${my}"/><path class="ipah" d="M${ax1},${my} l-14,-9 v18 z"/><text class="ipop" x="${(ax0+ax1)/2}" y="${my-16}" text-anchor="middle">${st.inv?'IP⁻¹':'IP'}</text><text class="ipsub" x="${(ax0+ax1)/2}" y="${my+26}" text-anchor="middle">only moves bits</text>`;
+  // brackets L0 / R0 next to the output grid
+  if(!st.inv){const bx=ipGX[1]+8*ipP+4;for(const [r0,lab,cv] of [[0,'L₀','--cL'],[4,'R₀','--cR']]){const ya=ipGY+r0*ipP,yb=ya+4*ipP-4;h+=`<path class="ipbr" d="M${bx},${ya} h6 V${yb} h-6" style="stroke:var(${cv})"/><text class="ipbt" x="${bx+12}" y="${(ya+yb)/2+6}" style="fill:var(${cv})">${lab}</text>`;}}
+  // hex lines under the grids
+  const yh=ipGY+8*ipP+30,hx=b=>IPX.hex(b).replace(/(.{8})/,'$1 ');
+  h+=`<text class="iphex" x="${ipGX[0]}" y="${yh}">${st.inv?'z':'x'} = ${hx(st.left)}</text>`;
+  if(!o.empty&&k>=2)h+=`<text class="iphex" x="${ipGX[1]}" y="${yh}">${st.inv?'IP⁻¹(z)':'IP(x)'} = ${hx(st.right)}</text>`;
+  if(k===3&&!o.empty){const f=IPX.facts();if(f.pattern){const c=f.rows[0].col-1;const [cx,cy0]=ipXY(0,c),[,cy1]=ipXY(0,56+c);
+    h+=`<rect class="ipbox" x="${cx-ipC/2-3}" y="${cy0-ipC/2-3}" width="${ipC+6}" height="${cy1-cy0+ipC+6}" rx="8"/>`;
+    const [rx0,ry]=ipXY(1,0);h+=`<rect class="ipbox" x="${rx0-ipC/2-3}" y="${ry-ipC/2-3}" width="${8*ipP+2}" height="${ipC+6}" rx="8"/>`;}}
+  svg.innerHTML=`<g>${h}</g><g class="iplines">${lines}</g><g id="ip-hl"></g><g id="ip-anim"></g>`;
+  $('ipInfo').innerHTML=IPX.info(null);
+};
+IPX.info=g=>{
+  if(!g)return IPX.k===0?'Press <b>Step</b> (or →). Point at any cell to see where its bit comes from or goes to.':'Point at any cell to draw its line. Click a bit on the left to flip it.';
+  const st=IPX.state(IPX.k),side=g[0],n=+g.slice(1);
+  const i=side==='R'?n:st.M.indexOf(n+1),j=st.M[i]-1,a=st.inv?'z':'x',b=st.inv?'IP⁻¹(z)':'IP(x)';
+  return `Bit ${j+1} of ${a} (row ${Math.floor(j/8)+1}, column ${j%8+1}) → place <b>${i+1}</b> of ${b}. The table says <b>${j+1}</b> in place ${i+1}.`;
+};
+IPX.hl=g=>{const L=$('ip-hl');if(!L)return;L.innerHTML='';document.querySelectorAll('#svg-ip .ipc.hl').forEach(e=>e.classList.remove('hl'));
+  if(g){const st=IPX.state(IPX.k),n=+g.slice(1),i=g[0]==='R'?n:st.M.indexOf(n+1),j=st.M[i]-1,[x1,y1]=ipXY(0,j),[x2,y2]=ipXY(1,i);
+    L.innerHTML=`<line class="iplh" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="ipl hl" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><circle class="ipd hl" cx="${x1}" cy="${y1}" r="4"/><circle class="ipd hl" cx="${x2}" cy="${y2}" r="4"/>`;
+    for(const s of [`L${j}`,`R${i}`]){const e=document.querySelector(`#svg-ip [data-gi="${s}"]`);if(e)e.classList.add('hl');}}
+  $('ipInfo').innerHTML=IPX.info(g);};
+IPX.plan=k=>{
+  if(k===5)return{dur:400,start:()=>p=>{}};
+  return{dur:k===1?2200:k===2?3000:k===3?3000:3000,start:()=>{
+    IPX.render(k,{empty:true});
+    const st=IPX.state(k),A=$('ip-anim'),mv=[];
+    const tok=(v,c)=>`<rect x="${-ipC/2}" y="${-ipC/2}" width="${ipC}" height="${ipC}" rx="6" fill="${c}"/><rect class="tokr" x="${-ipC/2}" y="${-ipC/2}" width="${ipC}" height="${ipC}" rx="6"/><text class="ipv" x="0" y="11" text-anchor="middle">${v}</text>`;
+    const list=k===1?[0,1,39]:[...Array(64).keys()];
+    list.forEach((i,n)=>{const j=st.M[i]-1;let a,b;
+      if(k===1){a=n*0.3;b=a+0.38;}else if(k===3){a=Math.floor(i/8)*0.085;b=a+0.32;}else{a=(i/64)*0.5;b=a+0.45;}
+      mv.push({node:node(A,tok(st.right[i],st.rc(i)),'iptok'),pts:[ipXY(0,j),ipXY(1,i)],a,b});});
+    return mover(mv);}};
+};
+IPX.progress=k=>['Ready','Step 1 of 5 · how to read the table','Step 2 of 5 · all 64 bits','Step 3 of 5 · the hidden pattern','Step 4 of 5 · IP⁻¹ puts them back','Step 5 of 5 · why?'][k];
+IPX.explain=k=>{
+  IPX.ensure();const f=IPX.facts(),st=IPX.state(k),hx=b=>IPX.hex(b).replace(/(.{8})/,'$1 ');
+  if(k===0)return `<p class="step">IP and IP⁻¹ · start</p><p>DES starts with the <b>initial permutation IP</b> and ends with the <b>final permutation IP⁻¹</b>.</p><p>A permutation only <b>changes the order</b> of the bits. No bit changes its value. No bit is lost or added.</p><p>Left: the 64 bits of x, as 8 bytes (one per row). Right: the IP table, written as an 8 × 8 grid.</p>`;
+  if(k===1)return `<p class="step">Step 1 of 5 · how to read the table</p><p>The table is a <b>picture of the output</b>. Each number says which input bit lands in that place.</p><p>The first number is 58, so <b>output bit 1 = input bit 58</b>. The second is 50: output bit 2 = input bit 50.</p><p>Where does input bit 1 go? Look for 1 in the table: it is in place <b>40</b>.</p><p class="note">Careful: “58 in the first place” means bit 58 comes <b>to</b> place 1. It does not mean that bit 1 goes to place 58.</p>`;
+  if(k===2)return `<p class="step">Step 2 of 5 · all 64 bits</p><p>All 64 bits move at the same time, each to its own place.</p><p>Here: x = <span class="mono">${hx(st.left)}</span><br>IP(x) = <span class="mono">${hx(st.right)}</span></p><p>Then the output is cut in two: <b>L₀</b> = rows 1–4 (32 bits), <b>R₀</b> = rows 5–8.</p><p class="small">Look at the colours: every output row has one bit from each of the 8 bytes.</p>`;
+  if(k===3)return `<p class="step">Step 3 of 5 · the hidden pattern</p>${f.pattern?`<p>Each output row is <b>one column</b> of x, read from the bottom (byte 8) to the top (byte 1).</p><p>Row 1 = column ${f.rows[0].col}: bits 58, 50, 42, …, 2. That is why the table counts down by 8.</p><p class="note">${f.rows.map((r,i)=>`row ${i+1} ← column ${r.col}`).join('<br>')}</p><p>So <b style="color:var(--cL)">L₀</b> gets the even columns (bits 2, 4, 6, 8 of every byte) and <b style="color:var(--cR)">R₀</b> the odd columns (1, 3, 5, 7).</p>`:'<p>(The pattern check failed.)</p>'}`;
+  if(k===4)return `<p class="step">Step 4 of 5 · IP⁻¹ puts them back</p><p>The final permutation IP⁻¹ is the <b>inverse</b> of IP: every bit goes back to the place it had before IP.</p><p>Example: IP moved bit 1 to place 40, so IP⁻¹ takes bit 40 back to place 1. That is why the IP⁻¹ table starts with 40.</p><p>Here IP⁻¹(IP(x)) = <span class="mono">${hx(st.right)}</span> = x.</p>${f.inv?'<p class="note">IP⁻¹(IP(x)) = x for all 64 bit positions (checked in this page).</p>':''}`;
+  return `<p class="step">Step 5 of 5 · why?</p><p>IP and IP⁻¹ use <b>no key</b> and the tables are public. Anyone can undo them, so they add <b>no security</b>.</p><p>Schneier (Applied Cryptography) says they made it easier to load data into DES chips of the 1970s in byte-sized pieces.</p><p class="note">In DES: L₀R₀ = IP(x) at the start. At the end, after round 16: y = IP⁻¹(R₁₆L₁₆).</p><p class="small">The whole picture: <button class="lnk" data-goto="fc">tab 8</button>. IP on any message: <button class="lnk" data-goto="des">tab 6</button>.</p>`;
+};
+IPX.legend=()=>IPX.k===3?`<h3>Colours</h3><div class="lg"><span class="sw" style="background:var(--cL)"></span>even columns (bits 2, 4, 6, 8 of a byte) → L₀</div><div class="lg"><span class="sw" style="background:var(--cR)"></span>odd columns (bits 1, 3, 5, 7) → R₀</div>`
+  :`<h3>Colours</h3><div class="lg"><span class="sws">${[0,1,2,3,4,5,6,7].map(j=>`<i style="background:var(--g${j})"></i>`).join('')}</span>bytes 1–8 of x (where the bit started)</div><div class="lg"><span class="sw" style="border:1.6px dashed var(--line2)"></span>empty place: its bit has not arrived yet</div><p class="small">Small number in a cell: its place on the left, the table entry on the right.</p>`;
+IPX.extra=()=>{const {IP,FP}=ipT(),k=IPX.k,hlIP=k===1?[0,1,39]:[],hlFP=k===4?[0,49,57]:[];
+  const tb=(T,hl,name)=>`<table class="iptab"><tr><th colspan="8">${name}</th></tr>${[...Array(8).keys()].map(r=>`<tr>${T.slice(8*r,8*r+8).map((v,c)=>`<td class="${hl.includes(8*r+c)?'on':''}">${v}</td>`).join('')}</tr>`).join('')}</table>`;
+  return `<h3>The two tables (as on the slide)</h3><div class="iptabs">${tb(IP,hlIP,'IP')}${tb(FP,hlFP,'IP⁻¹')}</div><p class="small">Read row by row: place 1, 2, …, 64.</p>`;};
+SC.ip=IPX;
+
+/* ================= scene 5: key schedule ================= */
+const KS={id:'ks',k:0,mode:'enc',modes:true};
+const kW=860;
+const kgx=j=>14+j*104,kgc=j=>kgx(j)+47,kxE=e=>kgx(Math.floor(e/6))+(e%6)*16+7;
+const kxy=b=>{const row=b<32?0:1,i=b%32,byte=Math.floor(i/8),q=i%8;return[95+byte*170+q*20+9,row?76:48];};
+const RC={cx:[215,645],cy:276,r:100};
+const slotXY=(ring,pc)=>{const th=-Math.PI/2+2*Math.PI*pc/28;return[RC.cx[ring]+RC.r*Math.cos(th),RC.cy+RC.r*Math.sin(th)];};
+const KY={K:452,LIST:500};
+const byteC=b=>css('--g'+Math.floor(b/8));
+const isPar=b=>b%8===7;
+const CUM=[0],DCUM=[0];for(let i=0;i<16;i++){CUM.push(CUM[i]+SHIFTS[i]);DCUM.push(DCUM[i]+DSHIFTS[i]);}
+const ringBit=(ring,c)=>PC1[ring*28+c]-1;
+const TAP=[[],[]];PC2.forEach(v=>{TAP[v<=28?0:1].push((v-1)%28);});
+KS.total=()=>33;
+KS.off=k=>{if(k<2)return 0;const r=Math.floor(k/2);return KS.mode==='enc'?CUM[r]:-DCUM[r];};
+KS.ki=r=>KS.mode==='enc'?r:17-r;
+KS.bits=r=>{const off=KS.off(2*r);return PC2.map(v=>{const pos=v-1,ring=pos<28?0:1,p=pos%28;return ringBit(ring,mod(p+off,28));});};
+KS.picked=k=>k>=3?Math.floor((k-1)/2):0;
+KS.render=()=>{
+  const k=KS.k,svg=$('svg-ks');svg.setAttribute('viewBox',`0 0 ${kW} 640`);
+  let h=`<text class="lbl" x="95" y="24"><tspan class="b">Key k</tspan> · 64 bits = 8 bytes (numbers = bit positions)</text>`;
+  for(let b=0;b<64;b++){const [x,y]=kxy(b);
+    h+=cellSVG(x,y,[isPar(b)?css('--par'):byteC(b)],{w:18,h:22,txt:b+1,cls:k>=1?'dimmed':''});
+    if(isPar(b))h+=`<line class="strk" x1="${x-9}" y1="${y+11}" x2="${x+9}" y2="${y-11}"/>`;}
+  // rings
+  const off=KS.off(k);
+  for(const ring of [0,1]){const cx=RC.cx[ring];
+    h+=`<circle class="ring" cx="${cx}" cy="${RC.cy}" r="${RC.r}"/><circle class="ringc" cx="${cx}" cy="${RC.cy}" r="${RC.r}"/>`;
+    for(let p=0;p<28;p++){const th=-Math.PI/2+2*Math.PI*p/28,c=Math.cos(th),s=Math.sin(th);
+      if(TAP[ring].includes(p))h+=`<line class="tick" x1="${cx+(RC.r+17)*c}" y1="${RC.cy+(RC.r+17)*s}" x2="${cx+(RC.r+25)*c}" y2="${RC.cy+(RC.r+25)*s}"/>`;
+      else{const X=cx+(RC.r+21)*c,Y=RC.cy+(RC.r+21)*s;h+=`<line class="xm" x1="${X-3}" y1="${Y-3}" x2="${X+3}" y2="${Y+3}"/><line class="xm" x1="${X-3}" y1="${Y+3}" x2="${X+3}" y2="${Y-3}"/>`;}}
+    h+=`<text class="rl" x="${cx}" y="${RC.cy-RC.r-31}" text-anchor="middle">1</text>`;
+    h+=`<text class="ctr" x="${cx}" y="${RC.cy+4}" text-anchor="middle">${ring?'D':'C'}</text>`;
+    h+=`<text class="ctr2" x="${cx}" y="${RC.cy+24}" text-anchor="middle">28 bits</text>`;
+    h+=`<text id="ks-rot-${ring}" class="rot" x="${cx}" y="${RC.cy-26}" text-anchor="middle"></text>`;
+  }
+  h+=`<text class="ctr2" x="${kW/2}" y="${RC.cy-6}" text-anchor="middle">turned so far</text><text id="ks-turn" class="ctr" style="font-size:22px" x="${kW/2}" y="${RC.cy+20}" text-anchor="middle">${Math.abs(off)} / 28</text>`;
+  h+=`<g id="ks-ring"></g>`;
+  // k row
+  const pr=KS.picked(k),mk=KS.making||0,lr=mk||pr;
+  h+=`<text class="lbl" x="14" y="${KY.K-20}"><tspan class="b">${lr?'k'+sb(KS.ki(lr)):'kᵢ'}</tspan> = PC-2(C, D) · 48 bits, 6 for each S-box</text>`;
+  const kb=pr&&!mk?KS.bits(pr):null;
+  for(let j=0;j<48;j++)h+=cellSVG(kxE(j),KY.K,kb?[byteC(kb[j])]:null,{txt:kb?kb[j]+1:undefined});
+  for(let j=0;j<8;j++)h+=`<text class="rl" x="${kgc(j)}" y="${KY.K+24}" text-anchor="middle">to S${j+1}</text>`;
+  // key list
+  h+=`<text class="lbl" x="14" y="${KY.LIST}"><tspan class="b">Round keys so far</tspan> (${KS.mode==='enc'?'in encryption order':'in decryption order'})</text>`;
+  for(let r=1;r<=16;r++){const col=(r-1)>=8?1:0,row=(r-1)%8,x=14+col*430,y=KY.LIST+12+row*15;
+    h+=`<text class="rl" x="${x}" y="${y+9}">k${sb(KS.ki(r))}</text>`;
+    if(r<=pr){const bb=KS.bits(r);for(let j=0;j<48;j++)h+=`<rect x="${x+30+j*7.4+Math.floor(j/6)*3}" y="${y}" width="6.4" height="11" rx="1.5" fill="${byteC(bb[j])}"/>`;}
+    else h+=`<rect class="emp" x="${x+30}" y="${y}" width="${48*7.4+21}" height="11" rx="2"/>`;}
+  h+='<g id="ks-anim"></g>';
+  svg.innerHTML=h;
+  if(k>=1)KS.placeRing(off);
+};
+KS.placeRing=(off)=>{
+  const g=$('ks-ring');if(!g.childNodes.length){let s='';for(const ring of [0,1])for(let c=0;c<28;c++){const b=ringBit(ring,c);s+=`<g id="kr-${ring}-${c}">${cellSVG(0,0,[byteC(b)],{w:20,h:20,txt:b+1})}</g>`;}g.innerHTML=s;}
+  for(const ring of [0,1])for(let c=0;c<28;c++){const [x,y]=slotXY(ring,c-off);$(`kr-${ring}-${c}`).setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);}
+};
+KS.plan=k=>{
+  const A=()=>$('ks-anim');
+  if(k===1)return{dur:2800,start:()=>{const mv=[];
+    for(let b=0;b<64;b++){const [x,y]=kxy(b);if(isPar(b))mv.push({node:node(A(),cellSVG(0,0,[css('--par')],{w:18,h:22,txt:b+1})),pts:[[x,y],[x,y+40]],a:0,b:.3,fadeEnd:true});}
+    for(const ring of [0,1])for(let c=0;c<28;c++){const b=ringBit(ring,c),[x,y]=kxy(b),[X,Y]=slotXY(ring,c),a=.25+c*.012;
+      mv.push({node:node(A(),cellSVG(0,0,[byteC(b)],{w:20,h:20,txt:b+1})),pts:[[x,y],[X,Y]],a,b:a+.4});}
+    return mover(mv);}};
+  if(k%2===0){const r=k/2,o0=KS.off(k-1),o1=KS.off(k),s=Math.abs(o1-o0);
+    return{dur:s===0?700:1300+400*s,start:()=>{
+      for(const ring of [0,1])$('ks-rot-'+ring).textContent=s===0?'':(o1>o0?'↺':'↻');
+      return p=>{KS.placeRing(o0+(o1-o0)*ease(p));$('ks-turn').textContent=Math.round(Math.abs(o0+(o1-o0)*ease(p)))+' / 28';};}};}
+  const r=(k-1)/2,off=KS.off(k);
+  return{dur:2600,start:()=>{KS.making=r;KS.render();KS.making=0;const mv=[];const bits=KS.bits(r);
+    PC2.forEach((v,j)=>{const pos=v-1,ring=pos<28?0:1,p=pos%28,[X,Y]=slotXY(ring,p),a=j*.008;
+      mv.push({node:node(A(),cellSVG(0,0,[byteC(bits[j])],{txt:bits[j]+1})),pts:[[X,Y],[X,Y+(ring?1:1)*0],[kxE(j),KY.K]],a,b:a+.55});});
+    return mover(mv);}};
+};
+KS.progress=k=>k===0?'Ready':k===1?'PC-1':`Round ${Math.floor(k/2)} of 16 · ${k%2===0?'rotate':'PC-2 → k'+sb(KS.ki(Math.floor(k/2)))}`;
+KS.explain=k=>{
+  const enc=KS.mode==='enc';
+  if(k===0)return `<p class="step">Key schedule · start</p><p>The key k has 64 bits: 8 bytes, one colour per byte. The numbers are bit positions. Every 8th bit (8, 16, …, 64; grey) is a parity bit.</p><p>From this key DES makes 16 round keys of 48 bits.${enc?'':' In decryption they are needed in reverse order: k₁₆ first.'}</p>`;
+  if(k===1)return `<p class="step">PC-1</p><p>The 8 parity bits are dropped. The other 56 bits are mixed and put into two registers of 28 bits: <b>C</b> (left ring) and <b>D</b> (right ring). Position 1 is at the top.</p>`;
+  const r=Math.floor(k/2);
+  let h;
+  if(k%2===0){
+    if(enc){const s=SHIFTS[r-1];h=`<p class="step">Round ${r} · rotate</p><p>Both rings turn <b>left by ${s}</b> position${s>1?'s':''} (${s===1?'1 in rounds 1, 2, 9 and 16':'2 in all other rounds'}). Every bit moves to a lower position; the bit at position 1 goes around to the end.</p><p>Turned so far: ${CUM[r]} of 28.</p>`;}
+    else{const s=DSHIFTS[r-1];h=r===1?`<p class="step">Round 1 (decryption) · no rotation</p><p>No rotation here. After 16 encryption rounds the rings have turned 28 positions, one full turn, so C₁₆ = C₀ and D₁₆ = D₀. k₁₆ can be taken right away.</p>`
+      :`<p class="step">Round ${r} (decryption) · rotate</p><p>Both rings turn <b>right by ${s}</b>: the encryption rotations are undone in reverse order.</p>`;}
+  }else{
+    const ki=KS.ki(r);
+    h=`<p class="step">Round ${r} · PC-2 → k${sb(ki)}</p><p>PC-2 takes 24 bits from C and 24 bits from D, from the marked positions (4 positions in each ring, marked ×, are never taken), and puts them in a new order. This is the round key <b>k${sb(ki)}</b>: 48 bits, 6 for each S-box.</p><p>Look at the numbers: a round key is only a selection of the original key bits. Because the rings turn, every round takes a different selection.</p>`;
+  }
+  if(k===KS.total())h+=enc?`<p class="note">Total: 4 × 1 + 12 × 2 = 28 = one full turn. The rings are back at the start: C₁₆ = C₀ and D₁₆ = D₀. That is why decryption can make k₁₆ first, without rotating (press <b>Decrypt</b>).</p>`
+                          :`<p class="note">The round keys came out in reverse order, k₁₆ … k₁, by turning the rings to the right. They are exactly the same keys as in encryption.</p>`;
+  return h;
+};
+KS.legend=()=>`<h3>Colours</h3>
+  <div class="lg"><span class="sws">${[0,1,2,3,4,5,6,7].map(j=>`<i style="background:var(--g${j})"></i>`).join('')}</span>bytes 1–8 of the key</div>
+  <div class="lg"><span class="sw" style="background:var(--par)"></span>parity bit (dropped by PC-1)</div>
+  <p class="small">Around the rings: a tick = a position PC-2 takes, × = a position PC-2 never takes.</p>`;
+KS.extra=k=>{
+  const enc=KS.mode==='enc',r=k>=2?Math.floor(k/2):0,arr=enc?SHIFTS:DSHIFTS;
+  let h=`<h3>Rotation per round (${enc?'left':'right'})</h3><div class="shifts">`;
+  arr.forEach((s,i)=>{h+=`<span class="${i+1===r?'cur':(i+1<r?'done':'')}"><small>${i+1}</small>${s}</span>`;});
+  return h+`</div><p class="small">${enc?'Sum: 28 = one full turn.':'Round 1: no rotation. After that, the right turns undo the left turns of encryption in reverse order.'}</p>`;
+};
+SC.ks=KS;
+
+/* ================= controls ================= */
+$('bPlay').onclick=()=>{
+  const s=cur();
+  if(ENG.playing){setPlaying(false);if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null;}return;}
+  if(s.k>=s.total()&&!ENG.anim){s.k=0;s.render();if(s.focus)s.focus(1);}
+  setPlaying(true);if(!ENG.anim)startStage(s.k+1);
+};
+$('bStep').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(true);return;}const s=cur();if(s.k<s.total())startStage(s.k+1);};
+$('bBack').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(false);return;}const s=cur();if(s.k>0){s.k--;s.render();panel();}};
+$('bReset').onclick=()=>{setPlaying(false);stopAnim(false);const s=cur();s.k=0;s.render();panel();if(s.id==='feistel')$('vp-feistel').scrollTo({top:0,behavior:'smooth'});};
+$('nr').onchange=()=>{setPlaying(false);stopAnim(false);FE.N=+$('nr').value;FE.k=0;FE.init();FE.render();panel();};
+$('spd').oninput=()=>{ENG.speed=+$('spd').value;};
+$('mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;setPlaying(false);stopAnim(false);const s=cur();s.mode=b.dataset.m;s.k=0;
+  if(s.id==='feistel'){FE.init();$('vp-feistel').scrollTo({top:b.dataset.m==='dec'?1e6:0,behavior:'smooth'});}s.render();panel();};
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(b)switchTab(b.dataset.tab);};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');
+  if(g){const t=g.dataset.goto;if(t==='ks'&&g.dataset.round){KS.mode='enc';KS.k=2*(+g.dataset.round)+1;}
+    if(t==='e'&&g.dataset.eg!==undefined){EX.k=+g.dataset.eg+1;}
+    if(t==='s'&&g.dataset.six){SB.j=+g.dataset.sbj;SB.x=[...g.dataset.six].map(Number);SB.prev=null;SB.k=4;}switchTab(t);window.scrollTo({top:0,behavior:'smooth'});return;}
+  const zb=e.target.closest('[data-zj]');
+  if(zb&&ENG.tab==='f'){const j=+zb.dataset.zj;setPlaying(false);if(ENG.anim)stopAnim(true);FS.zj=j;
+    if(FS.k===5){FS.trace=P.findIndex(v=>Math.floor((v-1)/4)===j);FS.level=4;FS.render0();}else FS.render();panel();return;}
+  const fb=e.target.closest('[data-fbit]');
+  if(fb&&ENG.tab==='f'){FS.trace=+fb.dataset.fbit;setPlaying(false);if(FS.k===5&&!ENG.anim){FS.level=4;FS.render0();panel();}else{stopAnim(true);FS.k=4;startStage(5);}}
+});
+/* tab 7 (IP) interaction */
+$('svg-ip').addEventListener('mouseover',e=>{const b=e.target.closest('[data-gi]');IPX.hl(b?b.dataset.gi:null);});
+$('svg-ip').addEventListener('mouseleave',()=>IPX.hl(null));
+$('vp-ip').addEventListener('click',e=>{
+  const f=e.target.closest('[data-ipflip]'),st=e.target.closest('[data-ipset]');if(!f&&!st)return;
+  if(ENG.anim)stopAnim(true);IPX.ensure();
+  if(f){const j=+f.dataset.ipflip,xi=IPX.k>=4?T4.IP[j]-1:j;IPX.x[xi]^=1;IPX.render();panel();IPX.hl('L'+j);return;}
+  if(st.dataset.ipset==='ex')IPX.x=null;else IPX.x=IPX.x.map(()=>Math.random()<.5?1:0);IPX.ensure();IPX.render();panel();
+});
+/* tab 8 interaction */
+document.addEventListener('click',e=>{
+  const c=e.target.closest('[data-fch]');
+  if(c){setPlaying(false);if(ENG.anim)stopAnim(false);FC.ch=c.dataset.fch;FC.k=0;if(ENG.tab!=='fc')switchTab('fc');else{FC.render();panel();}$('vp-fc').scrollIntoView({block:'start',behavior:'smooth'});return;}
+  if(e.target.closest('[data-fcpng]')){FC.png();return;}
+  const b=e.target.closest('#svg-fc [data-fcs]');
+  if(b){setPlaying(false);if(ENG.anim)stopAnim(true);FC.k=+b.dataset.fcs;FC.render();panel();}
+});
+/* tab 3 and tab 4 interaction */
+$('svg-e').addEventListener('mouseover',e=>{const b=e.target.closest('[data-er]');EX.hl(b?+b.dataset.er:-1);});
+$('svg-e').addEventListener('mouseleave',()=>EX.hl(-1));
+$('vp-e').addEventListener('click',e=>{
+  const f=e.target.closest('[data-eflip]'),st=e.target.closest('[data-eset]');if(!f&&!st)return;
+  if(ENG.anim)stopAnim(true);
+  if(f){const r=+f.dataset.eflip;EX.R[r]^=1;EX.render();panel();EX.hl(r);return;}
+  EX.R=st.dataset.eset==='ex'?FS.data().R.slice():EX.R.map(()=>Math.random()<.5?1:0);EX.render();panel();
+});
+$('vp-s').addEventListener('click',e=>{
+  const go=e.target.closest('[data-sgo],[data-spre]');
+  const stop=()=>{setPlaying(false);if(ENG.anim)stopAnim(true);};
+  if(go){stop();const pr=go.dataset.spre;
+    if(pr==='slide'){SB.j=5;SB.x=[1,1,0,0,1,1];}
+    else if(pr==='f'){const d=FS.data();SB.j=0;SB.x=d.fd.sb[0].six.slice();}
+    else if(pr==='rand'){SB.x=SB.x.map(()=>Math.random()<.5?1:0);}
+    SB.prev=null;SB.k=0;SB.render();panel();setPlaying(true);startStage(1);return;}
+  const p=e.target.closest('[data-sj]');if(p){stop();SB.j=+p.dataset.sj;SB.prev=null;SB.render();panel();return;}
+  const q=e.target.closest('[data-sx]');if(q){stop();SB.prev=SB.x.slice();SB.x[+q.dataset.sx]^=1;SB.render();panel();return;}
+  const c=e.target.closest('[data-cell]');if(c){stop();const [r,col]=c.dataset.cell.split(',').map(Number);SB.prev=SB.x.slice();SB.x=[r>>1,(col>>3)&1,(col>>2)&1,(col>>1)&1,col&1,r&1];SB.k=4;SB.render();panel();}
+});
+document.addEventListener('keydown',e=>{
+  if(ENG.tab==='des')return;
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.key==='ArrowRight'){e.preventDefault();$('bStep').click();}
+  else if(e.key==='ArrowLeft'){e.preventDefault();$('bBack').click();}
+  else if(e.key===' '){e.preventDefault();$('bPlay').click();}
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(ENG.tab==='des')return;if(!ENG.anim){if(ENG.tab==='ks')$('ks-ring')&&($('ks-ring').innerHTML='');cur().render();panel();}});
+window.DF={FE,FS,EX,SB,IPX,FC,KS,ENG,startStage,switchTab,SDEP,ALLDEP,PDIST,PC1,PC2,SHIFTS};
+FE.init();FE.render();panel();
+/* ================= tab 6: encrypt / decrypt, step by step ================= */
+window.T4=(function(){
+'use strict';
+const IP=[58,50,42,34,26,18,10,2,60,52,44,36,28,20,12,4,62,54,46,38,30,22,14,6,64,56,48,40,32,24,16,8,57,49,41,33,25,17,9,1,59,51,43,35,27,19,11,3,61,53,45,37,29,21,13,5,63,55,47,39,31,23,15,7];
+const FP=[40,8,48,16,56,24,64,32,39,7,47,15,55,23,63,31,38,6,46,14,54,22,62,30,37,5,45,13,53,21,61,29,36,4,44,12,52,20,60,28,35,3,43,11,51,19,59,27,34,2,42,10,50,18,58,26,33,1,41,9,49,17,57,25];
+/* ---------- DES core (E, P, PC1, PC2, SHIFTS, S come from the tables above) ---------- */
+const bitsToHex=b=>{let s='';for(let i=0;i<b.length;i+=4)s+=((b[i]<<3)|(b[i+1]<<2)|(b[i+2]<<1)|b[i+3]).toString(16).toUpperCase();return s;};
+const perm=(bits,t)=>t.map(i=>bits[i-1]);
+const xor=(a,b)=>a.map((v,i)=>v^b[i]);
+const rotl=(a,n)=>a.slice(n).concat(a.slice(0,n));
+const ham=(a,b)=>a.reduce((s,v,i)=>s+(v^b[i]),0);
+const inv=t=>{const r=[];t.forEach((src,pos)=>{r[src-1]=pos;});return r;};
+const IPinv=inv(IP),FPinv=inv(FP);
+function keySchedule(key){
+  const pc1=perm(key,PC1);let C=pc1.slice(0,28),D=pc1.slice(28);const Cs=[C],Ds=[D],K=[null];
+  for(let i=0;i<16;i++){C=rotl(C,SHIFTS[i]);D=rotl(D,SHIFTS[i]);Cs.push(C);Ds.push(D);K.push(perm(C.concat(D),PC2));}
+  return{pc1,C:Cs,D:Ds,K};
+}
+function sbox(j,six){const row=(six[0]<<1)|six[5],col=(six[1]<<3)|(six[2]<<2)|(six[3]<<1)|six[4],val=S[j][row*16+col];return{six,row,col,val,out:[(val>>3)&1,(val>>2)&1,(val>>1)&1,val&1]};}
+function fDetail(R,k){const e=perm(R,E),x=xor(e,k),sbs=[];let s=[];for(let j=0;j<8;j++){const d=sbox(j,x.slice(6*j,6*j+6));sbs.push(d);s=s.concat(d.out);}return{e,k,x,sb:sbs,s,p:perm(s,P)};}
+function runDES(input,key,decrypt){
+  const ks=keySchedule(key),ip=perm(input,IP),L=[ip.slice(0,32)],R=[ip.slice(32)],rounds=[null];
+  for(let i=1;i<=16;i++){const ki=decrypt?17-i:i,fd=fDetail(R[i-1],ks.K[ki]);L.push(R[i-1]);R.push(xor(L[i-1],fd.p));rounds.push({ki,fd});}
+  const pre=R[16].concat(L[16]);return{input,key,decrypt,ks,ip,L,R,rounds,pre,out:perm(pre,FP)};
+}
+/* ---------- bytes, text, padding ---------- */
+const hx=b=>bitsToHex(b),bstr=b=>b.join('');
+const bytesToBits=a=>{const r=[];a.forEach(v=>{for(let i=7;i>=0;i--)r.push((v>>i)&1);});return r;};
+const bitsToBytes=b=>{const r=[];for(let i=0;i<b.length;i+=8){let v=0;for(let j=0;j<8;j++)v=(v<<1)|b[i+j];r.push(v);}return r;};
+const h2=v=>v.toString(16).toUpperCase().padStart(2,'0');
+const bytesHex=(a,sep)=>a.map(h2).join(sep===undefined?'':sep);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const enc8=new TextEncoder(),dec8=new TextDecoder('utf-8',{fatal:true});
+const utf8=s=>Array.from(enc8.encode(s));
+const toText=a=>{try{return dec8.decode(new Uint8Array(a));}catch(e){return null;}};
+const printable=a=>a.every(v=>v>=32&&v<=126);
+const showByte=v=>v>=32&&v<=126?String.fromCharCode(v):'·';
+function parseHex(s){const c=s.replace(/\s+/g,'');if(!/^[0-9a-fA-F]*$/.test(c))return{err:'Hex may contain only the digits 0–9 and the letters A–F.'};if(c.length%2)return{err:'Hex needs an even number of digits (2 digits = 1 byte).'};const a=[];for(let i=0;i<c.length;i+=2)a.push(parseInt(c.substr(i,2),16));return{bytes:a};}
+function pad(bytes,mode){
+  if(mode==='pkcs'){const n=8-bytes.length%8;return bytes.concat(Array(n).fill(n));}
+  if(mode==='bit'){const o=bytes.concat([0x80]);while(o.length%8)o.push(0);return o;}
+  return bytes.slice();
+}
+function unpad(bytes,mode){
+  if(mode==='pkcs'){const n=bytes[bytes.length-1];if(!(n>=1&&n<=8))return{err:`The last byte is ${h2(n)}, which is not valid PKCS#5/#7 padding (it must be 01–08). Wrong key or wrong padding type?`};
+    for(let i=1;i<=n;i++)if(bytes[bytes.length-i]!==n)return{err:`The last ${n} bytes should all be ${h2(n)}, but they are not. Wrong key or wrong padding type?`};return{bytes:bytes.slice(0,bytes.length-n),n};}
+  if(mode==='bit'){let i=bytes.length-1;while(i>=0&&bytes[i]===0)i--;if(i<0||bytes[i]!==0x80)return{err:'No 80 byte found before the final 00 bytes: this is not valid bit padding. Wrong key or wrong padding type?'};return{bytes:bytes.slice(0,i),n:bytes.length-i};}
+  return{bytes:bytes.slice(),n:0};
+}
+const PRESETS={
+  hello:{mode:'enc',msg:'Hello world!',mf:'text',key:'AZTU2026',kf:'text',pad:'pkcs'},
+  book:{mode:'enc',msg:'0123456789ABCDEF',mf:'hex',key:'133457799BBCDFF1',kf:'hex',pad:'none'},
+  ecb:{mode:'enc',msg:'SECRET!!SECRET!!',mf:'text',key:'Kerckhof',kf:'text',pad:'pkcs'},
+  zero:{mode:'enc',msg:'8787878787878787',mf:'hex',key:'0E329232EA6D0D73',kf:'hex',pad:'none'}
+};
+/* ---------- state ---------- */
+const N_STEPS=84,I_SWAP=82,I_FP=83,iRound=(r,s)=>2+(r-1)*5+s;
+function stepInfo(i){if(i===0)return{t:'start'};if(i===1)return{t:'ip'};if(i===I_SWAP)return{t:'swap'};if(i===I_FP)return{t:'fp'};const q=i-2;return{t:'round',r:Math.floor(q/5)+1,sub:q%5};}
+const X={mode:'enc',mf:'text',kf:'text',pad:'pkcs',res:null,keyBits:null,sel:0,tr:null,i:0,sbsel:0,tab:'rounds',avSrc:'p',avBit:1,timer:null,pin:null};
+
+/* ---------- read inputs and run DES on all blocks ---------- */
+function compute(){
+  const err=[];$('xMsg').classList.remove('bad');$('xKey').classList.remove('bad');
+  // key
+  let kb=null;const kv=$('xKey').value;
+  if(X.kf==='text'){const b=utf8(kv);$('xKeyCnt').textContent=`${b.length} / 8 bytes`;
+    if(b.length!==8){err.push(`The key must be exactly 8 bytes (64 bits). Now: ${b.length}. Letters like ə, ş, ü take 2 bytes each.`);$('xKey').classList.add('bad');}else kb=b;}
+  else{const p=parseHex(kv);const n=kv.replace(/\s+/g,'').length;$('xKeyCnt').textContent=`${n} / 16 hex digits`;
+    if(p.err||p.bytes.length!==8){err.push(p.err||`The key must be 16 hex digits (64 bits). Now: ${n}.`);$('xKey').classList.add('bad');}else kb=p.bytes;}
+  // message
+  let mb=null;const mv=$('xMsg').value;
+  if(X.mode==='dec'){const p=parseHex(mv);
+    if(p.err){err.push(p.err);$('xMsg').classList.add('bad');}
+    else if(!p.bytes.length||p.bytes.length%8){err.push(`A DES ciphertext is a whole number of 8-byte blocks (16 hex digits each). Now: ${p.bytes.length} bytes.`);$('xMsg').classList.add('bad');}
+    else mb=p.bytes;
+    $('xMsgCnt').textContent=p.bytes?`${p.bytes.length} bytes = ${Math.floor(p.bytes.length/8)} block${p.bytes.length>8?'s':''}${p.bytes.length%8?' + '+p.bytes.length%8+' bytes':''}`:'';
+  }else{
+    if(X.mf==='text')mb=utf8(mv);else{const p=parseHex(mv);if(p.err){err.push(p.err);$('xMsg').classList.add('bad');}else mb=p.bytes;}
+    if(mb){const padded=pad(mb,X.pad),np=padded.length-mb.length;
+      $('xMsgCnt').textContent=`${mb.length} bytes${np?` + ${np} padding`:''} = ${padded.length/8|0} block${padded.length>8?'s':''}`;
+      if(X.pad==='none'&&(mb.length===0||mb.length%8)){err.push(`Without padding the message must be a whole number of 8-byte blocks. Now: ${mb.length} bytes. Choose a padding.`);$('xMsg').classList.add('bad');mb=null;}}
+  }
+  $('xErr').innerHTML=err.map(esc).join('<br>');
+  if(err.length)return false;
+  X.keyBits=bytesToBits(kb);
+  const blocks=[];
+  if(X.mode==='enc'){
+    const padded=pad(mb,X.pad);
+    for(let i=0;i<padded.length;i+=8){const inp=padded.slice(i,i+8);blocks.push({inBytes:inp,outBytes:bitsToBytes(runDES(bytesToBits(inp),X.keyBits,false).out),padFrom:Math.max(0,mb.length-i)});}
+    X.res={mode:'enc',msgBytes:mb,blocks,cipher:blocks.flatMap(b=>b.outBytes)};
+  }else{
+    for(let i=0;i<mb.length;i+=8){const inp=mb.slice(i,i+8);blocks.push({inBytes:inp,outBytes:bitsToBytes(runDES(bytesToBits(inp),X.keyBits,true).out)});}
+    const plain=blocks.flatMap(b=>b.outBytes),u=unpad(plain,X.pad);
+    X.res={mode:'dec',blocks,plain,unp:u,text:u.bytes?toText(u.bytes):null};
+    const keep=u.bytes?u.bytes.length:plain.length;blocks.forEach((b,k)=>{b.padFrom=Math.max(0,keep-8*k);});
+  }
+  if(X.sel>=blocks.length)X.sel=0;
+  X.tr=runDES(bytesToBits(blocks[X.sel].inBytes),X.keyBits,X.mode==='dec');
+  return true;
+}
+
+/* ---------- result card ---------- */
+function blockCells(bytes,padFrom){
+  return bytes.map((v,j)=>j>=padFrom?`<span class="padb">${h2(v)}</span>`:h2(v)).join(' ');
+}
+function blockText(bytes,padFrom){
+  return bytes.map((v,j)=>j>=padFrom?`<span class="padb">${h2(v)}</span>`:esc(showByte(v))).join('');
+}
+function renderRes(){
+  const r=X.res;if(!r){$('xRes').innerHTML='';return;}
+  let h='';
+  if(r.mode==='enc'){
+    h+=`<h3>Blocks · each 8-byte block is encrypted on its own with the same key (ECB mode)</h3><div class="blkwrap"><table class="blk"><tr><th>#</th><th>plaintext block</th><th>hex (orange = padding)</th><th>→ ciphertext block</th><th></th></tr>`;
+    r.blocks.forEach((b,k)=>{h+=`<tr class="${k===X.sel?'sel':''}"><td>${k+1}</td><td class="m">${blockText(b.inBytes,b.padFrom)}</td><td class="m">${blockCells(b.inBytes,b.padFrom)}</td><td class="m">${bytesHex(b.outBytes,' ')}</td><td><button data-xblock="${k}"${k===X.sel?' class="pri"':''}>${k===X.sel?'● step by step':'step by step'}</button></td></tr>`;});
+    h+='</table></div>';
+    const same=r.blocks.length>1&&new Set(r.blocks.map(b=>bytesHex(b.inBytes))).size<r.blocks.length;
+    h+=`<div class="out"><b>Ciphertext</b><span class="mono">${bytesHex(r.cipher,' ').replace(/((?:\S\S ){7}\S\S) /g,'$1 · ')}</span><button id="xCopy">Copy hex</button><button class="pri" id="xToDec">Decrypt this →</button></div>`;
+    if(same)h+=`<p class="xnote">Two plaintext blocks are the same, so their ciphertext blocks are the same too. This is the weakness of ECB mode: it shows patterns in the message.</p>`;
+  }else{
+    h+=`<h3>Blocks · each 8-byte block is decrypted on its own with the same key</h3><div class="blkwrap"><table class="blk"><tr><th>#</th><th>ciphertext block</th><th>→ plaintext hex (orange = padding)</th><th>as text</th><th></th></tr>`;
+    r.blocks.forEach((b,k)=>{h+=`<tr class="${k===X.sel?'sel':''}"><td>${k+1}</td><td class="m">${bytesHex(b.inBytes,' ')}</td><td class="m">${blockCells(b.outBytes,b.padFrom)}</td><td class="m">${blockText(b.outBytes,b.padFrom)}</td><td><button data-xblock="${k}"${k===X.sel?' class="pri"':''}>${k===X.sel?'● step by step':'step by step'}</button></td></tr>`;});
+    h+='</table></div>';
+    if(r.unp.err)h+=`<div class="out"><span style="color:var(--xor)">${esc(r.unp.err)}</span></div>`;
+    else{
+      const t=r.text;
+      h+=`<div class="out"><b>Plaintext</b>${r.unp.n?`<span class="xnote" style="margin:0">(${r.unp.n} padding byte${r.unp.n>1?'s':''} removed)</span>`:''}</div>`;
+      h+=t!==null?`<div class="out"><span class="okline">“${esc(t)}”</span></div>`:`<div class="out"><span class="mono">${bytesHex(r.unp.bytes,' ')}</span><span class="xnote" style="margin:0">(not readable as text)</span></div>`;
+      h+=`<div class="out"><button id="xToEnc">Encrypt this again →</button></div>`;
+    }
+  }
+  $('xRes').innerHTML=h;
+}
+
+/* ---------- hover / pin highlight ---------- */
+function applyHl(id){
+  document.querySelectorAll('#t4 .hl').forEach(e=>e.classList.remove('hl'));
+  const info=$('xHinfo');
+  if(!id){if(info&&info.dataset.def)info.innerHTML=info.dataset.def;return;}
+  const el=document.querySelector(`#t4 [data-id="${id}"]`);if(!el)return;
+  el.classList.add('hl');
+  (el.dataset.l||'').split(' ').filter(Boolean).forEach(x=>document.querySelectorAll(`#t4 [data-id="${x}"]`).forEach(y=>y.classList.add('hl')));
+  if(info&&el.dataset.info)info.innerHTML=el.dataset.info;
+}
+const inT4=e=>e.target.closest&&e.target.closest('#t4');
+document.addEventListener('mouseover',e=>{if(!inT4(e))return;const el=e.target.closest('[data-l]');if(el)applyHl(el.dataset.id);});
+document.addEventListener('mouseout',e=>{if(!inT4(e))return;const el=e.target.closest('[data-l]');if(el&&!(e.relatedTarget&&el.contains(e.relatedTarget)))applyHl(X.pin);});
+
+/* ---------- small renderers ---------- */
+function grid64(bits,idp,o={}){
+  let h='<div class="g64">';
+  for(let i=0;i<64;i++){const cls=['c'];const c=o.cls&&o.cls(i);if(c)cls.push(c);const l=o.link?o.link(i):'',inf=o.info?o.info(i):'';
+    h+=`<div class="${cls.join(' ')}" data-id="${idp}-${i}"${l?` data-l="${l}"`:''}${inf?` data-info="${inf}"`:''} title="bit ${i+1}">${bits[i]}</div>`;}
+  return h+'</div>';
+}
+function bitSpan(v,idp,i,o){const cls=['b'];const c=o.cls&&o.cls(i);if(c)cls.push(c);if(v===null)cls.push('bph');const l=o.link?o.link(i):'';
+  return `<span class="${cls.join(' ')}" data-id="${idp}-${i}"${l?` data-l="${l}"`:''} title="${o.name} bit ${i+1}">${v===null?'·':v}</span>`;}
+function laneRow(label,bits,n,idp,o,show,laneCls){
+  let h=`<div class="lab${show?'':' xdim'}">${label}</div>`;
+  for(let j=0;j<8;j++){h+=`<div class="lane${laneCls?' '+laneCls:''}${show?'':' xdim'}">`;for(let q=0;q<n;q++){const i=j*n+q;h+=bitSpan(show?bits[i]:null,idp,i,o);}h+='</div>';}
+  return h;
+}
+function segments(){const s=[{lab:'start',a:0,b:0},{lab:'IP',a:1,b:1}];for(let r=1;r<=16;r++)s.push({lab:String(r),a:iRound(r,0),b:iRound(r,4),wide:true});s.push({lab:'swap',a:I_SWAP,b:I_SWAP},{lab:'IP⁻¹',a:I_FP,b:I_FP});return s;}
+function renderPhase(){
+  $('xPhase').innerHTML=segments().map(g=>{const f=X.i>=g.b?1:X.i<g.a?0:(X.i-g.a+1)/(g.b-g.a+1),act=X.i>=g.a&&X.i<=g.b;
+    return `<div class="phs${g.wide?' wide':''}${act?' act':''}" data-xgo="${g.a}" title="${/^\d+$/.test(g.lab)?'Round '+g.lab:g.lab}"><div class="bar"><div class="fill" style="width:${(f*100).toFixed(0)}%"></div></div><div class="pl">${g.lab}</div></div>`;}).join('');
+  const s=stepInfo(X.i);let w={start:'Start',ip:'Initial permutation IP',swap:'Swap after round 16',fp:'Final permutation IP⁻¹'}[s.t];
+  if(s.t==='round')w=`Round ${s.r} of 16, step ${s.sub+1} of 5`;
+  const nb=X.res?X.res.blocks.length:1;
+  $('xStepLbl').textContent=`Block ${X.sel+1} of ${nb} · Step ${X.i} / ${N_STEPS-1} · ${w}`;
+  $('xBack').disabled=X.i===0;$('xStep').disabled=X.i===N_STEPS-1;$('xRound').disabled=X.i===N_STEPS-1;
+}
+function renderLadder(){
+  const tr=X.tr,s=stepInfo(X.i),u='<span class="unk">········</span>';
+  let h='<h3>Feistel ladder</h3><div class="lr head"><span></span><span>L</span><span>R</span></div>';
+  const ipK=X.i>=1,ipCls=s.t==='ip'?' cur':(s.t==='round'&&s.r===1?' inp':'');
+  h+=`<div class="lr${ipCls}" data-xgo="1"><span class="lab">after IP</span><span class="hx">${ipK?hx(tr.L[0]):u}</span><span class="hx">${ipK?hx(tr.R[0]):u}</span></div>`;
+  for(let r=1;r<=16;r++){const known=X.i>=iRound(r,4);let cls='';if(s.t==='round'&&s.r===r)cls=' cur';else if(s.t==='round'&&s.r===r+1)cls=' inp';else if(s.t==='swap'&&r===16)cls=' inp';
+    h+=`<div class="lr${cls}" data-xgo="${iRound(r,0)}"><span class="lab">round ${r}<span class="rk">k${sb(tr.rounds[r].ki)}</span></span><span class="hx">${known?hx(tr.L[r]):u}</span><span class="hx">${known?hx(tr.R[r]):u}</span></div>`;}
+  h+='<div class="lsep"></div>';
+  const swK=X.i>=I_SWAP;
+  h+=`<div class="lr${s.t==='swap'?' cur':(s.t==='fp'?' inp':'')}" data-xgo="${I_SWAP}"><span class="lab">swap</span><span class="hx">${swK?hx(tr.R[16]):u}</span><span class="hx">${swK?hx(tr.L[16]):u}</span></div>`;
+  const fpK=X.i>=I_FP;
+  h+=`<div class="lr${s.t==='fp'?' cur':''}" data-xgo="${I_FP}"><span class="lab">IP⁻¹ → ${X.mode==='enc'?'y':'x'}</span><span class="hx span2">${fpK?hx(tr.out):'<span class="unk">················</span>'}</span></div>`;
+  $('xLadder').innerHTML=h;
+}
+const blockAsText=bits=>{const a=bitsToBytes(bits);return printable(a)?String.fromCharCode(...a):null;};
+function renderExplain(){
+  const tr=X.tr,s=stepInfo(X.i),enc=X.mode==='enc',nb=X.res.blocks.length;let h='';
+  const bname=nb>1?`block ${X.sel+1} of ${nb}`:'the block';
+  if(s.t==='start'){
+    const t=blockAsText(tr.input);
+    h=`<p><b>Start.</b> ${enc?'Plaintext':'Ciphertext'} ${bname}: <span class="mono">${hx(tr.input)}</span>${t?` = “${esc(t)}”`:''}. Key k = <span class="mono">${hx(tr.key)}</span>${blockAsText(tr.key)?` = “${esc(blockAsText(tr.key))}”`:''}. 64 bits each.</p>`;
+    h+=enc?`<p>DES does: initial permutation IP → 16 Feistel rounds → swap → final permutation IP⁻¹. Before that, 16 round keys k₁ … k₁₆ of 48 bits each are made from the key (see <b>Key schedule</b> below).</p>`
+          :`<p>Decryption uses <b>exactly the same steps</b> as encryption. Only one thing changes: the round keys go in reverse order, k₁₆ in round 1 and k₁ in round 16.</p>`;
+    h+=`<p>Press <b>Step ▶</b> or the → key.${nb>1?' To follow another block, click “step by step” in the table above.':''}</p>`;
+  }else if(s.t==='ip'){
+    h=`<p><b>Initial permutation IP.</b> The 64 bits only change places; no bit changes its value. Output bit 1 is input bit 58, output bit 2 is input bit 50, and so on (table IP). Point at a bit to see where it came from.</p><p>IP uses no key, so anyone can undo it. It adds no security.</p><p>Then the 64 bits are cut in two halves: L₀ = <span class="mono">${hx(tr.L[0])}</span> (blue) and R₀ = <span class="mono">${hx(tr.R[0])}</span> (green).</p>`;
+  }else if(s.t==='round'){
+    const r=s.r,rd=tr.rounds[r],fd=rd.fd,ki=rd.ki,p=r-1;
+    if(s.sub===0)h=`<p><b>Round ${r}, step 1 of 5: expansion E.</b> The function f starts with the right half R${sb(p)} = <span class="mono">${hx(tr.R[p])}</span>. It has 32 bits, but the round key has 48, so E makes 48 bits from 32.</p><p>R is cut into 8 groups of 4 bits. Each group also gets the last bit of the group on its left and the first bit of the group on its right (grey). So we get 8 × 6 = 48 bits. Point at a bit to see where it came from.</p>`;
+    if(s.sub===1)h=`<p><b>Round ${r}, step 2 of 5: XOR with the round key.</b> E(R${sb(p)}) ⊕ <span class="kcol">k${sb(ki)}</span>, bit by bit: equal bits give 0, different bits give 1.</p><p>This is the only place in the round where the key is used.${enc?'':` In decryption, round ${r} uses k${sb(ki)} (keys in reverse order).`}</p>`;
+    if(s.sub===2){const d=fd.sb[X.sbsel];h=`<p><b>Round ${r}, step 3 of 5: S-boxes.</b> The 48 bits go into 8 S-boxes, 6 bits each. The outer bits (1st and 6th) choose the row (0–3), the middle 4 bits choose the column (0–15). The number in the table is the 4-bit output.</p><p>S${X.sbsel+1}: <span class="mono">${bstr(d.six)}</span> → row <span class="mono">${d.six[0]}${d.six[5]}</span> = ${d.row}, column <span class="mono">${bstr(d.six.slice(1,5))}</span> = ${d.col} → ${d.val} = <span class="mono">${bstr(d.out)}</span>. Click another S-box to see its table.</p>`;}
+    if(s.sub===3)h=`<p><b>Round ${r}, step 4 of 5: permutation P.</b> The 32 bits change places, so the 4 output bits of one S-box go to different S-boxes in the next round (diffusion).</p><p>The result is f(R${sb(p)}, k${sb(ki)}) = <span class="mono">${hx(fd.p)}</span>.</p>`;
+    if(s.sub===4){h=`<p><b>Round ${r}, step 5 of 5: the Feistel step.</b></p><p>New right half: R${sb(r)} = L${sb(p)} ⊕ f = <span class="mono">${hx(tr.L[p])}</span> ⊕ <span class="mono">${hx(fd.p)}</span> = <b class="mono">${hx(tr.R[r])}</b>.</p><p>New left half: L${sb(r)} = R${sb(p)} = <b class="mono">${hx(tr.L[r])}</b>. It is only copied, not changed.</p>`;
+      if(!enc)h+=`<p class="note">We never computed f backwards: decryption just computes the same f again. This is why f does not need an inverse.</p>`;
+      if(r===16)h+=`<p class="note">This was the last round. Next comes one more swap.</p>`;}
+  }else if(s.t==='swap'){
+    h=`<p><b>Swap after round 16.</b> The halves change places once more: R₁₆ ‖ L₁₆ = <span class="mono">${hx(tr.R[16])} ${hx(tr.L[16])}</span>.</p><p>This cancels the swap of round 16. Because of it, decryption can use the very same steps, only with the keys in reverse order.</p>`;
+  }else{
+    h=`<p><b>Final permutation IP⁻¹.</b> The inverse of IP: it puts back every bit that IP moved.</p>`;
+    const t=blockAsText(tr.out);
+    h+=enc?`<p>Ciphertext of ${bname}: <b class="mono">${hx(tr.out)}</b></p><p class="note">The ciphertext of all blocks is in the table at the top. <button class="pri" id="xToDec2">Decrypt the whole message →</button></p>`
+          :`<p>Plaintext of ${bname}: <b class="mono">${hx(tr.out)}</b>${t?` = “${esc(t)}”`:''}. Same key, same steps, keys in reverse order: we are back at the plaintext.</p>`;
+  }
+  $('xExplain').innerHTML=h;
+}
+function roundSVG(r,sub){
+  const tr=X.tr,rd=tr.rounds[r],p=r-1,f=sub>=3,done=sub===4,fOn=sub<=3?' on':'',xOn=done?' on':'';const m=on=>`url(#${on?'xma':'xmn'})`;
+  return `<svg class="rsvg" viewBox="0 0 470 240" role="img" aria-label="Feistel round ${r}"><defs>
+  <marker id="xmn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0,0 L10,5 L0,10 z"/></marker>
+  <marker id="xma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk on" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box${done?' on':''}" x="20" y="10" width="175" height="36" rx="6"/><text x="107" y="33" text-anchor="middle"><tspan class="sl">L${sb(p)} =</tspan> ${hx(tr.L[p])}</text>
+  <rect class="box on" x="275" y="10" width="175" height="36" rx="6"/><text x="362" y="33" text-anchor="middle"><tspan class="sl">R${sb(p)} =</tspan> ${hx(tr.R[p])}</text>
+  <line class="w${xOn}" x1="107" y1="46" x2="107" y2="96" marker-end="${m(done)}"/>
+  <circle class="xo${xOn}" cx="107" cy="110" r="12"/><line class="w${xOn}" x1="95" y1="110" x2="119" y2="110"/><line class="w${xOn}" x1="107" y1="98" x2="107" y2="122"/>
+  <line class="w${done?' on':''}" x1="362" y1="46" x2="362" y2="150"/><circle cx="362" cy="110" r="3.5" class="mk${fOn}"/>
+  <line class="w${fOn}" x1="362" y1="110" x2="268" y2="110" marker-end="${m(sub<=3)}"/>
+  <rect class="box${fOn}" x="208" y="92" width="58" height="36" rx="6"/><text class="ft" x="237" y="116" text-anchor="middle">f</text>
+  <text class="kt" x="237" y="64" text-anchor="middle">k${sb(rd.ki)}</text><line class="w k${fOn}" x1="237" y1="70" x2="237" y2="90" marker-end="${m(sub<=3)}"/>
+  <line class="w${f?' on':''}" x1="208" y1="110" x2="122" y2="110" marker-end="${m(f)}"/>${f?`<text class="fv" x="165" y="102" text-anchor="middle">${hx(rd.fd.p)}</text>`:''}
+  <line class="w${xOn}" x1="107" y1="122" x2="107" y2="150"/><line class="w${xOn}" x1="107" y1="150" x2="362" y2="190" marker-end="${m(done)}"/><line class="w${xOn}" x1="362" y1="150" x2="107" y2="190" marker-end="${m(done)}"/>
+  <rect class="box${xOn}" x="20" y="194" width="175" height="36" rx="6"/><text x="107" y="217" text-anchor="middle"><tspan class="sl">L${sb(r)} =</tspan> ${done?hx(tr.L[r]):'????????'}</text>
+  <rect class="box${xOn}" x="275" y="194" width="175" height="36" rx="6"/><text x="362" y="217" text-anchor="middle"><tspan class="sl">R${sb(r)} =</tspan> ${done?hx(tr.R[r]):'????????'}</text></svg>`;
+}
+function renderVisual(){
+  const tr=X.tr,s=stepInfo(X.i),enc=X.mode==='enc';let h='';
+  if(s.t==='start'){
+    h=`<div class="pair"><div><div class="cap">${enc?'Plaintext':'Ciphertext'} block (64 bits)</div>${grid64(tr.input,'sx')}</div><div><div class="cap">Key k (64 bits; crossed-out bits are parity bits)</div>${grid64(tr.key,'sk',{cls:i=>i%8===7?'par':''})}</div></div>`;
+  }else if(s.t==='ip'||s.t==='fp'){
+    const isIP=s.t==='ip',T=isIP?IP:FP,Ti=isIP?IPinv:FPinv,src=isIP?tr.input:tr.pre,dst=isIP?tr.ip:tr.out,nm=isIP?'IP':'IP⁻¹';
+    const srcName=isIP?(enc?'x':'y'):'R₁₆ ‖ L₁₆',dstName=isIP?'IP(x)':(enc?'y':'x');
+    h=`<div class="pair"><div><div class="cap">${srcName}</div><div class="g64wrap">${grid64(src,'gi',{cls:i=>isIP?'':(i<32?'Rh':'Lh'),link:i=>'go-'+Ti[i],info:i=>`Input bit ${i+1} goes to output position ${Ti[i]+1}.`})}</div></div>
+      <div class="bigarrow">${nm}<br>→</div><div><div class="cap">${dstName}</div><div class="g64wrap">${grid64(dst,'go',{cls:i=>isIP?(i<32?'Lh':'Rh'):'',link:i=>'gi-'+(T[i]-1),info:i=>`Output bit ${i+1} = input bit ${T[i]}.`})}${isIP?'<div class="side"><span>L₀</span><span>R₀</span></div>':''}</div></div></div><div class="hinfo" id="xHinfo"></div>`;
+  }else if(s.t==='swap'){
+    h=`<div class="swapv"><div class="hbox L"><small>L₁₆</small>${hx(tr.L[16])}</div><div class="hbox R"><small>R₁₆</small>${hx(tr.R[16])}</div><div style="font-family:var(--sans);color:var(--muted)">swap →</div><div class="hbox R"><small>R₁₆</small>${hx(tr.R[16])}</div><div class="hbox L"><small>L₁₆</small>${hx(tr.L[16])}</div></div>`;
+  }else{
+    const r=s.r,sub=s.sub,rd=tr.rounds[r],fd=rd.fd,p=r-1,ki=rd.ki;
+    h=`<div class="rtop">${roundSVG(r,sub)}<div class="legend"><div><span class="sw2" style="background:var(--accentBg);border-color:var(--accent)"></span>active part of this step</div><div><span class="sw2" style="background:var(--keyBg)"></span>round key bits</div><div><span class="sw2" style="background:var(--dim)"></span>grey digits in E: copied neighbour bits</div><div style="margin-top:6px">Below: what happens inside f. Each column is one S-box lane.</div></div></div>`;
+    let pp='<div class="pipe">';
+    pp+=laneRow(`<b>R${sb(p)}</b> · 32 bits`,tr.R[p],4,'R',{name:'R'},true);
+    pp+=laneRow(`<b>E(R${sb(p)})</b> · 48`,fd.e,6,'E',{name:'E',cls:i=>(i%6===0||i%6===5)?'bor':'',link:i=>'R-'+(E[i]-1)},true);
+    pp+=laneRow(`<b class="kcol">k${sb(ki)}</b> · 48`,fd.k,6,'K',{name:'k'},sub>=1,'key');
+    pp+=laneRow('<b>E ⊕ k</b> · 48',fd.x,6,'X',{name:'E⊕k',link:i=>`E-${i} K-${i}`},sub>=1);
+    pp+=`<div class="lab${sub>=2?'':' xdim'}"><b>S-boxes</b></div>`;
+    for(let j=0;j<8;j++){const d=fd.sb[j];pp+=`<div class="schip${sub>=2&&j===X.sbsel?' sel':''}${sub>=2?'':' xdim'}" data-xsel="${j}"><b>S${j+1}</b><br>${sub>=2?`r${d.row} c${d.col} → ${d.val}`:'·'}</div>`;}
+    pp+=laneRow('<b>S-box out</b> · 32',fd.s,4,'O',{name:'S out',link:i=>{const j=Math.floor(i/4);return [0,1,2,3,4,5].map(q=>'X-'+(6*j+q)).join(' ');}},sub>=2);
+    pp+=laneRow('<b>P → f</b> · 32',fd.p,4,'F',{name:'f',link:i=>'O-'+(P[i]-1)},sub>=3);
+    pp+=laneRow(`<b>L${sb(p)}</b> · 32`,tr.L[p],4,'L',{name:'L'},sub>=4);
+    pp+=laneRow(`<b>R${sb(r)} = L ⊕ f</b>`,tr.R[r],4,'N',{name:'R'+r,link:i=>`L-${i} F-${i}`},sub>=4);
+    h+=`<div class="pipewrap">${pp}</div></div>`;
+    if(sub>=2){const j=X.sbsel,d=fd.sb[j];
+      let t=`<table class="stab"><tr><th>S${j+1}</th>`;for(let c=0;c<16;c++)t+=`<th class="${c===d.col?'cl':''}">${c}</th>`;t+='</tr>';
+      for(let rr=0;rr<4;rr++){t+=`<tr><th class="${rr===d.row?'rw':''}">${rr}</th>`;for(let c=0;c<16;c++){const cls=rr===d.row&&c===d.col?'hit':(rr===d.row?'rw':(c===d.col?'cl':''));t+=`<td class="${cls}">${S[j][rr*16+c]}</td>`;}t+='</tr>';}
+      h+=`<div class="sboxw"><div class="cap">S${j+1}: input <span class="mono">${bstr(d.six)}</span> · outer bits <span class="mono">${d.six[0]}${d.six[5]}</span> → row ${d.row} · middle bits <span class="mono">${bstr(d.six.slice(1,5))}</span> → column ${d.col} · output ${d.val} = <span class="mono">${bstr(d.out)}</span></div><div class="tblwrap">${t}</table></div></div>`;}
+  }
+  $('xVisual').innerHTML=h;
+  const hi=$('xHinfo');if(hi)hi.dataset.def='Point at a bit (or tap it) to see where it moves.';
+  if(!X.pin&&(s.t==='ip'||s.t==='fp'))X.pin='go-0';
+  applyHl(X.pin);
+}
+function renderKeys(){
+  const tr=X.tr,ks=tr.ks,s=stepInfo(X.i),cur=s.t==='round'?tr.rounds[s.r].ki:-1,dec=X.mode==='dec';
+  const rot=(bits,n)=>bits.map((b,i)=>i>=28-n?`<span class="rotb">${b}</span>`:b).join('');
+  const kt=blockAsText(tr.key);
+  let h=`<h3>1 · Drop the parity bits (PC-1)</h3><p>The key has 64 bits, but every 8th bit (bits 8, 16, …, 64) is a parity bit. PC-1 drops them and mixes the other 56 bits.${kt?` (A text key like “${esc(kt)}”: the last bit of every character is ignored.)`:''}</p>
+  <div class="pair"><div><div class="cap">Key k = <span class="mono">${hx(tr.key)}</span></div>${grid64(tr.key,'kk',{cls:i=>i%8===7?'par':''})}</div>
+  <div><div class="cap">PC-1(k), 56 bits, cut into two halves of 28 bits</div><div class="bits"><span class="sl">C₀ =</span> ${bstr(ks.C[0])}</div><div class="bits"><span class="sl">D₀ =</span> ${bstr(ks.D[0])}</div></div></div>
+  <h3 style="margin-top:18px">2 · Sixteen round keys</h3><p>Every round both halves are rotated left by 1 bit (rounds 1, 2, 9, 16) or 2 bits (other rounds); orange = bits that came around from the front. PC-2 then picks 48 of the 56 bits.${s.t==='round'?` The highlighted row is the key used in round ${s.r}.`:''}</p>
+  <div class="tblwrap"><table class="kt"><tr><th>i</th><th>shift</th><th>Cᵢ</th><th>Dᵢ</th><th>kᵢ = PC-2(Cᵢ Dᵢ)</th>${dec?'<th>used in decryption round</th>':''}</tr>
+  <tr><td>0</td><td></td><td class="m">${bstr(ks.C[0])}</td><td class="m">${bstr(ks.D[0])}</td><td></td>${dec?'<td></td>':''}</tr>`;
+  for(let i=1;i<=16;i++)h+=`<tr class="${i===cur?'cur':''}"><td>${i}</td><td>${SHIFTS[i-1]}</td><td class="m">${rot(ks.C[i],SHIFTS[i-1])}</td><td class="m">${rot(ks.D[i],SHIFTS[i-1])}</td><td class="m"><span class="sl">k${sb(i)} =</span> ${hx(ks.K[i])}</td>${dec?`<td>${17-i}</td>`:''}</tr>`;
+  h+=`</table></div><p class="note">4 × 1 + 12 × 2 = 28 = one full turn, so C₁₆ = C₀ and D₁₆ = D₀${bstr(ks.C[16])===bstr(ks.C[0])&&bstr(ks.D[16])===bstr(ks.D[0])?' ✓':''}.</p>`;
+  $('xKeys').innerHTML=h;
+}
+function renderAval(){
+  const a=X.tr.input,k=X.keyBits,b=X.avBit-1;
+  const a2=X.avSrc==='p'?a.map((v,i)=>i===b?v^1:v):a,k2=X.avSrc==='k'?k.map((v,i)=>i===b?v^1:v):k;
+  const t1=runDES(a,k,false),t2=runDES(a2,k2,false);
+  const rows=[];for(let r=0;r<=16;r++)rows.push({lab:r===0?'after IP':'round '+r,d:ham(t1.L[r].concat(t1.R[r]),t2.L[r].concat(t2.R[r]))});
+  rows.push({lab:'output',d:ham(t1.out,t2.out)});
+  let h=`<h3>Avalanche effect</h3><p>Change <b>one</b> bit of the block (or of the key) and encrypt both versions. Each bar shows how many of the 64 bits of (Lᵢ, Rᵢ) are different after that round. The dashed line is half (32 bits).</p>
+  <div class="avc">Flip one bit of the <span class="seg" id="xAvSeg"><button data-src="p" class="${X.avSrc==='p'?'on':''}">block</button><button data-src="k" class="${X.avSrc==='k'?'on':''}">key</button></span>
+  bit number <button id="xAvM">◀</button><input id="xAvBit" type="number" min="1" max="64" value="${X.avBit}"><button id="xAvP">▶</button> <span class="cap" style="margin:0">(1 = leftmost, 64 = rightmost)</span></div>`;
+  if(X.avSrc==='k'&&X.avBit%8===0)h+=`<p class="note">Key bit ${X.avBit} is a parity bit. PC-1 drops it, so both encryptions are the same. Try another bit.</p>`;
+  h+='<div class="av">';for(const r of rows)h+=`<div>${r.lab}</div><div class="avbar"><i style="width:${(r.d/64*100).toFixed(1)}%"></i></div><div class="avn">${r.d}</div>`;h+='</div>';
+  const mark=(x,y)=>{let s='';for(let i=0;i<64;i++){s+=x[i]!==y[i]?`<span class="d">${x[i]}</span>`:x[i];if(i%8===7&&i<63)s+=' ';}return s;};
+  h+=`<div style="margin-top:14px" class="cap">The two outputs (yellow = different bits, ${ham(t1.out,t2.out)} of 64):</div><div class="dbits">${hx(t1.out)} = ${mark(t1.out,t2.out)}<br>${hx(t2.out)} = ${mark(t2.out,t1.out)}</div><p class="cap" style="margin-top:10px">This view always encrypts the selected block with the current key.</p>`;
+  $('xAval').innerHTML=h;
+}
+
+/* ---------- render all ---------- */
+function renderSteps(){
+  if(!X.tr)return;
+  renderPhase();renderLadder();renderExplain();renderVisual();renderKeys();renderAval();
+  for(const t of ['rounds','keys','aval'])$('x-tab-'+t).hidden=X.tab!==t;
+  document.querySelectorAll('#xTabs button').forEach(b=>b.classList.toggle('on',b.dataset.xtab===X.tab));
+}
+function syncControls(){
+  document.querySelectorAll('#xMode button').forEach(b=>b.classList.toggle('on',b.dataset.mode===X.mode));
+  document.querySelectorAll('#xMsgFmt button').forEach(b=>{b.classList.toggle('on',b.dataset.f===(X.mode==='dec'?'hex':X.mf));b.disabled=X.mode==='dec'&&b.dataset.f==='text';});
+  document.querySelectorAll('#xKeyFmt button').forEach(b=>b.classList.toggle('on',b.dataset.f===X.kf));
+  $('xMsgLbl').textContent=X.mode==='enc'?'Plaintext':'Ciphertext (hex)';
+  $('xPad').value=X.pad;
+}
+function refresh(){syncControls();if(compute()){renderRes();renderSteps();}}
+function go(i){X.i=Math.max(0,Math.min(N_STEPS-1,i));X.pin=null;renderSteps();}
+function stopPlay(){if(X.timer){clearInterval(X.timer);X.timer=null;$('xPlay').textContent='▶ Play';}}
+function loadPreset(name){const p=PRESETS[name];if(!p)return;stopPlay();X.mode=p.mode;X.mf=p.mf;X.kf=p.kf;X.pad=p.pad;$('xMsg').value=p.msg;$('xKey').value=p.key;X.sel=0;X.i=0;X.pin=null;refresh();}
+function toDec(){
+  if(!X.res||X.res.mode!=='enc')return;stopPlay();
+  $('xMsg').value=X.res.blocks.map(b=>bytesHex(b.outBytes)).join(' ');X.mode='dec';X.sel=0;X.i=0;X.pin=null;$('xPreset').value='custom';refresh();
+  $('t4').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function toEnc(){
+  const r=X.res;if(!r||r.mode!=='dec'||r.unp.err)return;stopPlay();
+  if(r.text!==null){$('xMsg').value=r.text;X.mf='text';}else{$('xMsg').value=bytesHex(r.unp.bytes,' ');X.mf='hex';}
+  X.mode='enc';X.sel=0;X.i=0;X.pin=null;$('xPreset').value='custom';refresh();
+}
+/* ---------- events ---------- */
+$('xMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.mode===X.mode)return;
+  if(b.dataset.mode==='dec'){if(X.res&&X.res.mode==='enc')return toDec();X.mode='dec';}else{if(X.res&&X.res.mode==='dec'&&!X.res.unp.err)return toEnc();X.mode='enc';}
+  X.i=0;refresh();});
+$('xMsgFmt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||b.dataset.f===X.mf)return;
+  const v=$('xMsg').value;
+  if(b.dataset.f==='hex'){$('xMsg').value=bytesHex(utf8(v),' ');}
+  else{const p=parseHex(v);if(!p.err){const t=toText(p.bytes);if(t!==null)$('xMsg').value=t;else{$('xErr').textContent='These bytes are not readable text, so they stay in hex.';return;}}}
+  X.mf=b.dataset.f;$('xPreset').value='custom';refresh();});
+$('xKeyFmt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.f===X.kf)return;
+  const v=$('xKey').value;
+  if(b.dataset.f==='hex'){$('xKey').value=bytesHex(utf8(v));}
+  else{const p=parseHex(v);if(!p.err){const t=toText(p.bytes);if(t!==null&&printable(p.bytes))$('xKey').value=t;else{$('xErr').textContent='This key is not readable text (some bytes are not letters or digits), so it stays in hex.';return;}}}
+  X.kf=b.dataset.f;$('xPreset').value='custom';refresh();});
+$('xMsg').addEventListener('input',()=>{$('xPreset').value='custom';refresh();});
+$('xKey').addEventListener('input',()=>{$('xPreset').value='custom';refresh();});
+$('xPad').addEventListener('change',()=>{X.pad=$('xPad').value;$('xPreset').value='custom';refresh();});
+$('xPreset').addEventListener('change',()=>loadPreset($('xPreset').value));
+$('xTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;X.tab=b.dataset.xtab;renderSteps();});
+$('xReset').onclick=()=>{stopPlay();go(0);};
+$('xBack').onclick=()=>{stopPlay();go(X.i-1);};
+$('xStep').onclick=()=>{stopPlay();go(X.i+1);};
+$('xEnd').onclick=()=>{stopPlay();go(N_STEPS-1);};
+$('xRound').onclick=()=>{stopPlay();const s=stepInfo(X.i);if(s.t==='start')go(1);else if(s.t==='ip')go(iRound(1,0));else if(s.t==='round')go(s.r<16?iRound(s.r+1,0):I_SWAP);else go(X.i+1);};
+$('xPlay').onclick=()=>{if(X.timer){stopPlay();return;}if(X.i===N_STEPS-1)go(0);$('xPlay').textContent='❚❚ Pause';X.timer=setInterval(()=>{if(X.i>=N_STEPS-1){stopPlay();return;}go(X.i+1);},1100);};
+document.addEventListener('click',e=>{
+  if(!inT4(e))return;
+  const lk=e.target.closest('[data-l]');if(lk){X.pin=lk.dataset.id;applyHl(X.pin);}
+  const g=e.target.closest('[data-xgo]');if(g){stopPlay();X.tab='rounds';go(+g.dataset.xgo);return;}
+  const c=e.target.closest('[data-xsel]');if(c){X.sbsel=+c.dataset.xsel;renderSteps();return;}
+  const bl=e.target.closest('[data-xblock]');if(bl){stopPlay();X.sel=+bl.dataset.xblock;X.i=0;X.pin=null;refresh();return;}
+  if(e.target.id==='xToDec'||e.target.id==='xToDec2'){toDec();return;}
+  if(e.target.id==='xToEnc'){toEnc();return;}
+  if(e.target.id==='xCopy'){const t=bytesHex(X.res.cipher);const done=()=>{e.target.textContent='Copied ✓';setTimeout(()=>{e.target.textContent='Copy hex';},1500);};
+    try{navigator.clipboard.writeText(t).then(done,()=>{window.prompt('Copy the ciphertext:',t);});}catch(er){window.prompt('Copy the ciphertext:',t);}return;}
+  const a=e.target.closest('#xAvSeg button');if(a){X.avSrc=a.dataset.src;renderAval();return;}
+  if(e.target.id==='xAvM'){X.avBit=X.avBit>1?X.avBit-1:64;renderAval();return;}
+  if(e.target.id==='xAvP'){X.avBit=X.avBit<64?X.avBit+1:1;renderAval();return;}
+});
+document.addEventListener('change',e=>{if(e.target.id==='xAvBit'){const v=Math.round(+e.target.value);X.avBit=v>=1&&v<=64?v:1;renderAval();}});
+document.addEventListener('keydown',e=>{
+  if(typeof ENG==='undefined'||ENG.tab!=='des')return;
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.key==='ArrowRight'){e.preventDefault();stopPlay();go(X.i+1);}
+  else if(e.key==='ArrowLeft'){e.preventDefault();stopPlay();go(X.i-1);}
+});
+loadPreset('hello');
+return{show:()=>{refresh();},IP,FP,X,runDES,pad,unpad,utf8,bytesHex,compute,toDec,toEnc};
+})();
+</script>
+</body>
+</html>

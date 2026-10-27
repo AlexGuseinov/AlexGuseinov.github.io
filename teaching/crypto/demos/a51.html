@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A5/1 stream cipher: interactive demo</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#cbc8bd;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;
+  --tap:#bcd9f2;--tapInk:#0b375f;--tapLine:#5a90c4;
+  --clk:#f5b65f;--clkInk:#452800;--clkLine:#b97a20;
+  --xor:#d4433a;--ok:#2b7a4b;--okBg:#e3f2e8;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#46464d;
+  --accent:#8ab8ee;--accentBg:#1b2939;
+  --tap:#25496c;--tapInk:#e1eefb;--tapLine:#5f93c6;
+  --clk:#7d5214;--clkInk:#fde8c6;--clkLine:#cf8f33;
+  --xor:#ff7d70;--ok:#82d1a2;--okBg:#173024;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans)}
+.wrap{max-width:1120px;margin:0 auto;padding:28px 20px 40px}
+header h1{font-size:30px;line-height:1.2;margin:0 0 6px;font-weight:650;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-top:18px}
+h2{font-size:19px;margin:0 0 4px;font-weight:600}
+.lead{color:var(--muted);margin:0 0 16px;font-size:15px}
+label{font-size:14px;color:var(--muted);display:block;margin-bottom:5px}
+input[type=text],textarea,select{font:15px var(--mono);color:var(--ink);background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{font-family:var(--sans);resize:vertical;min-height:70px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.row{display:flex;gap:18px;flex-wrap:wrap}
+.field{flex:1 1 300px;min-width:0}
+.inline{display:flex;gap:6px}
+button{font:500 14px var(--sans);color:var(--ink);background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.err{color:var(--xor);font-size:13px;min-height:19px;margin-top:3px}
+.bits{font:14px/1.9 var(--mono);word-break:break-all;color:var(--faint);margin-top:6px}
+.bits .used{color:var(--ink)}
+.bits .cur{background:var(--clk);color:var(--clkInk);border-radius:3px;padding:0 2px}
+.small{font-size:13px;color:var(--muted)}
+.phases{display:flex;gap:4px;margin:4px 0 14px;cursor:pointer}
+.ph{min-width:0}
+.ph .bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.ph .fill{height:100%;background:var(--accent)}
+.ph .pl{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap}
+.ph.act .pl{color:var(--ink);font-weight:600}
+.controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.controls .sp{display:flex;align-items:center;gap:8px;margin-left:6px;font-size:13px;color:var(--muted)}
+.steplbl{margin-left:auto;font:14px var(--mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:34px repeat(23,minmax(0,1fr)) 68px;gap:3px;align-items:center}
+.ix{font:11px var(--mono);color:var(--faint);text-align:center}
+.rn{font-weight:650;font-size:15px}
+.cell{height:32px;display:flex;align-items:center;justify-content:center;font:600 15px var(--mono);border:1px solid var(--line2);border-radius:5px;background:var(--panel);cursor:pointer;user-select:none}
+.cell.empty{opacity:.4;font-weight:400}
+.cell.tap{background:var(--tap);color:var(--tapInk);border-color:var(--tapLine)}
+.cell.clk{background:var(--clk);color:var(--clkInk);border-color:var(--clkLine)}
+.cell.new{box-shadow:inset 0 0 0 2px var(--xor)}
+.cell.sel{outline:3px solid var(--accent);outline-offset:1px;opacity:1}
+.stay .cell{opacity:.32}
+.stay .cell.sel{opacity:1}
+.st{font-size:12px;font-weight:600;padding:2px 0;border-radius:99px;text-align:center}
+.st.mv{background:var(--okBg);color:var(--ok)}
+.st.sy{background:var(--line);color:var(--muted)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:10px 0 0}
+.sw{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:-2px;margin-right:5px;border:1px solid var(--line2)}
+.explain{margin-top:16px;padding:14px 16px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:15px}
+.explain p{margin:0 0 8px}
+.explain .rl{font:14px/1.7 var(--mono)}
+.explain .note{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--accentBg);color:var(--ink)}
+.comp{margin-top:10px;padding:10px 14px;border-radius:10px;border:1px dashed var(--line2);font-size:14px}
+.comp .terms{font:13px/1.8 var(--mono);word-break:break-word;color:var(--muted)}
+.ks{font:14px/1.9 var(--mono);word-break:break-all;color:var(--faint)}
+.ks .used{color:var(--ink)}
+.ks .cur{background:var(--accent);color:var(--panel);border-radius:3px;padding:0 2px}
+.kslbl{font-size:14px;font-weight:600;margin-top:10px}
+.badge{display:inline-block;margin-top:12px;font-size:13px;padding:5px 10px;border-radius:8px;background:var(--okBg);color:var(--ok)}
+.burst{margin-top:14px}
+.burst .bh{font-size:14px;font-weight:600;margin-bottom:4px}
+pre.x{margin:0;font:13px/1.7 var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto}
+pre.x .k{color:var(--faint)}
+.out{font:15px var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;word-break:break-all;min-height:44px}
+.outtext{font:17px var(--sans)}
+footer{margin-top:22px;font-size:13px;color:var(--muted);text-align:center;line-height:1.7}
+@media (max-width:700px){.grid{grid-template-columns:24px repeat(23,minmax(0,1fr)) 46px;gap:2px}.cell{height:24px;font-size:11px}.st{font-size:10px}.wrap{padding:18px 12px}}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<div class="wrap">
+<header>
+  <h1>A5/1 stream cipher</h1>
+  <p>Interactive demo: how GSM turns a 64-bit key and a frame number into keystream, step by step.</p>
+</header>
+
+<section>
+  <h2>1. Inputs</h2>
+  <p class="lead">Both the phone and the network know the session key Kc. The frame number Fn is public and changes for every frame.</p>
+  <div class="row">
+    <div class="field">
+      <label for="key">Session key Kc (64 bits = 16 hex digits)</label>
+      <div class="inline">
+        <input type="text" id="key" value="1223456789ABCDEF" spellcheck="false" autocomplete="off">
+        <button id="bRandKey">Random</button>
+      </div>
+      <div class="err" id="keyErr"></div>
+    </div>
+    <div class="field" style="flex:0 1 300px">
+      <label for="frame">Frame number Fn (22 bits, decimal or 0x hex)</label>
+      <div class="inline">
+        <input type="text" id="frame" value="0x134" spellcheck="false" autocomplete="off">
+        <button id="bFramePlus">+1</button>
+      </div>
+      <div class="err" id="frameErr"></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;padding-top:26px">
+      <button id="bRef">Use reference test vector</button>
+    </div>
+  </div>
+  <div class="small">Key bits in loading order k1 … k64 (inside each byte, the least significant bit goes first):</div>
+  <div class="bits" id="keyBits"></div>
+  <div class="small" style="margin-top:8px">Frame bits in loading order f1 … f22 (least significant bit first): <span id="frameInfo"></span></div>
+  <div class="bits" id="frameBits"></div>
+</section>
+
+<section>
+  <h2>2. Inside the cipher</h2>
+  <p class="lead">One frame takes 414 steps: 64 key steps + 22 frame steps + 100 warm-up steps + 228 keystream steps. Click a phase to jump to its start.</p>
+  <div class="phases" id="phases"></div>
+  <div class="controls">
+    <button id="bReset">Reset</button>
+    <button id="bBack">← Back</button>
+    <button id="bStep" class="primary">Step →</button>
+    <button id="b10">+10</button>
+    <button id="bPhase">Finish phase</button>
+    <button id="bEnd">Run to end</button>
+    <button id="bPlay">Play</button>
+    <span class="sp">Speed <input type="range" id="speed" min="0" max="100" value="60" style="width:110px"></span>
+    <span class="steplbl" id="stepLbl"></span>
+  </div>
+  <div id="grid"></div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--tap);border-color:var(--tapLine)"></span>Blue: feedback cells (XOR goes back into cell 0)</span>
+    <span><span class="sw" style="background:var(--clk);border-color:var(--clkLine)"></span>Orange: clocking cells (majority vote)</span>
+    <span><span class="sw" style="box-shadow:inset 0 0 0 2px var(--xor)"></span>Red ring: new bit that entered in the last step</span>
+    <span><span class="sw" style="opacity:.4"></span>Faded: no input bit has reached this cell yet</span>
+  </div>
+  <div class="explain" id="explain"></div>
+  <div class="comp" id="comp"></div>
+  <div class="small" style="margin-top:8px">Keyboard: → step, ← back, Space play or pause. Click any cell to see which key bits (k) and frame bits (f) it is made of.</div>
+</section>
+
+<section>
+  <h2>3. Keystream for this frame</h2>
+  <p class="lead">228 bits: the first 114 encrypt one direction (A→B), the next 114 the other direction (B→A). Bits appear as the steps above produce them.</p>
+  <div class="kslbl">A→B (steps 187–300)</div>
+  <div class="ks" id="ksAB"></div>
+  <div class="small" id="hexAB"></div>
+  <div class="kslbl">B→A (steps 301–414)</div>
+  <div class="ks" id="ksBA"></div>
+  <div class="small" id="hexBA"></div>
+  <div class="badge" id="badge"></div>
+</section>
+
+<section>
+  <h2>4. Encrypt and decrypt a message</h2>
+  <p class="lead">Ciphertext = plaintext ⊕ keystream. One burst carries 114 bits, so a longer message is split into bursts. Every burst uses the next frame number (Fn, Fn+1, …), and the cipher starts again from zero for each one.</p>
+  <div class="row">
+    <div class="field">
+      <label for="msg">Message</label>
+      <textarea id="msg">Hello from AzTU!</textarea>
+      <div class="small" id="msgInfo"></div>
+    </div>
+    <div class="field" style="flex:0 1 260px">
+      <label for="dir">Direction</label>
+      <select id="dir"><option value="ab">A→B (first 114 bits)</option><option value="ba">B→A (second 114 bits)</option></select>
+      <div style="margin-top:12px"><button class="primary" id="bEnc">Encrypt</button></div>
+      <div class="err" id="encErr"></div>
+    </div>
+  </div>
+  <div id="encBursts"></div>
+  <label style="margin-top:16px" for="ct">Ciphertext (hex). Copy it, change the key or frame number, and try to decrypt.</label>
+  <textarea id="ct" spellcheck="false" style="font-family:var(--mono);min-height:56px"></textarea>
+  <div style="margin-top:10px"><button id="bDec">Decrypt with the key and frame number above</button></div>
+  <div class="err" id="decErr"></div>
+  <label style="margin-top:6px">Recovered message</label>
+  <div class="out outtext" id="decOut"></div>
+  <div id="decBursts"></div>
+  <p class="small" style="margin-top:14px">Decryption is the same operation as encryption: plaintext = ciphertext ⊕ keystream. With a wrong key or a wrong frame number the keystream is different, so the result is garbage.</p>
+</section>
+
+<footer>
+  Simplification: in real GSM the 114 bits of a burst are speech or data after error-correction coding, not plain text bytes. Here text bytes are used directly so the XOR is easy to see.<br>
+  The cipher follows the reference implementation by M. Briceño, I. Goldberg and D. Wagner (1999) and is checked against its test vector.<br>
+  Fundamentals of Cryptography · AzTU Cybersecurity Department · Ali Huseynli, Teaching Assistant
+</footer>
+</div>
+
+<script id="engine">
+const A5 = (() => {
+  const LEN = [19, 22, 23];
+  const TAPS = [[13, 16, 17, 18], [20, 21], [7, 20, 21, 22]];
+  const CLK = [8, 10, 10];
+  const TOP = [18, 21, 22];
+  const MASK = [0x07FFFF, 0x3FFFFF, 0x7FFFFF];
+  const TAPM = [0x072000, 0x300000, 0x700080];
+  const PHASES = [
+    { id: 'key', name: 'Key loading', short: 'Key', n: 64 },
+    { id: 'frame', name: 'Frame number loading', short: 'Frame', n: 22 },
+    { id: 'warm', name: 'Warm-up', short: 'Warm-up', n: 100 },
+    { id: 'ab', name: 'Keystream A→B', short: 'A→B', n: 114 },
+    { id: 'ba', name: 'Keystream B→A', short: 'B→A', n: 114 }
+  ];
+  const parity = x => { x ^= x >>> 16; x ^= x >>> 8; x ^= x >>> 4; x ^= x >>> 2; x ^= x >>> 1; return x & 1; };
+  const bit = (r, j) => (r >>> j) & 1;
+  const clockOne = (r, i) => ((r << 1) & MASK[i]) | parity(r & TAPM[i]);
+  function keyBitsFromHex(hex) {
+    const b = [];
+    for (let i = 0; i < 64; i++) {
+      const byte = parseInt(hex.substr((i >> 3) * 2, 2), 16);
+      b.push((byte >> (i & 7)) & 1);
+    }
+    return b;
+  }
+  function frameBits(fn) { const b = []; for (let i = 0; i < 22; i++) b.push((fn >>> i) & 1); return b; }
+  function majority(R) {
+    const c = [bit(R[0], 8), bit(R[1], 10), bit(R[2], 10)];
+    const m = (c[0] + c[1] + c[2]) >= 2 ? 1 : 0;
+    return { c, m, moved: c.map(x => x === m) };
+  }
+  const out = R => bit(R[0], 18) ^ bit(R[1], 21) ^ bit(R[2], 22);
+
+  function keystream(kb, fn) {
+    let R = [0, 0, 0];
+    for (let i = 0; i < 64; i++) R = R.map((r, j) => clockOne(r, j) ^ kb[i]);
+    const fb = frameBits(fn);
+    for (let i = 0; i < 22; i++) R = R.map((r, j) => clockOne(r, j) ^ fb[i]);
+    const step = () => { const mv = majority(R).moved; R = R.map((r, j) => mv[j] ? clockOne(r, j) : r); };
+    for (let i = 0; i < 100; i++) step();
+    const ab = [], ba = [];
+    for (let i = 0; i < 114; i++) { step(); ab.push(out(R)); }
+    for (let i = 0; i < 114; i++) { step(); ba.push(out(R)); }
+    return { ab, ba };
+  }
+
+  // Full trace with, for every cell, the set of input bits it is made of (bit i<64: k(i+1), i>=64: f(i-63)).
+  function trace(kb, fn) {
+    const fb = frameBits(fn);
+    let R = [0, 0, 0];
+    let M = LEN.map(n => new Array(n).fill(0n));
+    const T = [{ phase: 'init', R: R.slice(), M }];
+    const shiftM = (m, i) => { let f = 0n; for (const t of TAPS[i]) f ^= m[t]; const n = m.slice(0, -1); n.unshift(f); return n; };
+    const info = () => ({ fbv: R.map((r, j) => parity(r & TAPM[j])), tapv: R.map((r, j) => TAPS[j].map(t => bit(r, t))) });
+    const load = (phase, pi, b, mbit) => {
+      const inf = info();
+      R = R.map((r, j) => clockOne(r, j) ^ b);
+      M = M.map((m, j) => { const n = shiftM(m, j); n[0] ^= mbit; return n; });
+      T.push({ phase, pi, inBit: b, moved: [true, true, true], fbv: inf.fbv, tapv: inf.tapv, R: R.slice(), M });
+    };
+    for (let i = 0; i < 64; i++) load('key', i, kb[i], 1n << BigInt(i));
+    for (let i = 0; i < 22; i++) load('frame', i, fb[i], 1n << BigInt(64 + i));
+    const mstep = (phase, pi) => {
+      const mj = majority(R);
+      const inf = info();
+      R = R.map((r, j) => mj.moved[j] ? clockOne(r, j) : r);
+      M = M.map((m, j) => mj.moved[j] ? shiftM(m, j) : m);
+      T.push({ phase, pi, maj: mj, moved: mj.moved, fbv: inf.fbv, tapv: inf.tapv, z: out(R), R: R.slice(), M });
+    };
+    for (let i = 0; i < 100; i++) mstep('warm', i);
+    for (let i = 0; i < 114; i++) mstep('ab', i);
+    for (let i = 0; i < 114; i++) mstep('ba', i);
+    return T;
+  }
+
+  function terms(m) {
+    const a = [];
+    for (let i = 0; i < 86; i++) if ((m >> BigInt(i)) & 1n) a.push(i < 64 ? 'k' + (i + 1) : 'f' + (i - 63));
+    return a;
+  }
+
+  return { LEN, TAPS, CLK, TOP, PHASES, bit, keyBitsFromHex, frameBits, keystream, trace, terms };
+})();
+</script>
+
+<script id="ui">
+(function () {
+  const $ = id => document.getElementById(id);
+  const STARTS = [0, 64, 86, 186, 300];
+  const ENDS = [64, 86, 186, 300, 414];
+  const REF_KEY = '1223456789ABCDEF', REF_FN = 0x134;
+  const REF_AB = '534EAA582FE8151AB6E1855A728C00', REF_BA = '24FD35A35D5FB6526D32F906DF1AC0';
+  const FN_MAX = 4194303;
+
+  let kb, fn, T, KS, t = 0, sel = [2, 0], timer = null;
+
+  const bitsToBytes = bits => { const o = new Uint8Array(Math.ceil(bits.length / 8)); bits.forEach((v, i) => { if (v) o[i >> 3] |= 1 << (7 - (i & 7)); }); return o; };
+  const bytesToBits = bytes => { const b = []; for (const x of bytes) for (let i = 7; i >= 0; i--) b.push((x >> i) & 1); return b; };
+  const hex = (bytes, sp) => Array.from(bytes, x => x.toString(16).padStart(2, '0').toUpperCase()).join(sp ? ' ' : '');
+  const group = bits => { let s = ''; bits.forEach((v, i) => { s += v; if (i % 8 === 7 && i < bits.length - 1) s += ' '; }); return s; };
+
+  const refOK = (() => {
+    const ks = A5.keystream(A5.keyBitsFromHex(REF_KEY), REF_FN);
+    return hex(bitsToBytes(ks.ab)) === REF_AB && hex(bitsToBytes(ks.ba)) === REF_BA;
+  })();
+
+  function parseFrame(s) {
+    s = s.trim();
+    let v = NaN;
+    if (/^0x[0-9a-f]+$/i.test(s)) v = parseInt(s.slice(2), 16);
+    else if (/^\d+$/.test(s)) v = parseInt(s, 10);
+    return (Number.isInteger(v) && v >= 0 && v <= FN_MAX) ? v : null;
+  }
+  function readInputs() {
+    const k = $('key').value.replace(/\s+/g, '');
+    const f = parseFrame($('frame').value);
+    let ok = true;
+    if (!/^[0-9a-fA-F]{16}$/.test(k)) { $('keyErr').textContent = 'Enter exactly 16 hex digits (0–9, A–F).'; ok = false; } else $('keyErr').textContent = '';
+    if (f === null) { $('frameErr').textContent = 'Enter a number from 0 to 4194303 (or 0x0 to 0x3FFFFF).'; ok = false; } else $('frameErr').textContent = '';
+    if (!ok) return false;
+    kb = A5.keyBitsFromHex(k.toUpperCase());
+    fn = f;
+    T = A5.trace(kb, fn);
+    KS = A5.keystream(kb, fn);
+    return true;
+  }
+
+  function phaseOf(step) { for (let i = 0; i < 5; i++) if (step > STARTS[i] && step <= ENDS[i]) return i; return -1; }
+
+  function renderInputBits() {
+    const loadedK = Math.min(t, 64), curK = (t >= 1 && t <= 64) ? t - 1 : -1;
+    let h = '';
+    kb.forEach((b, i) => { h += `<span class="${i === curK ? 'cur' : i < loadedK ? 'used' : ''}">${b}</span>`; if (i % 8 === 7) h += ' '; });
+    $('keyBits').innerHTML = h;
+    const loadedF = Math.max(0, Math.min(t - 64, 22)), curF = (t >= 65 && t <= 86) ? t - 65 : -1;
+    const fbits = A5.frameBits(fn);
+    h = '';
+    fbits.forEach((b, i) => { h += `<span class="${i === curF ? 'cur' : i < loadedF ? 'used' : ''}">${b}</span>`; if (i % 8 === 7) h += ' '; });
+    $('frameBits').innerHTML = h;
+    $('frameInfo').textContent = `Fn = ${fn} = 0x${fn.toString(16).toUpperCase()}`;
+  }
+
+  function renderPhases() {
+    const pi = phaseOf(t);
+    $('phases').innerHTML = A5.PHASES.map((p, i) => {
+      const f = Math.max(0, Math.min(1, (t - STARTS[i]) / p.n));
+      return `<div class="ph${i === pi ? ' act' : ''}" style="flex:${p.n} 1 0" data-i="${i}" title="${p.name}: ${p.n} steps"><div class="bar"><div class="fill" style="width:${(f * 100).toFixed(1)}%"></div></div><div class="pl">${p.short} ${p.n}</div></div>`;
+    }).join('');
+    const where = pi < 0 ? 'Start' : `${A5.PHASES[pi].name} ${t - STARTS[pi]}/${A5.PHASES[pi].n}`;
+    $('stepLbl').textContent = `Step ${t}/414 · ${where}`;
+  }
+
+  function renderGrid() {
+    const s = T[t];
+    let h = '<div class="grid"><div></div>';
+    for (let c = 0; c < 23; c++) h += `<div class="ix">${22 - c}</div>`;
+    h += '<div></div></div>';
+    for (let ri = 0; ri < 3; ri++) {
+      const n = A5.LEN[ri];
+      const moved = s.moved ? s.moved[ri] : null;
+      const stay = moved === false;
+      h += `<div class="grid${stay ? ' stay' : ''}" style="margin-top:3px"><div class="rn">R${ri + 1}</div>`;
+      for (let c = 0; c < 23 - n; c++) h += '<div></div>';
+      for (let j = n - 1; j >= 0; j--) {
+        const m = s.M[ri][j];
+        let cl = 'cell';
+        if (m === 0n) cl += ' empty';
+        if (A5.TAPS[ri].includes(j)) cl += ' tap';
+        if (A5.CLK[ri] === j) cl += ' clk';
+        if (j === 0 && moved) cl += ' new';
+        if (sel[0] === ri && sel[1] === j) cl += ' sel';
+        h += `<div class="${cl}" data-r="${ri}" data-j="${j}" title="R${ri + 1}[${j}]">${A5.bit(s.R[ri], j)}</div>`;
+      }
+      h += moved === null ? '<div></div>' : `<div class="st ${moved ? 'mv' : 'sy'}">${moved ? 'moved' : 'stays'}</div>`;
+      h += '</div>';
+    }
+    $('grid').innerHTML = h;
+  }
+
+  function regLine(s, j, sym) {
+    const name = 'R' + (j + 1);
+    const tv = s.tapv[j].join(' ⊕ ');
+    const nb = A5.bit(s.R[j], 0);
+    if (sym) return `<div class="rl"><b>${name}</b>: blue cells ${A5.TAPS[j].join(', ')} → ${tv} = ${s.fbv[j]}. New ${name}[0] = ${s.fbv[j]} ⊕ ${sym} (${s.inBit}) = ${nb}</div>`;
+    if (s.moved[j]) return `<div class="rl"><b>${name}</b> moves: blue cells ${A5.TAPS[j].join(', ')} → ${tv} = ${s.fbv[j]}, so the new ${name}[0] = ${nb}</div>`;
+    return `<div class="rl"><b>${name}</b> stays: its orange bit (${s.maj.c[j]}) is not the majority (${s.maj.m}). Nothing in ${name} changes.</div>`;
+  }
+
+  function renderExplain() {
+    const s = T[t];
+    let h = '';
+    if (s.phase === 'init') {
+      h = '<p>All three registers start at zero. Press <b>Step →</b> (or the → key) to begin.</p><p>First the 64 key bits are loaded, one per step. Each key bit goes into cell 0 of all three registers. The key is not split between the registers.</p>';
+    } else if (s.phase === 'key' || s.phase === 'frame') {
+      const no = s.pi + 1, isKey = s.phase === 'key';
+      const sym = (isKey ? 'k' : 'f') + no;
+      h = `<p><b>${isKey ? 'Key loading' : 'Frame number loading'}, step ${no} of ${isKey ? 64 : 22}.</b> All three registers move one cell to the left; the majority rule is not used yet. The XOR of the blue cells goes into cell 0, then the input bit ${sym} = ${s.inBit} is XORed into cell 0 of all three registers.</p>`;
+      for (let j = 0; j < 3; j++) h += regLine(s, j, sym);
+    } else {
+      const mj = s.maj;
+      const movers = [0, 1, 2].filter(j => mj.moved[j]).map(j => 'R' + (j + 1));
+      const stayers = [0, 1, 2].filter(j => !mj.moved[j]).map(j => 'R' + (j + 1));
+      const tops = A5.TOP.map((p, j) => A5.bit(s.R[j], p));
+      let what;
+      if (s.phase === 'warm') what = `<p><b>Warm-up, step ${s.pi + 1} of 100.</b> The output bit is computed but thrown away.</p>`;
+      else what = `<p><b>Keystream ${s.phase === 'ab' ? 'A→B' : 'B→A'}, bit ${s.pi + 1} of 114.</b></p>`;
+      h = what;
+      h += `<p>Majority vote of the orange cells: R1[8] = ${mj.c[0]}, R2[10] = ${mj.c[1]}, R3[10] = ${mj.c[2]} → majority = ${mj.m}. ${movers.join(' and ')} move${stayers.length ? '; ' + stayers[0] + ' stays' : ' (all three agree)'}.</p>`;
+      for (let j = 0; j < 3; j++) h += regLine(s, j, null);
+      h += `<p style="margin-top:8px">Output z = R1[18] ⊕ R2[21] ⊕ R3[22] = ${tops.join(' ⊕ ')} = <b>${s.z}</b>${s.phase === 'warm' ? ' (discarded)' : ` → keystream bit ${s.pi + 1} for ${s.phase === 'ab' ? 'A→B' : 'B→A'}`}</p>`;
+    }
+    const notes = {
+      64: 'All 64 key bits are in. The registers are not final yet: next, the 22 frame-number bits are loaded in exactly the same way.',
+      86: 'Key and frame number are loaded. Next come 100 warm-up steps with the majority rule. Their output is thrown away.',
+      186: 'Setup is finished. The registers now hold the starting state for the keystream. From the next step on, every step gives one keystream bit, and the registers keep changing at every step.',
+      300: 'The 114 bits for A→B are ready. The next 114 steps give the bits for the other direction.',
+      414: 'Done: 228 keystream bits for this frame. The next frame starts again from zero with frame number Fn + 1.'
+    };
+    if (notes[t]) h += `<div class="note">${notes[t]}</div>`;
+    $('explain').innerHTML = h;
+  }
+
+  function renderComp() {
+    const s = T[t];
+    const [r, j] = sel;
+    const tm = A5.terms(s.M[r][j]);
+    const nk = tm.filter(x => x[0] === 'k').length, nf = tm.length - nk;
+    let h = `<b>R${r + 1}[${j}] = ${A5.bit(s.R[r], j)}</b> · `;
+    h += tm.length ? `made of ${tm.length} input bit${tm.length > 1 ? 's' : ''} (${nk} key, ${nf} frame):<div class="terms">${tm.join(' ⊕ ')}</div>` : 'empty: no input bit has reached this cell yet.';
+    if (s.z !== undefined) {
+      const zm = s.M[0][18] ^ s.M[1][21] ^ s.M[2][22];
+      h += `<div class="small" style="margin-top:6px">The output bit z of this step is the XOR of ${A5.terms(zm).length} input bits.</div>`;
+    }
+    $('comp').innerHTML = h;
+  }
+
+  function ksRow(bits, start) {
+    let h = '';
+    for (let i = 0; i < 114; i++) {
+      const idx = start + 1 + i;
+      const shown = idx <= t;
+      h += `<span class="${idx === t ? 'cur' : shown ? 'used' : ''}">${shown ? bits[i] : '·'}</span>`;
+      if (i % 8 === 7) h += ' ';
+    }
+    return h;
+  }
+  function renderKS() {
+    $('ksAB').innerHTML = ksRow(KS.ab, 186);
+    $('ksBA').innerHTML = ksRow(KS.ba, 300);
+    $('hexAB').textContent = t >= 300 ? 'Hex: ' + hex(bitsToBytes(KS.ab), true) : 'Hex appears when all 114 bits are produced.';
+    $('hexBA').textContent = t >= 414 ? 'Hex: ' + hex(bitsToBytes(KS.ba), true) : 'Hex appears when all 114 bits are produced.';
+    const isRef = hex(Uint8Array.from(kb.reduce((a, b, i) => { a[i >> 3] |= b << (i & 7); return a; }, new Array(8).fill(0)))) === REF_KEY && fn === REF_FN;
+    let msg = refOK ? 'Self-check passed: this code reproduces the reference test vector.' : 'Self-check FAILED against the reference test vector.';
+    if (isRef && refOK) msg = 'These inputs are the reference test vector (key 12 23 45 67 89 AB CD EF, Fn = 0x134). The keystream above matches the published values.';
+    $('badge').textContent = msg;
+  }
+
+  function render() { renderInputBits(); renderPhases(); renderGrid(); renderExplain(); renderComp(); renderKS(); }
+
+  function go(n) { t = Math.max(0, Math.min(414, n)); render(); }
+  function stop() { if (timer) { clearTimeout(timer); timer = null; $('bPlay').textContent = 'Play'; } }
+  function delay() { const v = +$('speed').value; return Math.round(700 * Math.pow(0.955, v)); }
+  function tick() { if (t >= 414) { stop(); return; } go(t + 1); timer = setTimeout(tick, delay()); }
+  function play() { if (timer) { stop(); return; } if (t >= 414) go(0); $('bPlay').textContent = 'Pause'; timer = setTimeout(tick, 0); }
+
+  $('bReset').onclick = () => { stop(); go(0); };
+  $('bBack').onclick = () => { stop(); go(t - 1); };
+  $('bStep').onclick = () => { stop(); go(t + 1); };
+  $('b10').onclick = () => { stop(); go(t + 10); };
+  $('bPhase').onclick = () => { stop(); go(ENDS.find(e => e > t) ?? 414); };
+  $('bEnd').onclick = () => { stop(); go(414); };
+  $('bPlay').onclick = play;
+  $('phases').onclick = e => { const el = e.target.closest('.ph'); if (el) { stop(); go(STARTS[+el.dataset.i]); } };
+  $('grid').onclick = e => { const el = e.target.closest('.cell'); if (el) { sel = [+el.dataset.r, +el.dataset.j]; renderGrid(); renderComp(); } };
+
+  document.addEventListener('keydown', e => {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === ' ' && tag === 'BUTTON') return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); stop(); go(t + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); stop(); go(t - 1); }
+    else if (e.key === ' ') { e.preventDefault(); play(); }
+  });
+
+  const onInput = () => { stop(); if (readInputs()) render(); };
+  $('key').addEventListener('input', onInput);
+  $('frame').addEventListener('input', onInput);
+  $('bRandKey').onclick = () => { const b = new Uint8Array(8); crypto.getRandomValues(b); $('key').value = hex(b); onInput(); };
+  $('bFramePlus').onclick = () => { const f = parseFrame($('frame').value); if (f === null) return; const n = (f + 1) % (FN_MAX + 1); $('frame').value = '0x' + n.toString(16).toUpperCase(); onInput(); };
+  $('bRef').onclick = () => { $('key').value = REF_KEY; $('frame').value = '0x134'; onInput(); };
+
+  // ---- Encryption ----
+  function crypt(bits, dir) {
+    const bursts = [], all = [];
+    for (let s = 0, b = 0; s < bits.length; s += 114, b++) {
+      const f = (fn + b) % (FN_MAX + 1);
+      const ks = A5.keystream(kb, f)[dir];
+      const p = bits.slice(s, s + 114);
+      const k = ks.slice(0, p.length);
+      const c = p.map((v, i) => v ^ k[i]);
+      bursts.push({ b, f, p, k, c });
+      all.push(...c);
+    }
+    return { bursts, all };
+  }
+  function burstHTML(list, labels) {
+    return list.map(x => `<div class="burst"><div class="bh">Burst ${x.b + 1} · frame number ${x.f} (0x${x.f.toString(16).toUpperCase()}) · ${x.p.length} bits</div><pre class="x"><span class="k">${labels[0]}</span>  ${group(x.in)}\n<span class="k">K</span>  ${group(x.k)}\n<span class="k">${labels[1]}</span>  ${group(x.out)}</pre></div>`).join('');
+  }
+  function updMsgInfo() {
+    const n = new TextEncoder().encode($('msg').value).length;
+    $('msgInfo').textContent = `${n} bytes = ${n * 8} bits → ${Math.ceil(n * 8 / 114)} burst(s) of up to 114 bits`;
+  }
+  $('msg').addEventListener('input', updMsgInfo);
+
+  $('bEnc').onclick = () => {
+    if (!readInputs()) { $('encErr').textContent = 'Fix the key or frame number first.'; return; }
+    const bytes = new TextEncoder().encode($('msg').value);
+    if (!bytes.length) { $('encErr').textContent = 'Type a message first.'; return; }
+    if (bytes.length > 400) { $('encErr').textContent = 'Please keep the message under 400 bytes for the demo.'; return; }
+    $('encErr').textContent = '';
+    const r = crypt(bytesToBits(bytes), $('dir').value);
+    $('encBursts').innerHTML = burstHTML(r.bursts.map(x => ({ ...x, in: x.p, out: x.c })), ['P', 'C']);
+    $('ct').value = hex(bitsToBytes(r.all), true);
+    render();
+  };
+  $('bDec').onclick = () => {
+    if (!readInputs()) { $('decErr').textContent = 'Fix the key or frame number first.'; return; }
+    const h = $('ct').value.replace(/\s+/g, '');
+    if (!h.length) { $('decErr').textContent = 'Paste a ciphertext first (or press Encrypt).'; return; }
+    if (!/^[0-9a-fA-F]+$/.test(h) || h.length % 2) { $('decErr').textContent = 'The ciphertext must be hex digits, two per byte.'; return; }
+    $('decErr').textContent = '';
+    const bytes = Uint8Array.from(h.match(/../g), x => parseInt(x, 16));
+    const r = crypt(bytesToBits(bytes), $('dir').value);
+    const pt = bitsToBytes(r.all);
+    $('decOut').textContent = new TextDecoder('utf-8', { fatal: false }).decode(pt);
+    $('decBursts').innerHTML = burstHTML(r.bursts.map(x => ({ ...x, in: x.p, out: x.c })), ['C', 'P']);
+    render();
+  };
+  $('ct').addEventListener('input', () => { $('decErr').textContent = ''; });
+
+  readInputs();
+  updMsgInfo();
+  render();
+})();
+</script>
+</body>
+</html>
