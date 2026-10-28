@@ -74,13 +74,21 @@ h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
 .iptab td{width:21px;text-align:center;padding:2px 0;border:1px solid var(--line)}
 .iptab td.on{background:var(--ink);color:var(--bg);font-weight:700}
 #vp-fc svg{max-width:900px}
+/* overview: DES in brief */
+.dfacts{padding:2px 4px 12px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.dfacts h2{font-size:18px;margin:0 0 6px}
+.dfacts>p{margin:0 0 10px;font-size:15px;max-width:900px}
+.dft{border-collapse:collapse;font-size:14.5px;width:100%;max-width:900px}
+.dft th{text-align:left;color:var(--muted);font-weight:600;padding:5px 14px 5px 0;vertical-align:top;white-space:nowrap;border-bottom:1px solid var(--line)}
+.dft td{padding:5px 0;border-bottom:1px solid var(--line)}
+
 .fcbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;padding:4px 4px 0}
 .fccap{margin:8px 4px 4px;font-size:15px;font-weight:600;color:var(--muted)}
 #svg-fc .fcb{cursor:pointer}
 #svg-fc .fcb:hover rect,#svg-fc .fcb:hover circle{stroke-width:2.8}
 #svg-fc .fcflow{stroke-dasharray:9 6;animation:flow .55s linear infinite}
 #vp-e svg{max-width:1100px}
-/* tab 3: expansion */
+/* tab 4: expansion */
 #svg-e .ec rect{stroke:rgba(0,0,0,.25);stroke-width:1}
 #svg-e .ev{font:700 17px var(--mono);fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.45);stroke-width:2.5px;pointer-events:none}
 #svg-e .ec.clk{cursor:pointer}
@@ -120,7 +128,7 @@ h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
 .etab th{font-family:var(--sans);font-size:13px;color:var(--muted);text-align:left}
 .etab td.cp{color:var(--xor);font-weight:700}
 .etab tr.cur td,.etab tr.cur th{background:var(--accentBg)}
-/* tab 4: S-boxes */
+/* tab 5: S-boxes */
 #vp-s{padding:6px 8px}
 .sbbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;margin-bottom:4px}
 #vp-s .fxflow{margin:10px auto 0}
@@ -367,7 +375,7 @@ button.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoratio
 .ctr2{font-size:12px;fill:var(--muted)}
 .rot{font-size:34px;fill:var(--accent)}
 .strk{stroke:var(--faint);stroke-width:1.4}
-/* ---------- tab 4: encrypt / decrypt ---------- */
+/* ---------- tab 7: encrypt / decrypt ---------- */
 :root{--key:#b46a08;--keyBg:#fcefd9;--dim:#f0eee8;--hl:#ffe08a;--ok:#2b7a4b}
 @media (prefers-color-scheme:dark){:root{--key:#f0b25a;--keyBg:#3a2a12;--dim:#25252a;--hl:#6b5512;--ok:#6cc290}}
 #t4 .xrow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;justify-content:space-between}
@@ -512,24 +520,36 @@ button.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoratio
   <p class="sub">How data moves through DES: the Feistel rounds, the inside of f, and the key schedule</p>
   <p class="by">Fundamentals of Cryptography · Lecture 04 · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
   <nav class="tabs" id="tabs">
-    <button data-tab="feistel" class="on">1 · Feistel rounds</button>
-    <button data-tab="f">2 · Inside f</button>
-    <button data-tab="e">3 · Expansion E</button>
-    <button data-tab="s">4 · S-boxes</button>
-    <button data-tab="ks">5 · Key schedule</button>
-    <button data-tab="des">6 · Encrypt / Decrypt</button>
-    <button data-tab="ip">7 · IP and IP⁻¹</button>
-    <button data-tab="fc">8 · DES flowcharts</button>
+    <button data-tab="fc" class="on">1 · Overview</button>
+    <button data-tab="feistel">2 · Feistel rounds</button>
+    <button data-tab="f">3 · Inside f</button>
+    <button data-tab="e">4 · Expansion E</button>
+    <button data-tab="s">5 · S-boxes</button>
+    <button data-tab="ks">6 · Key schedule</button>
+    <button data-tab="des">7 · Encrypt / Decrypt</button>
+    <button data-tab="ip">8 · IP and IP⁻¹</button>
   </nav>
 </header>
 <main class="wrap layout">
   <div class="card stage">
-    <div class="vp" id="vp-feistel"><svg id="svg-feistel" role="img" aria-label="Feistel network animation"></svg></div>
+    <div class="vp" id="vp-feistel" hidden><svg id="svg-feistel" role="img" aria-label="Feistel network animation"></svg></div>
     <div class="vp" id="vp-f" hidden><svg id="svg-f" role="img" aria-label="Inside the f-function"></svg><div class="fz" id="fz"></div></div>
     <div class="vp" id="vp-e" hidden><svg id="svg-e" role="img" aria-label="Expansion E"></svg><div class="etools"><p class="einfo" id="eInfo"></p><div class="row"><button data-eset="ex" title="Use R₀ of the textbook example">Example R₀</button><button data-eset="rand">Random R</button></div></div></div>
     <div class="vp" id="vp-s" hidden><div id="sb-main"></div></div>
     <div class="vp" id="vp-ip" hidden><svg id="svg-ip" role="img" aria-label="Initial and final permutation"></svg><div class="etools"><p class="einfo" id="ipInfo"></p><div class="row"><button data-ipset="ex" title="x = 0123456789ABCDEF">Example x</button><button data-ipset="rand">Random x</button></div></div></div>
-    <div class="vp" id="vp-fc" hidden><div class="fcbar"><div class="seg"><button data-fch="A" class="on">A · Whole DES</button><button data-fch="B">B · Function f</button><button data-fch="C">C · Key schedule</button></div><button data-fcpng title="Save this chart as a PNG picture (white background)">⤓ Save as PNG</button></div><p class="fccap" id="fcCap"></p><svg id="svg-fc" role="img" aria-label="DES flowchart"></svg></div>
+    <div class="vp" id="vp-fc"><div class="dfacts">
+      <h2>DES in brief</h2>
+      <p>DES, the <b>Data Encryption Standard</b>, was designed at IBM and published by the US National Bureau of Standards (now NIST) as <b>FIPS 46</b> in 1977. For more than 20 years it was the standard block cipher. It is a <b>Feistel cipher</b>.</p>
+      <table class="dft">
+        <tr><th>Block</th><td><b>64 bits</b>: the plaintext is cut into blocks of 8 bytes</td></tr>
+        <tr><th>Key</th><td><b>64 bits</b>, but only <b>56</b> are used: every 8th bit is a parity bit</td></tr>
+        <tr><th>Rounds</th><td><b>16</b>, each with its own 48-bit round key K₁ … K₁₆ from the key schedule</td></tr>
+        <tr><th>Structure</th><td>IP → 16 Feistel rounds → swap → IP⁻¹. Decryption: the same steps, round keys in reverse order</td></tr>
+        <tr><th>Function f</th><td>32 bits in → expansion E: 48 bits → ⊕ Kᵢ → 8 S-boxes (6 → 4 bits) → permutation P: 32 bits out</td></tr>
+        <tr><th>Today</th><td>2⁵⁶ ≈ 7.2 · 10¹⁶ keys is too few: in 1998 the EFF machine “Deep Crack” found a DES key in 56 hours. AES replaced DES in 2001. Triple DES (three DES operations) was used longer and is now retired too.</td></tr>
+      </table>
+      <p class="small">The charts below show the whole cipher (A), the function f (B) and the key schedule (C). Press <b>Step</b> or click a block.</p>
+    </div><div class="fcbar"><div class="seg"><button data-fch="A" class="on">A · Whole DES</button><button data-fch="B">B · Function f</button><button data-fch="C">C · Key schedule</button></div><button data-fcpng title="Save this chart as a PNG picture (white background)">⤓ Save as PNG</button></div><p class="fccap" id="fcCap"></p><svg id="svg-fc" role="img" aria-label="DES flowchart"></svg></div>
     <div class="vp" id="vp-ks" hidden><svg id="svg-ks" role="img" aria-label="DES key schedule"></svg></div>
   </div>
   <aside class="panel">
@@ -865,7 +885,7 @@ FE.explain=k=>{
   const {i,s}=FE.stageOf(k),p=i-1;
   const T=enc?[
     `<p class="step">Round ${i} · step 1 of 4</p><p><b>Copy R${sb(p)} into f.</b> The round key k${sb(i)} goes into f too.</p><p>R${sb(p)} itself does not change: it also goes straight down its own wire.</p>`,
-    `<p class="step">Round ${i} · step 2 of 4</p><p><b>f mixes R${sb(p)} with k${sb(i)}.</b> The output f${sb(i)} carries the colours of R${sb(p)} and of k${sb(i)}.</p><p>What happens inside f: see tab 2.</p>`,
+    `<p class="step">Round ${i} · step 2 of 4</p><p><b>f mixes R${sb(p)} with k${sb(i)}.</b> The output f${sb(i)} carries the colours of R${sb(p)} and of k${sb(i)}.</p><p>What happens inside f: see tab 3.</p>`,
     `<p class="step">Round ${i} · step 3 of 4</p><p><b>XOR f${sb(i)} into the left half.</b> L${sb(p)} comes down to ⊕ and meets f${sb(i)}: L${sb(p)} ⊕ f${sb(i)}.</p>`,
     `<p class="step">Round ${i} · step 4 of 4</p><p><b>Swap.</b> The mixed half L${sb(p)} ⊕ f${sb(i)} becomes the new right half R${sb(i)}. The old R${sb(p)} becomes the new left half L${sb(i)}, unchanged.</p><p>So in one round only one half gets new colours. The other half gets them in the next round.</p>`
   ]:[
@@ -1010,7 +1030,7 @@ FS.zoom=lv=>{
   const bit=(v,c,pos,cls)=>`<span class="zb${cls?' '+cls:''}" style="--c:${c}"><b>${v}</b>${pos!==undefined?`<small>${pos}</small>`:''}</span>`;
   const row=(n,title,sub,body,on)=>`<div class="zrow${on?'':' zoff'}"><div class="zl">${n?`<span class="zn">${n}</span>`:''}<div><b>${title}</b><small>${sub}</small></div></div><div class="zc">${on?body:'<span class="zq">waits for step '+n+'</span>'}</div></div>`;
   let h=`<div class="zhead"><div><h3 class="zt">Up close: group ${j+1} → S-box S${j+1}</h3>
-    <p class="zs fxnav">Step by step: <button class="lnk" data-goto="e" data-eg="${j}">tab 3 · Expansion E</button> · <button class="lnk" data-goto="s" data-sbj="${j}" data-six="${s.six.join('')}">tab 4 · S-boxes</button></p>
+    <p class="zs fxnav">Step by step: <button class="lnk" data-goto="e" data-eg="${j}">tab 4 · Expansion E</button> · <button class="lnk" data-goto="s" data-sbj="${j}" data-six="${s.six.join('')}">tab 5 · S-boxes</button></p>
     <p class="zs">Real bits from round 1 of the textbook example: plaintext <span class="mono">${ZPT}</span>, key <span class="mono">${ZKEY}</span>. So R₀ = <span class="mono">${d.hR}</span> and k₁ = <span class="mono">${d.hk}</span>.</p></div>
     <div class="seg zpick">${[0,1,2,3,4,5,6,7].map(i=>`<button data-zj="${i}" class="${i===j?'on':''}">S${i+1}</button>`).join('')}</div></div>`;
   // R: the group and its two neighbour bits
@@ -1049,10 +1069,10 @@ FS.explain=k=>{
   const j=FS.zg(),z=FS.zinfo(j),s=z.sbj,n=j+1;
   const up=t=>`<p class="zhint"><b>Up close (S${n}):</b> ${t}</p>`;
   if(k===0)return `<p class="step">Inside f · start</p><p>f takes two inputs: the right half <b>R</b> (32 bits) and the round key <b>kᵢ</b> (48 bits). It gives back 32 bits.</p><p>Four steps: <b>1</b> expand, <b>2</b> add the key, <b>3</b> S-boxes, <b>4</b> permute.</p><p>Each colour is one group of 4 bits of R. Watch where the colours go.</p>`+up('below the picture you see one group with its real bits. Click any S-box to choose another one.');
-  if(k===1)return `<p class="step">Step 1 of 4 · expansion E</p><p><b>32 → 48 bits.</b> Each group of 4 gets a copy of one bit from each neighbour: the last bit of the group on the left and the first bit of the group on the right.</p><p>Why? The key has 48 bits, and each S-box needs 6 bits. Neighbouring groups now share bits, so one bit of R can reach two S-boxes.</p>`+up(`bits ${z.ePos.join(', ')} of R.`)+'<p class="small">Step by step: <button class="lnk" data-goto="e">tab 3 · Expansion E</button></p>';
+  if(k===1)return `<p class="step">Step 1 of 4 · expansion E</p><p><b>32 → 48 bits.</b> Each group of 4 gets a copy of one bit from each neighbour: the last bit of the group on the left and the first bit of the group on the right.</p><p>Why? The key has 48 bits, and each S-box needs 6 bits. Neighbouring groups now share bits, so one bit of R can reach two S-boxes.</p>`+up(`bits ${z.ePos.join(', ')} of R.`)+'<p class="small">Step by step: <button class="lnk" data-goto="e">tab 4 · Expansion E</button></p>';
   if(k===2)return `<p class="step">Step 2 of 4 · XOR with the round key</p><p>The 48 key bits (purple) are XORed with the 48 bits, one by one. This is the <b>only</b> place where the key enters f.</p><p>Every cell now carries its own colour plus the key.</p>`+up(`the 6 bits going into S${n} are <span class="mono">${s.six.join('')}</span>.`);
-  if(k===3)return `<p class="step">Step 3 of 4 · S-boxes</p><p>Each group of 6 goes into its own S-box: <b>6 bits in, 4 bits out</b>. The outer 2 bits choose the row of the table, the middle 4 bits choose the column.</p><p>${ALLDEP?'In every DES S-box each output bit depends on all 6 input bits, so the':'The'} outputs carry the group's own colour, both neighbours' colours, and the key.</p><p>This is the non-linear step (confusion). Without the S-boxes, DES would be a set of linear equations.</p>`+up(`row ${s.row}, column ${s.col} → ${s.val} = <span class="mono">${s.out.join('')}</span>.`)+'<p class="small">Step by step: <button class="lnk" data-goto="s">tab 4 · S-boxes</button></p>';
-  if(k===4)return `<p class="step">Step 4 of 4 · permutation P</p><p>The 32 bits change places. Look at any group of 4 now: ${PDIST?'its 4 bits come from 4 <b>different</b> S-boxes':'its bits come from different S-boxes'}.</p><p>So in the next round every S-box gets bits from several S-boxes of this round, and the mixing spreads fast (diffusion). The result f(R, kᵢ) goes to ⊕ with L (tab 1).</p>`+up(`the 4 bits go to f bits ${z.dest.map(p=>p+1).join(', ')}.`);
+  if(k===3)return `<p class="step">Step 3 of 4 · S-boxes</p><p>Each group of 6 goes into its own S-box: <b>6 bits in, 4 bits out</b>. The outer 2 bits choose the row of the table, the middle 4 bits choose the column.</p><p>${ALLDEP?'In every DES S-box each output bit depends on all 6 input bits, so the':'The'} outputs carry the group's own colour, both neighbours' colours, and the key.</p><p>This is the non-linear step (confusion). Without the S-boxes, DES would be a set of linear equations.</p>`+up(`row ${s.row}, column ${s.col} → ${s.val} = <span class="mono">${s.out.join('')}</span>.`)+'<p class="small">Step by step: <button class="lnk" data-goto="s">tab 5 · S-boxes</button></p>';
+  if(k===4)return `<p class="step">Step 4 of 4 · permutation P</p><p>The 32 bits change places. Look at any group of 4 now: ${PDIST?'its 4 bits come from 4 <b>different</b> S-boxes':'its bits come from different S-boxes'}.</p><p>So in the next round every S-box gets bits from several S-boxes of this round, and the mixing spreads fast (diffusion). The result f(R, kᵢ) goes to ⊕ with L (tab 2).</p>`+up(`the 4 bits go to f bits ${z.dest.map(p=>p+1).join(', ')}.`);
   const t=FS.traceSets();
   return `<p class="step">Follow one bit back</p><p>Bit ${t.p+1} of f comes from <b>S-box ${t.j+1}</b> (its output bit ${t.b+1}). That S-box used R bits <b>${t.rs.map(r=>r+1).join(', ')}</b> and 6 bits of the round key.</p><p>So one output bit of f depends on 6 of the 32 bits of R. After a few rounds, these dependencies cover everything.</p><p>Click any bit of f to follow it back.</p>`;
 };
@@ -1060,7 +1080,7 @@ FS.legend=()=>`<h3>Colours</h3>
   <div class="lg"><span class="sws">${[0,1,2,3,4,5,6,7].map(j=>`<i style="background:var(--g${j})"></i>`).join('')}</span>groups 1–8 of R (4 bits each)</div>
   <div class="lg"><span class="sw" style="background:var(--cK1)"></span>round key bits</div>
   <p class="small">A cell with several colours depends on all of them. The light column marks the group shown up close.</p>`;
-FS.extra=()=>`<h3>Sizes</h3><p class="small" style="margin-top:0">R 32 → E 48 → ⊕ kᵢ 48 → S-boxes 32 → P 32 bits.</p><p class="small">f does not need an inverse: decryption computes the same f again, and L ⊕ f ⊕ f = L (tab 1, Decrypt).</p><p class="small">The exact tables (E, S1–S8, P) are on slides 17–20.</p>`;
+FS.extra=()=>`<h3>Sizes</h3><p class="small" style="margin-top:0">R 32 → E 48 → ⊕ kᵢ 48 → S-boxes 32 → P 32 bits.</p><p class="small">f does not need an inverse: decryption computes the same f again, and L ⊕ f ⊕ f = L (tab 2, Decrypt).</p><p class="small">The exact tables (E, S1–S8, P) are on slides 17–20.</p>`;
 SC.f=FS;
 /* ================= shared facts for tabs 3 and 4 (computed, not typed) ================= */
 const pop4=v=>((v>>3)&1)+((v>>2)&1)+((v>>1)&1)+(v&1);
@@ -1148,7 +1168,7 @@ EX.progress=k=>k===0?'Ready':k<=8?`Group ${k} of 8 → S${k}`:'Summary';
 EX.explain=k=>{
   EX.ensure();const R=EX.R;
   if(k===0)return `<p class="step">Expansion E · start</p><p><b>The problem:</b> R has 32 bits, but the round key has 48. To XOR them, R must become 48 bits.</p><p><b>E does not compute anything.</b> It only copies bits. In hardware, E is just wires.</p><p>Top rows: R, cut into 8 groups of 4. Bottom rows: 8 empty groups of 6, one for each S-box. The small numbers under them are the E table: they say which bit of R goes there.</p><p>Press <b>Step</b> to fill the groups one by one.</p>`;
-  if(k===9)return `<p class="step">Summary</p><p><b>8 groups × 6 bits = 48 bits.</b></p><p>Count: the ${EUSE.filter(n=>n===2).length} edge bits of the groups (red ring) are used <b>twice</b>, the ${EUSE.filter(n=>n===1).length} middle bits once: 16 × 2 + 16 × 1 = 48.</p><p>No new information is added. E(R) still holds only the 32 bits of R.</p><p class="note"><b>Why?</b> (1) 48 = the size of the round key, so the two can be XORed. (2) Each S-box needs 6 bits. (3) An edge bit goes into <b>two</b> S-boxes, so one changed bit changes two S-boxes (faster avalanche). (4) The copies sit at the two ends of each 6-bit group, and in the S-box the two end bits choose the <b>row</b> (tab 4).</p>`;
+  if(k===9)return `<p class="step">Summary</p><p><b>8 groups × 6 bits = 48 bits.</b></p><p>Count: the ${EUSE.filter(n=>n===2).length} edge bits of the groups (red ring) are used <b>twice</b>, the ${EUSE.filter(n=>n===1).length} middle bits once: 16 × 2 + 16 × 1 = 48.</p><p>No new information is added. E(R) still holds only the 32 bits of R.</p><p class="note"><b>Why?</b> (1) 48 = the size of the round key, so the two can be XORed. (2) Each S-box needs 6 bits. (3) An edge bit goes into <b>two</b> S-boxes, so one changed bit changes two S-boxes (faster avalanche). (4) The copies sit at the two ends of each 6-bit group, and in the S-box the two end bits choose the <b>row</b> (tab 5).</p>`;
   const j=k-1,own=[0,1,2,3].map(q=>4*j+q),l=E[6*j]-1,r=E[6*j+5]-1,v=i=>R[i];
   const lNote=j===0?' Group 1 has no group on its left, so E wraps around to the end of R.':j===4?' Group 4 is in the row above, so a dashed copy cell is drawn at the start of this row.':'';
   const rNote=j===7?' Group 8 has no group on its right, so E wraps around to the start of R.':j===3?' Group 5 is in the row below, so a dashed copy cell is drawn at the end of this row.':'';
@@ -1207,7 +1227,7 @@ SB.render=(lv,anim)=>{
     for(let r=0;r<4;r++){t+='<tr>';for(let cc=0;cc<16;cc++)t+=`<td class="${b===j&&k>=3&&r===c.row&&cc===c.col?'hit':''}">${S[b][16*r+cc]}</td>`;t+='</tr>';}
     return t+'</table></div>';}).join('')}</div><p class="small">All 8 have the same shape (4 rows × 16 columns, numbers 0–15), but different numbers. S1 gets bits 1–6 of E(R) ⊕ k, S2 bits 7–12, and so on.</p>`;
   $('sb-main').innerHTML=`<div class="sbbar"><div class="seg zpick">${[0,1,2,3,4,5,6,7].map(i=>`<button data-sj="${i}" class="${i===j?'on':''}">S${i+1}</button>`).join('')}</div>
-    <div class="row"><button class="pri" data-sgo>▶ Step by step</button><button data-spre="slide">Example: S6, 110011</button><button data-spre="f">From tab 2: S1, round 1</button><button data-spre="rand">Random input</button></div></div>
+    <div class="row"><button class="pri" data-sgo>▶ Step by step</button><button data-spre="slide">Example: S6, 110011</button><button data-spre="f">From tab 3: S1, round 1</button><button data-spre="rand">Random input</button></div></div>
     ${flow}${diff}${flips}${all}`;
 };
 SB.plan=k=>({dur:650,start:()=>{SB.render(k,true);return p=>{};}});
@@ -1215,10 +1235,10 @@ SB.progress=k=>['Ready','Step 1 of 4 · row','Step 2 of 4 · column','Step 3 of 
 SB.explain=k=>{
   const j=SB.j,x=SB.x,c=sbCalc(j,x),n=j+1;
   if(k===0)return `<p class="step">S-box · start</p><p>An S-box is a <b>fixed table</b>: 4 rows × 16 columns, filled with the numbers 0–15.</p><p>It takes <b>6 bits</b> and gives back <b>4 bits</b>. Nothing is computed: we only <b>look up</b> one number in the table.</p><p>Now: S${n} gets <span class="mono"><b>${x.join('')}</b></span>. Press <b>Step</b>.</p>`;
-  if(k===1)return `<p class="step">Step 1 of 4 · row</p><p>Take the <b>first and the last</b> bit: <span class="mono">${x[0]}</span> and <span class="mono">${x[5]}</span>.</p><p>Together <span class="mono">${x[0]}${x[5]}</span> in binary = <b>${c.row}</b>. So we use <b>row ${c.row}</b>. 2 bits can give 4 rows: 0, 1, 2, 3.</p><p class="small">In DES these two bits are the neighbour copies made by E (tab 3), XORed with the key.</p>`;
+  if(k===1)return `<p class="step">Step 1 of 4 · row</p><p>Take the <b>first and the last</b> bit: <span class="mono">${x[0]}</span> and <span class="mono">${x[5]}</span>.</p><p>Together <span class="mono">${x[0]}${x[5]}</span> in binary = <b>${c.row}</b>. So we use <b>row ${c.row}</b>. 2 bits can give 4 rows: 0, 1, 2, 3.</p><p class="small">In DES these two bits are the neighbour copies made by E (tab 4), XORed with the key.</p>`;
   if(k===2)return `<p class="step">Step 2 of 4 · column</p><p>Take the <b>4 middle</b> bits: <span class="mono">${x.slice(1,5).join('')}</span>.</p><p>In binary that is <b>${c.col}</b>. So we use <b>column ${c.col}</b>. 4 bits can give 16 columns: 0 to 15.</p>`;
   if(k===3)return `<p class="step">Step 3 of 4 · look up</p><p>In S${n}, go to <b>row ${c.row}</b> and <b>column ${c.col}</b>. The number there is <b>${c.val}</b>.</p><p>That is the whole S-box: one table lookup.</p>`;
-  return `<p class="step">Step 4 of 4 · output</p><p>Write ${c.val} with 4 bits: <span class="mono"><b>${c.out.join('')}</b></span>.</p><p>So S${n}(<span class="mono">${x.join('')}</span>) = <span class="mono">${c.out.join('')}</span>: 6 bits in, 4 bits out.</p><p>In f, all 8 S-boxes do this at the same time: 8 × 4 = 32 bits, which then go to P (tab 2).</p><p class="note">Try it: click an input bit, or a row of the table “What if one input bit is flipped?”.</p>`;
+  return `<p class="step">Step 4 of 4 · output</p><p>Write ${c.val} with 4 bits: <span class="mono"><b>${c.out.join('')}</b></span>.</p><p>So S${n}(<span class="mono">${x.join('')}</span>) = <span class="mono">${c.out.join('')}</span>: 6 bits in, 4 bits out.</p><p>In f, all 8 S-boxes do this at the same time: 8 × 4 = 32 bits, which then go to P (tab 3).</p><p class="note">Try it: click an input bit, or a row of the table “What if one input bit is flipped?”.</p>`;
 };
 SB.legend=()=>`<h3>Colours</h3>
   <div class="lg"><span class="sw" style="background:var(--xor)"></span>bit 1 and bit 6 → the row</div>
@@ -1352,21 +1372,21 @@ const FCT={
  C:['Key schedule','Key','PC-1','Split into C and D','Round 1: shift','Round 1: PC-2 → K₁','Round 2','Rounds 3–15','Round 16']};
 const FCX={
  A:[`<p class="step">Chart A · whole DES</p><p>The whole cipher on one page. The data goes down the middle. The round keys come from the key schedule on the right.</p><p>Press <b>Step</b> to walk through it, or click any block.</p>`,
-  `<p><b>Two inputs.</b> The plaintext x is one block of <b>64 bits</b>. The key K also has 64 bits, but only 56 of them are used (chart C).</p><p class="small">A longer message is cut into 64-bit blocks (tab 6).</p>`,
-  `<p><b>IP, the initial permutation.</b> It only changes the order of the 64 bits. It adds no security. IP⁻¹ at the end puts the bits back.</p><p class="small">Step by step: <button class="lnk" data-goto="ip">tab 7</button></p>`,
+  `<p><b>Two inputs.</b> The plaintext x is one block of <b>64 bits</b>. The key K also has 64 bits, but only 56 of them are used (chart C).</p><p class="small">A longer message is cut into 64-bit blocks (tab 7).</p>`,
+  `<p><b>IP, the initial permutation.</b> It only changes the order of the 64 bits. It adds no security. IP⁻¹ at the end puts the bits back.</p><p class="small">Step by step: <button class="lnk" data-goto="ip">tab 8</button></p>`,
   `<p><b>Split.</b> L₀ = the left 32 bits, R₀ = the right 32 bits.</p>`,
-  `<p><b>Round 1.</b> R₀ goes into f together with the round key K₁ (48 bits). The output f(R₀, K₁) has 32 bits and is XORed into L₀.</p><p>Then the halves swap: <b>L₁ = R₀</b> and <b>R₁ = L₀ ⊕ f(R₀, K₁)</b>.</p><p class="small">Inside f: <button class="lnk" data-fch="B">chart B</button> · animation: <button class="lnk" data-goto="feistel">tab 1</button></p>`,
+  `<p><b>Round 1.</b> R₀ goes into f together with the round key K₁ (48 bits). The output f(R₀, K₁) has 32 bits and is XORed into L₀.</p><p>Then the halves swap: <b>L₁ = R₀</b> and <b>R₁ = L₀ ⊕ f(R₀, K₁)</b>.</p><p class="small">Inside f: <button class="lnk" data-fch="B">chart B</button> · animation: <button class="lnk" data-goto="feistel">tab 2</button></p>`,
   `<p><b>Round 2.</b> The same, with K₂: L₂ = R₁, R₂ = L₁ ⊕ f(R₁, K₂).</p>`,
   `<p><b>Rounds 3–15.</b> The same round 13 more times, each with its own key K₃ … K₁₅.</p><p class="note">Every round: Lᵢ = Rᵢ₋₁ and Rᵢ = Lᵢ₋₁ ⊕ f(Rᵢ₋₁, Kᵢ).</p>`,
   `<p><b>Round 16.</b> The same round, but the halves are <b>not swapped</b> at the end. So the pre-output is R₁₆L₁₆.</p><p>Why? Then decryption is the same chart: only the keys go in the order K₁₆ … K₁.</p>`,
-  `<p><b>IP⁻¹</b> undoes IP: every bit goes back to the place it had before IP.</p><p class="small">Step by step: <button class="lnk" data-goto="ip">tab 7</button></p>`,
-  `<p><b>Ciphertext y</b>, 64 bits.</p><p class="note">DES = IP, 16 rounds, IP⁻¹. Decryption: the same steps with the keys K₁₆ … K₁. Try it in <button class="lnk" data-goto="des">tab 6</button>.</p>`],
+  `<p><b>IP⁻¹</b> undoes IP: every bit goes back to the place it had before IP.</p><p class="small">Step by step: <button class="lnk" data-goto="ip">tab 8</button></p>`,
+  `<p><b>Ciphertext y</b>, 64 bits.</p><p class="note">DES = IP, 16 rounds, IP⁻¹. Decryption: the same steps with the keys K₁₆ … K₁. Try it in <button class="lnk" data-goto="des">tab 7</button>.</p>`],
  B:[`<p class="step">Chart B · the function f</p><p>f(R, Kᵢ) is used once in every round. It takes 32 bits of data and a 48-bit round key, and gives back 32 bits.</p><p>Press <b>Step</b>, or click any block.</p>`,
   `<p><b>Inputs:</b> the right half R (32 bits) and the round key Kᵢ (48 bits, from chart C).</p>`,
-  `<p><b>Expansion E: 32 → 48 bits.</b> E only copies bits: each group of 4 also gets one bit from each neighbour.</p><p class="small">Step by step: <button class="lnk" data-goto="e">tab 3</button></p>`,
+  `<p><b>Expansion E: 32 → 48 bits.</b> E only copies bits: each group of 4 also gets one bit from each neighbour.</p><p class="small">Step by step: <button class="lnk" data-goto="e">tab 4</button></p>`,
   `<p><b>XOR with the key.</b> E(R) ⊕ Kᵢ, bit by bit, 48 bits. This is the only place where the key enters f.</p>`,
   `<p><b>Cut into 8 blocks</b> B1 … B8 of 6 bits each: one block for each S-box.</p>`,
-  `<p><b>S-boxes.</b> Sj takes Bj (6 bits) and gives 4 bits by a table lookup: the outer bits choose the row, the middle bits the column. 8 × 4 = 32 bits.</p><p class="small">Step by step: <button class="lnk" data-goto="s">tab 4</button></p>`,
+  `<p><b>S-boxes.</b> Sj takes Bj (6 bits) and gives 4 bits by a table lookup: the outer bits choose the row, the middle bits the column. 8 × 4 = 32 bits.</p><p class="small">Step by step: <button class="lnk" data-goto="s">tab 5</button></p>`,
   `<p><b>Permutation P.</b> The 32 bits change places. ${PDIST?'The 4 bits of every S-box go to 4 different S-boxes in the next round.':''}</p><p class="small">Some textbook figures stop after the S-boxes. In the standard (FIPS 46-3), P comes after them.</p>`,
   `<p><b>Output f(R, Kᵢ)</b>, 32 bits. It goes to ⊕ with the left half L (<button class="lnk" data-fch="A">chart A</button>).</p><p class="small">f never has to be inverted. Decryption computes the same f again.</p>`],
  C:[`<p class="step">Chart C · key schedule</p><p>From one 64-bit key K, DES makes 16 round keys K₁ … K₁₆ of 48 bits each.</p><p>Press <b>Step</b>, or click any block.</p>`,
@@ -1377,7 +1397,7 @@ const FCX={
   `<p><b>PC-2</b> (permuted choice 2) takes 48 of the 56 bits of C₁D₁, in a new order. The result is the round key <b>K₁</b>.</p><p>C₁ and D₁ themselves go on to round 2 unchanged. PC-2 is the <b>same table</b> in every round.</p>`,
   `<p><b>Round 2.</b> Rotate by 1 again → C₂, D₂ → PC-2 → K₂.</p>`,
   `<p><b>Rounds 3–15.</b> Rotate by 2 (round 9: by 1) → PC-2 → K₃ … K₁₅. Because the rings turn, PC-2 picks different key bits every time.</p>`,
-  `<p><b>Round 16.</b> Rotate by 1 → PC-2 → K₁₆. Now C₁₆ = C₀ and D₁₆ = D₀.</p><p class="note">For decryption the same keys are used in the order K₁₆ … K₁ (<button class="lnk" data-goto="ks">tab 5</button>).</p>`]};
+  `<p><b>Round 16.</b> Rotate by 1 → PC-2 → K₁₆. Now C₁₆ = C₀ and D₁₆ = D₀.</p><p class="note">For decryption the same keys are used in the order K₁₆ … K₁ (<button class="lnk" data-goto="ks">tab 6</button>).</p>`]};
 FC.total=()=>FCT[FC.ch].length-1;
 FC.render=lv=>{
   const k=lv===undefined?FC.k:lv,d=fcDraw(FC.ch,fcPal(false),k),svg=$('svg-fc');
@@ -1496,7 +1516,7 @@ IPX.explain=k=>{
   if(k===2)return `<p class="step">Step 2 of 5 · all 64 bits</p><p>All 64 bits move at the same time, each to its own place.</p><p>Here: x = <span class="mono">${hx(st.left)}</span><br>IP(x) = <span class="mono">${hx(st.right)}</span></p><p>Then the output is cut in two: <b>L₀</b> = rows 1–4 (32 bits), <b>R₀</b> = rows 5–8.</p><p class="small">Look at the colours: every output row has one bit from each of the 8 bytes.</p>`;
   if(k===3)return `<p class="step">Step 3 of 5 · the hidden pattern</p>${f.pattern?`<p>Each output row is <b>one column</b> of x, read from the bottom (byte 8) to the top (byte 1).</p><p>Row 1 = column ${f.rows[0].col}: bits 58, 50, 42, …, 2. That is why the table counts down by 8.</p><p class="note">${f.rows.map((r,i)=>`row ${i+1} ← column ${r.col}`).join('<br>')}</p><p>So <b style="color:var(--cL)">L₀</b> gets the even columns (bits 2, 4, 6, 8 of every byte) and <b style="color:var(--cR)">R₀</b> the odd columns (1, 3, 5, 7).</p>`:'<p>(The pattern check failed.)</p>'}`;
   if(k===4)return `<p class="step">Step 4 of 5 · IP⁻¹ puts them back</p><p>The final permutation IP⁻¹ is the <b>inverse</b> of IP: every bit goes back to the place it had before IP.</p><p>Example: IP moved bit 1 to place 40, so IP⁻¹ takes bit 40 back to place 1. That is why the IP⁻¹ table starts with 40.</p><p>Here IP⁻¹(IP(x)) = <span class="mono">${hx(st.right)}</span> = x.</p>${f.inv?'<p class="note">IP⁻¹(IP(x)) = x for all 64 bit positions (checked in this page).</p>':''}`;
-  return `<p class="step">Step 5 of 5 · why?</p><p>IP and IP⁻¹ use <b>no key</b> and the tables are public. Anyone can undo them, so they add <b>no security</b>.</p><p>Schneier (Applied Cryptography) says they made it easier to load data into DES chips of the 1970s in byte-sized pieces.</p><p class="note">In DES: L₀R₀ = IP(x) at the start. At the end, after round 16: y = IP⁻¹(R₁₆L₁₆).</p><p class="small">The whole picture: <button class="lnk" data-goto="fc">tab 8</button>. IP on any message: <button class="lnk" data-goto="des">tab 6</button>.</p>`;
+  return `<p class="step">Step 5 of 5 · why?</p><p>IP and IP⁻¹ use <b>no key</b> and the tables are public. Anyone can undo them, so they add <b>no security</b>.</p><p>Schneier (Applied Cryptography) says they made it easier to load data into DES chips of the 1970s in byte-sized pieces.</p><p class="note">In DES: L₀R₀ = IP(x) at the start. At the end, after round 16: y = IP⁻¹(R₁₆L₁₆).</p><p class="small">The whole picture: <button class="lnk" data-goto="fc">tab 1</button>. IP on any message: <button class="lnk" data-goto="des">tab 7</button>.</p>`;
 };
 IPX.legend=()=>IPX.k===3?`<h3>Colours</h3><div class="lg"><span class="sw" style="background:var(--cL)"></span>even columns (bits 2, 4, 6, 8 of a byte) → L₀</div><div class="lg"><span class="sw" style="background:var(--cR)"></span>odd columns (bits 1, 3, 5, 7) → R₀</div>`
   :`<h3>Colours</h3><div class="lg"><span class="sws">${[0,1,2,3,4,5,6,7].map(j=>`<i style="background:var(--g${j})"></i>`).join('')}</span>bytes 1–8 of x (where the bit started)</div><div class="lg"><span class="sw" style="border:1.6px dashed var(--line2)"></span>empty place: its bit has not arrived yet</div><p class="small">Small number in a cell: its place on the left, the table entry on the right.</p>`;
@@ -1637,7 +1657,7 @@ document.addEventListener('click',e=>{
   const fb=e.target.closest('[data-fbit]');
   if(fb&&ENG.tab==='f'){FS.trace=+fb.dataset.fbit;setPlaying(false);if(FS.k===5&&!ENG.anim){FS.level=4;FS.render0();panel();}else{stopAnim(true);FS.k=4;startStage(5);}}
 });
-/* tab 7 (IP) interaction */
+/* tab 8 (IP) interaction */
 $('svg-ip').addEventListener('mouseover',e=>{const b=e.target.closest('[data-gi]');IPX.hl(b?b.dataset.gi:null);});
 $('svg-ip').addEventListener('mouseleave',()=>IPX.hl(null));
 $('vp-ip').addEventListener('click',e=>{
@@ -1646,7 +1666,7 @@ $('vp-ip').addEventListener('click',e=>{
   if(f){const j=+f.dataset.ipflip,xi=IPX.k>=4?T4.IP[j]-1:j;IPX.x[xi]^=1;IPX.render();panel();IPX.hl('L'+j);return;}
   if(st.dataset.ipset==='ex')IPX.x=null;else IPX.x=IPX.x.map(()=>Math.random()<.5?1:0);IPX.ensure();IPX.render();panel();
 });
-/* tab 8 interaction */
+/* tab 1 interaction */
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-fch]');
   if(c){setPlaying(false);if(ENG.anim)stopAnim(false);FC.ch=c.dataset.fch;FC.k=0;if(ENG.tab!=='fc')switchTab('fc');else{FC.render();panel();}$('vp-fc').scrollIntoView({block:'start',behavior:'smooth'});return;}
@@ -1654,7 +1674,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('#svg-fc [data-fcs]');
   if(b){setPlaying(false);if(ENG.anim)stopAnim(true);FC.k=+b.dataset.fcs;FC.render();panel();}
 });
-/* tab 3 and tab 4 interaction */
+/* tab 4 and tab 5 interaction */
 $('svg-e').addEventListener('mouseover',e=>{const b=e.target.closest('[data-er]');EX.hl(b?+b.dataset.er:-1);});
 $('svg-e').addEventListener('mouseleave',()=>EX.hl(-1));
 $('vp-e').addEventListener('click',e=>{
@@ -1685,7 +1705,8 @@ document.addEventListener('keydown',e=>{
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(ENG.tab==='des')return;if(!ENG.anim){if(ENG.tab==='ks')$('ks-ring')&&($('ks-ring').innerHTML='');cur().render();panel();}});
 window.DF={FE,FS,EX,SB,IPX,FC,KS,ENG,startStage,switchTab,SDEP,ALLDEP,PDIST,PC1,PC2,SHIFTS};
 FE.init();FE.render();panel();
-/* ================= tab 6: encrypt / decrypt, step by step ================= */
+switchTab('fc');            // the page opens on the overview
+/* ================= tab 7: encrypt / decrypt, step by step ================= */
 window.T4=(function(){
 'use strict';
 const IP=[58,50,42,34,26,18,10,2,60,52,44,36,28,20,12,4,62,54,46,38,30,22,14,6,64,56,48,40,32,24,16,8,57,49,41,33,25,17,9,1,59,51,43,35,27,19,11,3,61,53,45,37,29,21,13,5,63,55,47,39,31,23,15,7];
