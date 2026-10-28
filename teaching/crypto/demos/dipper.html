@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dipper step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;
+  --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;--carry:#b7791f;--carryBg:#fdf3dc;
+  --wA:#3b74d6;--wB:#e8892c;--wC:#2f9e6a;--wD:#d24b4b;
+  --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;
+  --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;--carry:#e6b450;--carryBg:#33280f;
+  --wA:#5a8fe8;--wB:#f09a45;--wC:#45b882;--wD:#e46464;
+  --g0:#3f72c9;--g1:#c97a2e;--g2:#2f8c60;--g3:#bd4a4a;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{font-family:var(--mono);width:100%}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.mono{font-family:var(--mono)}
+.k{color:var(--key);font-weight:600}
+button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+a{color:var(--accent)}
+
+.inbar{display:grid;grid-template-columns:minmax(200px,auto) minmax(0,1fr) minmax(0,1.3fr) auto;gap:10px 14px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.meta{font-size:13px;color:var(--muted);white-space:nowrap;padding-bottom:8px}
+.meta b{color:var(--ink)}
+.err{grid-column:1/-1;color:var(--xor);font-size:13px;margin-top:-4px}
+.err:empty{display:none}
+@media (max-width:900px){.inbar{grid-template-columns:1fr}.meta{padding:0}}
+
+/* state = four 16-bit words, each 4 nibbles */
+.state{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center}
+.word{display:flex;flex-direction:column;align-items:center;gap:3px}
+.wl{font:600 12px var(--sans)}
+.wl small{font-weight:400;color:var(--faint)}
+.wn{display:flex;gap:3px;padding:3px;border-radius:7px;border:2px solid transparent}
+.c{width:30px;height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 15px var(--mono);line-height:1.05;border-radius:5px;background:var(--panel);border:1px solid var(--line2);transition:background .25s,border-color .25s}
+.c small{font:400 9px var(--sans);color:var(--faint)}
+.c.emp{color:var(--faint);border-style:dashed;background:transparent;font-weight:400}
+.c.done{color:var(--faint)}
+.c.chg{background:var(--accentBg);border-color:var(--accent)}
+.c.key{background:var(--keyBg);border-color:var(--key)}
+.c.cur{outline:3px solid var(--ink);outline-offset:1px}
+.c.hi{background:var(--xorBg);border-color:var(--xor)}
+.c.off{opacity:.45}
+.gw{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.gcap{font-size:13px;color:var(--muted);text-align:center}
+.gcap b{color:var(--ink)}
+.op{font-size:15px;color:var(--muted);text-align:center;font-weight:600}
+.op big{font-size:20px;color:var(--ink);margin-right:6px}
+.stack{display:flex;flex-direction:column;align-items:center;gap:10px}
+.sec{margin-top:22px}
+.scroll{overflow-x:auto;max-width:100%}
+
+/* 16-bit binary rows */
+.bw{border-collapse:separate;border-spacing:2px 3px;font:13px var(--mono);margin:0 auto}
+.bw th{font:600 12.5px var(--sans);text-align:right;padding-right:8px;white-space:nowrap}
+.bw td.b{width:17px;height:22px;text-align:center;border-radius:3px;background:var(--line);color:var(--ink)}
+.bw td.b.one{background:var(--line2)}
+.bw td.gap{width:6px}
+.bw td.hx{padding-left:10px;color:var(--muted);text-align:left;white-space:nowrap}
+.bw tr.res td.b{font-weight:700;outline:1.5px solid var(--ink);outline-offset:-1.5px}
+.bw tr.res th{border-top:0}
+.bw td.b.mv{background:var(--accent);color:var(--onAccent)}
+.bw td.b.cy{background:var(--carryBg);color:var(--carry);font-weight:700}
+.bw td.b.cy1{background:var(--carry);color:#fff;font-weight:700}
+.bw td.b.df{background:var(--xor);color:#fff}
+.bw td.b.k1{background:var(--keyBg);color:var(--key)}
+.bw td.b.rc{background:var(--key);color:#fff;font-weight:700}
+.bw tr.sep td{height:2px;padding:0;background:var(--ink)}
+.bw .idx td{font:9px var(--sans);color:var(--faint);text-align:center;background:none}
+
+/* tables */
+.st{border-collapse:collapse;font:14px var(--mono);margin:0 auto}
+.st th{font:600 12px var(--sans);color:var(--muted);padding:3px 8px 3px 0;text-align:left;white-space:nowrap}
+.st td{border:1px solid var(--line);padding:3px 0;width:26px;text-align:center}
+.st td.hit{background:var(--ink);color:var(--bg);font-weight:700}
+.ddt{border-collapse:collapse;font:11px var(--mono);margin:0 auto}
+.ddt th{color:var(--muted);font-weight:600;padding:1px 3px}
+.ddt td{width:20px;height:19px;text-align:center;border:1px solid var(--line)}
+.bt{border-collapse:collapse;font:13px var(--mono)}
+.bt th{font:600 12px var(--sans);color:var(--muted);text-align:left;padding:2px 8px 2px 0;white-space:nowrap}
+.bt td{width:18px;text-align:center;padding:2px 0}
+.bt tr.res td,.bt tr.res th{border-top:2px solid var(--ink);font-weight:700;color:var(--ink)}
+.bt td.hx{width:auto;padding-left:10px;color:var(--muted)}
+
+/* key register */
+.kreg{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.kw{display:flex;flex-direction:column;align-items:center;gap:2px}
+.kw .lab{font:600 12px var(--sans);color:var(--muted)}
+.kw .v{font:600 15px var(--mono);padding:6px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--panel);min-width:62px;text-align:center}
+.kw .v.rk{background:var(--keyBg);border-color:var(--key)}
+.kw .v.chg{background:var(--accentBg);border-color:var(--accent)}
+.kw .v u{text-decoration:none;background:var(--xor);color:#fff;border-radius:3px;padding:0 1px}
+.kw .src{font:11px var(--mono);color:var(--accent);min-height:15px;text-align:center}
+.rcl{display:flex;flex-wrap:wrap;gap:3px}
+.rcl span{font:11.5px var(--mono);padding:2px 5px;border:1px solid var(--line);border-radius:4px}
+.rcl span.on{background:var(--key);color:#fff;border-color:var(--key)}
+
+/* pLayer svg */
+#pl svg{width:100%;height:auto;display:block}
+#pl .bx{fill:var(--panel);stroke:var(--line2)}
+#pl .bv{font:9px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+#pl .wl2{stroke:var(--line);stroke-width:1;fill:none}
+#pl .wl2.dn{stroke-width:1.4;opacity:.75}
+#pl .wl2.on{stroke-width:3;opacity:1}
+#pl .bit{cursor:pointer}
+#pl .nlab{font:9px var(--sans);fill:var(--faint);text-anchor:middle}
+#pl .glab{font:600 11px var(--sans);text-anchor:middle}
+#pl .bx.on{stroke:var(--ink);stroke-width:2}
+
+/* chips, results */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:18px}
+.rg{display:flex;gap:1px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:1px 3px}
+.rg b{font-size:10.5px;color:var(--muted);margin-right:2px;font-weight:600}
+.chip{font:11px var(--mono);padding:2px 4px;border-radius:4px;border:0;background:transparent;color:var(--faint)}
+.chip.done{color:var(--ink)}
+.chip.on{background:var(--accent);color:var(--onAccent)}
+.result{margin-top:18px;padding:10px 12px;border-radius:8px;background:var(--okBg);font-size:15px}
+.rt{border-collapse:collapse;font-size:12.5px;width:100%}
+.rt td,.rt th{padding:2px 4px;border-bottom:1px solid var(--line);text-align:left}
+.rt th{color:var(--muted);font-weight:600}
+.rt td.mono{font-size:12px}
+.rt tr.on td{background:var(--accentBg)}
+.rtw{max-height:420px;overflow:auto}
+
+/* overview */
+.ov{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:820px){.ov{grid-template-columns:1fr}}
+#rd svg{width:100%;height:auto;display:block;max-width:560px;margin:0 auto}
+#rd .bx{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
+#rd .go{cursor:pointer}
+#rd .go:hover .bx{stroke:var(--accent);stroke-width:2.5}
+#rd .t{font:600 14px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+#rd .ts{font:12px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+#rd .tm{font:600 14px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+#rd .ln{stroke:var(--muted);stroke-width:2;fill:none}
+#rd .ar{fill:var(--muted)}
+#rd .lane{font:700 15px var(--sans);text-anchor:middle}
+#rd .kb{fill:var(--keyBg);stroke:var(--key)}
+#rd .kt{fill:var(--key)}
+.vt{border-collapse:collapse;font-size:14px;width:100%;margin-top:6px}
+.vt td,.vt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.vt th{color:var(--muted);font-weight:600;font-size:13px}
+.paper{margin-top:16px;padding:10px 12px;border-radius:8px;background:var(--accentBg);font-size:14px}
+
+/* diffusion */
+.bitpick{display:grid;grid-template-columns:repeat(16,1fr);gap:4px 6px;max-width:640px;margin:0 auto}
+@media (max-width:620px){.bitpick{grid-template-columns:repeat(8,1fr)}}
+.n4{display:flex;flex-direction:column;align-items:center;gap:2px}
+.n4 span{font:11px var(--mono);color:var(--muted)}
+.n4 div{display:flex;gap:1px}
+.n4 i{width:8px;height:16px;border-radius:2px;background:var(--line);cursor:pointer;display:block}
+.n4 i.one{background:var(--line2)}
+.n4 i.flip{background:var(--xor)}
+.drows{display:flex;flex-direction:column;gap:6px;align-items:center}
+.drow{display:flex;align-items:center;gap:8px}
+.drow>span{font-size:12px;color:var(--muted);width:92px;text-align:right}
+.drow .state{gap:4px;flex-wrap:nowrap}.drow .wn{gap:1px;padding:0;border-width:0}.drow .word{gap:0}
+.drow .c{width:18px;height:20px;font-size:10px;font-weight:500;border-radius:3px}
+@media (max-width:620px){.drow .c{width:13px;font-size:8px}.drow>span{width:60px}}
+.bars{display:flex;align-items:flex-end;gap:2px;height:130px;position:relative;margin:24px auto 0;max-width:640px;border-bottom:1px solid var(--line2)}
+.bars .bar{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:1px}
+.bars .ref{position:absolute;left:0;right:0;border-top:1.5px dashed var(--xor)}
+.bars .ref span{position:absolute;right:0;top:-17px;font-size:11px;color:var(--xor)}
+.blbl{display:flex;justify-content:space-between;max-width:640px;margin:4px auto 0;font-size:11px;color:var(--muted)}
+
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Dipper, step by step</h1>
+  <p class="sub">A lightweight hybrid SPN–ARX block cipher: S-boxes, word rotations, modular additions and a bit permutation</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="ov" class="on">1 · Overview</button>
+    <button data-tab="ark">2 · AddRoundKey</button>
+    <button data-tab="sc">3 · SubCells</button>
+    <button data-tab="arx">4 · Rotations + ARX</button>
+    <button data-tab="pl">5 · Bit permutation</button>
+    <button data-tab="ks">6 · Key schedule</button>
+    <button data-tab="x">7 · Encrypt / Decrypt</button>
+    <button data-tab="df">8 · Diffusion</button>
+  </nav>
+</header>
+
+<section class="wrap">
+  <div class="card inbar">
+    <label class="fld"><span class="flh"><b>Example</b></span><select id="pre"></select></label>
+    <div class="fld"><div class="flh"><b>Plaintext</b> <span>64 bits = 16 hex digits</span></div><input type="text" id="ptI" spellcheck="false" autocomplete="off"></div>
+    <div class="fld"><div class="flh"><b>Key</b> <span>96 or 128 bits = 24 or 32 hex digits</span></div><input type="text" id="kI" spellcheck="false" autocomplete="off"></div>
+    <div class="meta" id="meta"></div>
+    <div class="err" id="err"></div>
+  </div>
+</section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stage"></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <div class="seg" id="mode"><button data-m="enc" class="on">Encrypt</button><button data-m="dec">Decrypt</button></div>
+        <label class="inl" id="rWrap">Round <select id="rSel"></select></label>
+      </div>
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline. Follows Dipper Specification v1.1; test vectors from its Section 13.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const h1=v=>v.toString(16);
+const hex=(v,n=16)=>v.toString(16).padStart(n,'0');
+const B=BigInt;
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+
+/* ---------- Dipper primitives (Specification v1.1) ---------- */
+const S=[0x1,0xA,0x4,0xC,0x6,0xF,0x3,0x9,0x2,0xD,0xB,0x7,0x5,0x0,0x8,0xE];   // GIFT S-box
+const SI=[];S.forEach((y,x)=>SI[y]=x);
+const ROT=[1,4,7,11];                                                          // A, B, C, D
+const P=i=>4*(i>>4)+16*((3*((i&15)>>2)+(i&3))&3)+(i&3);                         // GIFT-64 permutation
+const PI=[];for(let i=0;i<64;i++)PI[P(i)]=i;
+const M64=(1n<<64n)-1n;
+const rotl16=(x,r)=>((x<<r)|(x>>(16-r)))&0xFFFF;
+const rotr16=(x,r)=>((x>>r)|(x<<(16-r)))&0xFFFF;
+const nib=(s,n)=>Number((s>>B(4*n))&15n);
+const bit=(s,i)=>Number((s>>B(i))&1n);
+const words=s=>[48,32,16,0].map(o=>Number((s>>B(o))&0xFFFFn));
+const join=w=>w.reduce((a,v)=>(a<<16n)|B(v),0n);
+function sub(s,box=S){let o=0n;for(let n=0;n<16;n++)o|=B(box[nib(s,n)])<<B(4*n);return o}
+function perm(s,inv){let o=0n;for(let i=0;i<64;i++)if((s>>B(i))&1n)o|=1n<<B(inv?PI[i]:P(i));return o}
+const rotW=s=>{const w=words(s);return join(w.map((v,j)=>rotl16(v,ROT[j])))};
+const irotW=s=>{const w=words(s);return join(w.map((v,j)=>rotr16(v,ROT[j])))};
+const arx=s=>{const [a,b,c,d]=words(s);return join([(a+b)&0xFFFF,b,(c+d)&0xFFFF,d])};
+const iarx=s=>{const [a,b,c,d]=words(s);return join([(a-b)&0xFFFF,b,(c-d)&0xFFFF,d])};
+const lfsr=l=>((l<<1)|(((l>>4)^(l>>1))&1))&31;
+
+function schedule(MK,kb){
+  const n=kb/16,M=(1n<<B(kb))-1n;let K=MK,l=1;const RK=[],st=[];
+  const kw=K=>range(0,n-1).map(j=>Number((K>>B(16*j))&0xFFFFn));   // kw[j] = k_j
+  const fromKw=w=>w.reduce((a,v,j)=>a|(B(v)<<B(16*j)),0n);
+  for(let i=1;i<=28;i++){
+    RK.push(K&M64);
+    const k=kw(K);let nw;
+    if(kb===96)nw=[k[4],k[5],rotr16(k[0],12),rotr16(k[1],2),k[2],k[3]];              // (k5..k0) <- (k3,k2,ROTR(k1,2),ROTR(k0,12),k5,k4)
+    else nw=[rotr16(k[0],12),rotr16(k[1],2),k[4],k[5],k[6],k[7],k[2],k[3]];           // (k7..k0) <- (k3,k2,k7,k6,k5,k4,ROTR(k1,2),ROTR(k0,12))
+    const K1=fromKw(nw);let K2=K1;
+    const pos=kb===96?[92,68,44,20]:[124,60,28];
+    for(const p of pos){const v=Number((K2>>B(p))&15n);K2=(K2&~(15n<<B(p))&M)|(B(S[v])<<B(p))}
+    const rcs=kb===96?48:64,K3=K2^(B(l)<<B(rcs));
+    st.push({i,rc:l,reg:K,K1,K2,K3,pos,rcs});
+    K=K3;l=lfsr(l);
+  }
+  return {RK,st,kb,n};
+}
+function encTrace(pt,KS){
+  let s=pt;const ops=[{r:0,op:'in',s}];
+  const add=(r,op,f,ki)=>{const p=s;s=f(s);ops.push({r,op,p,s,ki})};
+  for(let r=1;r<=28;r++){add(r,'ark',x=>x^KS.RK[r-1],r);add(r,'sc',x=>sub(x));add(r,'rot',rotW);add(r,'arx',arx);add(r,'p',x=>perm(x))}
+  return ops;
+}
+function decTrace(ct,KS){
+  let s=ct;const ops=[{r:0,op:'in',s}];
+  const add=(r,op,f,ki)=>{const p=s;s=f(s);ops.push({r,op,p,s,ki})};
+  for(let r=1;r<=28;r++){const ki=29-r;add(r,'ip',x=>perm(x,true));add(r,'iarx',iarx);add(r,'irot',irotW);add(r,'isc',x=>sub(x,SI));add(r,'ark',x=>x^KS.RK[ki-1],ki)}
+  return ops;
+}
+// S-box properties, computed here
+const DDT=[...Array(16)].map(()=>Array(16).fill(0));
+for(let x=0;x<16;x++)for(let a=0;a<16;a++)DDT[a][S[x]^S[x^a]]++;
+const DU=Math.max(...DDT.slice(1).flat());
+const par=v=>{let p=0;while(v){p^=v&1;v>>=1}return p};
+let LIN=0;for(let a=1;a<16;a++)for(let b=1;b<16;b++){let w=0;for(let x=0;x<16;x++)w+=par((a&x)^(b&S[x]))?-1:1;LIN=Math.max(LIN,Math.abs(w))}
+
+/* ---------- data ---------- */
+const PRE=[
+  {id:'tv1',name:'TV1 · Dipper-64/96 (spec example)',pt:'0123456789abcdef',key:'00112233445566778899aabb',ct:'5f189202d3152b8f'},
+  {id:'tv2',name:'TV2 · Dipper-64/96 (all zeros)',pt:'0000000000000000',key:'000000000000000000000000',ct:'d873355ec63b1b4b'},
+  {id:'tv3',name:'TV3 · Dipper-64/128 (spec example)',pt:'0123456789abcdef',key:'000102030405060708090a0b0c0d0e0f',ct:'4b46284387969060'},
+  {id:'tv4',name:'TV4 · Dipper-64/128 (all ones)',pt:'ffffffffffffffff',key:'ffffffffffffffffffffffffffffffff',ct:'6abb4518063706b0'},
+];
+const D={pt:0n,key:0n,kb:96,KS:null,enc:[],dec:[],ct:0n,expect:null};
+function recompute(){D.KS=schedule(D.key,D.kb);D.enc=encTrace(D.pt,D.KS);D.ct=D.enc.at(-1).s;D.dec=decTrace(D.ct,D.KS)}
+function loadPreset(id){const p=PRE.find(x=>x.id===id);$('#ptI').value=p.pt;$('#kI').value=p.key;$('#pre').value=id;onInput()}
+function onInput(){
+  const a=$('#ptI').value.replace(/\s+/g,''),b=$('#kI').value.replace(/\s+/g,'');const e=[];
+  if(!/^[0-9a-fA-F]{16}$/.test(a))e.push(`Plaintext: needs 16 hex digits (now ${a.length}).`);
+  if(!/^[0-9a-fA-F]*$/.test(b)||![24,32].includes(b.length))e.push(`Key: needs 24 or 32 hex digits (now ${b.length}).`);
+  $('#err').textContent=e.join(' ');if(e.length)return;
+  D.pt=B('0x'+a);D.key=B('0x'+b);D.kb=b.length*4;
+  const p=PRE.find(p=>p.pt===a.toLowerCase()&&p.key===b.toLowerCase());
+  $('#pre').value=p?p.id:'custom';D.expect=p?p.ct:null;
+  recompute();
+  $('#meta').innerHTML=`<b>Dipper-64/${D.kb}</b> · 28 rounds`;
+  ST.built='';fillRounds();show(false);
+}
+
+/* ---------- renderers ---------- */
+const WN=['A','B','C','D'],WC=['--wA','--wB','--wC','--wD'];
+// 64-bit state as words A B C D, each 4 nibbles; get(n) gives nibble n (15 = leftmost)
+function state(get,o={}){
+  let h='<div class="state">';
+  for(let w=0;w<4;w++){
+    h+=`<div class="word">${o.nolab?'':`<div class="wl" style="color:var(${WC[w]})">${WN[w]} <small>bits ${63-16*w}…${48-16*w}</small></div>`}<div class="wn" style="${o.wcls&&o.wcls(w)?`border-color:var(${WC[w]})`:''}">`;
+    for(let n=15-4*w;n>=12-4*w;n--){const v=get(n);const cls=['c'];if(v==null)cls.push('emp');if(o.cls)cls.push(o.cls(n)||'');
+      h+=`<div class="${cls.join(' ')}" data-n="${n}">${v==null?'·':h1(v)}${o.noidx?'':`<small>${n}</small>`}</div>`}
+    h+='</div></div>';
+  }
+  return h+'</div>';
+}
+const nv=s=>n=>nib(s,n);
+const gbox=(cap,g)=>`<div class="gw"><div class="gcap">${cap}</div>${g}</div>`;
+const opx=(sym,name)=>`<div class="op"><big>${sym}</big>${name||''}</div>`;
+function bitRows(rows,w=4){let h='<table class="bt">';for(const [l,v,c] of rows)h+=`<tr class="${c||''}"><th>${l}</th>${[...v.toString(2).padStart(w,'0')].map(x=>`<td>${x}</td>`).join('')}<td class="hx">${h1(v)}</td></tr>`;return h+'</table>'}
+// 16-bit binary rows; rows: [label, value, rowClass, cellClass(i)]  (i = bit index 15..0)
+function bw(rows,o={}){
+  let h='<table class="bw">';
+  if(o.idx)h+=`<tr class="idx"><th></th>${range(0,15).map(p=>`<td>${15-p}</td>${p%4===3&&p<15?'<td class="gap"></td>':''}`).join('')}<td></td></tr>`;
+  for(const [l,v,rc,cc] of rows){
+    if(l==='—'){h+=`<tr class="sep"><th style="background:none"></th>${range(0,18).map(()=>'<td></td>').join('')}<td style="background:none"></td></tr>`;continue}
+    h+=`<tr class="${rc||''}"><th>${l}</th>`;
+    for(let p=0;p<16;p++){const i=15-p,b=(v>>i)&1;h+=`<td class="b ${b?'one':''} ${cc?cc(i,b)||'':''}">${b}</td>${p%4===3&&p<15?'<td class="gap"></td>':''}`}
+    h+=`<td class="hx">${v.toString(16).padStart(4,'0')}</td></tr>`;
+  }
+  return h+'</table>';
+}
+function findOp(op,r){return D.enc.find(o=>o.op===op&&o.r===r)}
+const NAME={in:'Input',ark:'AddRoundKey',sc:'SubCells',rot:'Word rotations',arx:'ARX additions',p:'Bit permutation',
+  isc:'Inverse SubCells',irot:'Inverse rotations',iarx:'Subtractions (inverse ARX)',ip:'Inverse permutation'};
+const SHORT={in:'IN',ark:'K',sc:'S',rot:'R',arx:'+',p:'P',isc:'S⁻¹',irot:'R⁻¹',iarx:'−',ip:'P⁻¹'};
+const lane=w=>`<b style="color:var(${WC[w]})">${WN[w]}</b>`;
+
+/* ---------- tabs ---------- */
+const ST={tab:'ov',step:{},round:{sc:1,arx:1,pl:1,ark:1,ks:1},mode:'enc',playing:false,timer:null,built:'',flip:63,plPick:null};
+const stage=$('#stage');const T={};
+
+/* 1 · overview: round diagram */
+function roundSvg(){
+  const X=[95,235,375,515],W=110;let s=`<svg viewBox="0 0 610 520" role="img" aria-label="One round of Dipper">`;
+  s+=`<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L9 5L1 9z" class="ar"/></marker></defs>`;
+  X.forEach((x,w)=>{s+=`<text class="lane" x="${x}" y="16" style="fill:var(${WC[w]})">${WN[w]}</text><text class="ts" x="${x}" y="34">16 bits</text>`});
+  const vl=(x,y1,y2)=>`<path class="ln" d="M${x} ${y1}V${y2}" marker-end="url(#ah)"/>`;
+  X.forEach(x=>{s+=vl(x,44,66)});
+  s+=`<g class="go" data-goto="ark"><rect class="bx kb" x="40" y="68" width="530" height="36" rx="8"/><text class="t kt" x="305" y="86">⊕ round key RK<tspan font-size="10" dy="4">i</tspan><tspan dy="-4"> (all 64 bits)</tspan></text></g>`;
+  X.forEach(x=>{s+=vl(x,104,128)});
+  s+=`<g class="go" data-goto="sc">`;X.forEach(x=>{s+=`<rect class="bx" x="${x-W/2}" y="130" width="${W}" height="36" rx="8"/><text class="t" x="${x}" y="148">S S S S</text>`});s+=`</g>`;
+  X.forEach(x=>{s+=vl(x,166,190)});
+  s+=`<g class="go" data-goto="arx">`;X.forEach((x,w)=>{s+=`<rect class="bx" x="${x-40}" y="192" width="80" height="36" rx="18"/><text class="tm" x="${x}" y="210">⋘ ${ROT[w]}</text>`});s+=`</g>`;
+  [0,2].forEach(w=>{const xa=X[w],xb=X[w+1];
+    s+=vl(xa,228,266);
+    s+=vl(xb,228,326);
+    s+=`<path class="ln" d="M${xb} 284H${xa+19}" marker-end="url(#ah)"/><circle cx="${xb}" cy="284" r="4" class="ar"/>`;
+    s+=`<g class="go" data-goto="arx"><circle class="bx" cx="${xa}" cy="284" r="16"/><text class="t" x="${xa}" y="284">+</text></g>`;
+    s+=`<text class="ts" x="${xa-58}" y="284">mod 2¹⁶</text>`;
+    s+=vl(xa,300,326);
+  });
+  s+=`<g class="go" data-goto="pl"><rect class="bx" x="40" y="328" width="530" height="40" rx="8"/><text class="t" x="305" y="348">Bit permutation P (GIFT-64)</text></g>`;
+  X.forEach(x=>{s+=vl(x,368,398)});
+  X.forEach((x,w)=>{s+=`<text class="lane" x="${x}" y="414" style="fill:var(${WC[w]})">${WN[w]}′</text>`});
+  s+=`<text class="ts" x="305" y="448">The output is the input of the next round.</text>`;
+  s+=`<text class="ts" x="305" y="472">B and D are not changed by the additions; they are added into A and C.</text>`;
+  s+=`<text class="ts" x="305" y="496">Click a box to see that step.</text>`;
+  return s+'</svg>';
+}
+T.ov={n:()=>1,render(){
+  stage.innerHTML=`<div class="ov">
+    <div><div class="h3">One round of Dipper (repeated 28 times)</div><div id="rd">${roundSvg()}</div></div>
+    <div>
+      <div class="h3">Parameters</div>
+      <table class="vt">
+        <tr><th>Block</th><td>64 bits = four 16-bit words A ‖ B ‖ C ‖ D</td></tr>
+        <tr><th>Key</th><td>96 bits (Dipper-64/96) or 128 bits (Dipper-64/128)</td></tr>
+        <tr><th>Rounds</th><td>28 for both versions</td></tr>
+        <tr><th>S-box</th><td>the 4-bit GIFT S-box, 16 per round</td></tr>
+        <tr><th>ARX part</th><td>rotations (1, 4, 7, 11) and 2 additions mod 2<sup>16</sup></td></tr>
+        <tr><th>Linear layer</th><td>the GIFT-64 bit permutation</td></tr>
+        <tr><th>Round keys</th><td>RK<sub>i</sub> = lower 64 bits of the key register</td></tr>
+      </table>
+      <div class="sec"><div class="h3">The state: the input ${hex(D.pt)} split into words and nibbles</div>${state(nv(D.pt))}</div>
+      <div class="paper">Dipper is described in: A. Huseynli, Y. Imamverdiyev, J. Alizadeh, “Dipper: A Lightweight Hybrid SPN–ARX Block Cipher”, <i>Cryptography</i> (MDPI), 2026.
+        <a href="https://doi.org/10.3390/cryptography10040052" target="_blank" rel="noopener">DOI</a> ·
+        <a href="https://github.com/AlexGuseinov/Dipper-lightweight-cipher" target="_blank" rel="noopener">specification and code</a></div>
+    </div></div>`;
+  $('#explain').innerHTML=`<div class="step">What is Dipper?</div>
+    <p>Dipper is a <b>lightweight</b> block cipher for small IoT devices. It has a 64-bit block and a 96- or 128-bit key.</p>
+    <p>It is a <b>hybrid</b>: an SPN (S-boxes + bit permutation, like PRESENT and GIFT) with an extra <b>ARX</b> step (Addition, Rotation, XOR, like SPECK).</p>
+    <p>So every round has two different sources of non-linearity: the S-box and the carries of modular addition.</p>`;
+  $('#extra').innerHTML=`<h3>The five steps of a round</h3>
+    <p>1. <button class="link" data-goto="ark">AddRoundKey</button>: XOR the 64-bit round key.</p>
+    <p>2. <button class="link" data-goto="sc">SubCells</button>: 16 GIFT S-boxes.</p>
+    <p>3. <button class="link" data-goto="arx">Word rotations</button>: A ⋘ 1, B ⋘ 4, C ⋘ 7, D ⋘ 11.</p>
+    <p>4. <button class="link" data-goto="arx">ARX additions</button>: A ← A + B, C ← C + D (mod 2<sup>16</sup>).</p>
+    <p>5. <button class="link" data-goto="pl">Bit permutation</button>: the GIFT-64 permutation P.</p>
+    <p class="note">Rotations and the permutation are only wires in hardware, so they cost no gates.</p>`;
+}};
+
+/* 2 · AddRoundKey (word by word) */
+T.ark={n:()=>5,rounds:()=>range(1,28),render(k){
+  const r=ST.round.ark,o=findOp('ark',r),K=D.KS.RK[r-1],cur=k>0?k-1:-1;
+  const sw=words(o.p),kw=words(K),ow=words(o.s);
+  stage.innerHTML=`<div class="stack">
+    ${gbox(`State · ${r===1?'plaintext':`output of round ${r-1}`}`,state(nv(o.p),{wcls:w=>w===cur}))}
+    ${opx('⊕')}
+    ${gbox(`Round key <b class="k">RK${r}</b> = k3 ‖ k2 ‖ k1 ‖ k0`,state(nv(K),{cls:()=>'key',wcls:w=>w===cur}))}
+    ${opx('=')}
+    ${gbox('Output',state(n=>k>0&&(15-n>>2)<k?nib(o.s,n):null,{cls:n=>k>0&&(15-n>>2)<k?'chg':'',wcls:w=>w===cur}))}
+  </div>
+  ${cur>=0?`<div class="sec"><div class="h3">Word ${WN[cur]}: bit-by-bit XOR</div><div class="scroll">${bw([[`${WN[cur]}`,sw[cur]],[`⊕ key`,kw[cur],'',(i,b)=>b?'k1':''],['—'],[`= ${WN[cur]}`,ow[cur],'res']])}</div></div>`:''}`;
+  $('#explain').innerHTML=cur<0?`<div class="step">AddRoundKey · round ${r}</div>
+    <p>The whole 64-bit state is XORed with the round key RK<sub>${r}</sub>.</p>
+    <p>RK<sub>${r}</sub> is the <b>lower 64 bits</b> of the key register in round ${r} (words k3 k2 k1 k0). See the <button class="link" data-goto="ks" data-round="${Math.min(r,28)}">key schedule</button>.</p>
+    <p>Dipper adds the key to <b>all</b> 64 bits. GIFT adds it to only half of the bits.</p>`
+   :`<div class="step">Word ${WN[cur]}</div><p class="mono">${hex(sw[cur],4)} ⊕ <span class="k">${hex(kw[cur],4)}</span> = <b>${hex(ow[cur],4)}</b></p><p>A bit flips where the key bit is 1.</p>`;
+  $('#extra').innerHTML=`<h3>All round keys (${D.kb}-bit key)</h3><div class="rtw"><table class="rt"><tr><th>i</th><th>RK<sub>i</sub></th></tr>${D.KS.RK.map((v,i)=>`<tr class="${i+1===r?'on':''}"><td>${i+1}</td><td class="mono">${hex(v)}</td></tr>`).join('')}</table></div>`;
+  const on=$('#extra tr.on');if(on)on.scrollIntoView({block:'nearest'});
+}};
+
+/* 3 · SubCells */
+T.sc={n:()=>17,rounds:()=>range(1,28),render(k){
+  const r=ST.round.sc,o=findOp('sc',r),cur=k>0?16-k:-1,x=cur>=0?nib(o.p,cur):null;
+  let ddt='<table class="ddt"><tr><th>Δin\\Δout</th>'+range(0,15).map(b=>`<th>${h1(b)}</th>`).join('')+'</tr>';
+  for(let a=0;a<16;a++)ddt+=`<tr><th>${h1(a)}</th>`+DDT[a].map(v=>`<td style="${v&&a?`background:color-mix(in srgb,var(--accent) ${v*14}%,transparent)`:''}">${v||''}</td>`).join('')+'</tr>';
+  ddt+='</table>';
+  stage.innerHTML=`<div class="stack">
+    ${gbox(`Input · round ${r} (after AddRoundKey)`,state(nv(o.p),{cls:n=>n===cur?'cur':(cur>=0&&n>cur?'done':'')}))}
+    ${opx('↓','GIFT S-box on every nibble')}
+    ${gbox('Output',state(n=>k>0&&n>=16-k?nib(o.s,n):null,{cls:n=>n===cur?'cur chg':(k>0&&n>=16-k?'chg':'')}))}
+  </div>
+  <div class="sec"><div class="h3">The GIFT S-box</div><div class="scroll"><table class="st">
+    <tr><th>x</th>${range(0,15).map(v=>`<td class="${v===x?'hit':''}">${h1(v)}</td>`).join('')}</tr>
+    <tr><th>S(x)</th>${S.map((v,i)=>`<td class="${i===x?'hit':''}">${h1(v)}</td>`).join('')}</tr></table></div></div>
+  <div class="sec"><div class="h3">Difference distribution table (DDT): number of x with S(x) ⊕ S(x ⊕ Δin) = Δout</div><div class="scroll">${ddt}</div></div>`;
+  $('#explain').innerHTML=cur<0?`<div class="step">SubCells · round ${r}</div>
+    <p>The state is cut into 16 nibbles (4 bits each). Every nibble goes through the same 4-bit <b>GIFT S-box</b>.</p>
+    <p>Dipper reuses this S-box from GIFT (CHES 2017) because it is small and has been studied a lot.</p>`
+   :`<div class="step">Nibble ${cur} (word ${WN[3-(cur>>2)]}, bits ${4*cur+3}…${4*cur})</div>
+    <p>S(<span class="mono"><b>${h1(x)}</b></span>) = <span class="mono"><b>${h1(S[x])}</b></span></p>${bitRows([['in',x],['out',S[x],'res']])}`;
+  $('#extra').innerHTML=`<h3>Properties (computed from the table)</h3>
+    <p>Differential uniformity: <b>${DU}</b>. The best difference holds with probability ${DU}/16 ≈ 2<sup>−${(Math.log2(16/DU)).toFixed(3)}</sup>.</p>
+    <p>Linearity (max |Walsh value|): <b>${LIN}</b>, so the best linear bias is ${LIN}/32 = 2<sup>−${Math.log2(32/LIN)}</sup>.</p>
+    <p class="note">The GIFT S-box was chosen together with the GIFT bit permutation (the “BOGI” idea), which Dipper also uses in step 5.</p>`;
+}};
+
+/* 4 · rotations + ARX */
+function carries(a,b){const c=[0];let cy=0;for(let i=0;i<16;i++){const x=(a>>i)&1,y=(b>>i)&1;cy=(x&y)|(x&cy)|(y&cy);c.push(cy)}let v=0;for(let i=0;i<16;i++)v|=c[i]<<i;return {cin:v,out:c[16]}}
+T.arx={n:()=>7,rounds:()=>range(1,28),render(k){
+  const r=ST.round.arx,o=findOp('rot',r),q=findOp('arx',r);
+  const w0=words(o.p),w1=words(o.s),w2=words(q.s);
+  const rotated=j=>k>j;      // word j rotated after step j+1
+  let main='';
+  const wrow=(j)=>{
+    const v=rotated(j)?w1[j]:w0[j];
+    const moved=(i)=>rotated(j)&&k===j+1&&i<ROT[j]?'mv':'';
+    return [`${WN[j]}${rotated(j)?'₁':''}`,v,'',moved];
+  };
+  if(k<=4){
+    main=`<div class="gcap" style="margin-bottom:8px">The four words after SubCells${k>0?', rotating one by one':''}. Bit 15 on the left.</div>
+      <div class="scroll">${bw([0,1,2,3].map(wrow),{idx:true})}</div>`;
+    if(k>0){const j=k-1;main+=`<div class="sec"><div class="h3">${WN[j]}₁ = ROTL16(${WN[j]}, ${ROT[j]})</div><div class="scroll">${bw([[WN[j],w0[j]],[`${WN[j]} ⋘ ${ROT[j]}`,w1[j],'res',i=>i<ROT[j]?'mv':'']])}</div>
+      <p class="gcap" style="margin-top:6px">Blue bits came around from the left end (bits ${15}…${16-ROT[j]} of ${WN[j]}).</p></div>`}
+  } else {
+    const j=k===5?0:2,a=w1[j],b=w1[j+1],s=w2[j],{cin,out}=carries(a,b),x=a^b;
+    main=`<div class="gcap" style="margin-bottom:8px">${WN[j]}₂ = ${WN[j]}₁ + ${WN[j+1]}₁ mod 2<sup>16</sup>. Addition works right to left, like on paper.</div>
+      <div class="scroll">${bw([
+        ['carry in',cin,'',(i,bv)=>bv?'cy1':'cy'],
+        [`${WN[j]}₁`,a],[`+ ${WN[j+1]}₁`,b],['—'],
+        [`= ${WN[j]}₂`,s,'res',i=>((s^x)>>i)&1?'df':''],
+      ],{idx:true})}</div>
+      <div class="sec"><div class="h3">Compare with plain XOR (no carries)</div><div class="scroll">${bw([
+        [`${WN[j]}₁ ⊕ ${WN[j+1]}₁`,x],[`${WN[j]}₁ + ${WN[j+1]}₁`,s,'res',i=>((s^x)>>i)&1?'df':'']])}</div>
+      <p class="gcap" style="margin-top:6px">The red bits are where the sum differs from XOR: exactly the positions with carry-in 1. ${out?'The last carry (out of bit 15) is thrown away: that is “mod 2¹⁶”.':''}</p></div>`;
+    if(k===6)main+=`<div class="sec"><div class="h3">Result of the ARX layer</div>${state(nv(q.s),{wcls:w=>w===0||w===2})}<p class="gcap" style="margin-top:6px">A₂ ‖ B₁ ‖ C₂ ‖ D₁ goes to the bit permutation.</p></div>`;
+  }
+  stage.innerHTML=main;
+  const ex=[`<div class="step">Rotations + ARX · round ${r}</div><p>After SubCells the state is split into four 16-bit words A, B, C, D.</p><p>First each word is <b>rotated left</b> by its own amount: 1, 4, 7, 11. Then two <b>modular additions</b> mix the words: A + B and C + D.</p>`,
+    `<div class="step">Rotate A by 1</div><p>Every bit moves 1 position to the left. Bit 15 comes back as bit 0.</p>`,
+    `<div class="step">Rotate B by 4</div><p>B moves 4 positions left (one full nibble).</p>`,
+    `<div class="step">Rotate C by 7</div><p>C moves 7 positions left.</p>`,
+    `<div class="step">Rotate D by 11</div><p>D moves 11 positions left (the same as 5 to the right).</p><p>Because the 4 amounts are different, the 4 words are not aligned any more when they are added.</p>`,
+    `<div class="step">A₂ = A₁ + B₁ (mod 2¹⁶)</div><p>Ordinary binary addition with carries. The carry chain makes a bit depend on <b>all lower bits</b> of both words.</p><p>This is non-linear over GF(2): it is not just XOR. B₁ itself stays the same.</p>`,
+    `<div class="step">C₂ = C₁ + D₁ (mod 2¹⁶)</div><p>The same for the right half. D₁ stays the same.</p><p>Only A and C change. This half-state update is cheap (2 adders) and easy to invert: A₁ = A₂ − B₁.</p>`][k];
+  $('#explain').innerHTML=ex;
+  $('#extra').innerHTML=`<h3>In formulas</h3><p class="mono" style="font-size:13px;line-height:1.8">A₁ = A ⋘ 1, B₁ = B ⋘ 4<br>C₁ = C ⋘ 7, D₁ = D ⋘ 11<br>A₂ = (A₁ + B₁) mod 2¹⁶<br>C₂ = (C₁ + D₁) mod 2¹⁶<br>state ← A₂ ‖ B₁ ‖ C₂ ‖ D₁</p>
+    <h3 style="margin-top:12px">Why add ARX to an SPN?</h3><p>The S-box mixes bits inside a nibble. Addition mixes bits along a whole 16-bit word through the carries. So Dipper has two different non-linear operations in each round.</p>
+    <p class="note">Rotation constants (1, 4, 7, 11) are all different. 1, 7 and 11 are coprime to 16; 4 is not.</p>`;
+}};
+
+/* 5 · bit permutation */
+T.pl={n:()=>17,rounds:()=>range(1,28),render(k){
+  const r=ST.round.pl,o=findOp('p',r);
+  const W=12,L=26,Y1=40,Y2=310,BH=16,X=i=>L+(63-i)*W;
+  const key='pl'+r+hex(o.p);
+  if(ST.built!==key){
+    let s=`<svg viewBox="0 0 ${L*2+64*W} ${Y2+44}" role="img" aria-label="GIFT-64 bit permutation">`;
+    ['A₂','B₁','C₂','D₁'].forEach((t,w)=>{s+=`<text class="glab" x="${(X(63-16*w)+X(48-16*w))/2+W/2}" y="12" style="fill:var(${WC[w]})">${t}</text>`});
+    for(let n=0;n<16;n++)s+=`<text class="nlab" x="${X(4*n+1.5)+W/2}" y="30">${n}</text>`;
+    for(let i=0;i<64;i++)s+=`<path class="wl2" id="w${i}" d="M${X(i)+W/2} ${Y1+BH} C ${X(i)+W/2} ${(Y1+Y2)/2}, ${X(P(i))+W/2} ${(Y1+Y2)/2}, ${X(P(i))+W/2} ${Y2}"/>`;
+    for(let i=0;i<64;i++){s+=`<g class="bit" data-b="${i}"><rect class="bx" id="t${i}" x="${X(i)+1}" y="${Y1}" width="${W-2}" height="${BH}" rx="2"/><text class="bv" x="${X(i)+W/2}" y="${Y1+BH/2}">${bit(o.p,i)}</text></g>`;
+      s+=`<rect class="bx" id="b${i}" x="${X(i)+1}" y="${Y2}" width="${W-2}" height="${BH}" rx="2"/><text class="bv" id="bv${i}" x="${X(i)+W/2}" y="${Y2+BH/2}"></text>`}
+    for(const q of [16,32,48])s+=`<line x1="${X(q)-0.5}" x2="${X(q)-0.5}" y1="${Y1-4}" y2="${Y1+BH+4}" stroke="var(--line2)"/><line x1="${X(q)-0.5}" x2="${X(q)-0.5}" y1="${Y2-4}" y2="${Y2+BH+4}" stroke="var(--line2)"/>`;
+    s+=`<text class="nlab" x="${X(32)}" y="${Y2+36}" style="font-size:11px">output nibbles 15 … 0 (bit 63 on the left)</text>`;
+    stage.innerHTML=`<div class="gcap" style="margin-bottom:6px">Top: state after the ARX layer (round ${r}). Bottom: after P. Click a bit to follow it.</div><div id="pl" class="scroll"><div style="min-width:560px">${s}</svg></div></div>
+      <div class="sec stack">${gbox('Before (hex)',state(nv(o.p)))}${gbox('After (hex) = output of round '+r,state(n=>k>=16?nib(o.s,n):null,{cls:()=>k>=16?'chg':''}))}</div>`;
+    ST.built=key;
+  }
+  const curN=k>0?16-k:-1,done=i=>k>0&&(i>>2)>=16-k,col=j=>`var(--g${j})`;
+  for(let i=0;i<64;i++){
+    const w=$('#w'+i),on=(i>>2)===curN||ST.plPick===i;
+    w.setAttribute('class','wl2'+(on?' on':(done(i)?' dn':'')));w.style.stroke=on||done(i)?col(i&3):'';
+    $('#t'+i).setAttribute('class','bx'+(on?' on':''));$('#t'+i).style.fill=done(i)||on?`color-mix(in srgb,${col(i&3)} 30%,var(--panel))`:'';
+    const t=P(i);$('#bv'+t).textContent=done(i)?bit(o.s,t):'';
+    $('#b'+t).style.fill=done(i)?`color-mix(in srgb,${col(i&3)} 30%,var(--panel))`:'';$('#b'+t).setAttribute('class','bx'+(on?' on':''));
+  }
+  $$('#pl .wl2.on').forEach(e=>e.parentNode.appendChild(e));
+  const pk=ST.plPick;
+  $('#explain').innerHTML=curN<0?`<div class="step">Bit permutation · round ${r}</div>
+    <p>Bit <b>i</b> moves to position <b>P(i)</b>, the GIFT-64 permutation:</p>
+    <p class="mono" style="font-size:13px">P(i) = 4⌊i/16⌋ + 16((3⌊(i mod 16)/4⌋ + (i mod 4)) mod 4) + (i mod 4)</p>
+    <p>Step through the 16 nibbles and watch where their 4 bits go.</p>`
+   :`<div class="step">Bits of nibble ${curN}</div>
+    <p>Bits ${4*curN+3}, ${4*curN+2}, ${4*curN+1}, ${4*curN} go to positions <b>${[3,2,1,0].map(j=>P(4*curN+j)).join(', ')}</b>, which are in nibbles <b>${[3,2,1,0].map(j=>P(4*curN+j)>>2).join(', ')}</b>.</p>
+    <p>So the 4 output bits of one S-box feed <b>4 different S-boxes</b> in the next round.</p>`;
+  $('#extra').innerHTML=`<h3>Facts you can check in the picture</h3>
+    <p>Bit j of a nibble stays bit j of its new nibble (P(i) mod 4 = i mod 4). The colours show j.</p>
+    <p>Each word (16 bits) is spread over all four words after P, so A, B, C and D mix in the next round.</p>
+    ${pk!=null?`<p class="mono">P(${pk}) = ${P(pk)}</p>`:''}
+    <p class="note">In hardware P is only wires: 0 gates. Decryption uses the inverse permutation P⁻¹.</p>`;
+}};
+
+/* 6 · key schedule */
+function kreg(K,n,o={}){
+  let h='<div class="kreg">';
+  for(let j=n-1;j>=0;j--){const v=Number((K>>B(16*j))&0xFFFFn);let t=hex(v,4);
+    if(o.sb&&o.sb.includes(j))t=`<u>${t[0]}</u>${t.slice(1)}`;
+    h+=`<div class="kw"><span class="lab">k${j}</span><span class="v ${o.cls?o.cls(j):''}">${t}</span><span class="src">${o.src?o.src(j):''}</span></div>`}
+  return h+'</div>';
+}
+T.ks={n:()=>4,rounds:()=>range(1,27),render(k){
+  const r=ST.round.ks,s=D.KS.st[r-1],kb=D.kb,n=kb/16;
+  const src96=['k4','k5','ROTR(k0,12)','ROTR(k1,2)','k2','k3'],src128=['ROTR(k0,12)','ROTR(k1,2)','k4','k5','k6','k7','k2','k3'];
+  const SRC=kb===96?src96:src128;
+  const sbW=s.pos.map(p=>p>>4);             // words whose top nibble goes through S
+  const rcW=s.rcs>>4;                       // word that receives RC
+  let main;
+  if(k===0)main=gbox(`<b>Key register at round ${r}</b> · lower 64 bits = RK${r}`,kreg(s.reg,n,{cls:j=>j<4?'rk':''}))+
+    `<div class="sec" style="text-align:center"><span class="gcap">RK${r} = k3 ‖ k2 ‖ k1 ‖ k0 = </span><span class="mono k">${hex(D.KS.RK[r-1])}</span></div>`;
+  else if(k===1)main=`<div class="stack">${gbox('Before',kreg(s.reg,n))}${opx('↓','move words, rotate k1 and k0')}${gbox('After step 1 (the blue text shows where each word came from)',kreg(s.K1,n,{src:j=>'← '+SRC[j],cls:j=>SRC[j].startsWith('ROTR')?'chg':''}))}</div>`;
+  else if(k===2)main=`<div class="stack">${gbox('After step 1',kreg(s.K1,n,{sb:sbW}))}${opx('↓',`GIFT S-box on ${sbW.length} nibbles`)}${gbox('After step 2',kreg(s.K2,n,{sb:sbW,cls:j=>sbW.includes(j)?'chg':''}))}</div>
+    <div class="sec stack"><div class="h3">The ${sbW.length} S-boxes</div><p class="mono" style="margin:0;text-align:center">${s.pos.map(p=>{const a=Number((s.K1>>B(p))&15n),b=Number((s.K2>>B(p))&15n);return `K[${p+3}:${p}]: S(${h1(a)}) = ${h1(b)}`}).join('<br>')}</p></div>`;
+  else{const before=Number((s.K2>>B(16*rcW))&0xFFFFn),after=Number((s.K3>>B(16*rcW))&0xFFFFn);
+    main=`<div class="stack">${gbox(`After step 3 = key register for round ${r+1}`,kreg(s.K3,n,{cls:j=>j===rcW?'chg':(j<4?'rk':'')}))}</div>
+    <div class="sec"><div class="h3">Word k${rcW}: XOR the 5-bit constant RC${r} = ${hex(s.rc,2)} into K[${s.rcs+4}:${s.rcs}]</div><div class="scroll">${bw([[`k${rcW}`,before],[`⊕ RC${r}`,s.rc,'',i=>i<5?'rc':''],['—'],[`= k${rcW}`,after,'res']])}</div></div>
+    <div class="sec" style="text-align:center"><span class="gcap">Next round key RK${r+1} = </span><span class="mono k">${hex(D.KS.RK[r])}</span></div>`}
+  stage.innerHTML=main;
+  const ex=[`<p>Dipper-64/${kb} keeps the key in a ${kb}-bit register of ${n} words k${n-1} … k0. The round key RK<sub>${r}</sub> is the <b>lower 64 bits</b>: k3 ‖ k2 ‖ k1 ‖ k0.</p><p>After the round, the register is updated in 3 steps.</p>`,
+    `<p><b>Step 1, word rotation.</b> The words change places, and two of them are also rotated right: k1 by 2 bits and k0 by 12 bits (the same idea as in GIFT).</p>
+     <p class="mono" style="font-size:13px">${kb===96?'(k5,k4,k3,k2,k1,k0) ← (k3, k2, ROTR(k1,2), ROTR(k0,12), k5, k4)':'(k7,…,k0) ← (k3, k2, k7, k6, k5, k4, ROTR(k1,2), ROTR(k0,12))'}</p>`,
+    `<p><b>Step 2, S-boxes.</b> The top nibble of ${sbW.map(j=>'k'+j).join(', ')} goes through the GIFT S-box. This makes the key schedule non-linear.</p>
+     <p>${kb===96?'The 96-bit version uses 4 S-boxes.':'The 128-bit version uses 3 S-boxes, to keep the hardware small (its key register is already larger).'}</p>`,
+    `<p><b>Step 3, round constant.</b> The 5-bit constant RC<sub>${r}</sub> = ${hex(s.rc,2)} is XORed into bits ${s.rcs+4}…${s.rcs} (inside k${rcW}).</p><p>This makes every round different.</p>`][k];
+  $('#explain').innerHTML=`<div class="step">Key schedule · after round ${r} · step ${k} of 3</div>${ex}`;
+  const nb=((s.rc>>4)^(s.rc>>1))&1;
+  $('#extra').innerHTML=`<h3>Round constants: a 5-bit LFSR</h3>
+    <p class="mono" style="font-size:13px">start: LFSR = 01<br>new bit = LFSR[4] ⊕ LFSR[1]<br>LFSR ← (LFSR ≪ 1) | new bit (5 bits)</p>
+    <p>Round ${r}: <span class="mono">${s.rc.toString(2).padStart(5,'0')}</span> → new bit ${(s.rc>>4)&1} ⊕ ${(s.rc>>1)&1} = ${nb} → <span class="mono">${lfsr(s.rc).toString(2).padStart(5,'0')}</span> = ${hex(lfsr(s.rc),2)}</p>
+    <div class="rcl">${D.KS.st.map(x=>`<span class="${x.i===r?'on':''}">${x.i}: ${hex(x.rc,2)}</span>`).join('')}</div>
+    <p style="margin-top:8px;font-size:13px;color:var(--muted)">The values above are RC<sub>1</sub> … RC<sub>28</sub>, computed by the rule.</p>`;
+}};
+
+/* 7 · encrypt / decrypt */
+T.x={n:()=>(ST.mode==='enc'?D.enc:D.dec).length,render(k){
+  const ops=ST.mode==='enc'?D.enc:D.dec,o=ops[k],enc=ST.mode==='enc';
+  let ch='',i=0;
+  for(let r=0;r<=28;r++){let h=`<span class="rg"><b>${r===0?'start':r}</b>`;
+    while(i<ops.length&&ops[i].r===r){h+=`<button class="chip ${i===k?'on':(i<k?'done':'')}" data-jump="${i}">${SHORT[ops[i].op]}${ops[i].op==='ark'?ops[i].ki:''}</button>`;i++}
+    ch+=h+'</span>'}
+  const main=o.op==='in'?gbox(`<b>${enc?'Plaintext':'Ciphertext'}</b>`,state(nv(o.s)))
+    :`<div class="stack">${gbox('Before',state(nv(o.p)))}${opx('↓',NAME[o.op])}${o.op==='ark'?gbox(`<b class="k">RK${o.ki}</b>`,state(nv(D.KS.RK[o.ki-1]),{cls:()=>'key'}))+opx('='):''}${gbox('After',state(nv(o.s),{cls:n=>nib(o.s,n)!==nib(o.p,n)?'chg':''}))}</div>`;
+  let res='';
+  if(k===ops.length-1){
+    if(enc){const got=hex(o.s),ok=D.expect?got===D.expect:null;res=`<div class="result">Ciphertext: <span class="mono"><b>${got}</b></span>${ok===true?'<br>✓ Same as the test vector in the Dipper specification.':ok===false?'<br>✗ Does not match the expected value.':''}</div>`}
+    else{const ok=o.s===D.pt;res=`<div class="result">Recovered plaintext: <span class="mono"><b>${hex(o.s)}</b></span><br>${ok?'✓ Same as the original plaintext.':'✗ Different from the original plaintext.'}</div>`}
+  }
+  stage.innerHTML=`<div class="chips">${ch}</div>${main}${res}`;
+  const desc={in:enc?'The plaintext is the starting state.':`We start from the ciphertext <span class="mono">${hex(D.ct)}</span> and undo the rounds from the last to the first.`,
+    ark:`XOR with round key RK${o.ki}.`,sc:'GIFT S-box on all 16 nibbles.',rot:'A ⋘ 1, B ⋘ 4, C ⋘ 7, D ⋘ 11.',arx:'A ← A + B and C ← C + D (mod 2¹⁶).',p:'GIFT-64 bit permutation.',
+    ip:'Undo the permutation with P⁻¹.',iarx:'Undo the additions: A ← A − B and C ← C − D (mod 2¹⁶). This works because B and D were not changed.',irot:'Rotate right: A ⋙ 1, B ⋙ 4, C ⋙ 7, D ⋙ 11.',isc:'Inverse GIFT S-box on all 16 nibbles.'}[o.op];
+  const nchg=o.p!=null?range(0,15).filter(n=>nib(o.s,n)!==nib(o.p,n)).length:0;
+  const tabOf={ark:'ark',sc:'sc',rot:'arx',arx:'arx',p:'pl'}[o.op];
+  $('#explain').innerHTML=`<div class="step">${NAME[o.op]}${o.r?' · round '+o.r:''} · step ${k} of ${ops.length-1}</div><p>${desc}</p>
+    ${o.p!=null?`<p>${nchg} of 16 nibbles changed.</p>`:''}
+    ${enc&&tabOf?`<p><button class="link" data-goto="${tabOf}" data-round="${o.r}">Look inside this step →</button></p>`:''}
+    ${!enc&&o.op==='in'?'<p>Decryption needs the round keys in reverse order (RK28 first), so the key schedule is run forward first.</p>':''}`;
+  const rows=[];for(let r=0;r<=28;r++){const l=ops.filter(x=>x.r===r).at(-1);rows.push(`<tr class="${o.r===r?'on':''}"><td>${r===0?'start':r}</td><td class="mono">${hex(l.s)}</td></tr>`)}
+  $('#extra').innerHTML=`<h3>State at the end of each round</h3><div class="rtw"><table class="rt"><tr><th>Round</th><th>State</th></tr>${rows.join('')}</table></div>`;
+  const on=$('#extra tr.on');if(on)on.scrollIntoView({block:'nearest'});
+}};
+
+/* 8 · diffusion */
+T.df={n:()=>1,render(){
+  const fb=ST.flip,pt2=D.pt^(1n<<B(fb)),t2=encTrace(pt2,D.KS);
+  const st=(ops,r)=>ops.filter(x=>x.r===r).at(-1).s;
+  const pc=v=>{let n=0;while(v){n+=Number(v&1n);v>>=1n}return n};
+  let pick='';
+  for(let n=15;n>=0;n--)pick+=`<div class="n4"><span>${h1(nib(pt2,n))}</span><div>${[3,2,1,0].map(j=>{const i=4*n+j;return `<i class="${i===fb?'flip':(bit(D.pt,i)?'one':'')}" data-fb="${i}" title="bit ${i}"></i>`}).join('')}</div></div>`;
+  const counts=[];let rows='';
+  for(let r=0;r<=28;r++){const d=st(D.enc,r)^st(t2,r);counts.push(pc(d));
+    if(r<=5)rows+=`<div class="drow"><span>${r===0?'start':'after round '+r}</span>${state(n=>nib(d,n),{nolab:true,noidx:true,cls:n=>nib(d,n)?'hi':'off'})}</div>`}
+  stage.innerHTML=`<div class="h3">Plaintext bits (bit 63 on the left). Click a bit to flip it. Now flipped: bit ${fb} (word ${WN[3-(fb>>4)]}).</div>
+    <div class="bitpick">${pick}</div>
+    <div class="sec"><div class="h3">Difference (XOR) of the two states after each round. Red nibbles differ. Groups = words A B C D.</div><div class="drows">${rows}</div></div>
+    <div class="sec"><div class="h3">Number of different bits after each round (out of 64)</div>
+      <div class="bars"><div class="ref" style="bottom:50%"><span>32 = half</span></div>${counts.map(n=>`<div class="bar" style="height:${n/64*100}%" title="${n} bits"></div>`).join('')}</div>
+      <div class="blbl"><span>start</span><span>round 14</span><span>round 28</span></div></div>`;
+  $('#explain').innerHTML=`<div class="step">Diffusion</div>
+    <p>We flip one plaintext bit, encrypt both plaintexts with the same key and compare the states after every round.</p>
+    <p>The S-box spreads the change inside a nibble, the carries spread it along a word, and P sends it to other words. After a few rounds about half of the 64 bits differ.</p>`;
+  $('#extra').innerHTML=`<h3>Different bits per round</h3><p class="mono" style="font-size:13px">${counts.slice(0,7).map((c,i)=>`${i===0?'start':'round '+i}: ${c}`).join('<br>')}</p>
+    <p>The two ciphertexts differ in <b>${counts[28]}</b> of 64 bits.</p>`;
+}};
+
+/* ---------- step engine ---------- */
+function curN(){return T[ST.tab].n()}
+function show(anim,dir=1){
+  const t=T[ST.tab],n=t.n();let k=Math.max(0,Math.min(ST.step[ST.tab]||0,n-1));ST.step[ST.tab]=k;
+  t.render(k,anim,dir);const stepped=n>1;
+  $('#ctrl').hidden=!stepped&&!t.rounds;
+  $('#prog').textContent=stepped?`Step ${k} of ${n-1}`:'';
+  $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
+  if(k>=n-1&&ST.playing)stop();
+}
+function fillRounds(){
+  const t=T[ST.tab];$('#rWrap').hidden=!t.rounds;$('#mode').hidden=ST.tab!=='x';if(!t.rounds)return;
+  const rs=t.rounds();if(!rs.includes(ST.round[ST.tab]))ST.round[ST.tab]=rs[0];
+  $('#rSel').innerHTML=rs.map(r=>`<option${r===ST.round[ST.tab]?' selected':''}>${r}</option>`).join('');
+}
+function go(d){const n=curN(),k=ST.step[ST.tab]||0,nk=Math.max(0,Math.min(n-1,k+d));if(nk===k)return;ST.step[ST.tab]=nk;show(true,d)}
+function stop(){ST.playing=false;clearInterval(ST.timer);$('#bPlay').textContent='▶ Play'}
+function play(){if(ST.playing)return stop();if((ST.step[ST.tab]||0)>=curN()-1){ST.step[ST.tab]=0;show(false)}
+  ST.playing=true;$('#bPlay').textContent='❚❚ Pause';ST.timer=setInterval(()=>go(1),1300/ +$('#spd').value)}
+function setTab(id,round){
+  stop();ST.tab=id;ST.built='';ST.plPick=null;
+  if(round!=null&&ST.round[id]!==undefined){ST.round[id]=Math.min(+round,id==='ks'?27:28);ST.step[id]=0}
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  fillRounds();show(false);try{localStorage.setItem('dipper-tab',id)}catch(e){}
+}
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{stop();go(1)};
+$('#bBack').onclick=()=>{stop();go(-1)};
+$('#bReset').onclick=()=>{stop();ST.step[ST.tab]=0;ST.built='';show(false)};
+$('#bPlay').onclick=play;
+$('#spd').oninput=()=>{if(ST.playing){stop();play()}};
+$('#rSel').onchange=e=>{stop();ST.round[ST.tab]=+e.target.value;ST.step[ST.tab]=0;ST.built='';show(false)};
+$('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;stop();ST.mode=b.dataset.m;$$('#mode button').forEach(x=>x.classList.toggle('on',x===b));ST.step.x=0;show(false)};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');if(g){setTab(g.dataset.goto,g.dataset.round);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  const j=e.target.closest('[data-jump]');if(j){stop();ST.step.x=+j.dataset.jump;show(false);return}
+  const b=e.target.closest('#pl .bit');if(b){ST.plPick=ST.plPick===+b.dataset.b?null:+b.dataset.b;show(false);return}
+  const f=e.target.closest('[data-fb]');if(f){ST.flip=+f.dataset.fb;show(false)}
+});
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,select,textarea')||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='ArrowRight'){stop();go(1);e.preventDefault()}
+  else if(e.key==='ArrowLeft'){stop();go(-1);e.preventDefault()}
+  else if(e.key===' '&&curN()>1){play();e.preventDefault()}
+});
+$('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="custom" disabled>Your own input</option>';
+$('#pre').onchange=e=>loadPreset(e.target.value);
+$('#ptI').oninput=$('#kI').oninput=onInput;
+let startTab='ov';try{const t=localStorage.getItem('dipper-tab');if(t&&T[t])startTab=t}catch(e){}
+ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
+loadPreset('tv1');
+</script>
+</body>
+</html>
