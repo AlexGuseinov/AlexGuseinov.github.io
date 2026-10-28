@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LFSR, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;
+  --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;
+  --g0:#3f72c9;--g1:#c97a2e;--g2:#2f8c60;--g3:#bd4a4a;
+  --rowc:#8ab8ee;--rowBg:#1f3048;--colc:#f0a35e;--colBg:#3a2716;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:36px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.seg.sm button{padding:2px 9px;font-size:12.5px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{font-family:var(--mono);width:100%}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.mono{font-family:var(--mono)}
+.k{color:var(--key);font-weight:600}
+.x{color:var(--xor);font-weight:600}
+button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+
+/* input bar */
+.inbar{display:grid;grid-template-columns:minmax(200px,auto) minmax(0,1fr) minmax(0,1fr) auto;gap:10px 14px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.meta{font-size:13px;color:var(--muted);white-space:nowrap;padding-bottom:8px}
+.meta b{color:var(--ink)}
+.err{grid-column:1/-1;color:var(--xor);font-size:13px;margin-top:-4px}
+.err:empty{display:none}
+@media (max-width:900px){.inbar{grid-template-columns:1fr}.meta{padding:0}}
+
+/* state grids */
+.g4{display:grid;grid-template-columns:repeat(4,var(--cs));gap:4px}
+.g4.sm{--cs:26px;gap:2px}
+.c{height:var(--cs);display:flex;align-items:center;justify-content:center;font:600 15px var(--mono);border-radius:6px;background:var(--panel);border:1px solid var(--line2);transition:background .25s,border-color .25s}
+.g4.sm .c{font-size:10px;border-radius:3px;font-weight:500}
+.c.emp{color:var(--faint);border-style:dashed;background:transparent;font-weight:400}
+.c.done{color:var(--faint)}
+.c.chg{background:var(--accentBg);border-color:var(--accent)}
+.c.key{background:var(--keyBg);border-color:var(--key)}
+.c.cur{outline:3px solid var(--ink);outline-offset:1px}
+.c.src{outline:3px solid var(--accent);outline-offset:1px}
+.c.src2{outline:3px solid var(--key);outline-offset:1px}
+.c.colr{color:#fff;border-color:rgba(0,0,0,.15)}
+.c small{font:400 9px var(--sans);opacity:.75;margin-left:2px;align-self:flex-end;margin-bottom:4px}
+.gw{display:flex;flex-direction:column;align-items:center;gap:6px}
+.gcap{font-size:13px;color:var(--muted);text-align:center}
+.gcap b{color:var(--ink)}
+.flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 16px}
+.op{font-size:15px;color:var(--muted);text-align:center;font-weight:600}
+.op big{display:block;font-size:24px;line-height:1;color:var(--ink)}
+.sec{margin-top:22px}
+.sec>.h3{text-align:left}
+.scroll{overflow-x:auto;max-width:100%}
+
+/* S-box table */
+.sbt{border-collapse:collapse;font:12px var(--mono);margin:0 auto}
+.sbt th{font-weight:700;color:var(--muted);padding:2px 4px;font-size:11.5px}
+.sbt td{padding:2px 3px;text-align:center;border:1px solid var(--line);cursor:pointer;min-width:22px}
+.sbt td:hover{border-color:var(--accent)}
+.sbt td.ax{background:var(--accentBg)}
+.sbt td.hit{background:var(--ink);color:var(--bg);font-weight:700}
+.sbt td.pick{outline:2px solid var(--key);outline-offset:-2px}
+.sbt th.hit{color:var(--accent)}
+
+/* bit tables */
+.bt{border-collapse:collapse;font:13px var(--mono)}
+.bt th{font:600 12px var(--sans);color:var(--muted);text-align:left;padding:2px 8px 2px 0;white-space:nowrap}
+.bt td{width:20px;text-align:center;padding:2px 0}
+.bt tr.res td,.bt tr.res th{border-top:2px solid var(--ink);font-weight:700;color:var(--ink)}
+.bt td.hx{width:auto;padding-left:10px;color:var(--muted)}
+.bt tr.res td.hx{color:var(--ink)}
+
+/* shift rows animation */
+.anim{position:relative}
+.anim .c{position:absolute;left:0;top:0;width:var(--cs);transition:transform .5s ease,opacity .25s}
+
+/* mixcolumns matrix */
+.mx{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font:14px var(--mono)}
+.mt{border-collapse:separate;border-spacing:2px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);border-radius:4px;padding:0 3px}
+.mt td{padding:3px 6px;text-align:center;border-radius:4px}
+.mt tr.on td{background:var(--accentBg);font-weight:700}
+.mt td.on{background:var(--accent);color:var(--onAccent);font-weight:700}
+.terms{font:14px var(--mono);line-height:1.9;margin-top:12px}
+.terms .t{display:block}
+.terms .why{color:var(--muted);font-family:var(--sans);font-size:13px}
+
+/* key expansion */
+.kdet{font:14px var(--mono);line-height:1.8;padding:10px 12px;border-radius:8px;background:var(--accentBg);margin-bottom:16px}
+.kdet .why{font:13px var(--sans);color:var(--muted)}
+.kgrid{display:flex;flex-wrap:wrap;gap:16px 18px;justify-content:center}
+.rc{display:flex;flex-wrap:wrap;gap:4px}
+.rc span{font:12px var(--mono);padding:2px 6px;border:1px solid var(--line);border-radius:4px}
+.rc span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+
+/* round chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.rg{display:flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:2px 4px}
+.rg b{font-size:11px;color:var(--muted);margin-right:3px;font-weight:600}
+.chip{font:12px var(--mono);padding:2px 5px;border-radius:4px;border:0;background:transparent;color:var(--faint)}
+.chip.done{color:var(--ink)}
+.chip.on{background:var(--accent);color:var(--onAccent)}
+.result{margin-top:18px;padding:10px 12px;border-radius:8px;background:var(--okBg);font-size:15px}
+.result .mono{word-break:break-all}
+.rt{border-collapse:collapse;font-size:12.5px;width:100%}
+.rt td,.rt th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:left}
+.rt th{color:var(--muted);font-weight:600}
+.rt td.mono{font-size:11.5px;word-break:break-all}
+.rt tr.on td{background:var(--accentBg)}
+
+/* overview */
+.ov{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:760px){.ov{grid-template-columns:1fr}}
+.fl{display:flex;flex-direction:column;align-items:center;gap:0}
+.fb{min-width:210px;text-align:center;padding:8px 12px;border:1.5px solid var(--line2);border-radius:8px;background:var(--panel);font-weight:600;font-size:15px}
+.fb[data-goto]{cursor:pointer}
+.fb[data-goto]:hover{border-color:var(--accent);color:var(--accent)}
+.fb.io{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.fb.kb{border-color:var(--key);color:var(--key)}
+.fb .kk{font:600 13px var(--mono);color:var(--key);margin-left:6px}
+.fa{color:var(--muted);font-size:18px;line-height:1.3}
+.fgrp{border:1.5px dashed var(--line2);border-radius:12px;padding:8px 14px 12px;display:flex;flex-direction:column;align-items:center}
+.fgl{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.vt{border-collapse:collapse;font-size:14px;width:100%;margin-top:6px}
+.vt td,.vt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+.vt th{color:var(--muted);font-weight:600;font-size:13px}
+.inrow{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-bottom:10px}
+.inrow .c{width:32px;height:38px;flex-direction:column;font-size:13px;line-height:1.1}
+.inrow .c small,.g4 .c small{margin:0}
+.lay .c{flex-direction:column;line-height:1.05}
+
+/* diffusion */
+.bits{display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center}
+.by8{display:flex;flex-direction:column;align-items:center;gap:2px}
+.by8 span{font:11px var(--mono);color:var(--muted)}
+.by8 div{display:flex;gap:1px}
+.by8 i{width:11px;height:16px;border-radius:2px;background:var(--line);cursor:pointer;display:block}
+.by8 i.one{background:var(--line2)}
+.by8 i.flip{background:var(--xor)}
+.by8 i:hover{outline:2px solid var(--accent)}
+.dgr{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.dgr .c{transition:none}
+.bars{display:flex;align-items:flex-end;gap:6px;height:130px;position:relative;margin:10px auto 0;max-width:560px;border-bottom:1px solid var(--line2);padding:0 4px}
+.bars .bar{flex:1;background:var(--accent);border-radius:3px 3px 0 0;position:relative;min-height:1px}
+.bars .bar span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font:11px var(--mono);color:var(--muted)}
+.bars .ref{position:absolute;left:0;right:0;border-top:1.5px dashed var(--xor)}
+.bars .ref span{position:absolute;right:0;top:-17px;font-size:11px;color:var(--xor)}
+.blbl{display:flex;gap:6px;max-width:560px;margin:4px auto 0;padding:0 4px}
+.blbl span{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+
+/* One round picture */
+.rdw svg{width:100%;height:auto;display:block}
+.rdw .rl{stroke:var(--line2);stroke-width:1.4;fill:none}
+.rdw .rl.hl{stroke:var(--xor);stroke-width:2.6}
+.rdw .rl.dash{stroke-dasharray:4 3}
+.rdw .rmn{fill:var(--line2)}.rdw .rmh{fill:var(--xor)}
+.rdw .rb{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+.rdw .rb.hl{stroke:var(--xor);stroke-width:2.4;fill:var(--xorBg)}
+.rdw .rbt{font:700 11px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .go{cursor:pointer}
+.rdw .rbox:hover .rb,.rdw .rbox:hover .rx{stroke:var(--accent);stroke-width:2.4}
+.rdw .srbx{fill:none;stroke:var(--ink);stroke-width:2}
+.rdw .srband{fill:transparent}.rdw .srband.a{fill:color-mix(in srgb,var(--ink) 6%,transparent)}
+.rdw .rrow{font:10.5px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab{font:600 12px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab.go{fill:var(--ink);text-decoration:underline}
+.rdw .rlab.on{fill:var(--accent);font-weight:700}
+.rdw .rgl{font:11px var(--sans);fill:var(--faint);text-anchor:middle}
+.rdw .rdot{fill:var(--line2)}.rdw .rdot.hl{fill:var(--xor)}
+.rdw .rx{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}.rdw .rx.hl{stroke:var(--xor);fill:var(--xorBg);stroke-width:2.2}
+.rdw .rxp{stroke:var(--ink);stroke-width:1.3;pointer-events:none}
+.rdw .rkt{fill:var(--keyBg);stroke:var(--key);stroke-width:.8}
+.rdw .rkv{font:8.5px var(--mono);fill:var(--key);text-anchor:middle;dominant-baseline:central}
+.rdw .rka{stroke:var(--key);stroke-width:1}
+.rdw .rq{stroke:var(--line2);stroke-width:1}
+.rdw .rq.hl{fill:var(--xor);stroke:var(--xor)}
+.rdw .rq.new{stroke:var(--accent);stroke-width:2.2}
+.rdw .rct{font:600 12.5px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .rct.hl{fill:#fff}.rdw .rct.emp{fill:var(--faint);font-weight:400}
+.rdw .rcell{cursor:pointer}
+.rdw .rcell:hover .rq{stroke:var(--ink);stroke-width:2}
+.rdw .rnote{font:12px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+
+/* Key expansion picture */
+.ked svg{width:100%;height:auto;display:block}
+.ked .kl{stroke:var(--line2);stroke-width:1.6;fill:none}
+.ked .kl.a{stroke:var(--accent);stroke-width:2.8}
+.ked .kl.k{stroke:var(--key);stroke-width:2.8}
+.ked .kmn{fill:var(--line2)}.ked .kma{fill:var(--accent)}.ked .kmk{fill:var(--key)}
+.ked .kdot{fill:var(--line2)}.ked .kdot.a{fill:var(--accent)}
+.ked .wb{fill:var(--panel);stroke:var(--line2);stroke-width:1.3}
+.ked .wb.key{fill:var(--keyBg);stroke:var(--key)}
+.ked .wb.emp{fill:none;stroke-dasharray:4 3}
+.ked .wb.cur{stroke:var(--ink);stroke-width:2.6}
+.ked .wb.src{stroke:var(--accent);stroke-width:2.6}
+.ked .wb.src2{stroke:var(--key);stroke-width:2.6}
+.ked .wt{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .wt.emp{fill:var(--faint);font-weight:400}
+.ked .kcap{font:11px var(--sans);fill:var(--muted);text-anchor:middle}
+.ked .kcap .kr{fill:var(--key);font-weight:600}
+.ked .gb{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}
+.ked .gb.on{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.5}
+.ked .gt{font:italic 700 16px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .gt.sm{font:600 10px var(--sans)}
+.ked .xo{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}.ked .xo.on{stroke:var(--accent);stroke-width:2.5}
+.ked .xp{stroke:var(--line2);stroke-width:1.5}.ked .xp.on{stroke:var(--accent)}
+.g4.kcol{grid-template-columns:var(--cs)}
+.gpf{gap:10px 12px}
+.gp{padding:4px;border-radius:8px;border:2px solid transparent}.gp.on{border-color:var(--accent);background:var(--accentBg)}
+.c.mvb{background:var(--xor);border-color:var(--xor);color:#fff}
+.kr{cursor:pointer;border-radius:8px;padding:2px}.kr:hover{background:var(--accentBg)}
+
+/* SubBytes lookup */
+.hn{color:var(--rowc);font-weight:700}
+.ln{color:var(--colc);font-weight:700}
+.c .q{color:inherit;font-weight:600}
+.g4.bin .c{flex-direction:column;font-size:12px;line-height:1.15;gap:1px}
+.g4.bin .c .q+.q{opacity:.75}
+.sbwrap{position:relative;display:flex;flex-wrap:wrap;gap:22px 24px;justify-content:center;align-items:center;padding-top:30px}
+#sbIn .gw,#sbOut .gw{flex-direction:column-reverse}
+.sbarr{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.sbarr path{fill:none;stroke-width:2.2}
+.sbarr .pr{stroke:var(--rowc)}.sbarr .pc{stroke:var(--colc)}.sbarr .po{stroke:var(--ink);stroke-dasharray:6 4}
+.sbarr .arr{fill:var(--rowc)}.sbarr .arc{fill:var(--colc)}.sbarr .aro{fill:var(--ink)}
+.sbarr text{font:700 14px var(--sans)}.sbarr .tr{fill:var(--rowc)}.sbarr .tc{fill:var(--colc)}
+.sbt th.corner{font-size:10px;color:var(--faint)}
+.sbt th small{display:block;font-size:8.5px;font-weight:400;color:var(--faint)}
+.sbt.bin th{padding:2px 1px}.sbt.bin th small{font-size:8px;letter-spacing:-.2px}.sbt.bin td{padding:2px 1px}
+.sbt th.hitr{background:var(--rowc);color:#fff}.sbt th.hitc{background:var(--colc);color:#fff}
+.sbt th.hitr small,.sbt th.hitc small{color:#fff}
+.sbt td.axr{background:var(--rowBg)}.sbt td.axc{background:var(--colBg)}
+.lkup{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:8px;margin-top:22px}
+.lks{border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:130px}
+.lkh{font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+.lkbig{font-size:22px;font-weight:600}
+.lkmid{font-size:13px;line-height:1.7}
+.lksub{font-size:12px;color:var(--muted)}
+.lkarr{align-self:center;color:var(--muted);font-size:18px}
+@media (max-width:700px){.lkarr{display:none}.lks{min-width:0;flex:1 1 40%}}
+
+/* ShiftRows rails */
+.srbox{display:flex;flex-direction:column;gap:4px}
+.srline{display:flex;align-items:center;gap:8px}
+.srlab{font-size:12px;color:var(--muted);width:38px;text-align:right}
+.srtrack{width:calc(4 * var(--cs) + 12px);overflow:hidden;border-radius:7px;outline:2px solid transparent;outline-offset:2px;transition:outline-color .3s}
+.srtrack.mv{outline-color:var(--ink)}
+.srrail{display:flex;gap:4px;width:max-content;transition:transform .65s cubic-bezier(.45,.05,.3,1)}
+.srrail .c{width:var(--cs);flex:none}
+.srdots{display:flex;gap:3px;width:44px;font-size:11px;color:var(--faint)}
+.srdots i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line2);display:block}
+.srdots i.on{background:var(--ink);border-color:var(--ink)}
+#stage [data-o]{cursor:pointer}
+.c.lk{outline:3px solid var(--ink);outline-offset:1px}
+.c.pin{outline:3px solid var(--ink);outline-offset:1px;box-shadow:0 0 0 6px color-mix(in srgb,var(--ink) 18%,transparent)}
+
+/* GF(2^8) tab */
+.gfin{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-top:10px}
+.gfin .fld{font-size:13px;color:var(--muted);width:90px}
+.gfin .row button{padding:4px 9px;font-size:13px}
+.gft td,.gft th{text-align:center}
+.gft tr.on td{background:var(--accentBg)}
+.gfr th{font-weight:600;color:var(--muted);text-align:right;padding-right:10px;white-space:nowrap}
+.gfr td{font-size:13px;letter-spacing:1px;white-space:pre}
+.gfr tr.sub td{color:var(--xor)}
+.gfr tr.res td{font-weight:700}
+
+/* MixColumns playground, tracking, round strip */
+.play{padding-top:14px;border-top:1px solid var(--line)}
+.play .row{gap:6px}
+.mcin{width:52px!important;text-align:center;font-size:15px}
+.play button{padding:5px 10px;font-size:13px}
+.c.hi{background:var(--xorBg);border-color:var(--xor)}
+.c.trk{background:var(--xor);border-color:var(--xor);color:#fff}
+[data-trk] .c{cursor:pointer}
+.strip{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+.stp{cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent}
+.stp:hover{border-color:var(--line2)}
+.stp.on{border-color:var(--accent)}
+
+
+/* v2: animation layer (tokens fly over the stage, like the DES demo) */
+.stage{position:relative}
+#fx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5}
+.tok text{font-family:var(--mono);font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:3px;stroke-linejoin:round}
+.tok .edge{fill:none;stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.mini .bg{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.flash{animation:flash .7s ease-out}
+@keyframes flash{from{background:var(--xor);color:#fff;border-color:var(--xor)}}
+.op.pulse big{color:var(--accent);animation:pz .4s ease-in-out infinite alternate}
+@keyframes pz{to{transform:scale(1.35)}}
+.mt td.hot{background:var(--xor);color:#fff}
+.rg.band{background:var(--accentBg);border-color:var(--accent)}
+.c.ghost{opacity:0}
+/* overview chart */
+.ov2{display:grid;grid-template-columns:minmax(0,600px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.ov2{grid-template-columns:minmax(0,1fr)}}
+.ovw{width:100%;max-width:600px;height:auto;display:block}
+.ovw .ob{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
+.ovw .ob.io{fill:var(--ink);stroke:var(--ink)}
+.ovw .ob.kb{stroke:var(--key)}
+.ovw .ob.on{stroke:var(--accent);stroke-width:2.6;fill:var(--accentBg)}
+.ovw .ob.pulse{animation:opulse .4s ease-in-out infinite alternate}
+.ovw .ob.io.on,.ovw .ob.io.pulse{fill:var(--ink);stroke:var(--accent);stroke-width:3;animation:none}
+@keyframes opulse{from{fill:var(--accentBg)}to{fill:var(--panel)}}
+.ovw .ot{font:600 15px var(--sans);fill:var(--ink);dominant-baseline:central}
+.ovw .ot.io{fill:var(--bg)}
+.ovw .okk{font:600 12.5px var(--mono);fill:var(--key);dominant-baseline:central;text-anchor:end}
+.ovw .ow{stroke:var(--line2);stroke-width:2;fill:none}
+.ovw .ow.k{stroke:var(--key);stroke-dasharray:4 3}
+.ovw .ow.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 5;animation:flow .55s linear infinite}
+.ovw .ow.k.on{stroke:var(--key)}
+@keyframes flow{to{stroke-dashoffset:-13}}
+.ovw .om{fill:var(--line2)}.ovw .omk{fill:var(--key)}
+.ovw .og{fill:none;stroke:var(--line2);stroke-width:1.5;stroke-dasharray:6 4}
+.ovw .ogl{font:600 12.5px var(--sans);fill:var(--muted)}
+.ovw .lane{stroke:var(--line);stroke-width:2;stroke-dasharray:2 4}
+.ovw [data-goto]{cursor:pointer}
+.ovw [data-goto]:hover .ob{stroke:var(--accent)}
+.c.colv{color:#fff;border-color:transparent;text-shadow:0 0 3px rgba(0,0,0,.6)}
+/* GF(2^8) close-up of one step */
+.bl{border-collapse:separate;border-spacing:3px}
+.bl tr{transition:opacity .2s}
+.bl td.bc{width:24px;height:26px;border:1px solid var(--line2);border-radius:4px;background:var(--panel)}
+.bl td.out{width:24px;color:var(--xor);text-decoration:line-through}
+.bl tr.sub td.bc{border-color:var(--xor);color:var(--xor)}
+.bl tr.res td.bc{border:1.5px solid var(--ink)}
+.bl tr.res td,.bl tr.res th{border-top:0}
+/* ShiftRows rows */
+.srcells{display:flex;gap:4px;border-radius:7px;outline:2px solid transparent;outline-offset:3px}
+.srcells .c{width:var(--cs);flex:none}
+.srline.mv .srcells{outline-color:var(--ink)}
+.srdots{width:auto;min-width:44px;align-items:center}
+.srsh{font-size:12px;color:var(--muted);white-space:nowrap;margin-right:3px}
+/* One round: wires and boxes of the active stage */
+.rdw .rl.on{stroke:var(--accent);stroke-width:2.2}
+.rdw .rb.on,.rdw .rx.on{stroke:var(--accent);stroke-width:2.4;fill:var(--accentBg)}
+/* Diffusion */
+.dg .c{transition:none}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* MixColumns: where the matrix row meets the column */
+.mcw{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:8px 6px;margin-top:16px;font:14px var(--mono)}
+.mcl,.mcx{margin-top:12px;font-weight:700;color:var(--muted)}
+.mcl{color:var(--ink)}
+.mct{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mct small{font-size:12px;color:var(--ink)}
+.mcp{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--line2);border-radius:8px}
+.mcc,.mcb,.mcr{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-weight:700}
+.mcc{background:var(--accentBg);color:var(--accent);border:1px solid var(--accent)}
+.mcb{color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55)}
+.mcr{width:36px;background:var(--accent);color:var(--onAccent)}
+.mcd{color:var(--muted)}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* ---------- LFSR ---------- */
+.cbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.cbar .fld{flex:1 1 240px}
+.cbar .fld.sm{flex:0 0 auto}
+.cbar .err{flex-basis:100%;margin:0}
+.cbar .ex{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.cbar .ex button{padding:4px 9px;font-size:13px}
+.cbar .poly{font:15px var(--mono);color:var(--ink)}
+.reg svg{width:100%;height:auto;display:block}
+.reg .cl{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+.reg .cl.one{fill:var(--accent);stroke:var(--accent)}
+.reg .cv{font:700 20px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.reg .cv.one{fill:var(--onAccent)}
+.reg .lab{font:12px var(--sans);fill:var(--muted);text-anchor:middle}
+.reg .w{stroke:var(--line2);stroke-width:2;fill:none}
+.reg .w.on{stroke:var(--accent);stroke-width:2.6}
+.reg .w.fb{stroke:var(--xor)}
+.reg .sw{fill:var(--panel);stroke:var(--line2);stroke-width:1.6;cursor:pointer}
+.reg .sw.on{fill:var(--xor);stroke:var(--xor)}
+.reg .swt{font:700 12px var(--mono);fill:var(--muted);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.reg .swt.on{fill:#fff}
+.reg [data-tap],.reg [data-seed]{cursor:pointer}
+.reg [data-tap]:hover .sw,.reg [data-seed]:hover .cl{stroke:var(--accent);stroke-width:2.6}
+.reg .xo{fill:var(--panel);stroke:var(--xor);stroke-width:2.2}
+.reg .xop{stroke:var(--xor);stroke-width:2}
+.reg .mk{fill:var(--line2)}.reg .mkx{fill:var(--xor)}.reg .mka{fill:var(--accent)}
+.reg .outl{font:600 13px var(--sans);fill:var(--muted)}
+.bits{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-start}
+.bit{width:24px;height:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--line2);background:var(--panel);font:700 14px/1 var(--mono)}
+.bit small{font:400 8.5px var(--sans);color:var(--muted);margin-top:2px}
+.bit.one{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+.bit.one small{color:var(--onAccent);opacity:.8}
+.bit.emp{border-style:dashed;background:transparent;color:var(--faint);font-weight:400}
+.bit.cur{outline:3px solid var(--ink);outline-offset:1px}
+.bit.ks{background:var(--keyBg);border-color:var(--key);color:var(--key)}
+.bit.ks.one{background:var(--key);color:#fff}
+.bit.gap{margin-left:7px}
+.rowlab{font-size:13px;color:var(--muted);margin:14px 0 6px}
+.rowlab b{color:var(--ink)}
+.stt{font:12.5px var(--mono);border-collapse:collapse;width:100%}
+.stt td,.stt th{padding:2px 6px;border-bottom:1px solid var(--line);text-align:left}
+.stt th{font:600 12px var(--sans);color:var(--muted)}
+.stt tr.on td{background:var(--accentBg);font-weight:700}
+.stt tr.back td{color:var(--ok)}
+.bmt{font:13px var(--mono);border-collapse:collapse;width:100%}
+.bmt td,.bmt th{padding:3px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.bmt th{font:600 12px var(--sans);color:var(--muted)}
+.bmt tr.on td{background:var(--accentBg)}
+.bmt td.d1{color:var(--xor);font-weight:700}
+.bmt td.d0{color:var(--ok)}
+.cx{font:700 18px var(--mono);text-align:center;padding:10px;border-radius:8px;background:var(--accentBg);margin-top:10px}
+.cx small{display:block;font:13px var(--sans);color:var(--muted);margin-top:4px}
+.bit.dim{opacity:.45}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>LFSR, step by step</h1>
+  <p class="sub">Linear feedback shift registers: how they make a keystream, how long it is before it repeats, and why one LFSR alone is easy to break</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="lf" class="on">1 · The register</button>
+    <button data-tab="sc">2 · Stream cipher</button>
+    <button data-tab="bm">3 · Breaking it: Berlekamp–Massey</button>
+  </nav>
+</header>
+
+<section class="wrap"><div class="card" id="inbar" style="margin-bottom:12px"></div></section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stageCard"><div id="stage"></div><svg id="fx" aria-hidden="true"></svg></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row" id="ctrlTop">
+        <div class="seg" id="mode"><button data-m="enc" class="on">Encrypt</button><button data-m="dec">Decrypt</button></div>
+        <label class="inl" id="rWrap" hidden>Round <select id="rSel"></select></label>
+      </div>
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label>
+        <label class="inl" id="fWrap" title="Scroll so the moving part stays in view"><input type="checkbox" id="follow" checked> follow</label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const hx=b=>b.toString(16).padStart(2,'0'),hexs=a=>a.map(hx).join('');
+const bin=b=>b.toString(2).padStart(8,'0');
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fromHex=h=>(h.match(/../g)||[]).map(x=>parseInt(x,16));
+const te=new TextEncoder(),td=new TextDecoder();
+const printable=v=>v>=0x20&&v<0x7f;
+const sI=j=>`s<sub>${j?'i+'+j:'i'}</sub>`;          // s with index i + j
+const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹',sup=n=>String(n).split('').map(d=>SUP[+d]).join(''),SUB='₀₁₂₃₄₅₆₇₈₉',sub=n=>String(n).split('').map(d=>SUB[+d]).join('');
+
+/* ---------- the LFSR (as in Paar & Pelzl, Understanding Cryptography) ----------
+   n flip-flops FFn−1 … FF0, shown left to right. Each clock: FF0 is the output bit, every bit moves one place
+   to the right, and the feedback bit = XOR of the bits FFj with tap pj = 1 enters FFn−1.
+   So s(i+n) = p(n−1)·s(i+n−1) ⊕ … ⊕ p1·s(i+1) ⊕ p0·s(i), and P(x) = xⁿ + p(n−1)xⁿ⁻¹ + … + p1·x + p0. */
+const LF={n:3,p:[1,1,0],seed:[1,0,0]};        // p[j] = pj; seed[d] = the bit in FF(n−1−d), left to right
+const LF_EX=[
+  {name:'Paar & Pelzl: x³ + x + 1',n:3,taps:[1,0],seed:'100'},
+  {name:'x⁴ + x + 1',n:4,taps:[1,0],seed:'1000'},
+  {name:'x⁴ + x² + 1 (not maximal)',n:4,taps:[2,0],seed:'1000'},
+  {name:'x⁸ + x⁴ + x³ + x² + 1',n:8,taps:[4,3,2,0],seed:'00000001'},
+  {name:'x¹⁶ + x¹⁴ + x¹³ + x¹¹ + 1',n:16,taps:[14,13,11,0],seed:'1010110011100001'},
+];
+// a primitive feedback polynomial for every length (taps j with pj = 1), each checked to give the period 2ⁿ − 1
+const PRIM={2:[1,0],3:[1,0],4:[1,0],5:[2,0],6:[1,0],7:[1,0],8:[4,3,2,0],9:[4,0],10:[3,0],11:[2,0],12:[6,4,1,0],13:[4,3,1,0],14:[10,6,1,0],15:[1,0],16:[14,13,11,0]};
+function lfNext(s){const n=s.length,out=s[n-1];let fb=0;for(let j=0;j<n;j++)if(LF.p[j])fb^=s[n-1-j];return{s:[fb,...s.slice(0,n-1)],out,fb}}
+// states and output bits of the first `count` clocks
+function lfRun(count){const st=[LF.seed.slice()],out=[],fb=[];let s=LF.seed.slice();for(let i=0;i<count;i++){const r=lfNext(s);out.push(r.out);fb.push(r.fb);s=r.s;st.push(s)}return{st,out,fb}}
+let PERIOD=null;
+// clocks until the start state comes back (null: it never does, which can happen when p0 = 0)
+function lfPeriod(){if(PERIOD!==undefined&&PERIOD!==null&&PERIOD.key===lfKey())return PERIOD.v;
+  let s=LF.seed.slice(),v=null;const start=s.join('');for(let i=1;i<=(1<<LF.n);i++){s=lfNext(s).s;if(s.join('')===start){v=i;break}}
+  PERIOD={key:lfKey(),v};return v}
+const lfKey=()=>LF.p.join('')+'/'+LF.seed.join('');
+function polyStr(n,p){const t=[`x${sup(n)}`];for(let j=n-1;j>=1;j--)if(p[j])t.push(j===1?'x':`x${sup(j)}`);if(p[0])t.push('1');return t.join(' + ')}
+function lfLoad(ex){LF.n=ex.n;LF.p=Array(ex.n).fill(0);ex.taps.forEach(j=>LF.p[j]=1);LF.seed=[...ex.seed].map(Number);changed()}
+function changed(){PERIOD=null;ST.step.lf=0;ST.step.sc=0;ST.step.bm=0;ST.built='';show()}
+
+/* ---------- page state ---------- */
+const ST={tab:'lf',step:{},round:{},mode:'enc',built:'',pick:null};
+const stage=$('#stage');
+const T={};
+const enc=()=>ST.mode==='enc';
+function bar(html){const key=ST.tab+ST.mode;if(ST.built===key)return;$('#inbar').innerHTML=`<div class="cbar">${html}<div class="err" id="err"></div></div>`;ST.built=key}
+const setErr=m=>{const e=$('#err');if(e)e.textContent=m||''};
+// the settings bar of the register (the same on every tab)
+function lfBar(extra){bar(`<label class="fld sm"><span class="flh"><b>Length n</b></span><select id="lfN">${[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(v=>`<option${v===LF.n?' selected':''}>${v}</option>`).join('')}</select></label>
+  <div class="fld"><span class="flh"><b>Feedback polynomial</b> <span>click the taps p in the picture to change it</span></span><span class="poly" id="lfPoly">P(x) = ${polyStr(LF.n,LF.p)}</span></div>
+  <div class="ex">Examples: ${LF_EX.map((e,i)=>`<button data-lfex="${i}">${e.name}</button>`).join('')}</div>${extra||''}`)}
+function bitsRow(b,o={}){return `<div class="bits"${o.id?` id="${o.id}"`:''}>${b.map((v,i)=>{const sh=!o.shown||o.shown(i);return `<div class="bit${sh?(v?' one':''):' emp'}${o.cls?' '+(o.cls(i)||''):''}${o.gap&&i&&i%o.gap===0?' gap':''}" data-i="${i}">${sh?v:'·'}${o.lab?`<small>${o.lab(i)}</small>`:''}</div>`}).join('')}</div>`}
+function bitRows(rows){
+  let h='<table class="bt">';
+  for(const [l,b,cls] of rows)h+=`<tr class="${cls||''}"><th>${l}</th>${[...bin(b)].map(x=>`<td>${x}</td>`).join('')}<td class="hx">${hx(b)}</td></tr>`;
+  return h+'</table>';
+}
+/* ---------- animation helpers (one set for all tabs, as in the DES demo) ---------- */
+const NS='http://www.w3.org/2000/svg';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+let UID=0;
+// point at fraction t of the way along a polyline
+function along(pts,t){
+  const seg=[];let tot=0;for(let j=1;j<pts.length;j++){const d=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);seg.push(d);tot+=d}
+  if(tot===0)return pts[0];let d=t*tot;
+  for(let j=0;j<seg.length;j++){if(d<=seg[j]||j===seg.length-1){const u=seg[j]?Math.min(1,d/seg[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u]}d-=seg[j]}
+}
+function stripes(x,y,w,h,colors,rx){
+  const id='c'+(++UID);let s=`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><g clip-path="url(#${id})">`;
+  const sw=w/colors.length;colors.forEach((c,j)=>{s+=`<rect x="${(x+j*sw).toFixed(2)}" y="${y}" width="${(sw+.6).toFixed(2)}" height="${h}" style="fill:${c}"/>`});
+  return s+'</g>';
+}
+const gc=c=>`var(--g${c})`;                       // colour of state column (or row) c
+const KC='var(--key)',AC='var(--accent)';
+// a token: a box with colour stripes (where the value came from) and its value; label may be ['0001','1001'] for two lines
+function tok(label,w,h,colors){
+  const L=Array.isArray(label)?label:[label],n=Math.max(...L.map(x=>String(x).length)),rx=Math.min(7,h/4);
+  const fs=Math.max(8,Math.min(L.length>1?h*.34:h*.44,w/n*1.45));
+  let t='';L.forEach((x,j)=>{t+=`<text y="${((j-(L.length-1)/2)*fs*1.05+fs*.36).toFixed(1)}" text-anchor="middle" style="font-size:${fs.toFixed(1)}px">${x}</text>`});
+  return stripes(-w/2,-h/2,w,h,colors,rx)+`<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${rx}"/>`+t;
+}
+const FX=$('#fx');
+const fxClear=()=>{FX.innerHTML=''};
+// centre and size of any element (HTML or SVG), in overlay pixels
+function rectOf(el){const f=FX.getBoundingClientRect(),b=el.getBoundingClientRect();return{x:b.left-f.left+b.width/2,y:b.top-f.top+b.height/2,w:b.width,h:b.height}}
+const xy=r=>[r.x,r.y];
+// maps user coordinates of an SVG drawing to overlay pixels; .s = scale
+function svgMap(svg){const m=svg.getScreenCTM(),f=FX.getBoundingClientRect(),pt=svg.createSVGPoint();
+  const g=(x,y)=>{pt.x=x;pt.y=y;const q=pt.matrixTransform(m);return[q.x-f.left,q.y-f.top]};g.s=m.a;return g}
+function fxNode(inner,cls){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;FX.appendChild(g);return g}
+/* a move: {node, pts (with a, b) or legs:[[a,b,pts],…], fadeIn, fadeOut, end, at:[[p,fn(node)],…]} → tick(p), p in [0,1].
+   Between legs the token waits at the end of the last leg. end: hidden from then on. at: run once (morph, resize). */
+function mover(moves){
+  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0});
+  return p=>{for(const m of moves){
+    const L=m.legs,A=L[0][0],B=L[L.length-1][1];let g=L[0];for(const l of L)if(p>=l[0])g=l;
+    const pt=along(g[2],ease(clamp((p-g[0])/((g[1]-g[0])||1),0,1)));
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
+    const fw=Math.max(.04,(B-A)*.15);let op=p<A?0:1;
+    if(m.fadeIn&&p>=A)op=clamp((p-A)/fw,0,1);
+    if(m.fadeOut)op=Math.min(op,clamp((B-p)/fw,0,1));
+    if(m.end!=null&&p>=m.end)op=0;
+    m.node.style.opacity=op;
+    if(m.at)while(m.fired<m.at.length&&p>=m.at[m.fired][0]){m.at[m.fired][1](m.node);m.fired++}
+  }};
+}
+// run each fn once when p passes its time
+function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.length&&p>=list[i][0]){list[i][1]();i++}}}
+const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
+const hide=els=>els.forEach(e=>{if(e)e.style.opacity=0});
+const tgl=(els,c,on)=>els.forEach(e=>{if(e)e.classList.toggle(c,on)});
+// the same token, new value / size / colours
+const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
+
+
+/* 1 · the register, clock by clock */
+const lfCount=()=>{const p=lfPeriod();return p&&p<=32?p:32};
+const RG={CW:54,C:44,x0:96,cy:70,sy:128,by:184,xx:46};
+const rx=d=>RG.x0+d*RG.CW+RG.C/2;                     // centre of the cell at display position d (FF n−1−d)
+const bitC=v=>v?AC:'var(--muted)';
+function regSVG(s){
+  const n=LF.n,{CW,C,x0,cy,sy,by,xx}=RG,W=x0+n*CW+96,H=206,act=[];for(let j=0;j<n;j++)if(LF.p[j])act.push(rx(n-1-j));
+  let h=`<svg id="lfSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="LFSR with ${n} bits"><defs>${['mk','mkx','mka'].map(c=>`<marker id="${c}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="${c}" d="M0,0 L10,5 L0,10 z"/></marker>`).join('')}</defs>`;
+  // feedback: taps → bus → ⊕ → back into FF n−1
+  if(act.length)h+=`<path class="w fb" d="M${xx+14} ${by} H${Math.max(...act)}"/>`;
+  h+=`<path class="w fb" id="lfFb" d="M${xx} ${by-14} V${cy} H${x0-3}" marker-end="url(#mkx)"/>`;
+  h+=`<circle class="xo" cx="${xx}" cy="${by}" r="14"/><path class="xop" d="M${xx-8} ${by}H${xx+8}M${xx} ${by-8}V${by+8}"/>`;
+  h+=`<path class="w" d="M${x0+(n-1)*CW+C} ${cy} H${x0+(n-1)*CW+C+50}" marker-end="url(#mk)"/><text class="outl" x="${x0+(n-1)*CW+C+56}" y="${cy+4}">output</text>`;
+  for(let d=0;d<n;d++){const j=n-1-d,x=x0+d*CW,on=LF.p[j];
+    if(d<n-1)h+=`<path class="w" d="M${x+C} ${cy} H${x+CW-1}" marker-end="url(#mk)"/>`;
+    h+=`<path class="w${on?' fb':''}" d="M${rx(d)} ${cy+C/2} V${sy-12}"/>`+(on?`<path class="w fb" d="M${rx(d)} ${sy+12} V${by}"/>`:'');
+    h+=`<g data-tap="${j}"><title>tap p${j}: click to switch it ${on?'off':'on'}</title><circle class="sw${on?' on':''}" cx="${rx(d)}" cy="${sy}" r="12"/><text class="swt${on?' on':''}" x="${rx(d)}" y="${sy}">${on}</text></g><text class="lab" x="${rx(d)+22}" y="${sy+4}" style="text-anchor:start">p${sub(j)}</text>`;
+    h+=`<text class="lab" x="${rx(d)}" y="${cy-C/2-8}">FF${sub(j)}</text><g data-seed="${d}"><title>click to change this bit of the start state</title><rect class="cl${s[d]?' one':''}" x="${x}" y="${cy-C/2}" width="${C}" height="${C}" rx="7"/><text class="cv${s[d]?' one':''}" x="${rx(d)}" y="${cy}">${s[d]}</text></g>`}
+  return h+'</svg>';
+}
+T.lf={n:()=>1+lfCount(),render(k){
+  lfBar();
+  const n=LF.n,cnt=lfCount(),R=lfRun(cnt),s=R.st[k],per=lfPeriod(),max=(1<<n)-1;
+  const fbEq=[...Array(n).keys()].filter(j=>LF.p[j]).reverse().map(sI).join(' ⊕ ')||'0';
+  stage.innerHTML=`<div class="h3">${n} bits FF${sub(n-1)} … FF${sub(0)}. Red switches = taps (pⱼ = 1). Click a switch to change the taps${k===0?', or a bit to change the start state':''}.</div>
+    <div class="reg${n>8?' scroll':''}"><div style="${n>8?'min-width:640px':''}">${regSVG(s)}</div></div>
+    <div class="rowlab"><b>Output bits</b> s₀ s₁ s₂ …: the keystream</div>${bitsRow(R.out,{id:'lfOut',shown:i=>i<k,lab:i=>i,cls:()=>'ks'})}`;
+  const cur=k>0?lfNext(R.st[k-1]):null,tapsTxt=k>0?[...Array(n).keys()].filter(j=>LF.p[j]).reverse().map(j=>`FF${sub(j)}`).join(' ⊕ '):'';
+  const tapVals=k>0?[...Array(n).keys()].filter(j=>LF.p[j]).reverse().map(j=>R.st[k-1][n-1-j]).join(' ⊕ '):'';
+  let ex;
+  if(k===0)ex=`<div class="step">The LFSR</div><p>A row of ${n} bits. At every clock:</p>
+    <p>1. The bits at the <b class="x">taps</b> are XORed: that is the feedback bit.<br>2. Every bit moves one place to the right.<br>3. The rightmost bit (FF${sub(0)}) leaves as the next <b class="k">keystream</b> bit.<br>4. The feedback bit comes in on the left (FF${sub(n-1)}).</p>
+    <p class="mono" style="font-size:14px">${sI(n)} = ${fbEq}</p><p>Press <b>Step</b>.</p>`;
+  else{ex=`<div class="step">Clock ${k}</div><p>Feedback = ${tapsTxt} = ${tapVals} = <b>${cur.fb}</b></p><p>Output bit s${sub(k-1)} = <b>${cur.out}</b> (it was in FF${sub(0)}). Every bit moves right; the feedback bit enters FF${sub(n-1)}.</p><p class="mono">state: ${R.st[k-1].join('')} → <b>${s.join('')}</b></p>`;
+    if(per&&k===per)ex+=`<p class="note">Back at the start state after ${per} clock${per>1?'s':''}: from now on the keystream repeats. ${per===max?`${per} = 2${sup(n)} − 1 is the longest possible period for ${n} bits: every state except 00…0 comes once. P(x) is a <b>primitive</b> polynomial.`:`The longest possible period for ${n} bits is 2${sup(n)} − 1 = ${max}; this feedback gives less.`}</p>`}
+  $('#explain').innerHTML=ex;
+  const rows=R.st.slice(0,cnt+1).map((st,i)=>`<tr class="${i===k?'on':''}${i>0&&st.join('')===LF.seed.join('')?' back':''}"><td>${i}</td><td>${st.join('')}</td><td>${i<cnt?R.out[i]:''}</td></tr>`).join('');
+  $('#extra').innerHTML=`<h3>Period</h3>
+    <p>${per?`The state comes back after <b>${per}</b> clock${per>1?'s':''}${per===max?' = 2'+sup(n)+' − 1, the maximum.':per===1&&!LF.seed.includes(1)?': the state 00…0 never changes. Never start an LFSR there.':`; the maximum for ${n} bits is ${max}.`}`:`The start state never comes back (p${sub(0)} = 0: the register forgets its last bit). Use a polynomial with p${sub(0)} = 1.`}</p>
+    <p style="font-size:13px;color:var(--muted)">Only polynomials that are <b>primitive</b> give the maximal period 2ⁿ − 1. A long period is needed, but it is not enough for security: see tab 3.</p>
+    <h3 style="margin-top:12px">States</h3><div class="scroll" style="max-height:340px;overflow:auto"><table class="stt"><tr><th>clock</th><th>FF${sub(n-1)} … FF${sub(0)}</th><th>out</th></tr>${rows}</table></div>`;
+},
+// tapped bits → ⊕ → feedback goes back in on the left; all bits move one place right; FF0 leaves as output
+plan(k){
+  const n=LF.n,R=lfRun(lfCount()),s0=R.st[k-1],r=lfNext(s0);
+  return{dur:2400,start(){
+    const svg=$('#lfSvg'),slot=$(`#lfOut [data-i="${k-1}"]`);if(!svg||!slot)return null;
+    const P=svgMap(svg),sc=P.s,{C,cy,sy,by,xx,x0}=RG,w=C*sc*.8,mv=[];
+    $$('#lfSvg [data-seed] text').forEach(t=>t.style.opacity=0);$$('#lfSvg [data-seed] rect').forEach(t=>t.classList.remove('one'));hide([slot]);
+    const T_=(v,c)=>fxNode(tok(String(v),w,w,[c]));
+    for(let j=0;j<n;j++)if(LF.p[j]){const d=n-1-j;mv.push({node:T_(s0[d],bitC(s0[d])),pts:[P(rx(d),cy),P(rx(d),sy),P(rx(d),by),P(xx,by)],a:.02*d,b:.38,fadeOut:true})}
+    mv.push({node:T_(r.fb,'var(--xor)'),legs:[[.36,.42,[P(xx,by),P(xx,by)]],[.46,.86,[P(xx,by),P(xx,cy),P(rx(0),cy)]]],fadeIn:true});
+    for(let d=0;d<n-1;d++)mv.push({node:T_(s0[d],bitC(s0[d])),pts:[P(rx(d),cy),P(rx(d+1),cy)],a:.46,b:.86});
+    const O=rectOf(slot),ox=x0+(n-1)*RG.CW+C+50;
+    mv.push({node:T_(s0[n-1],'var(--key)'),legs:[[.46,.7,[P(rx(n-1),cy),P(ox,cy)]],[.72,1,[P(ox,cy),xy(O)]]],at:[[.72,retok(String(s0[n-1]),O.w,O.h,['var(--key)'])]]});
+    return both(mover(mv),cues([[.36,()=>$('#lfSvg .xo').classList.add('on')],[.46,()=>{const f=$('#lfFb');if(f)f.classList.add('on')}]]));
+  }};
+},
+focus(){follow($('#lfOut'))}};
+
+/* 2 · stream cipher: message bits ⊕ keystream bits */
+const SC={p:[...te.encode('LFSR')]};
+const MAXSC=8;
+const toBits=b=>b.flatMap(v=>[7,6,5,4,3,2,1,0].map(i=>(v>>i)&1));
+const toBytes=b=>{const r=[];for(let i=0;i<b.length;i+=8)r.push(b.slice(i,i+8).reduce((v,x)=>2*v+x,0));return r};
+const scKs=()=>toBytes(lfRun(8*SC.p.length).out);
+const scIn=()=>enc()?SC.p:SC.p.map((v,i)=>v^scKs()[i]),scOut=()=>enc()?SC.p.map((v,i)=>v^scKs()[i]):SC.p;
+const chLab=v=>printable(v)?(v===32?'␣':esc(String.fromCharCode(v))):'·';
+T.sc={n:()=>1+SC.p.length,render(k){
+  const e=enc();
+  lfBar(`<label class="fld"><span class="flh"><b>${e?'Plaintext':'Ciphertext (hex)'}</b> <span>up to ${MAXSC} ${e?'characters':'bytes'}</span></span><input type="text" id="scT" value="${e?esc(td.decode(new Uint8Array(SC.p))):hexs(scIn())}" spellcheck="false" autocomplete="off"></label>`);
+  const inp=scIn(),ks=scKs(),out=scOut(),j=k-1,B=toBits(inp),K=toBits(ks),O=toBits(out),cur=i=>(i>>3)===j?' cur':'';
+  const byteLab=b=>`<div class="bits" style="font-size:12px;color:var(--muted)">${b.map(v=>`<div style="width:${8*27-3}px;text-align:center">${chLab(v)} · ${hx(v)}</div>`).join('')}</div>`;
+  stage.innerHTML=`<div class="rowlab"><b>${e?'Plaintext':'Ciphertext'}</b> bits</div>${byteLab(inp)}${bitsRow(B,{id:'scIn',gap:8,cls:cur})}
+    <div class="rowlab"><b class="k">Keystream</b> from the LFSR (P(x) = ${polyStr(LF.n,LF.p)}, start state ${LF.seed.join('')})</div>${bitsRow(K,{id:'scK',gap:8,cls:i=>'ks'+cur(i)})}
+    <div class="rowlab"><b>${e?'Ciphertext':'Plaintext'}</b> = ${e?'plaintext':'ciphertext'} ⊕ keystream</div>${bitsRow(O,{id:'scOut',gap:8,shown:i=>(i>>3)<k,cls:cur})}${byteLab(out.map((v,i)=>i<k?v:32)).replace(/␣ · 20/g,'')}
+    ${j>=0?`<div class="sec"><div class="h3">Byte ${k}, bit by bit</div><div class="scroll">${bitRows([[e?'plaintext':'ciphertext',inp[j]],['⊕ keystream',ks[j]],[e?'= ciphertext':'= plaintext',out[j],'res']])}</div></div>`:''}`;
+  $('#explain').innerHTML=j<0?`<div class="step">LFSR as a stream cipher</div><p>The LFSR makes the keystream, bit by bit. Each message bit is XORed with one keystream bit, just like the <b>Vernam</b> cipher, but the key is now only the start state (and the taps), not a random string as long as the message.</p>
+      <p>Decryption: run the same LFSR from the same start state and XOR again.</p><p>Press <b>Step</b>.</p>`
+   :`<div class="step">Byte ${k} of ${inp.length}</div><p class="mono" style="font-size:15px">${hx(inp[j])} ⊕ <span class="k">${hx(ks[j])}</span> = <b>${hx(out[j])}</b></p><p>Keystream bits s${sub(8*j)} … s${sub(8*j+7)}.</p>
+      ${k===inp.length?`<p class="note">Done: <span class="mono"><b>${e?hexs(out):esc(td.decode(new Uint8Array(out)))}</b></span>. Press <b>${e?'Decrypt':'Encrypt'}</b> to go back.</p>`:''}`;
+  $('#extra').innerHTML=`<h3>Is this secure?</h3><p>Not with one LFSR. With a known piece of plaintext the attacker gets keystream bits: keystream = plaintext ⊕ ciphertext. From only 2n of them, the whole LFSR can be found (<button class="link" data-goto="bm">tab 3</button>).</p>
+    <p class="note">Real stream ciphers combine LFSRs in a non-linear way. A5/1 (GSM) uses three LFSRs that move irregularly: <a href="a51.html">see the A5/1 demo</a>.</p>`;
+},
+// the 8 message bits and the 8 keystream bits of this byte go down into the result row and are XORed there
+plan(k){const j=k-1;
+  return{dur:1800,start(){
+    const I=$$(`#scIn .bit`).slice(8*j,8*j+8),K=$$(`#scK .bit`).slice(8*j,8*j+8),O=$$(`#scOut .bit`).slice(8*j,8*j+8);if(I.length<8||O.length<8)return null;
+    const B=toBits(scIn()),Kb=toBits(scKs()),Ob=toBits(scOut()),mv=[];hide(O);
+    for(let x=0;x<8;x++){const a=rectOf(I[x]),b=rectOf(K[x]),o=rectOf(O[x]),i=8*j+x,t=.03*x;
+      mv.push({node:fxNode(tok(String(B[i]),a.w,a.h,[B[i]?AC:'var(--muted)'])),pts:[xy(a),xy(o)],a:t,b:t+.55,at:[[t+.6,retok(String(Ob[i]),o.w,o.h,[AC,KC])]]});
+      mv.push({node:fxNode(tok(String(Kb[i]),b.w,b.h,[KC])),pts:[xy(b),xy(o)],a:t+.1,b:t+.55,end:t+.58})}
+    return mover(mv);
+  }};
+}};
+
+/* 3 · Berlekamp–Massey: the shortest LFSR that makes the bits seen so far */
+// C(x) = 1 + c1·x + … + cL·x^L means s(N) = c1·s(N−1) ⊕ … ⊕ cL·s(N−L)
+function bm(s){
+  let C=[1],B=[1],L=0,m=1;const rows=[];
+  for(let N=0;N<s.length;N++){
+    let pred=0;for(let i=1;i<=L;i++)pred^=(C[i]||0)&s[N-i];
+    const d=s[N]^pred,row={N,s:s[N],pred,d,Lp:L,Cp:C.slice()};
+    if(d){const Tm=C.slice(),nc=C.slice();for(let i=0;i<B.length;i++)nc[i+m]=(nc[i+m]||0)^B[i];
+      if(2*L<=N){L=N+1-L;B=Tm;m=1}else m++;C=nc}
+    else m++;
+    row.C=C.slice();row.L=L;rows.push(row);
+  }
+  return rows;
+}
+const trimP=c=>{const a=c.slice();while(a.length>1&&!a[a.length-1])a.pop();return a};
+function polyC(c){const t=[];c.forEach((v,i)=>{if(v)t.push(i===0?'1':i===1?'x':`x${sup(i)}`)});return t.join(' + ')||'0'}
+const bmN=()=>2*LF.n;
+// the real LFSR as a connection polynomial: ci = p(n−i)
+const realC=()=>trimP([1,...[...Array(LF.n).keys()].map(i=>LF.p[LF.n-1-i])]);
+T.bm={n:()=>1+bmN(),render(k){
+  lfBar();
+  const N=bmN(),R=lfRun(N+16),s=R.out,rows=bm(s.slice(0,N)),last=k>0?rows[k-1]:null,C=last?last.C:[1],Lk=last?last.L:0,done=k===N;
+  let h=`<div class="rowlab"><b>Keystream bits</b> the attacker knows (plaintext ⊕ ciphertext): ${N} = 2n bits</div>${bitsRow(s.slice(0,N),{id:'bmS',lab:i=>i,cls:i=>'ks'+(i===k-1?' cur':'')+(i>=k?' dim':'')})}`;
+  h+=`<div class="cx" id="bmC">C(x) = ${polyC(trimP(C))}<small>LFSR length L = ${Lk}${Lk?` · s${sub('N')} = ${trimP(C).map((v,i)=>v&&i?`s<sub>N−${i}</sub>`:'').filter(Boolean).join(' ⊕ ')||'0'}`:''}</small></div>`;
+  h+=`<div class="sec"><div class="h3">One row per bit: the current LFSR predicts the bit; if it is wrong (d = 1), C(x) is corrected</div><div class="scroll"><table class="bmt" id="bmT"><tr><th>N</th><th>bit s<sub>N</sub></th><th>predicted</th><th>d</th><th>C(x) after</th><th>L</th></tr>
+    ${rows.slice(0,k).map((r,i)=>`<tr data-r="${i}" class="${i===k-1?'on':''}"><td>${r.N}</td><td>${r.s}</td><td>${r.pred}</td><td class="${r.d?'d1':'d0'}">${r.d}</td><td>${polyC(trimP(r.C))}</td><td>${r.L}</td></tr>`).join('')}</table></div></div>`;
+  if(done){const rc=realC(),ok=polyC(trimP(C))===polyC(rc),c=trimP(C),pred=s.slice(0,N);for(let x=N;x<N+16;x++){let v=0;for(let i=1;i<c.length;i++)v^=c[i]&pred[x-i];pred.push(v)}
+    const okP=pred.slice(N).join('')===s.slice(N,N+16).join('');
+    h+=`<div class="sec" id="bmP"><div class="h3">Result</div><p>Found: <b class="mono">C(x) = ${polyC(c)}</b>. The real LFSR: <span class="mono">${polyC(rc)}</span> ${ok?'✓ the same':'(different, but it makes the same bits)'}.</p>
+      <div class="rowlab"><b>Next 16 bits</b>, predicted with the found LFSR</div>${bitsRow(pred.slice(N),{id:'bmPr',lab:i=>N+i,cls:()=>'ks'})}
+      <div class="rowlab"><b>Next 16 bits</b> of the real keystream</div>${bitsRow(s.slice(N,N+16),{lab:i=>N+i,cls:()=>'ks'})}
+      <p class="note" style="margin-top:10px">${okP?'✓ All 16 predicted bits are right.':'✗ The prediction is not right: the LFSR needs more bits.'} From now on the attacker can make the whole keystream and decrypt everything.</p></div>`}
+  stage.innerHTML=h;
+  $('#explain').innerHTML=k===0?`<div class="step">Breaking one LFSR</div><p>The attacker knows a bit of plaintext, so she knows some keystream bits. The Berlekamp–Massey algorithm (1969) finds the <b>shortest LFSR</b> that produces these bits.</p>
+      <p>For an LFSR of length n, <b>2n bits are enough</b>. Here n = ${LF.n}, so ${N} bits.</p><p>Press <b>Step</b>: one bit at a time.</p>`
+   :`<div class="step">Bit ${last.N} of ${N-1}</div><p>The current LFSR (length ${last.Lp}) predicts s${sub(last.N)} = ${last.pred}. The real bit is ${last.s}, so d = <b>${last.d}</b>.</p>
+      <p>${last.d?`Wrong: C(x) is corrected${last.L!==last.Lp?`, and the LFSR gets longer: L = ${last.Lp} → ${last.L}`:''}.`:'Right: nothing changes.'}</p>
+      ${done?`<p class="note">After ${N} bits: L = ${Lk}. The found LFSR predicts the rest of the keystream.</p>`:''}`;
+  $('#extra').innerHTML=`<h3>Linear complexity</h3><p>The length L of the shortest LFSR that makes a sequence is its <b>linear complexity</b>. One LFSR of length n has linear complexity at most n, so 2n bits give it away.</p>
+    <p class="note">That is why real stream ciphers do not use one LFSR alone: they combine several in a non-linear way, to make the linear complexity huge.</p>`;
+},
+// the next bit goes into the table; C(x) changes when the prediction was wrong
+plan(k){const N=bmN(),r=bm(lfRun(N).out.slice(0,N))[k-1];
+  return{dur:1500,start(){
+    const src=$(`#bmS [data-i="${k-1}"]`),row=$(`#bmT tr[data-r="${k-1}"]`),cx=$('#bmC');if(!src||!row)return null;
+    const tgt=row.children[1],A=rectOf(src),B=rectOf(tgt);hide([row]);
+    const old=cx.innerHTML;if(r.d)cx.innerHTML=`C(x) = ${polyC(trimP(r.Cp))}<small>LFSR length L = ${r.Lp}</small>`;
+    return both(mover([{node:fxNode(tok(String(r.s),A.w,A.h,[KC])),pts:[xy(A),xy(B)],a:0,b:.5,end:.52}]),
+      cues([[.52,()=>{row.style.opacity=1}],[.7,()=>{if(r.d){cx.innerHTML=old;cx.classList.add('flash')}}]]));
+  }};
+},
+focus(){follow($('#bmT tr.on')||$('#bmT'))}};
+
+/* ---------- step engine: one animation at a time (as in the DES demo) ----------
+   Each tab: n() = number of states, render(k) = static picture after step k,
+   plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
+const ENG={playing:false,anim:null,playT:null};
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const speed=()=>+$('#spd').value;
+function curN(){return T[ST.tab].n()}
+function controls(k){
+  const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
+  $('#ctrl').hidden=!stepped&&!t.rounds;
+  $('#prog').textContent=stepped?`Step ${k} of ${n-1}`:'';
+  $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
+  $('#fWrap').hidden=!t.focus;
+}
+// static picture of the current step; any running animation or pending play step is dropped
+function show(){
+  if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
+  const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
+  fxClear();t.render(k);controls(k);
+}
+function startStage(to){
+  stopAnim(true);
+  const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
+  ST.step[tab]=to;fxClear();t.render(to);            // the target picture; start() hides what is still to come
+  const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
+  if(!tick){fxClear();t.render(to);controls(to);next();return}
+  const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
+  ENG.anim=a;controls(to);tick(0);
+  if(t.focus&&$('#follow').checked)t.focus(to);
+  requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
+}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();T[a.tab].render(a.to);controls(a.to);next()}
+// when playing, the next step starts only after this one has finished, plus a short pause
+function next(){
+  if(!ENG.playing)return;const k=ST.step[ST.tab];
+  if(k<curN()-1)ENG.playT=setTimeout(()=>{ENG.playT=null;startStage(k+1)},(RM.matches?60:380)/speed());else setPlaying(false);
+}
+// complete = jump to the end of the running step, otherwise back to its start
+function stopAnim(complete){
+  if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
+  const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
+  if(a.tab===ST.tab){T[a.tab].render(ST.step[a.tab]);controls(ST.step[a.tab])}
+}
+function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
+// keep the moving part in view (the "follow" box); only the page scrolls, never a wide drawing sideways
+function follow(el){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
+  if(r.top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+}
+function fillRounds(){
+  const t=T[ST.tab];
+  $('#rWrap').hidden=!t.rounds;$('#mode').hidden=ST.tab!=='sc';
+  if(!t.rounds)return;
+  const rs=t.rounds();if(!rs.includes(ST.round[ST.tab]))ST.round[ST.tab]=rs[0];
+  $('#rSel').innerHTML=rs.map(r=>`<option${r===ST.round[ST.tab]?' selected':''}>${r}</option>`).join('');
+}
+function goStep(tab,r,step){setTab(tab,r);ST.step[tab]=step;show();window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'})}
+function setTab(id,round){
+  setPlaying(false);stopAnim(true);ST.tab=id;ST.built='';ST.pick=null;
+  if(round!=null&&ST.round[id]!==undefined){ST.round[id]=+round;ST.step[id]=0}
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  fillRounds();show();
+  try{localStorage.setItem('lfsr-tab',id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(true);return}startStage((ST.step[ST.tab]||0)+1)};
+$('#bBack').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(false);return}const k=ST.step[ST.tab]||0;if(k>0){ST.step[ST.tab]=k-1;show()}};
+$('#bReset').onclick=()=>{setPlaying(false);stopAnim(false);ST.step[ST.tab]=0;ST.built='';show()};
+$('#bPlay').onclick=()=>{
+  if(ENG.playing){setPlaying(false);return}
+  const n=curN();if(n<2)return;
+  if((ST.step[ST.tab]||0)>=n-1&&!ENG.anim){ST.step[ST.tab]=0;ST.built='';show()}
+  setPlaying(true);if(!ENG.anim)startStage(ST.step[ST.tab]+1);
+};
+$('#rSel').onchange=e=>{setPlaying(false);stopAnim(false);ST.round[ST.tab]=+e.target.value;ST.step[ST.tab]=0;ST.built='';show()};
+$('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;setPlaying(false);stopAnim(false);ST.mode=b.dataset.m;
+  $$('#mode button').forEach(x=>x.classList.toggle('on',x===b));ST.step[ST.tab]=0;ST.built='';show()};
+/* ---------- inputs ---------- */
+$('#inbar').addEventListener('input',e=>{const t=e.target,v=t.value;
+  if(t.id!=='scT')return;
+  if(enc()){const b=[...te.encode(v)];if(!b.every(printable))return setErr('Use plain ASCII characters.');if(b.length>MAXSC)return setErr(`At most ${MAXSC} characters.`);setErr();SC.p=b}
+  else{const h=v.replace(/\s+/g,'');if(!/^([0-9a-fA-F]{2})*$/.test(h))return setErr('Ciphertext: hex digits, 2 per byte.');const c=fromHex(h);if(c.length>MAXSC)return setErr(`At most ${MAXSC} bytes.`);setErr();
+    const ks=toBytes(lfRun(8*c.length).out);SC.p=c.map((x,i)=>x^ks[i])}
+  ST.step.sc=Math.min(ST.step.sc||0,SC.p.length);show()});
+$('#inbar').addEventListener('change',e=>{const t=e.target;
+  if(t.id==='lfN'){const n=+t.value;LF.n=n;LF.p=Array(n).fill(0);PRIM[n].forEach(j=>LF.p[j]=1);LF.seed=Array(n).fill(0);LF.seed[0]=1;changed()}});
+document.addEventListener('click',e=>{
+  const ex=e.target.closest('[data-lfex]');if(ex){lfLoad(LF_EX[+ex.dataset.lfex]);return}
+  const tp=e.target.closest('[data-tap]');if(tp){LF.p[+tp.dataset.tap]^=1;changed();return}
+  const sd=e.target.closest('[data-seed]');if(sd&&ST.tab==='lf'){LF.seed[+sd.dataset.seed]^=1;changed();return}
+  const g=e.target.closest('[data-goto]');if(g)setTab(g.dataset.goto);
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
+});
+let startTab='lf';try{const t=localStorage.getItem('lfsr-tab');if(t&&T[t])startTab=t}catch(e){}
+setTab(startTab);
+
+</script>
+</body>
+</html>
