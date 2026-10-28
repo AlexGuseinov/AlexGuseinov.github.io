@@ -1600,8 +1600,12 @@ function stopAnim(complete){
   if(a.tab===ST.tab){T[a.tab].render(ST.step[a.tab]);controls(ST.step[a.tab])}
 }
 function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
-// keep the moving part in view (the "follow" box)
-function follow(el){if(el)el.scrollIntoView({block:'nearest',inline:'nearest',behavior:RM.matches?'auto':'smooth'})}
+// keep the moving part in view (the "follow" box); only the page scrolls, never a wide drawing sideways
+function follow(el){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
+  if(r.top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+}
 function fillRounds(){
   const t=T[ST.tab];
   $('#rWrap').hidden=!t.rounds;$('#mode').hidden=ST.tab!=='x';
