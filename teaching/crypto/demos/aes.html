@@ -392,6 +392,18 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .dg .c{transition:none}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
+/* MixColumns: where the matrix row meets the column */
+.mcw{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:8px 6px;margin-top:16px;font:14px var(--mono)}
+.mcl,.mcx{margin-top:12px;font-weight:700;color:var(--muted)}
+.mcl{color:var(--ink)}
+.mct{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mct small{font-size:12px;color:var(--ink)}
+.mcp{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--line2);border-radius:8px}
+.mcc,.mcb,.mcr{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-weight:700}
+.mcc{background:var(--accentBg);color:var(--accent);border:1px solid var(--accent)}
+.mcb{color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55)}
+.mcr{width:36px;background:var(--accent);color:var(--onAccent)}
+.mcd{color:var(--muted)}
 footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
 </style>
 </head>
@@ -1065,13 +1077,14 @@ T.mc={n:()=>17,rounds:()=>range(1,D.K.Nr-1),render(k){
   const r=ST.round.mc,o=findOp('mc',r),cur=k>0?k-1:-1,c=cur>=0?cur>>2:0,rr=cur>=0?cur&3:-1;
   const a=[0,1,2,3].map(j=>o.p[4*c+j]),out=o.s.map((v,i)=>i<k?v:null);
   const mt=`<table class="mt" id="mcM">${MM.map((row,i)=>`<tr class="${i===rr?'on':''}" data-r="${i}">${row.map((v,j)=>`<td data-j="${j}">${hx(v)}</td>`).join('')}</tr>`).join('')}</table>`;
-  const vin=`<table class="mt">${a.map(v=>`<tr><td>${hx(v)}</td></tr>`).join('')}</table>`;
+  const vin=`<table class="mt" id="mcC">${a.map((v,j)=>`<tr><td${cur>=0?` style="color:var(--g${j});font-weight:700"`:''}>${hx(v)}</td></tr>`).join('')}</table>`;
   const vout=`<table class="mt" id="mcV">${[0,1,2,3].map(i=>`<tr><td class="${i===rr?'on':''}" data-r="${i}">${4*c+i<k?hx(o.s[4*c+i]):'··'}</td></tr>`).join('')}</table>`;
   let det='';
   if(cur>=0){
     const terms=MM[rr].map((m,j)=>gm(m,a[j]));
-    det=`<div class="terms"><b>b<sub>${rr}</sub></b> = ${MM[rr].map((m,j)=>`${hx(m)}•${hx(a[j])}`).join(' ⊕ ')}
-      ${MM[rr].map((m,j)=>termHtml(m,a[j])).join('')}</div>
+    // where row rr of the matrix meets the column: one coefficient with one byte, four times
+    det=`<div class="mcw" id="mcW"><span class="mcl">b<sub>${rr}</sub> =</span>${MM[rr].map((m,j)=>`${j?'<span class="mcx">⊕</span>':''}<div class="mct"><div class="mcp"><span class="mcc">${hx(m)}</span><span class="mcd">•</span><span class="mcb" style="background:var(--g${j})">${hx(a[j])}</span></div><small>= ${hx(terms[j])}</small></div>`).join('')}<span class="mcx">=</span><div class="mct"><div class="mcp"><span class="mcr">${hx(o.s[cur])}</span></div></div></div>
+      <div class="terms">${MM[rr].map((m,j)=>termHtml(m,a[j])).join('')}</div>
       <div class="sec" style="margin-top:12px"><div class="h3">XOR of the four terms</div><div class="scroll">${bitRows([...terms.map((t,j)=>[`${hx(MM[rr][j])}•${hx(a[j])}`,t]),['b'+'<sub>'+rr+'</sub>',o.s[cur],'res']])}</div></div>`;
   }
   stage.innerHTML=`<div class="flow">
@@ -1091,7 +1104,8 @@ T.mc={n:()=>17,rounds:()=>range(1,D.K.Nr-1),render(k){
     <p>The matrix only uses 01, 02 and 03, so it is cheap to compute.</p>
     <p>The last round has no MixColumns.</p>`
    :`<div class="step">Column ${c}, row ${rr} · byte ${cur+1} of 16</div>
-    <p>Row ${rr} of the matrix (<span class="mono">${MM[rr].map(hx).join(' ')}</span>) times column ${c} gives <span class="mono"><b>${hx(o.s[cur])}</b></span>.</p>`;
+    <p>Row ${rr} of the matrix (<span class="mono">${MM[rr].map(hx).join(' ')}</span>) times column ${c} gives <span class="mono"><b>${hx(o.s[cur])}</b></span>.</p>
+    <p>Each byte of the column meets one number of the row: <span class="mono">${MM[rr].map((m,j)=>`${hx(m)}•${hx(a[j])}`).join(', ')}</span>. The four products are XORed.</p>`;
   $('#extra').innerHTML=`<h3>Multiplying by 02 (xtime)</h3>
     ${cur>=0&&MM[rr].includes(2)?`<div class="scroll">${xtimeLines(a[MM[rr].indexOf(2)])}</div>`:'<p>Shift the byte one bit to the left. If the top bit was 1, XOR the result with 1b.</p>'}
     <p style="margin-top:8px">03 • x = (02 • x) ⊕ x.</p>
@@ -1100,20 +1114,31 @@ T.mc={n:()=>17,rounds:()=>range(1,D.K.Nr-1),render(k){
     <p class="note">InvMixColumns uses the inverse matrix with entries 0e, 0b, 0d, 09.</p>`;
 }};
 
-// output byte (row rr of column c): the matrix row lights up, the 4 column bytes fly to it,
-// each becomes its product, the products merge with ⊕, and the result flies into the new state
+// output byte (row rr of column c): the coefficients of matrix row rr are copied down (the matrix stays as it is),
+// the bytes of the column come from the state, each pair becomes its product, the products are XORed,
+// and the result goes into the new state
 T.mc.plan=k=>{
-  const o=findOp('mc',ST.round.mc),cur=k-1,c=cur>>2,rr=cur&3,a=[0,1,2,3].map(j=>o.p[4*c+j]);
-  return{dur:3000,start(){
-    const ins=[0,1,2,3].map(j=>$(`#mcIn [data-i="${4*c+j}"]`)),row=$(`#mcM tr[data-r="${rr}"]`),out=$(`#mcO [data-i="${cur}"]`),vo=$(`#mcV td[data-r="${rr}"]`);
-    if(!row||!out||!vo||ins.some(e=>!e))return null;
-    const ms=[...row.querySelectorAll('td')],I=ins.map(rectOf),M=ms.map(rectOf),V=rectOf(vo),O=rectOf(out),tw=Math.max(M[0].w+8,30),th=M[0].h+8;
-    row.classList.remove('on');vo.classList.remove('on');hide([out,vo]);
-    const mv=[0,1,2,3].map(j=>({node:fxNode(tok(hx(a[j]),I[j].w,I[j].h,[gc(j)])),fadeOut:true,
-      legs:[[.08+.04*j,.36+.04*j,[xy(I[j]),[I[j].x,I[j].y-14],xy(M[j])]],[.6,.76,[xy(M[j]),xy(V)]]],
-      at:[[.36+.04*j,retok(hx(a[j]),tw,th,[gc(j)])],[.5,retok(hx(gm(MM[rr][j],a[j])),tw,th,[gc(j)])]]}));
-    mv.push({node:fxNode(tok(hx(o.s[cur]),V.w+8,V.h+6,[0,1,2,3].map(gc))),fadeIn:true,legs:[[.74,.78,[xy(V),xy(V)]],[.8,1,[xy(V),[V.x,V.y-16],xy(O)]]],at:[[.8,retok(hx(o.s[cur]),O.w,O.h,[0,1,2,3].map(gc))]]});
-    return both(mover(mv),cues([[.04,()=>row.classList.add('on')],[.46,()=>tgl(ms,'hot',true)],[.62,()=>tgl(ms,'hot',false)]]));
+  const o=findOp('mc',ST.round.mc),cur=k-1,c=cur>>2,rr=cur&3,a=[0,1,2,3].map(j=>o.p[4*c+j]),G=[0,1,2,3].map(gc);
+  return{dur:3400,start(){
+    const ins=[0,1,2,3].map(j=>$(`#mcIn [data-i="${4*c+j}"]`)),row=$(`#mcM tr[data-r="${rr}"]`),out=$(`#mcO [data-i="${cur}"]`),vo=$(`#mcV td[data-r="${rr}"]`),w=$('#mcW');
+    if(!row||!out||!vo||!w||ins.some(e=>!e))return null;
+    const ms=[...row.querySelectorAll('td')],cc=[...w.querySelectorAll('.mcc')],bb=[...w.querySelectorAll('.mcb')],pp=[...w.querySelectorAll('.mcp')],pr=[...w.querySelectorAll('.mct small')],res=w.querySelector('.mcr');
+    const I=ins.map(rectOf),M=ms.map(rectOf),C=cc.map(rectOf),B=bb.map(rectOf),PR=pr.map(rectOf),R=rectOf(res),O=rectOf(out);
+    // the column vector of the equation, and a lane in the gap under the matrix, so nothing crosses the matrix
+    const V=[...$$('#mcC td')].map(rectOf),mx=rectOf($('#mcM')),gy=(mx.y+mx.h/2+C[0].y-C[0].h/2)/2;
+    row.classList.remove('on');vo.classList.remove('on');hide([out,vo,res,...cc,...bb,...pr]);
+    const mv=[],cu=[[.02,()=>row.classList.add('on')],[.03,()=>tgl(ms,'hot',true)],[.4,()=>tgl(ms,'hot',false)]];
+    for(let j=0;j<4;j++){const t=.04*j;
+      mv.push({node:fxNode(tok(hx(MM[rr][j]),C[j].w,C[j].h,[AC])),pts:[xy(M[j]),[M[j].x,gy],[C[j].x,gy],xy(C[j])],a:.04+t,b:.28+t,end:.28+t});
+      mv.push({node:fxNode(tok(hx(a[j]),I[j].w,I[j].h,[G[j]])),legs:[[.12+t,.3+t,[xy(I[j]),[I[j].x,I[j].y-14],xy(V[j])]],[.32+t,.48+t,[xy(V[j]),[V[j].x,gy],[B[j].x,gy],xy(B[j])]]],end:.48+t,at:[[.3+t,retok(hx(a[j]),B[j].w,B[j].h,[G[j]])]]});
+      mv.push({node:fxNode(tok(hx(gm(MM[rr][j],a[j])),PR[j].w+10,PR[j].h+6,[G[j]])),pts:[xy(PR[j]),xy(R)],a:.66+.02*j,b:.82,fadeIn:true,fadeOut:true});
+      cu.push([.28+t,()=>{cc[j].style.opacity=1}],[.48+t,()=>{bb[j].style.opacity=1}],[.56,()=>{pp[j].classList.add('flash');pr[j].style.opacity=1}]);
+    }
+    // the result goes up into the output vector of the equation, then into the new state
+    const VO=rectOf(vo);
+    cu.push([.82,()=>{res.style.opacity=1;pp[4].classList.add('flash')}],[.93,()=>{vo.style.opacity=1;vo.classList.add('on')}]);
+    mv.push({node:fxNode(tok(hx(o.s[cur]),R.w,R.h,G)),legs:[[.84,.93,[xy(R),[R.x,gy],[VO.x,gy],xy(VO)]],[.94,1,[xy(VO),xy(O)]]],fadeIn:true,at:[[.94,retok(hx(o.s[cur]),O.w,O.h,G)]]});
+    return both(mover(mv),cues(cu));
   }};
 };
 
