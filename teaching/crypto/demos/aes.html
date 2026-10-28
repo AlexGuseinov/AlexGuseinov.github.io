@@ -201,6 +201,68 @@ button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inh
 .blbl{display:flex;gap:6px;max-width:560px;margin:4px auto 0;padding:0 4px}
 .blbl span{flex:1;text-align:center;font-size:11px;color:var(--muted)}
 
+/* One round picture */
+.rdw svg{width:100%;height:auto;display:block}
+.rdw .rl{stroke:var(--line2);stroke-width:1.4;fill:none}
+.rdw .rl.hl{stroke:var(--xor);stroke-width:2.6}
+.rdw .rl.dash{stroke-dasharray:4 3}
+.rdw .rmn{fill:var(--line2)}.rdw .rmh{fill:var(--xor)}
+.rdw .rb{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+.rdw .rb.hl{stroke:var(--xor);stroke-width:2.4;fill:var(--xorBg)}
+.rdw .rbt{font:700 11px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .go{cursor:pointer}
+.rdw .rbox:hover .rb,.rdw .rbox:hover .rx{stroke:var(--accent);stroke-width:2.4}
+.rdw .srbx{fill:none;stroke:var(--ink);stroke-width:2}
+.rdw .srband{fill:transparent}.rdw .srband.a{fill:color-mix(in srgb,var(--ink) 6%,transparent)}
+.rdw .rrow{font:10.5px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab{font:600 12px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab.go{fill:var(--ink);text-decoration:underline}
+.rdw .rlab.on{fill:var(--accent);font-weight:700}
+.rdw .rgl{font:11px var(--sans);fill:var(--faint);text-anchor:middle}
+.rdw .rdot{fill:var(--line2)}.rdw .rdot.hl{fill:var(--xor)}
+.rdw .rx{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}.rdw .rx.hl{stroke:var(--xor);fill:var(--xorBg);stroke-width:2.2}
+.rdw .rxp{stroke:var(--ink);stroke-width:1.3;pointer-events:none}
+.rdw .rkt{fill:var(--keyBg);stroke:var(--key);stroke-width:.8}
+.rdw .rkv{font:8.5px var(--mono);fill:var(--key);text-anchor:middle;dominant-baseline:central}
+.rdw .rka{stroke:var(--key);stroke-width:1}
+.rdw .rq{stroke:var(--line2);stroke-width:1}
+.rdw .rq.hl{fill:var(--xor);stroke:var(--xor)}
+.rdw .rq.new{stroke:var(--accent);stroke-width:2.2}
+.rdw .rct{font:600 12.5px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .rct.hl{fill:#fff}.rdw .rct.emp{fill:var(--faint);font-weight:400}
+.rdw .rcell{cursor:pointer}
+.rdw .rcell:hover .rq{stroke:var(--ink);stroke-width:2}
+.rdw .rnote{font:12px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+
+/* Key expansion picture */
+.ked svg{width:100%;height:auto;display:block}
+.ked .kl{stroke:var(--line2);stroke-width:1.6;fill:none}
+.ked .kl.a{stroke:var(--accent);stroke-width:2.8}
+.ked .kl.k{stroke:var(--key);stroke-width:2.8}
+.ked .kmn{fill:var(--line2)}.ked .kma{fill:var(--accent)}.ked .kmk{fill:var(--key)}
+.ked .kdot{fill:var(--line2)}.ked .kdot.a{fill:var(--accent)}
+.ked .wb{fill:var(--panel);stroke:var(--line2);stroke-width:1.3}
+.ked .wb.key{fill:var(--keyBg);stroke:var(--key)}
+.ked .wb.emp{fill:none;stroke-dasharray:4 3}
+.ked .wb.cur{stroke:var(--ink);stroke-width:2.6}
+.ked .wb.src{stroke:var(--accent);stroke-width:2.6}
+.ked .wb.src2{stroke:var(--key);stroke-width:2.6}
+.ked .wt{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .wt.emp{fill:var(--faint);font-weight:400}
+.ked .kcap{font:11px var(--sans);fill:var(--muted);text-anchor:middle}
+.ked .kcap .kr{fill:var(--key);font-weight:600}
+.ked .gb{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}
+.ked .gb.on{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.5}
+.ked .gt{font:italic 700 16px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .gt.sm{font:600 10px var(--sans)}
+.ked .xo{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}.ked .xo.on{stroke:var(--accent);stroke-width:2.5}
+.ked .xp{stroke:var(--line2);stroke-width:1.5}.ked .xp.on{stroke:var(--accent)}
+.g4.kcol{grid-template-columns:var(--cs)}
+.gpf{gap:10px 12px}
+.gp{padding:4px;border-radius:8px;border:2px solid transparent}.gp.on{border-color:var(--accent);background:var(--accentBg)}
+.c.mvb{background:var(--xor);border-color:var(--xor);color:#fff}
+.kr{cursor:pointer;border-radius:8px;padding:2px}.kr:hover{background:var(--accentBg)}
+
 /* SubBytes lookup */
 .hn{color:var(--rowc);font-weight:700}
 .ln{color:var(--colc);font-weight:700}
@@ -283,9 +345,10 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
     <button data-tab="sr">4 · ShiftRows</button>
     <button data-tab="mc">5 · MixColumns</button>
     <button data-tab="ark">6 · AddRoundKey</button>
-    <button data-tab="ke">7 · Key expansion</button>
-    <button data-tab="x">8 · Encrypt / Decrypt</button>
-    <button data-tab="df">9 · Diffusion</button>
+    <button data-tab="rd">7 · One round</button>
+    <button data-tab="ke">8 · Key expansion</button>
+    <button data-tab="x">9 · Encrypt / Decrypt</button>
+    <button data-tab="df">10 · Diffusion</button>
   </nav>
 </header>
 
@@ -412,7 +475,7 @@ const printable=b=>b.every(x=>x>=0x20&&x<0x7f);
 function fmtVal(b,f){return f==='text'?td.decode(new Uint8Array(b)):hexs(b)}
 function setFmt(which,f){
   const b=which==='pt'?D.pt:D.key;
-  if(f==='text'&&!printable(b)){$('#err').textContent=`The ${which==='pt'?'plaintext':'key'} bytes are not all printable characters, so they stay in hex.`;return}
+  if(f==='text'&&!printable(b)){const m=`The ${which==='pt'?'plaintext':'key'} bytes are not all printable characters, so they stay in hex.`;$('#err').textContent=m;setTimeout(()=>{if($('#err').textContent===m)$('#err').textContent=''},4000);return}
   D[which+'F']=f;
   $$(`#${which==='pt'?'ptF':'kF'} button`).forEach(x=>x.classList.toggle('on',x.dataset.f===f));
   $(which==='pt'?'#ptI':'#kI').value=fmtVal(b,f);
@@ -465,8 +528,8 @@ const NAME={in:'Input',ark:'AddRoundKey',sb:'SubBytes',sr:'ShiftRows',mc:'MixCol
 const SHORT={in:'IN',ark:'ARK',sb:'SB',sr:'SR',mc:'MC',isb:'ISB',isr:'ISR',imc:'IMC'};
 
 /* ---------- tabs ---------- */
-const ST={tab:'ov',step:{},round:{sb:1,sr:1,mc:1,ark:1},mode:'enc',playing:false,timer:null,built:'',pick:null,sbInv:false,flip:{i:0,b:7},
-  fmt:'hex',srInv:false,srSel:null,srHov:null,gfA:0x57,gfB:0x83,mcPlay:[0xdb,0x13,0x53,0x45],mcPrev:null,trk:null};
+const ST={tab:'ov',step:{},round:{sb:1,sr:1,mc:1,ark:1,rd:1},mode:'enc',playing:false,timer:null,built:'',pick:null,sbInv:false,flip:{i:0,b:7},
+  fmt:'hex',rdSel:null,srInv:false,srSel:null,srHov:null,gfA:0x57,gfB:0x83,mcPlay:[0xdb,0x13,0x53,0x45],mcPrev:null,trk:null};
 const stage=$('#stage');
 const T={};
 
@@ -821,39 +884,193 @@ T.ark={n:()=>17,rounds:()=>range(0,D.K.Nr),render(k){
     <p class="note">XOR is its own inverse: (x ⊕ k) ⊕ k = x. So decryption uses the same AddRoundKey, with the round keys in reverse order.</p>`;
 }};
 
-/* 6 · Key expansion */
-T.ke={n:()=>D.K.T-D.K.Nk+1,render(k,anim){
-  const K=D.K,Nk=K.Nk,done=Nk+k,cur=k>0?Nk+k-1:-1,f=cur>=0?K.info[cur]:null;
-  const ws=i=>hexs(K.w[i]);
-  let det;
-  if(!f)det=`Words <b>w0 … w${Nk-1}</b> are the key itself (N<sub>k</sub> = ${Nk}). Every next word is computed from earlier words.`;
-  else if(f.kind==='rcon')det=`<span class="why">i = ${cur}, and i mod ${Nk} = 0, so this word gets the extra function g:</span><br>
-    temp = w${cur-1} = ${hexs(f.prev)}<br>
-    RotWord(temp) = ${hexs(f.rot)} <span class="why">(first byte moves to the end)</span><br>
-    SubWord(…) = ${hexs(f.sub)} <span class="why">(S-box on each byte)</span><br>
-    ⊕ Rcon[${cur/Nk}] = ${hx(f.rc)}000000 → ${hexs(f.temp)}<br>
-    <b>w${cur}</b> = w${cur-Nk} ⊕ temp = <span class="k">${hexs(f.back)}</span> ⊕ ${hexs(f.temp)} = <b>${ws(cur)}</b>`;
-  else if(f.kind==='sub')det=`<span class="why">AES-256 only: i = ${cur}, i mod 8 = 4, so temp gets SubWord (without RotWord and Rcon):</span><br>
-    temp = SubWord(w${cur-1}) = SubWord(${hexs(f.prev)}) = ${hexs(f.temp)}<br>
-    <b>w${cur}</b> = w${cur-Nk} ⊕ temp = <span class="k">${hexs(f.back)}</span> ⊕ ${hexs(f.temp)} = <b>${ws(cur)}</b>`;
-  else det=`<b>w${cur}</b> = w${cur-Nk} ⊕ w${cur-1} = <span class="k">${hexs(f.back)}</span> ⊕ ${hexs(f.prev)} = <b>${ws(cur)}</b>`;
-  let g='';
-  for(let r=0;r<=K.Nr;r++){
-    const bytes=K.rk(r).map((v,j)=>4*r+(j>>2)<done?v:null);
-    g+=gbox(`<b>K${r}</b> · w${4*r}…w${4*r+3}`,grid(bytes,{cls:j=>{const wi=4*r+(j>>2);
-      if(wi===cur)return 'cur chg';if(cur>=0&&wi===cur-1)return 'src';if(cur>=0&&wi===cur-Nk)return 'src2';if(wi<Nk)return 'key';return ''},sm:K.Nr>10}));
+/* 7 · One whole round, drawn like the textbook figure */
+const SR_DEST=p=>(p&3)+4*(((p>>2)-(p&3)+4)&3);           // ShiftRows moves the byte at position p to SR_DEST(p)
+// level 0 = round input, 1 = after SubBytes, 2 = after ShiftRows, 3 = after MixColumns, 4 = round output
+function rdNext(l,p,last){return l===1?[SR_DEST(p)]:l===2&&!last?[0,1,2,3].map(j=>4*(p>>2)+j):[p]}
+function rdSets(sel,last){
+  const S=[null,null,null,null,null];if(!sel)return S;
+  S[sel.l]=new Set([sel.p]);
+  for(let l=sel.l;l<4;l++){const n=new Set();S[l].forEach(p=>rdNext(l,p,last).forEach(q=>n.add(q)));S[l+1]=n}
+  for(let l=sel.l;l>0;l--){const n=new Set();for(let p=0;p<16;p++)if(rdNext(l-1,p,last).some(q=>S[l].has(q)))n.add(p);S[l-1]=n}
+  return S;
+}
+function rdData(r){
+  const sb=findOp('sb',r),sr=findOp('sr',r),mc=r<D.K.Nr?findOp('mc',r):null,ak=findOp('ark',r);
+  return {L:[sb.p,sb.s,sr.s,mc?mc.s:sr.s,ak.s],rk:D.K.rk(r),last:!mc};
+}
+T.rd={n:()=>5,rounds:()=>range(1,D.K.Nr),render(k){
+  const r=ST.round.rd,{L,rk,last}=rdData(r),sel=ST.rdSel,S=rdSets(sel,last);
+  const LW=128,CW=46,CWd=42,CH=26,W=LW+16*CW+14;
+  const x=p=>LW+p*CW+CW/2;
+  const Y=[26,132,420,560,676],SBY=82,SRT=180,BAND0=30,BANDH=64,SRB=SRT+BAND0+3*BANDH+6,MY=488,AY=636,H=Y[4]+CH+16;
+  const inS=(l,p)=>S[l]&&S[l].has(p),edge=(l,p,q)=>inS(l,p)&&inS(l+1,q);
+  const on=b=>b?' hl':'';
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="One AES round: SubBytes, ShiftRows, MixColumns, AddRoundKey"><defs>${['n','h'].map(id=>`<marker id="rd${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M1 1L9 5L1 9z" class="rm${id}"/></marker>`).join('')}</defs>`;
+  const ln=(d,h,extra='')=>`<path class="rl${on(h)}${extra}" d="${d}" marker-end="url(#rd${h?'h':'n'})"/>`;
+  // column groups
+  for(let c=0;c<4;c++)s+=`<text class="rgl" x="${x(4*c)+1.5*CW}" y="14">column ${c}</text>`;
+  // stage labels (click to open the detailed tab)
+  const lab=(y,t,stg,go)=>`<text class="rlab${k===stg?' on':''}${go?' go':''}" x="${LW-14}" y="${y}"${go?` data-goto="${go}" data-round="${r}"`:''}>${t}</text>`;
+  s+=lab(Y[0]+CH/2,`Input of round ${r}`,0)+lab(SBY+11,'SubBytes',1,'sb')+lab(Y[1]+CH/2,'after SubBytes',1)+lab(SRT+BAND0/2,'ShiftRows',2,'sr')
+    +lab(Y[2]+CH/2,'after ShiftRows',2)+lab(MY+13,last?'(no MixColumns)':'MixColumns',3,last?null:'mc')+lab(Y[3]+CH/2,last?'unchanged':'after MixColumns',3)
+    +lab(AY,`AddRoundKey K${r}`,4,'ark')+lab(Y[4]+CH/2,`Output of round ${r}`,4);
+  // SubBytes
+  for(let p=0;p<16;p++){const h=edge(0,p,p);
+    s+=`<path class="rl${on(h)}" d="M${x(p)} ${Y[0]+CH} V${SBY}"/>`+ln(`M${x(p)} ${SBY+22} V${Y[1]}`,h);
+    s+=`<g class="rbox go" data-rdsb="${p}"><rect class="rb${on(h)}" x="${x(p)-11}" y="${SBY}" width="22" height="22" rx="3"/><text class="rbt" x="${x(p)}" y="${SBY+11}">S</text></g>`}
+  // ShiftRows box: one band per row
+  s+=`<g class="go" data-goto="sr" data-round="${r}"><rect class="srbx" x="${LW-6}" y="${SRT}" width="${16*CW+12}" height="${SRB-SRT}" rx="4"/>`;
+  for(let rr=1;rr<4;rr++){const by=SRT+BAND0+(rr-1)*BANDH;s+=`<rect class="srband${rr%2?' a':''}" x="${LW-4}" y="${by}" width="${16*CW+8}" height="${BANDH}"/><text class="rrow" x="${LW-14}" y="${by+BANDH/2}">row ${rr}: ⇠ ${rr}</text>`}
+  s+=`<text class="rrow" x="${LW-14}" y="${SRT+BAND0/2+13}">row 0: stays</text></g>`;
+  for(let p=0;p<16;p++){const rr=p&3,q=SR_DEST(p),h=edge(1,p,q);
+    if(rr===0){s+=ln(`M${x(p)} ${Y[1]+CH} V${Y[2]}`,h);continue}
+    const ly=SRT+BAND0+(rr-1)*BANDH+12+(p>>2)*13,xs=x(p)-5,xd=x(q)+5;
+    s+=`<path class="rl${on(h)}" d="M${xs} ${Y[1]+CH} V${ly}"/>`+ln(`M${xs} ${ly} H${xd}`,h)+ln(`M${xd} ${ly} V${Y[2]}`,h)+`<circle class="rdot${on(h)}" cx="${xs}" cy="${ly}" r="3"/>`}
+  // MixColumns
+  for(let c=0;c<4;c++){const cm=LW+(4*c+2)*CW,mx=j=>cm+(j-1.5)*17;
+    if(last){for(let j=0;j<4;j++){const p=4*c+j;s+=ln(`M${x(p)} ${Y[2]+CH} V${Y[3]}`,edge(2,p,p),' dash')}continue}
+    const any=[0,1,2,3].some(j=>inS(2,4*c+j))&&[0,1,2,3].some(j=>inS(3,4*c+j));
+    for(let j=0;j<4;j++){const p=4*c+j;s+=`<path class="rl${on([0,1,2,3].some(q=>edge(2,p,4*c+q)))}" d="M${x(p)} ${Y[2]+CH} L${mx(j)} ${MY}"/>`}
+    s+=`<g class="rbox go" data-rdmc="${c}"><rect class="rb${on(any)}" x="${cm-44}" y="${MY}" width="88" height="26" rx="4"/><text class="rbt" x="${cm}" y="${MY+13}">M</text></g>`;
+    for(let j=0;j<4;j++){const p=4*c+j;s+=ln(`M${mx(j)} ${MY+26} L${x(p)} ${Y[3]}`,[0,1,2,3].some(q=>edge(2,4*c+q,p)))}}
+  if(last)s+=`<text class="rnote" x="${LW+8*CW}" y="${MY+13}">The last round has no MixColumns: the bytes go straight down.</text>`;
+  // AddRoundKey
+  for(let p=0;p<16;p++){const h=edge(3,p,p);
+    s+=`<path class="rl${on(h)}" d="M${x(p)} ${Y[3]+CH} V${AY-10}"/>`+ln(`M${x(p)} ${AY+10} V${Y[4]}`,h);
+    s+=`<g class="rbox go" data-rdark="${p}"><circle class="rx${on(h)}" cx="${x(p)}" cy="${AY}" r="10"/><path class="rxp" d="M${x(p)-6} ${AY}H${x(p)+6}M${x(p)} ${AY-6}V${AY+6}"/>
+      <rect class="rkt" x="${x(p)-21}" y="${AY-27}" width="18" height="13" rx="3"/><text class="rkv" x="${x(p)-12}" y="${AY-20.5}">${hx(rk[p])}</text><path class="rka" d="M${x(p)-6} ${AY-14} L${x(p)-7.5} ${AY-9.5}"/></g>`}
+  // the five state rows (drawn last so they sit on top)
+  for(let l=0;l<5;l++)for(let p=0;p<16;p++){const shown=l<=k,c=p>>2,hi=inS(l,p);
+    s+=`<g class="rcell" data-rdl="${l}" data-rdp="${p}"><rect class="rq${hi?' hl':''}${l===k&&k>0?' new':''}" x="${x(p)-CWd/2}" y="${Y[l]}" width="${CWd}" height="${CH}" rx="4" style="${hi?'':`fill:color-mix(in srgb,var(--g${c}) ${shown?22:9}%,var(--panel))`}"/><text class="rct${hi?' hl':''}${shown?'':' emp'}" x="${x(p)}" y="${Y[l]+CH/2}">${shown?hx(L[l][p]):'··'}</text></g>`}
+  s+='</svg>';
+  stage.innerHTML=`<div class="h3">Round ${r} of ${D.K.Nr} with the bytes in one row: positions 0 … 15 = s<sub>0,0</sub>, s<sub>1,0</sub>, s<sub>2,0</sub>, s<sub>3,0</sub>, s<sub>0,1</sub> … (column by column). Click any byte to trace it; click a box to open that step.</div>
+    <div class="rdw scroll"><div style="min-width:720px">${s}</div></div>`;
+  // explanation
+  const msg=[`<p>This is one full round, drawn like the figure in most textbooks. Press <b>Step</b> to compute it stage by stage.</p>`,
+    `<p><b>SubBytes</b>: every byte goes through its own S-box. Nothing moves; only the values change.</p>`,
+    `<p><b>ShiftRows</b>: the values stay the same, but bytes move. Bytes of row 1 move 1 column to the left, row 2 moves 2, row 3 moves 3 (wrapping around). Row 0 stays.</p>`,
+    last?`<p>The last round has <b>no MixColumns</b>, so nothing changes here.</p>`:`<p><b>MixColumns</b>: each group of 4 bytes (one column) goes into M. Every output byte depends on all 4 input bytes of its column.</p>`,
+    `<p><b>AddRoundKey</b>: each byte is XORed with the matching byte of round key K${r} (the small purple numbers).</p><p>The result is the input of round ${r<D.K.Nr?r+1:'— none: this is the ciphertext'}.</p>`][k];
+  let tr='';
+  if(sel){const nm=['in the round input','after SubBytes','after ShiftRows',last?'after ShiftRows (no MixColumns in the last round)':'after MixColumns','in the round output'][sel.l];
+    const lst=set=>[...set].sort((a,b)=>a-b).map(p=>`${p}`).join(', ');
+    tr=`<div class="note" style="margin-top:8px">Byte at position <b>${sel.p}</b> (row ${sel.p&3}, column ${sel.p>>2}) ${nm}.<br>
+      ${sel.l<4?`It reaches <b>${S[4].size}</b> byte${S[4].size>1?'s':''} of the round output: positions ${lst(S[4])}.<br>`:''}
+      ${sel.l>0?`It depends on <b>${S[0].size}</b> byte${S[0].size>1?'s':''} of the round input: positions ${lst(S[0])}${S[0].size===4?' (one from each column)':''}.<br>`:''}
+      <button class="link" data-rdsel="-1">Clear</button></div>`}
+  $('#explain').innerHTML=`<div class="step">One round · round ${r} · step ${k} of 4</div>${msg}${tr}${!sel?'<p style="font-size:14px;color:var(--muted)">Tip: click a byte in any row to see where it goes and where it comes from.</p>':''}`;
+  const names=['round input','after SubBytes','after ShiftRows',last?'(no MixColumns)':'after MixColumns','after AddRoundKey'];
+  $('#extra').innerHTML=`<h3>Round ${r} in numbers (hex, positions 0 … 15)</h3><table class="rt">${names.map((n,l)=>`<tr class="${l===k?'on':''}"><td>${n}</td><td class="mono">${l<=k?hexs(L[l]):'·'.repeat(8)}</td></tr>`).join('')}<tr><td class="k">K${r}</td><td class="mono k">${hexs(rk)}</td></tr></table>
+    <p style="margin-top:10px;font-size:13px;color:var(--muted)">The colours mark the four columns of the state. ShiftRows is the only step that moves bytes between columns; MixColumns is the only step that mixes bytes with each other.</p>`;
+}};
+
+/* 8 · Key expansion */
+// every word is one step; a word that goes through g (or SubWord in AES-256) gets extra sub-steps
+function keSteps(){
+  const K=D.K;if(K._steps)return K._steps;
+  const s=[{i:-1,sub:'start'}];
+  for(let i=K.Nk;i<K.T;i++){const f=K.info[i];
+    (f.kind==='rcon'?['rot','sub','rcon','xor']:f.kind==='sub'?['sub','xor']:['xor']).forEach(sub=>s.push({i,sub}))}
+  return K._steps=s;
+}
+const vcol=(bytes,cls)=>`<div class="g4 kcol">${bytes.map((v,i)=>`<div class="c ${cls?cls(i)||'':''}">${v==null?'··':hx(v)}</div>`).join('')}</div>`;
+const NUL=[null,null,null,null];
+// the classic block picture: the previous Nk words on top, the next Nk words below
+function keDiagram(cur,sub){
+  const K=D.K,Nk=K.Nk,T=K.T;
+  const b=cur<0?0:Math.floor(cur/Nk)-1,t0=Nk*b,b0=Nk*(b+1),j=cur<0?-1:cur-b0;
+  const nb=Math.min(Nk,T-b0),done=w=>w<cur||(w===cur&&sub==='xor');
+  const CW=112,BW=96,L=16,BH=30,TY=30,XY=206,BY=258,gx=L+Nk*CW+10,W=gx+92,H=BY+BH+34;
+  const cx=c=>L+c*CW+CW/2,bx=c=>cx(c)-BW/2;
+  const xorOn=sub==='xor',gIn=j===0,gOut=j===0&&xorOn,chainOn=j>0&&(xorOn||sub==='sub');
+  const ln=(d,on,kind)=>`<path class="kl${on?' '+kind:''}" d="${d}" marker-end="url(#ke${on?kind:'n'})"/>`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Key expansion, one block of words"><defs>${['n','a','k'].map(id=>`<marker id="ke${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L9 5L1 9z" class="km${id}"/></marker>`).join('')}</defs>`;
+  // lines first, boxes on top
+  for(let c=0;c<nb;c++){
+    s+=ln(`M${cx(c)} ${TY+BH} V${XY-12}`,c===j&&xorOn,'k');
+    s+=ln(`M${cx(c)} ${XY+12} V${BY}`,c===j&&xorOn,'a');
+    if(c>0){const on=c===j&&chainOn,y=BY-22;
+      s+=`<circle cx="${cx(c-1)}" cy="${y}" r="2.6" class="kdot${on?' a':''}"/>`;
+      if(Nk>6&&c===4){const sx=(cx(3)+cx(4))/2-18;
+        s+=`<path class="kl${on?' a':''}" d="M${cx(3)} ${y} H${sx}"/><rect class="gb${on&&sub==='sub'?' on':''}" x="${sx}" y="${y-10}" width="36" height="20" rx="4"/><text class="gt sm" x="${sx+18}" y="${y}">Sub</text>`;
+        s+=ln(`M${sx+36} ${y} H${cx(4)-30} V${XY} H${cx(4)-12}`,on,'a');
+      }else s+=ln(`M${cx(c-1)} ${y} H${cx(c)-30} V${XY} H${cx(c)-12}`,on,'a');
+    }
   }
-  stage.innerHTML=`<div class="kdet">${det}</div><div class="kgrid">${g}</div>`;
-  if(anim&&cur>=0){const el=stage.querySelector('.c.cur');if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'})}
-  $('#explain').innerHTML=`<div class="step">${cur<0?'Key expansion':`Word w${cur} of w${K.T-1}`}</div>
-    <p>The key schedule turns the ${D.key.length}-byte key into ${K.Nr+1} round keys (${K.T} words of 4 bytes). Each word is one column of a round key.</p>
-    <p>Normal word: <span class="mono">w<sub>i</sub> = w<sub>i−${Nk}</sub> ⊕ w<sub>i−1</sub></span>. Every ${Nk}th word first passes w<sub>i−1</sub> through <b>g</b> = RotWord, SubWord and ⊕ Rcon.</p>
-    <p><span style="outline:3px solid var(--accent);padding:0 4px;border-radius:3px">w<sub>i−1</sub></span> &nbsp;<span style="outline:3px solid var(--key);padding:0 4px;border-radius:3px">w<sub>i−${Nk}</sub></span> &nbsp;<span style="background:var(--keyBg);padding:0 4px;border-radius:3px">key words</span></p>`;
+  const gx2=gx+35;
+  s+=ln(`M${bx(Nk-1)+BW} ${TY+BH/2} H${gx2} V96`,gIn,'a');
+  s+=ln(`M${gx2} 128 V158 H${cx(0)-30} V${XY} H${cx(0)-12}`,gOut,'a');
+  s+=`<rect class="gb${gIn&&!xorOn?' on':''}" x="${gx}" y="96" width="70" height="32" rx="6"/><text class="gt" x="${gx2}" y="112">g</text>`;
+  s+=`<text class="kcap" x="${gx2}" y="150">temp</text>`;
+  for(let c=0;c<nb;c++){const on=c===j&&xorOn;
+    s+=`<circle cx="${cx(c)}" cy="${XY}" r="12" class="xo${on?' on':''}"/><path class="xp${on?' on':''}" d="M${cx(c)-7} ${XY}H${cx(c)+7}M${cx(c)} ${XY-7}V${XY+7}"/>`}
+  for(let c=0;c<Nk;c++){const n=t0+c,src=(c===j&&xorOn)?' src2':(gIn&&c===Nk-1)?' src':'';
+    s+=`<text class="kcap" x="${cx(c)}" y="${TY-8}">w${n}</text><rect class="wb${n<Nk?' key':''}${src}" x="${bx(c)}" y="${TY}" width="${BW}" height="${BH}" rx="6"/><text class="wt" x="${cx(c)}" y="${TY+BH/2}">${hexs(K.w[n])}</text>`}
+  for(let c=0;c<nb;c++){const n=b0+c,d=done(n),src=(cur>=0&&n===cur-1&&chainOn)?' src':'';
+    s+=`<rect class="wb${n===cur?' cur':''}${d?'':' emp'}${src}" x="${bx(c)}" y="${BY}" width="${BW}" height="${BH}" rx="6"/><text class="wt${d?'':' emp'}" x="${cx(c)}" y="${BY+BH/2}">${d?hexs(K.w[n]):'· · · ·'}</text><text class="kcap" x="${cx(c)}" y="${BY+BH+16}">w${n} <tspan class="kr">K${n>>2}</tspan></text>`}
+  return {svg:s+'</svg>',W,b,t0,b0,nb};
+}
+// g (RotWord, SubWord, Rcon) or the AES-256 SubWord, shown as byte columns
+function kePipe(cur,sub){
+  const K=D.K,Nk=K.Nk,f=K.info[cur];
+  const order=f.kind==='rcon'?['rot','sub','rcon','xor']:['sub','xor'],at=x=>order.indexOf(sub)>=order.indexOf(x);
+  const box=(cap,html,on)=>`<div class="gp${on?' on':''}">${gbox(cap,html)}</div>`,arr=t=>`<div class="op gpa"><big>→</big>${t}</div>`;
+  let h='';
+  if(f.kind==='rcon'){
+    h=`<div class="h3">g(w${cur-1}): three small steps</div><div class="flow gpf">
+      ${box(`w${cur-1}`,vcol(f.prev,i=>i===0?'mvb':''),false)}${arr('RotWord')}
+      ${box('rotated',at('rot')?vcol(f.rot,i=>i===3?'mvb':''):vcol(NUL),sub==='rot')}${arr('SubWord')}
+      ${box('S-box',at('sub')?vcol(f.sub,()=>sub==='sub'?'chg':''):vcol(NUL),sub==='sub')}<div class="op gpa"><big>⊕</big></div>
+      ${box(`Rcon[${cur/Nk}]`,at('rcon')?vcol([f.rc,0,0,0],()=>'key'):vcol(NUL),sub==='rcon')}<div class="op gpa"><big>=</big></div>
+      ${box('temp',at('rcon')?vcol(f.temp,()=>sub==='rcon'?'chg':''):vcol(NUL),sub==='rcon')}</div>`;
+    if(sub==='sub')h+=`<p class="gcap mono" style="margin:8px 0 0">${f.rot.map((v,i)=>`S(${hx(v)}) = ${hx(f.sub[i])}`).join(' · ')}</p>`;
+  }else{
+    h=`<div class="h3">AES-256: w${cur-1} goes through SubWord only</div><div class="flow gpf">
+      ${box(`w${cur-1}`,vcol(f.prev),false)}${arr('SubWord')}${box('temp',vcol(f.temp,()=>sub==='sub'?'chg':''),sub==='sub')}</div>
+      <p class="gcap mono" style="margin:8px 0 0">${f.prev.map((v,i)=>`S(${hx(v)}) = ${hx(f.temp[i])}`).join(' · ')}</p>`;
+  }
+  return h;
+}
+T.ke={n:()=>keSteps().length,render(k){
+  const K=D.K,Nk=K.Nk,steps=keSteps(),st=steps[k],cur=st.i,sub=st.sub,f=cur>=0?K.info[cur]:null;
+  const doneW=w=>w<Nk||w<cur||(w===cur&&sub==='xor');
+  const dg=keDiagram(cur,sub);
+  let last='';
+  if(cur>=0&&sub==='xor'){const two=f.kind==='plain'?f.prev:f.temp;
+    last=`<div class="h3">${f.kind==='plain'?`w${cur} = w${cur-Nk} ⊕ w${cur-1}`:`w${cur} = w${cur-Nk} ⊕ temp`}</div><div class="flow gpf">${gbox(`w${cur-Nk}`,vcol(f.back,()=>'key'))}<div class="op gpa"><big>⊕</big></div>${gbox(f.kind==='plain'?`w${cur-1}`:'temp',vcol(two))}<div class="op gpa"><big>=</big></div>${gbox(`<b>w${cur}</b>`,vcol(K.w[cur],()=>'cur chg'))}</div>`}
+  const pipe=cur>=0&&f.kind!=='plain'?kePipe(cur,sub):'';
+  let g='';
+  for(let r=0;r<=K.Nr;r++){const bytes=K.rk(r).map((v,i)=>doneW(4*r+(i>>2))?v:null);
+    g+=`<div class="kr" data-kr="${r}" title="Go to the first word of K${r}">${gbox(`<b>K${r}</b> · w${4*r}…w${4*r+3}`,grid(bytes,{sm:true,cls:i=>{const w=4*r+(i>>2);
+      if(w===cur)return sub==='xor'?'cur chg':'cur';if(w<Nk)return 'key';return ''}}))}</div>`}
+  stage.innerHTML=`<div class="h3">${cur<0?`Block 1 of the key schedule: from the key words w0…w${Nk-1} to w${Nk}…w${Nk+dg.nb-1}`:`Block ${dg.b+1}: words w${dg.b0}…w${dg.b0+dg.nb-1} are made from w${dg.t0}…w${dg.t0+Nk-1}`}</div>
+    <div class="ked scroll"><div style="min-width:${Math.round(dg.W*0.62)}px;max-width:${dg.W}px;margin:0 auto">${dg.svg}</div></div>
+    ${pipe?`<div class="sec kpipe">${pipe}</div>`:''}${last?`<div class="sec kpipe">${last}</div>`:''}
+    <div class="sec"><div class="h3">All round keys. Round key K<sub>r</sub> = the four words w<sub>4r</sub> … w<sub>4r+3</sub>, one word per column. Click one to jump to it.</div><div class="kgrid">${g}</div></div>`;
+  const rk=cur>=0?`<p>w${cur} becomes <b>column ${cur&3}</b> of round key <b>K${cur>>2}</b>.</p>`:'';
+  const ex={
+    start:()=>`<div class="step">Key expansion</div>
+      <p>AES needs a different 16-byte round key for every round: ${K.Nr+1} round keys in total. The key expansion makes them from the ${D.key.length}-byte key.</p>
+      <p>It works with <b>words</b> of 4 bytes. The key itself gives the first ${Nk} words, w0 … w${Nk-1}. Every new word is:</p>
+      <p class="mono" style="font-size:14px">w<sub>i</sub> = w<sub>i−${Nk}</sub> ⊕ w<sub>i−1</sub></p>
+      <p>Only the first word of each block (i mod ${Nk} = 0) is different: w<sub>i−1</sub> first goes through a small function <b>g</b>.${Nk>6?' In AES-256, the word with i mod 8 = 4 also gets SubWord.':''}</p>
+      <p>Press <b>Step</b>.</p>`,
+    rot:()=>`<div class="step">w${cur} · step 1 of 4 (g)</div><p>i = ${cur} and ${cur} mod ${Nk} = 0, so w${cur-1} goes through <b>g</b> first.</p>
+      <p><b>RotWord</b>: the first byte moves to the end.<br><span class="mono">${sp(f.prev)} → ${sp(f.rot)}</span></p>`,
+    sub:()=>f&&f.kind==='rcon'?`<div class="step">w${cur} · step 2 of 4 (g)</div><p><b>SubWord</b>: each of the 4 bytes goes through the AES S-box, the same table as in SubBytes.</p><p class="mono">${sp(f.rot)} → ${sp(f.sub)}</p>`
+      :`<div class="step">w${cur} · step 1 of 2</div><p>AES-256 only: i mod 8 = 4, so w${cur-1} goes through <b>SubWord</b> (no RotWord, no Rcon).</p><p class="mono">${f?sp(f.prev)+' → '+sp(f.temp):''}</p>`,
+    rcon:()=>`<div class="step">w${cur} · step 3 of 4 (g)</div><p>XOR with the round constant <b>Rcon[${cur/Nk}] = ${f?hx(f.rc):''} 00 00 00</b>. Only the first byte changes; the other three are XORed with 00.</p><p class="mono">temp = ${f?sp(f.temp):''}</p>`,
+    xor:()=>f?`<div class="step">w${cur}${f.kind==='plain'?'':` · last step`}</div><p class="mono">w${cur} = w${cur-Nk} ⊕ ${f.kind==='plain'?'w'+(cur-1):'temp'}<br>= ${hexs(f.back)} ⊕ ${hexs(f.kind==='plain'?f.prev:f.temp)}<br>= <b>${hexs(K.w[cur])}</b></p>${f.kind==='plain'?'<p>This is a normal word: only XOR, no g.</p>':''}`:''
+  }[sub]();
+  $('#explain').innerHTML=ex+rk;
   const ri=f&&f.kind==='rcon'?cur/Nk:-1;
-  $('#extra').innerHTML=`<h3>Round constants Rcon[j] = x<sup>j−1</sup> in GF(2<sup>8</sup>)</h3>
+  $('#extra').innerHTML=`<h3>What g does, and why</h3>
+    <p><b>RotWord</b> moves bytes, <b>SubWord</b> makes it non-linear (S-box), <b>Rcon</b> makes every block different.</p>
+    <h3 style="margin-top:12px">Round constants Rcon[j] = x<sup>j−1</sup> in GF(2<sup>8</sup>)</h3>
     <div class="rc">${RC.slice(1,Math.ceil(K.T/Nk)).map((v,j)=>`<span class="${j+1===ri?'on':''}">${j+1}: ${hx(v)}</span>`).join('')}</div>
-    <p style="margin-top:10px">Rcon makes the rounds different from each other. Without it, all rounds would look the same, which allows slide attacks.</p>
-    <p class="note">SubWord uses the same S-box as SubBytes, so the key schedule is non-linear too.</p>`;
+    <p style="margin-top:8px;font-size:13px;color:var(--muted)">Each one is the previous one times 02 (xtime): 80 • 02 = 1b.</p>
+    <p class="note">Without Rcon all blocks would be computed in exactly the same way. Without the S-box the round keys would be a linear function of the key.</p>`;
 }};
 
 /* 7 · Encrypt / Decrypt */
@@ -957,6 +1174,7 @@ function stop(){ST.playing=false;clearInterval(ST.timer);$('#bPlay').textContent
 function play(){if(ST.playing)return stop();if((ST.step[ST.tab]||0)>=curN()-1)ST.step[ST.tab]=0,show(false);
   ST.playing=true;$('#bPlay').textContent='❚❚ Pause';
   ST.timer=setInterval(()=>go(1),1100/ +$('#spd').value)}
+function goStep(tab,r,step){setTab(tab,r);ST.step[tab]=step;show(false);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'})}
 function setTab(id,round){
   stop();ST.tab=id;ST.built='';ST.pick=null;
   if(round!=null&&ST.round[id]!==undefined){ST.round[id]=+round;ST.step[id]=0}
@@ -977,6 +1195,11 @@ $('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;stop();ST
   $$('#mode button').forEach(x=>x.classList.toggle('on',x===b));ST.step.x=0;show(false)};
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-goto]');if(g){setTab(g.dataset.goto,g.dataset.round);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  const rc=e.target.closest('[data-rdl]');if(rc){const l=+rc.dataset.rdl,p=+rc.dataset.rdp;ST.rdSel=ST.rdSel&&ST.rdSel.l===l&&ST.rdSel.p===p?null:{l,p};show(false);return}
+  if(e.target.closest('[data-rdsel]')){ST.rdSel=null;show(false);return}
+  const rb=e.target.closest('[data-rdsb],[data-rdmc],[data-rdark]');if(rb){const r=ST.round.rd,d=rb.dataset;
+    if(d.rdsb!=null)goStep('sb',r,+d.rdsb+1);else if(d.rdmc!=null)goStep('mc',r,4*d.rdmc+1);else goStep('ark',r,+d.rdark+1);return}
+  const kr=e.target.closest('[data-kr]');if(kr){const w=4*kr.dataset.kr,st=keSteps().findIndex(x=>x.i===w);stop();ST.step.ke=st<0?0:st;show(false);return}
   const fm=e.target.closest('[data-fmt]');if(fm){ST.fmt=fm.dataset.fmt;show(false);return}
   const sm=e.target.closest('[data-srm]');if(sm){stop();ST.srInv=sm.dataset.srm==='1';ST.step.sr=0;ST.srSel=null;ST.built='';show(false);return}
   const ss=e.target.closest('[data-srsel]');if(ss){ST.srSel=null;srLink();return}
