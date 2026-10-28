@@ -451,17 +451,57 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 /* the key letters (row headers) stay visible when the table scrolls sideways */
 .tr26 th[data-hr],.tr26 th.corner{position:sticky;left:0;z-index:1}
 .tr26 th[data-hr]:not(.hitr),.tr26 th.corner{background:var(--panel)}
+/* Affine table */
+.aft td{min-width:24px}
+.aft td.lt2{font-weight:700}
+.aft th[data-hr]{white-space:nowrap;text-align:right;padding-right:6px}
+/* Kasiski */
+:root{--g4:#c7a020;--g5:#19a2b5;--g6:#e374a8;--g7:#8a6a4d}
+@media (prefers-color-scheme:dark){:root{--g4:#b8962c;--g5:#2a9aab;--g6:#c96f99;--g7:#8f735a}}
+.cbar textarea{font:13px/1.5 var(--mono);width:100%;padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);resize:vertical}
+.ktx{font:600 14px/1.95 var(--mono);word-break:break-all;letter-spacing:1px}
+.ktx span{padding:1px 0;border-radius:3px;display:inline-block}
+.ktx span:nth-child(5n){margin-right:8px}
+.ktx span.rp{color:#fff}
+.kzr th,.kzr td{text-align:center;padding:2px 5px}
+.kzr td.f{color:var(--ok);font-weight:700}
+.kzr tr.cnt td{border-top:2px solid var(--ink);font-weight:700}
+.kzr .mcol{background:var(--accentBg)}
+.kbars{display:flex;align-items:flex-end;gap:4px;height:110px;border-bottom:1px solid var(--line2);max-width:560px;margin:8px auto 0}
+.kbar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font:11px var(--mono);color:var(--muted)}
+.kbar i{display:block;width:100%;background:var(--line2);border-radius:3px 3px 0 0}
+.kbar.on i{background:var(--accent)}
+.kbl{display:flex;gap:4px;max-width:560px;margin:2px auto 0;font:11px var(--mono);color:var(--muted)}
+.kbl span{flex:1;text-align:center;min-width:0}
+.kbl span.on{color:var(--accent);font-weight:700}
+.kbl.ic{font-size:9.5px}
+.kcol{display:flex;gap:8px;align-items:baseline;margin:4px 0}
+.kcol .kk{flex:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:1.5px dashed var(--key);color:var(--key);font:700 14px var(--mono)}
+.kcol .kk.on{border-style:solid;background:var(--key);color:#fff}
+.kcol .kln{flex:none;font:600 12px var(--sans);width:62px}
+.kcol .kls{font:13px/1.5 var(--mono);word-break:break-all;letter-spacing:1px}
+.kfq{display:flex;align-items:flex-end;gap:2px;height:140px;max-width:560px;margin:8px auto 0;border-bottom:1px solid var(--line2)}
+.kf{flex:1;position:relative;height:100%;min-width:0}
+.kf i{position:absolute;bottom:0;left:8%;width:84%;display:block}
+.kf i.ob{background:var(--accent);opacity:.8;border-radius:2px 2px 0 0}
+.kf i.en{border:1.5px dashed var(--ink);border-bottom:0;border-radius:2px 2px 0 0}
+.kchi{display:flex;align-items:flex-end;gap:2px;height:50px;max-width:560px;margin:4px auto 0;border-bottom:1px solid var(--line2)}
+.kchi i{flex:1;display:block;background:var(--line2);border-radius:2px 2px 0 0;min-width:0}
+.kchi i.best{background:var(--ok)}
+.kchi i.cur{outline:2px solid var(--ink);outline-offset:-1px}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
 <header class="wrap">
   <h1>Classical ciphers, step by step</h1>
-  <p class="sub">Caesar, Vigenère and Vernam: how each one encrypts, letter by letter, and why it is weak or strong</p>
+  <p class="sub">Caesar, affine, Vigenère and Vernam: how each one encrypts, letter by letter, and why it is weak or strong. Kasiski: how to break Vigenère without the key.</p>
   <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
   <nav class="tabs" id="tabs">
     <button data-tab="cz" class="on">1 · Caesar</button>
-    <button data-tab="vg">2 · Vigenère</button>
-    <button data-tab="vn">3 · Vernam</button>
+    <button data-tab="af">2 · Affine</button>
+    <button data-tab="vg">3 · Vigenère</button>
+    <button data-tab="vn">4 · Vernam</button>
+    <button data-tab="kz">5 · Kasiski: breaking Vigenère</button>
   </nav>
 </header>
 
@@ -663,7 +703,76 @@ plan(k){
   }};
 }};
 
-/* 2 · Vigenère: a Caesar shift that changes from letter to letter */
+/* 2 · Affine: c = (a·p + b) mod 26 */
+const AF_A=[1,3,5,7,9,11,15,17,19,21,23,25];                     // the values of a with no common factor with 26
+const m26=v=>((v%26)+26)%26;
+const inv26=a=>{for(let i=1;i<26;i++)if(a*i%26===1)return i;return null};
+const affine=(s,a,b)=>[...s].map(ch=>isL(ch)?chr(a*num(ch)+b):ch).join('');
+const affineDec=(s,a,b)=>{const ai=inv26(a);return [...s].map(ch=>isL(ch)?chr(ai*(num(ch)-b)):ch).join('')};
+const AF={p:'AFFINE CIPHER',a:5,b:8};
+const afIn=()=>enc()?AF.p:affine(AF.p,AF.a,AF.b),afOut=()=>enc()?affine(AF.p,AF.a,AF.b):AF.p;
+function afBar(){bar(`<label class="fld"><span class="flh"><b>${enc()?'Plaintext':'Ciphertext'}</b> <span>letters A–Z; other characters stay as they are</span></span><input type="text" id="afT" value="${esc(afIn())}" spellcheck="false" autocomplete="off"></label>
+  <label class="fld sm"><span class="flh"><b>a</b></span><select id="afA" aria-label="a">${AF_A.map(v=>`<option${v===AF.a?' selected':''}>${v}</option>`).join('')}</select></label>
+  <div class="fld sm"><span class="flh"><b>b</b></span><div class="knum"><button data-afb="-1" aria-label="b minus 1">−</button><input type="text" id="afB" value="${AF.b}" inputmode="numeric" aria-label="b"><button data-afb="1" aria-label="b plus 1">+</button></div></div>
+  <div class="ex">Examples: <button data-afex="AFFINE CIPHER,5,8">AFFINE CIPHER · a = 5, b = 8</button><button data-afex="HELLO WORLD,25,25">HELLO WORLD · a = 25, b = 25 (Atbash)</button></div>`)}
+// one column per letter: encryption x → a·x → a·x + b; decryption y → y − b → a⁻¹·(y − b)
+function afRows(){
+  const a=AF.a,b=AF.b,ai=inv26(a);
+  return enc()?[['plaintext',x=>AZ[x]],['x',x=>x],[`${a}·x mod 26`,x=>m26(a*x)],[`+ ${b} mod 26`,x=>m26(a*x+b)],['ciphertext',x=>AZ[m26(a*x+b)]]]
+              :[['ciphertext',y=>AZ[y]],['y',y=>y],[`y − ${b} mod 26`,y=>m26(y-b)],[`× ${ai} mod 26`,y=>m26(ai*(y-b))],['plaintext',y=>AZ[m26(ai*(y-b))]]];
+}
+function afTable(col){
+  return `<table class="sbt tr26 aft" id="afTab">${afRows().map(([l,f],r)=>`<tr><th data-hr="${r}">${l}</th>${range(0,25).map(c=>`<td data-r="${r}" data-c="${c}" class="${c===col?(r===4?'hit':'axc'):''}${r===0||r===4?' lt2':''}">${f(c)}</td>`).join('')}</tr>`).join('')}</table>`;
+}
+T.af={n:()=>1+letterIdx(afIn()).length,render(k){
+  afBar();
+  const e=enc(),inp=afIn(),out=afOut(),L=letterIdx(inp),a=AF.a,b=AF.b,ai=inv26(a);
+  const j=k>=1?L[k-1]:-1,bound=k<1?(L.length?0:inp.length):(k<L.length?L[k]:inp.length),col=j>=0?num(inp[j]):-1;
+  stage.innerHTML=`<div class="rowlab"><b>${e?'Plaintext':'Ciphertext'}</b> · small numbers: A = 0 … Z = 25</div>
+    ${chars(inp,'afIn',{sub:i=>isL(inp[i])?num(inp[i]):'',cls:i=>i===j?'cur':''})}
+    <div class="sec"><div class="h3">${e?`Every letter goes down its own column: x → ${a}·x → + ${b} → ciphertext letter`:`Every letter goes down its own column: y → y − ${b} → × ${ai} (the inverse of ${a}) → plaintext letter`}</div><div class="scroll" id="afS">${afTable(col)}</div></div>
+    <div class="rowlab"><b>${e?'Ciphertext':'Plaintext'}</b></div>
+    ${chars(out,'afOut',{shown:i=>i<bound,sub:i=>isL(out[i])?num(out[i]):'',cls:i=>i===j?'res':''})}`;
+  let ex;
+  if(k===0)ex=e?`<div class="step">Affine cipher</div><p>Multiply, then shift: <span class="mono">c = (a·p + b) mod 26</span>. Here a = ${a}, b = ${b}.</p>
+      <p>Caesar is the special case a = 1. With a we get many more keys, but a must have <b>no common factor with 26</b>: a = 1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23 or 25.</p><p>Press <b>Step</b>.</p>`
+    :`<div class="step">Affine cipher · decryption</div><p>Undo the two steps in reverse order: subtract b, then multiply by <b>a⁻¹</b>, the inverse of a mod 26:</p>
+      <p class="mono">p = a⁻¹·(c − b) mod 26</p><p>Here a⁻¹ = ${ai}, because ${a} · ${ai} = ${a*ai} = ${Math.floor(a*ai/26)} · 26 + 1.</p><p>Press <b>Step</b>.</p>`;
+  else{const v=num(inp[j]);
+    ex=`<div class="step">Letter ${k} of ${L.length}</div><p class="mono" style="font-size:15px">${e
+      ?`${inp[j]} = ${v} → ${a} · ${v} = ${a*v}${a*v>25?` ≡ ${m26(a*v)}`:''} → ${m26(a*v)} + ${b} = ${m26(a*v)+b}${m26(a*v)+b>25?` ≡ ${m26(a*v+b)}`:''} → <b>${out[j]}</b>`
+      :`${inp[j]} = ${v} → ${v} − ${b} = ${v-b}${v-b<0?` ≡ ${m26(v-b)}`:''} → ${ai} · ${m26(v-b)} = ${ai*m26(v-b)}${ai*m26(v-b)>25?` ≡ ${m26(ai*(v-b))}`:''} → <b>${out[j]}</b>`}</p>
+      <p>(≡ means: the same number mod 26.)</p>
+      ${k===L.length?`<p class="note">Done: <span class="mono"><b>${esc(out)}</b></span>. Press <b>${e?'Decrypt':'Encrypt'}</b> to go back.</p>`:''}`}
+  $('#explain').innerHTML=ex;
+  const bad=2,c1=chr(bad*0+b),c2=chr(bad*13+b);
+  $('#extra').innerHTML=`<h3>Why a needs no common factor with 26</h3>
+    <p>Try a = 2: A (0) → 2·0 + ${b} = ${b} = ${c1}, and N (13) → 2·13 + ${b} = ${26+b} ≡ ${b} = ${c2}. Two letters give the same ciphertext letter, so nobody can decrypt. This happens for every even a and for a = 13.</p>
+    <h3 style="margin-top:12px">Inverses mod 26</h3>
+    <table class="bf"><tr><td>a</td>${AF_A.map(v=>`<td style="${v===a?'font-weight:700;color:var(--ink)':''}">${v}</td>`).join('')}</tr><tr><td>a⁻¹</td>${AF_A.map(v=>`<td style="${v===a?'font-weight:700;color:var(--ink)':''}">${inv26(v)}</td>`).join('')}</tr></table>
+    <h3 style="margin-top:12px">Breaking it</h3>
+    <p>There are only 12 · 26 = 312 keys, so trying all of them is easy. Even faster: two known plaintext letters give two equations for a and b.</p>
+    <p class="note">Special cases: a = 1 is Caesar (ROT13: a = 1, b = 13). a = 25, b = 25 is the Atbash cipher: A ↔ Z, B ↔ Y, …</p>`;
+},
+// the letter goes down its column; on every row it shows the value of that row
+plan(k){
+  const e=enc(),inp=afIn(),out=afOut(),L=letterIdx(inp),j=L[k-1],bound=k<L.length?L[k]:inp.length,col=num(inp[j]);
+  return{dur:2600,start(){
+    const cin=$(`#afIn [data-i="${j}"]`),cout=$(`#afOut [data-i="${j}"]`),tb=$('#afTab');if(!cin||!cout||!tb)return null;
+    const cells=[0,1,2,3,4].map(r=>tb.querySelector(`td[data-r="${r}"][data-c="${col}"]`));
+    const sc=$('#afS');if(sc.scrollWidth>sc.clientWidth){const hb=cells[0].getBoundingClientRect(),sb=sc.getBoundingClientRect();if(hb.left<sb.left+90||hb.right>sb.right-30)sc.scrollLeft+=hb.left-(sb.left+sb.width/2)}
+    tgl(cells,'axc',false);cells[4].classList.remove('hit');
+    hide(range(j,bound-1).map(i=>$(`#afOut [data-i="${i}"]`)));
+    const A=rectOf(cin),O=rectOf(cout),R=cells.map(rectOf),w=Math.max(R[0].w+8,28),h=R[0].h+8,c0=e?AC:'var(--xor)',c1=e?'var(--xor)':AC;
+    const t=[.24,.38,.52,.66,.8],legs=[[0,t[0],[xy(A),xy(R[0])]]],at=[[t[0],retok(cells[0].textContent,w,h,[c0])]],cu=[[t[0],()=>cells[0].classList.add('axc','flash')]];
+    for(let r=1;r<5;r++){legs.push([t[r]-.08,t[r],[xy(R[r-1]),xy(R[r])]]);at.push([t[r],retok(cells[r].textContent,w,h,[r===4?c1:c0])]);
+      cu.push([t[r],()=>cells[r].classList.add(r===4?'hit':'axc','flash')])}
+    legs.push([.86,1,[xy(R[4]),xy(O)]]);at.push([.86,retok(out[j],A.w,A.h*.8,[c1])]);
+    return both(mover([{node:fxNode(tok(inp[j],A.w,A.h*.8,[c0])),legs,at}]),cues(cu));
+  }};
+}};
+
+/* 3 · Vigenère: a Caesar shift that changes from letter to letter */
 const vgIn=()=>enc()?VG.p:vigenere(VG.p,VG.key,1),vgOut=()=>enc()?vigenere(VG.p,VG.key,1):VG.p;
 function vgBar(){bar(`<label class="fld"><span class="flh"><b>${enc()?'Plaintext':'Ciphertext'}</b> <span>letters A–Z; other characters stay as they are</span></span><input type="text" id="vgT" value="${esc(vgIn())}" spellcheck="false" autocomplete="off"></label>
   <label class="fld sm"><span class="flh"><b>Key word</b></span><input type="text" id="vgK" value="${esc(VG.key)}" spellcheck="false" autocomplete="off" style="width:150px"></label>
@@ -731,7 +840,7 @@ plan(k){
   }};
 }};
 
-/* 3 · Vernam: every byte of the message is XORed with one byte of the key */
+/* 4 · Vernam: every byte of the message is XORed with one byte of the key */
 const vnIn=()=>enc()?VN.p:vernam(VN.p,VN.key),vnOut=()=>enc()?vernam(VN.p,VN.key):VN.p;
 const showByte=v=>printable(v)?(v===32?'␣':esc(String.fromCharCode(v))):'·';
 function vnBar(){const e=enc();bar(`<label class="fld"><span class="flh"><b>${e?'Plaintext':'Ciphertext (hex)'}</b> <span>${e?`up to ${MAXB} characters`:'2 hex digits per byte'}</span></span><input type="text" id="vnT" value="${e?esc(td.decode(new Uint8Array(VN.p))):hexs(vnIn())}" spellcheck="false" autocomplete="off"></label>
@@ -783,6 +892,124 @@ plan(k){const j=k-1;
       cues([[.32,show(ca,rows[0])],[.44,show(cb,rows[1])],[.54,()=>{show(cr,rows[2])();cr.parentNode.classList.add('flash')}]]));
   }};
 }};
+
+/* 5 · Kasiski: breaking Vigenère without the key */
+// letter frequencies of English text, in percent (A … Z)
+const EN=[8.2,1.5,2.8,4.3,12.7,2.2,2.0,6.1,7.0,0.15,0.77,4.0,2.4,6.7,7.5,1.9,0.095,6.0,6.3,9.1,2.8,0.98,2.4,0.15,2.0,0.074];
+const KZ_EX=[
+  {key:'LEMON',p:'Cryptography is the art of writing secret messages. For a long time the Vigenere cipher was called the indecipherable cipher, because the same letter of the plaintext is not always encrypted to the same letter of the ciphertext. But the key word repeats, and this is the weak point. When the same group of letters in the plaintext meets the same part of the key, the same group of letters appears in the ciphertext. The distance between the two groups is then a multiple of the length of the key word. Kasiski used these distances to find the length of the key, and then he broke every column like a simple Caesar cipher.'},
+  {key:'CIPHERS',p:'In the year eighteen sixty three a Prussian infantry officer named Friedrich Kasiski published a small book about secret writing and the art of deciphering. In this book he showed a general method to attack ciphers that use a repeating key. The method looks for words that appear more than once in the ciphertext. If the same word is encrypted with the same letters of the key, it gives the same ciphertext again, and the distance between the two places tells us a lot about the length of the key. Charles Babbage had found the same idea some years earlier, but he did not publish it.'},
+];
+const gcol=j=>`var(--g${j&7})`;                     // 8 colours for repeats and columns
+const lettersOnly=s=>[...s.toUpperCase()].filter(isL).join('');
+// repeated pieces (3 letters or more): each pair of places, made as long as the letters agree
+function kzRepeats(t){
+  const pos={};for(let i=0;i+3<=t.length;i++){const g=t.slice(i,i+3);(pos[g]=pos[g]||[]).push(i)}
+  const out=[];
+  for(const ps of Object.values(pos))for(let a=0;a+1<ps.length;a++){const i=ps[a],j=ps[a+1];let L=3;while(j+L<t.length&&t[i+L]===t[j+L])L++;out.push({seq:t.slice(i,i+L),i,j,d:j-i})}
+  // a pair inside a longer pair at the same distance is the same repeat: keep only the longer one
+  const keep=out.filter(r=>!out.some(q=>q!==r&&q.d===r.d&&q.i<r.i&&q.i+q.seq.length>=r.i+r.seq.length));
+  return keep.sort((x,y)=>y.seq.length-x.seq.length||x.i-y.i);
+}
+// index of coincidence of the m columns (English ≈ 0.066, random letters ≈ 0.038)
+function kzIC(t,m){let s=0;for(let c=0;c<m;c++){const f=Array(26).fill(0);let n=0;for(let i=c;i<t.length;i+=m){f[num(t[i])]++;n++}s+=n>1?f.reduce((a,v)=>a+v*(v-1),0)/(n*(n-1)):0}return s/m}
+function kzAnalyze(raw){
+  const t=lettersOnly(raw),reps=kzRepeats(t).slice(0,12),F=[];for(let f=2;f<=16;f++)F.push(f);
+  const cnt=F.map(f=>reps.filter(r=>r.d%f===0).length),mx=Math.max(0,...cnt),ics=F.map(f=>kzIC(t,f));
+  // the key length: a factor of many distances whose columns look like English (IC near the best one); the smallest such one,
+  // because multiples of the key length (2m, 3m, …) pass too
+  const icMax=Math.max(...ics),icMin=Math.max(.055,.85*icMax);
+  let m=F.find((f,i)=>mx>0&&cnt[i]>=mx*.5&&ics[i]>=icMin);
+  if(!m)m=F[ics.indexOf(Math.max(...ics))];
+  // every column is a Caesar cipher: try all 26 shifts, keep the one closest to English (chi-squared)
+  const cols=[];for(let c=0;c<m;c++){const col=[];for(let i=c;i<t.length;i+=m)col.push(t[i]);
+    const chi=[];for(let s=0;s<26;s++){const f=Array(26).fill(0);col.forEach(ch=>f[m26(num(ch)-s)]++);chi.push(f.reduce((a,o,i)=>{const e=col.length*EN[i]/100;return a+(o-e)*(o-e)/e},0))}
+    cols.push({col,chi,best:chi.indexOf(Math.min(...chi))})}
+  const key=cols.map(c=>AZ[c.best]).join('');
+  return{t,reps,F,cnt,ics,m,cols,key,plain:vigenere(t,key,-1)};
+}
+const KZ={ct:vigenere(lettersOnly(KZ_EX[0].p),KZ_EX[0].key,1),known:KZ_EX[0].key,mk:'SECRET',A:null};
+const kzA=()=>KZ.A||(KZ.A=kzAnalyze(KZ.ct));
+const kzOK=A=>A.t.length>=40&&A.reps.length>0;
+function kzBar(){bar(`<label class="fld" style="flex-basis:100%"><span class="flh"><b>Ciphertext to break</b> <span>only the letters count; 150 letters or more work well</span></span><textarea id="kzT" rows="3" spellcheck="false">${esc(KZ.ct)}</textarea></label>
+  <div class="ex">Examples: <button data-kzex="0">Example 1</button><button data-kzex="1">Example 2</button><span>· or encrypt example 1 with your own key word:</span><input type="text" id="kzK" value="${esc(KZ.mk)}" aria-label="key word" style="width:120px"><button data-kzmk>Encrypt</button></div>`)}
+// the steps: 0 start, 1 repeats, 2 key length, 3 columns, 4 … 3+m one column each, 4+m decrypt
+T.kz={n:()=>{const A=kzA();return kzOK(A)?5+A.m:1},render(k){
+  kzBar();$('#mode').hidden=true;
+  const A=kzA(),{t,reps,F,cnt,ics,m,cols,key}=A,ok=kzOK(A),cur=k>=4&&k<4+m?k-4:-1,done=k>=4+m;
+  // which repeat (if any) a letter belongs to; letters are coloured by repeat (steps 1–2) or by column (from step 3)
+  const owner=Array(t.length).fill(-1);if(k>=1&&k<3)reps.forEach((r,q)=>{for(let x=0;x<r.seq.length;x++){owner[r.i+x]=q;owner[r.j+x]=q}});
+  const span=i=>{const q=owner[i],c=i%m;return `<span data-i="${i}"${q>=0?` class="rp" style="background:${gcol(q)}"`:k>=3?` style="color:${gcol(c)}"`:''}>${t[i]}</span>`};
+  let h=`<div class="h3">Ciphertext · ${t.length} letters, in groups of 5 (spaces and punctuation are not sent)</div><div class="ktx" id="kzX">${[...t].map((_,i)=>span(i)).join('')}</div>`;
+  if(!ok)h+=`<p class="note" style="margin-top:12px">${t.length<40?'This ciphertext is too short.':'No piece of 3 letters repeats.'} Kasiski needs a longer ciphertext: try an example.</p>`;
+  if(ok&&k>=1){h+=`<div class="sec"><div class="h3">Repeated pieces and their distances${k>=2?' · ✓ = the distance is a multiple of this number':''}</div><div class="scroll"><table class="rt kzr" id="kzR"><tr><th>piece</th><th>at</th><th>again at</th><th>distance</th>${k>=2?F.map(f=>`<th class="${f===m?'mcol':''}">${f}</th>`).join(''):''}</tr>
+      ${reps.map((r,q)=>`<tr data-q="${q}"><td class="mono" style="color:${gcol(q)};font-weight:700">${r.seq}</td><td>${r.i+1}</td><td>${r.j+1}</td><td><b>${r.d}</b></td>${k>=2?F.map(f=>`<td class="${f===m?'mcol':''}${r.d%f===0?' f':''}">${r.d%f===0?'✓':''}</td>`).join(''):''}</tr>`).join('')}
+      ${k>=2?`<tr class="cnt"><td colspan="4">how many distances</td>${F.map((f,i)=>`<td class="${f===m?'mcol':''}">${cnt[i]}</td>`).join('')}</tr>`:''}</table></div></div>`}
+  if(ok&&k>=2){const top=Math.max(1,...cnt);
+    h+=`<div class="sec"><div class="h3">Key length: the number that divides many distances, and whose columns look like English (index of coincidence, IC)</div>
+      <div class="kbars" id="kzB">${F.map((f,i)=>`<div class="kbar${f===m?' on':''}" data-n="${cnt[i]}"><span>${cnt[i]}</span><i style="height:${cnt[i]/top*100}%"></i></div>`).join('')}</div>
+      <div class="kbl">${F.map(f=>`<span${f===m?' class="on"':''}>${f}</span>`).join('')}</div>
+      <div class="kbl ic">${F.map((f,i)=>`<span${f===m?' class="on"':''}>${ics[i].toFixed(3).slice(1)}</span>`).join('')}</div>
+      <p style="text-align:center;margin:8px 0 0">→ key length <b>m = ${m}</b></p></div>`}
+  if(ok&&k>=3)h+=`<div class="sec"><div class="h3">The letters in ${m} columns: letter 1, ${m+1}, ${2*m+1}, … in column 1, and so on. Each column is a Caesar cipher.</div><div id="kzC">${cols.map((c,ci)=>`<div class="kcol" data-c="${ci}"><b class="kk${k>=4+ci?' on':''}">${k>=4+ci?AZ[c.best]:'?'}</b><span class="kln" style="color:${gcol(ci)}">column ${ci+1}</span><span class="kls">${c.col.map((ch,x)=>`<span data-i="${ci+x*m}">${ch}</span>`).join('')}</span></div>`).join('')}</div></div>`;
+  if(ok&&k>=4){const ci=done?m-1:cur,c=cols[ci],s=c.best;h+=`<div class="sec" id="kzFq"><div class="h3">Column ${ci+1}: decrypt it with every shift and compare the letter counts with English. Best shift: <b>${s} = ${AZ[s]}</b></div>${kzFreq(c,s)}</div>`}
+  if(ok&&done)h+=`<div class="sec" id="kzP"><div class="h3">The key is <b class="k" style="font-size:18px">${key}</b>${KZ.known?(KZ.known===key?' · ✓ the same key that was used to encrypt':` · the real key was ${KZ.known}`):''}. Decrypted:</div><div class="ktx">${[...A.plain].map((ch,i)=>`<span data-i="${i}">${ch}</span>`).join('')}</div></div>`;
+  stage.innerHTML=h;
+  const ex=!ok?`<div class="step">Kasiski examination</div><p>The ciphertext is too short or has no repeats.</p>`
+   :[`<div class="step">Kasiski examination</div><p>Friedrich Kasiski (1863) showed how to break the Vigenère cipher <b>without the key</b>.</p>
+      <p>The idea: when the same piece of plaintext meets the same part of the key, the same piece of ciphertext appears again. The distance between the two places is then a <b>multiple of the key length</b>.</p><p>Press <b>Step</b>.</p>`,
+    `<div class="step">1 · Find repeats</div><p>Look for pieces of 3 or more letters that appear twice. Here are the ${reps.length} longest; each one has its own colour.</p><p>Most of them come from the same plaintext under the same key letters. A few can be chance.</p>`,
+    `<div class="step">2 · Distances → key length</div><p>${cnt[F.indexOf(m)]} of the ${reps.length} distances are multiples of <b>${m}</b>. Its divisors and multiples score too, so we check the columns: with ${m} columns the IC is ${ics[F.indexOf(m)].toFixed(3)} (English ≈ 0.066, random letters ≈ 0.038).</p><p>So the key word has <b>${m} letters</b>.</p>`,
+    `<div class="step">3 · Split into ${m} columns</div><p>All letters of one column were encrypted with the same key letter. So every column is just a <b>Caesar cipher</b>, and we know how to break that.</p>`][k]||''
+   +(cur>=0?`<div class="step">4 · Column ${cur+1} of ${m}</div><p>Decrypt the column with each of the 26 shifts and count its letters. The right shift gives a column that looks like English: many E, T, A, few Q, Z.</p><p class="mono">χ² = Σ (count − expected)² / expected</p><p>Smallest χ² at shift <b>${cols[cur].best}</b>, so key letter ${cur+1} is <b class="k">${AZ[cols[cur].best]}</b>.</p>`:'')
+   +(done?`<div class="step">5 · Decrypt</div><p>The key is <b class="k">${key}</b>. The plaintext appears without spaces, but it can be read.</p><p style="font-size:14px;color:var(--muted)">With short columns one letter of the key can come out wrong; the decrypted text then shows where, and it is easy to fix.</p>`:'');
+  $('#explain').innerHTML=ex;
+  $('#extra').innerHTML=`<h3>Why it works</h3>
+    <p>Vigenère with a key of m letters is m Caesar ciphers taking turns. Kasiski finds m; then letter counting breaks each Caesar cipher.</p>
+    <h3 style="margin-top:12px">Index of coincidence</h3>
+    <p>The chance that two letters taken from a text are the same. English: about 0.066. Random letters: 1/26 ≈ 0.038. The right column split gives columns with an English-like IC (Friedman, 1920s).</p>
+    <p class="note">Charles Babbage found the same attack some years before Kasiski, but he did not publish it. A key as long as the message, used once, has no repeats to find: that is the one-time pad (<button class="link" data-goto="vn">Vernam</button>).</p>`;
+},
+plan(k){
+  const A=kzA(),{t,reps,F,m,cols}=A,done=k>=4+m;
+  if(k===1)return{dur:2200,start(){
+    const rows=$$('#kzR tr[data-q]');hide(rows);const spans=$$('#kzX span.rp');spans.forEach(s=>{s.dataset.bg=s.style.background;s.style.background='';s.classList.remove('rp')});
+    // repeats light up one after another, both places at once
+    return cues(reps.map((r,q)=>[.05+q*.85/reps.length,()=>{rows[q].style.opacity=1;[r.i,r.j].forEach(st=>{for(let x=0;x<r.seq.length;x++){const s=$(`#kzX span[data-i="${st+x}"]`);if(s&&s.dataset.bg){s.classList.add('rp','flash');s.style.background=s.dataset.bg}}})}]));
+  }};
+  if(k===2)return{dur:2200,start(){
+    const ticks=$$('#kzR td.f'),cnt=$$('#kzR tr.cnt td'),bars=$$('#kzB .kbar i'),vals=bars.map(b=>b.style.height);hide([...ticks,...cnt]);bars.forEach(b=>b.style.height='0%');
+    const rows=$$('#kzR tr[data-q]'),cu=rows.map((r,q)=>[.04+q*.5/rows.length,()=>r.querySelectorAll('td.f').forEach(x=>x.style.opacity=1)]);cu.push([.56,()=>cnt.forEach(x=>x.style.opacity=1)]);
+    const c=cues(cu);return p=>{c(p);const q=ease(clamp((p-.55)/.4,0,1));bars.forEach((b,i)=>b.style.height=`calc(${vals[i]} * ${q})`)};
+  }};
+  if(k===3)return{dur:2400,start(){
+    const ls=$$('#kzC .kls span');hide(ls);const mv=[],N=Math.min(t.length,Math.max(3*m,48));
+    for(let i=0;i<N;i++){const a=$(`#kzX span[data-i="${i}"]`),b=$(`#kzC .kls span[data-i="${i}"]`);if(!a||!b)continue;const ra=rectOf(a),rb=rectOf(b),st=.5*i/N;
+      mv.push({node:fxNode(tok(t[i],rb.w+6,rb.h+4,[gcol(i%m)])),pts:[xy(ra),xy(rb)],a:st,b:st+.42,end:st+.43,at:[[st+.42,()=>{b.style.opacity=1}]]})}
+    const t2=mover(mv);return p=>{t2(p);if(p>=1)ls.forEach(s=>s.style.opacity=1);else if(p>.93)ls.forEach(s=>s.style.opacity=1)};
+  }};
+  if(!done){const ci=k-4,c=cols[ci];return{dur:2600,start(){
+    // the column's counts slide through all 26 shifts, then stop at the best one; its key letter appears
+    const ob=$$('#kzFq .kf i.ob'),cb=$$('#kzFq .kchi i'),lab=$('#kzFq .kfs'),kk=$(`#kzC .kcol[data-c="${ci}"] .kk`);
+    let last=-1;const show=s=>{if(s===last)return;last=s;const f=kzCounts(c,s),top=kzTop(c);ob.forEach((b,x)=>b.style.height=(f[x]/top*100)+'%');cb.forEach((b,x)=>b.classList.toggle('cur',x===s));if(lab)lab.textContent=`shift ${s} = ${AZ[s]} · χ² = ${c.chi[s].toFixed(0)}`};
+    kk.textContent='?';kk.classList.remove('on');
+    return p=>{show(p<.75?Math.floor(p/.75*26)%26:c.best);if(p>=.8&&!kk.classList.contains('on')){kk.textContent=AZ[c.best];kk.classList.add('on','flash')}};
+  }}}
+  return{dur:1800,start(){const ls=$$('#kzP .ktx span');hide(ls);return p=>ls.forEach((s,i)=>{s.style.opacity=p>=i/ls.length*.9?1:0})}};
+},
+focus(k){const A=kzA(),m=A.m;follow(k===1?$('#kzR'):k===2?$('#kzB'):k===3?$('#kzC'):k<4+m?$('#kzFq'):$('#kzP'))}};
+// letter counts of a column decrypted with shift s, and a common scale for the chart
+function kzCounts(c,s){const f=Array(26).fill(0);c.col.forEach(ch=>f[m26(num(ch)-s)]++);return f}
+function kzTop(c){let mx=0;for(let s=0;s<26;s++)mx=Math.max(mx,...kzCounts(c,s));return Math.max(mx,c.col.length*EN[4]/100)}
+function kzFreq(c,s){
+  const f=kzCounts(c,s),top=kzTop(c),cm=Math.max(...c.chi);
+  return `<div class="kfq">${range(0,25).map(x=>`<div class="kf"><i class="ob" style="height:${f[x]/top*100}%"></i><i class="en" style="height:${c.col.length*EN[x]/100/top*100}%"></i></div>`).join('')}</div>
+    <div class="kbl">${range(0,25).map(x=>`<span>${AZ[x]}</span>`).join('')}</div>
+    <p class="kfs" style="text-align:center;margin:6px 0 2px;font:13px var(--mono)">shift ${s} = ${AZ[s]} · χ² = ${c.chi[s].toFixed(0)}</p>
+    <div class="kchi">${c.chi.map((v,x)=>`<i class="${x===s?'cur':''}${x===c.best?' best':''}" style="height:${v/cm*100}%" title="shift ${x}: χ² = ${v.toFixed(0)}"></i>`).join('')}</div>
+    <div class="kbl">${range(0,25).map(x=>`<span>${x}</span>`).join('')}</div>
+    <p style="font-size:12.5px;color:var(--muted);text-align:center;margin:4px 0 0">Bars: the column's letters (filled) and English (dashed). Below: χ² for every shift; the lowest one wins.</p>`;
+}
 
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
@@ -869,11 +1096,17 @@ $('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;setPlayin
 /* ---------- inputs ---------- */
 // keep what the user typed in upper case, without moving the cursor
 function upper(t){const s=t.value.toUpperCase();if(s!==t.value){const p=t.selectionStart;t.value=s;t.setSelectionRange(p,p)}return s}
+// a new key for the affine cipher; in Decrypt mode the ciphertext in the box stays
+function afSetKey(a,b){if(!enc())AF.p=affineDec($('#afT').value.toUpperCase(),a,b);AF.a=a;AF.b=b;const f=$('#afB');if(f&&+f.value!==b)f.value=b;show()}
 function czSetK(n){if(!enc())CZ.p=caesar($('#czT').value.toUpperCase(),-n);CZ.k=n;const f=$('#czK');if(f&&+f.value!==n)f.value=n;show()}
 $('#inbar').addEventListener('input',e=>{
   const t=e.target,v=t.value;
   if(t.id==='czT'){const s=upper(t);if(s.length>MAXL)return setErr(`At most ${MAXL} characters.`);setErr();CZ.p=enc()?s:caesar(s,-CZ.k);show()}
   else if(t.id==='czK'){if(!/^\d{1,2}$/.test(v.trim())||+v>25)return setErr('k is a whole number from 0 to 25.');setErr();czSetK(+v)}
+  else if(t.id==='afT'){const s=upper(t);if(s.length>MAXL)return setErr(`At most ${MAXL} characters.`);setErr();AF.p=enc()?s:affineDec(s,AF.a,AF.b);show()}
+  else if(t.id==='afA'){setErr();afSetKey(+v,AF.b)}
+  else if(t.id==='afB'){if(!/^\d{1,2}$/.test(v.trim())||+v>25)return setErr('b is a whole number from 0 to 25.');setErr();afSetKey(AF.a,+v)}
+  else if(t.id==='kzT'){KZ.ct=v;KZ.known=null;KZ.A=null;ST.step.kz=0;show()}
   else if(t.id==='vgT'){const s=upper(t);if(s.length>MAXL)return setErr(`At most ${MAXL} characters.`);setErr();VG.p=enc()?s:vigenere(s,VG.key,-1);show()}
   else if(t.id==='vgK'){const s=upper(t).replace(/\s/g,'');if(!/^[A-Z]{1,12}$/.test(s))return setErr('The key word needs 1 to 12 letters A–Z.');setErr();
     if(!enc())VG.p=vigenere($('#vgT').value.toUpperCase(),s,-1);VG.key=s;show()}
@@ -891,6 +1124,10 @@ $('#inbar').addEventListener('input',e=>{
 $('#inbar').addEventListener('click',e=>{
   const kb=e.target.closest('[data-czk]');if(kb){czSetK((CZ.k+(+kb.dataset.czk)+26)%26);return}
   const cz=e.target.closest('[data-czex]');if(cz){const [s,k]=cz.dataset.czex.split(',');CZ.p=s;CZ.k=+k;ST.step.cz=0;ST.built='';show();return}
+  const ab=e.target.closest('[data-afb]');if(ab){afSetKey(AF.a,(AF.b+(+ab.dataset.afb)+26)%26);return}
+  const af=e.target.closest('[data-afex]');if(af){const [s,a,b]=af.dataset.afex.split(',');AF.p=s;AF.a=+a;AF.b=+b;ST.step.af=0;ST.built='';show();return}
+  const kx=e.target.closest('[data-kzex]');if(kx){const ex=KZ_EX[+kx.dataset.kzex];KZ.ct=vigenere(lettersOnly(ex.p),ex.key,1);KZ.known=ex.key;KZ.A=null;ST.step.kz=0;ST.built='';show();return}
+  if(e.target.closest('[data-kzmk]')){const w=$('#kzK').value.toUpperCase().replace(/[^A-Z]/g,'');if(!w)return setErr('Type a key word (letters A–Z).');KZ.mk=w;KZ.ct=vigenere(lettersOnly(KZ_EX[0].p),w,1);KZ.known=w;KZ.A=null;ST.step.kz=0;ST.built='';show();return}
   const vg=e.target.closest('[data-vgex]');if(vg){const [s,k]=vg.dataset.vgex.split(',');VG.p=s;VG.key=k;ST.step.vg=0;ST.built='';show();return}
   if(e.target.closest('[data-vnnew]')){const n=enc()?VN.p.length:VN.key.length,c=enc()?null:vernam(VN.p,VN.key);VN.key=randKey(n);if(c)VN.p=vernam(c,VN.key);ST.built='';show();return}
   if(e.target.closest('[data-vnex]')){VN.p=[...te.encode('HELLO')];VN.key=fromHex('3f9a07c2e1');ST.step.vn=0;ST.built='';show()}
@@ -902,8 +1139,8 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
 });
-// the course page links to #caesar, #vigenere and #vernam
-const TABNAME={cz:'caesar',vg:'vigenere',vn:'vernam'},BYNAME={caesar:'cz',vigenere:'vg',vernam:'vn'};
+// the course page links to #caesar, #affine, #vigenere, #vernam and #kasiski
+const TABNAME={cz:'caesar',af:'affine',vg:'vigenere',vn:'vernam',kz:'kasiski'},BYNAME={caesar:'cz',affine:'af',vigenere:'vg',vernam:'vn',kasiski:'kz'};
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)history.replaceState(null,'','#'+TABNAME[b.dataset.tab])});
 let startTab=BYNAME[location.hash.slice(1)];if(!startTab)try{const t=localStorage.getItem('classic-tab');if(t&&T[t])startTab=t}catch(e){}
 setTab(T[startTab]?startTab:'cz');
