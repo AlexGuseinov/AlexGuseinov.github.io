@@ -354,6 +354,7 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .ovw .ob.kb{stroke:var(--key)}
 .ovw .ob.on{stroke:var(--accent);stroke-width:2.6;fill:var(--accentBg)}
 .ovw .ob.pulse{animation:opulse .4s ease-in-out infinite alternate}
+.ovw .ob.io.on,.ovw .ob.io.pulse{fill:var(--ink);stroke:var(--accent);stroke-width:3;animation:none}
 @keyframes opulse{from{fill:var(--accentBg)}to{fill:var(--panel)}}
 .ovw .ot{font:600 15px var(--sans);fill:var(--ink);dominant-baseline:central}
 .ovw .ot.io{fill:var(--bg)}
@@ -665,7 +666,7 @@ function mini(s,cs){
   return h;
 }
 // chart geometry (SVG units): main column of boxes, the state lane at x = OV.wx, the key column on the right
-const OV={W:600,H:690,bx:92,bw:220,bh:42,wx:126,tx:160,kx:410,kw:180,bus:366,
+const OV={W:600,H:690,bx:92,bw:238,bh:42,wx:126,tx:160,kx:410,kw:180,bus:366,
   y:{P:10,A0:70,SB1:148,SR1:208,MC1:268,AK1:328,SB2:430,SR2:490,AK2:550,C:628,KEY:10,EXP:70,RK:130},
   g1:[122,384],g2:[404,606],loopx:72};
 const ovc=id=>OV.y[id]+OV.bh/2;
@@ -678,8 +679,8 @@ T.ov={n:()=>D.K.Nr+3,render(k){
     <marker id="om" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="om" d="M0,0 L10,5 L0,10 z"/></marker>
     <marker id="omk" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="omk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
   // round groups
-  h+=`<rect class="og" x="54" y="${OV.g1[0]}" width="276" height="${OV.g1[1]-OV.g1[0]}" rx="12"/><text class="ogl" x="${tx-4}" y="${OV.g1[0]+16}">Rounds 1 … ${Nr-1}${r?` · now round ${r}`:''}</text>`;
-  h+=`<rect class="og" x="54" y="${OV.g2[0]}" width="276" height="${OV.g2[1]-OV.g2[0]}" rx="12"/><text class="ogl" x="${tx-4}" y="${OV.g2[0]+16}">Round ${Nr} (last): no MixColumns</text>`;
+  h+=`<rect class="og" x="54" y="${OV.g1[0]}" width="294" height="${OV.g1[1]-OV.g1[0]}" rx="12"/><text class="ogl" x="${tx-4}" y="${OV.g1[0]+16}">Rounds 1 … ${Nr-1}${r?` · now round ${r}`:''}</text>`;
+  h+=`<rect class="og" x="54" y="${OV.g2[0]}" width="294" height="${OV.g2[1]-OV.g2[0]}" rx="12"/><text class="ogl" x="${tx-4}" y="${OV.g2[0]+16}">Round ${Nr} (last): no MixColumns</text>`;
   // wires on the state lane
   const dn=(a,b,w)=>arrow(`M${wx} ${OV.y[a]+bh} V${OV.y[b]-1}`,w);
   h+=dn('P','A0','a0')+dn('A0','SB1','g1')+dn('SB1','SR1','g1')+dn('SR1','MC1','g1')+dn('MC1','AK1','g1')+dn('AK1','SB2','g2')+dn('SB2','SR2','g2')+dn('SR2','AK2','g2')+dn('AK2','C','out');
@@ -695,7 +696,7 @@ T.ov={n:()=>D.K.Nr+3,render(k){
   h+=box('RK',`Round keys K0 … K${Nr}`,{x:OV.kx,w:OV.kw,h:54,cls:'kb',tx:kc,mid:1});
   // the state boxes
   h+=box('P','Plaintext · 16 bytes',{cls:'io'})+box('A0','AddRoundKey',{go:'ark',round:0,key:'K0'});
-  h+=box('SB1','SubBytes',{go:'sb',round:r})+box('SR1','ShiftRows',{go:'sr',round:r})+box('MC1','MixColumns',{go:'mc',round:r})+box('AK1','AddRoundKey',{go:'ark',round:r||1,key:r?`K${r}`:`K1 … K${Nr-1}`});
+  h+=box('SB1','SubBytes',{go:'sb',round:r})+box('SR1','ShiftRows',{go:'sr',round:r})+box('MC1','MixColumns',{go:'mc',round:r})+box('AK1','AddRoundKey',{go:'ark',round:r||1,key:r?`K${r}`:`K1…K${Nr-1}`});
   h+=box('SB2','SubBytes',{go:'sb',round:Nr})+box('SR2','ShiftRows',{go:'sr',round:Nr})+box('AK2','AddRoundKey',{go:'ark',round:Nr,key:`K${Nr}`});
   h+=box('C','Ciphertext · 16 bytes',{cls:'io'});
   h+=`<g id="ovTok" transform="translate(${wx} ${ovc(rest)})" class="mini">${mini(s,7)}</g></svg>`;
