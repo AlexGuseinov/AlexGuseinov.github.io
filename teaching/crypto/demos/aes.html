@@ -12,13 +12,14 @@
   --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --cs:44px;
+  --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
   --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
   --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;
   --g0:#3f72c9;--g1:#c97a2e;--g2:#2f8c60;--g3:#bd4a4a;
+  --rowc:#8ab8ee;--rowBg:#1f3048;--colc:#f0a35e;--colBg:#3a2716;
 }}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -199,6 +200,49 @@ button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inh
 .bars .ref span{position:absolute;right:0;top:-17px;font-size:11px;color:var(--xor)}
 .blbl{display:flex;gap:6px;max-width:560px;margin:4px auto 0;padding:0 4px}
 .blbl span{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+
+/* SubBytes lookup */
+.hn{color:var(--rowc);font-weight:700}
+.ln{color:var(--colc);font-weight:700}
+.c .q{color:inherit;font-weight:600}
+.g4.bin .c{flex-direction:column;font-size:12px;line-height:1.15;gap:1px}
+.g4.bin .c .q+.q{opacity:.75}
+.sbwrap{position:relative;display:flex;flex-wrap:wrap;gap:22px 24px;justify-content:center;align-items:center;padding-top:30px}
+#sbIn .gw,#sbOut .gw{flex-direction:column-reverse}
+.sbarr{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.sbarr path{fill:none;stroke-width:2.2}
+.sbarr .pr{stroke:var(--rowc)}.sbarr .pc{stroke:var(--colc)}.sbarr .po{stroke:var(--ink);stroke-dasharray:6 4}
+.sbarr .arr{fill:var(--rowc)}.sbarr .arc{fill:var(--colc)}.sbarr .aro{fill:var(--ink)}
+.sbarr text{font:700 14px var(--sans)}.sbarr .tr{fill:var(--rowc)}.sbarr .tc{fill:var(--colc)}
+.sbt th.corner{font-size:10px;color:var(--faint)}
+.sbt th small{display:block;font-size:8.5px;font-weight:400;color:var(--faint)}
+.sbt.bin th{padding:2px 1px}.sbt.bin th small{font-size:8px;letter-spacing:-.2px}.sbt.bin td{padding:2px 1px}
+.sbt th.hitr{background:var(--rowc);color:#fff}.sbt th.hitc{background:var(--colc);color:#fff}
+.sbt th.hitr small,.sbt th.hitc small{color:#fff}
+.sbt td.axr{background:var(--rowBg)}.sbt td.axc{background:var(--colBg)}
+.lkup{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:8px;margin-top:22px}
+.lks{border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:130px}
+.lkh{font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+.lkbig{font-size:22px;font-weight:600}
+.lkmid{font-size:13px;line-height:1.7}
+.lksub{font-size:12px;color:var(--muted)}
+.lkarr{align-self:center;color:var(--muted);font-size:18px}
+@media (max-width:700px){.lkarr{display:none}.lks{min-width:0;flex:1 1 40%}}
+
+/* ShiftRows rails */
+.srbox{display:flex;flex-direction:column;gap:4px}
+.srline{display:flex;align-items:center;gap:8px}
+.srlab{font-size:12px;color:var(--muted);width:38px;text-align:right}
+.srtrack{width:calc(4 * var(--cs) + 12px);overflow:hidden;border-radius:7px;outline:2px solid transparent;outline-offset:2px;transition:outline-color .3s}
+.srtrack.mv{outline-color:var(--ink)}
+.srrail{display:flex;gap:4px;width:max-content;transition:transform .65s cubic-bezier(.45,.05,.3,1)}
+.srrail .c{width:var(--cs);flex:none}
+.srdots{display:flex;gap:3px;width:44px;font-size:11px;color:var(--faint)}
+.srdots i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line2);display:block}
+.srdots i.on{background:var(--ink);border-color:var(--ink)}
+#stage [data-o]{cursor:pointer}
+.c.lk{outline:3px solid var(--ink);outline-offset:1px}
+.c.pin{outline:3px solid var(--ink);outline-offset:1px;box-shadow:0 0 0 6px color-mix(in srgb,var(--ink) 18%,transparent)}
 
 /* GF(2^8) tab */
 .gfin{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-top:10px}
@@ -402,10 +446,10 @@ function changed(){
 
 /* ---------- small renderers ---------- */
 function grid(s,o={}){
-  let h=`<div class="g4${o.sm?' sm':''}">`;
+  let h=`<div class="g4${o.sm?' sm':''}${o.bin?' bin':''}">`;
   for(let r=0;r<4;r++)for(let c=0;c<4;c++){const i=r+4*c,v=s[i];
     const cls=['c'];if(v==null)cls.push('emp');if(o.cls)cls.push(o.cls(i)||'');
-    h+=`<div class="${cls.join(' ')}" data-i="${i}"${o.style?` style="${o.style(i)}"`:''}${o.title?` title="${o.title(i)}"`:''}>${v==null?'··':hx(v)}${o.idx?`<small>${o.idx(i)}</small>`:''}</div>`}
+    h+=`<div class="${cls.join(' ')}" data-i="${i}"${o.style?` style="${o.style(i)}"`:''}${o.title?` title="${o.title(i)}"`:''}>${v==null?'··':o.bin?`<span class="hn${o.nib&&o.nib(i)?'':' q'}">${b4(v>>4)}</span><span class="ln${o.nib&&o.nib(i)?'':' q'}">${b4(v&15)}</span>`:o.nib&&o.nib(i)?`<span class="hn">${h4(v>>4)}</span><span class="ln">${h4(v&15)}</span>`:hx(v)}${o.idx?`<small>${o.idx(i)}</small>`:''}</div>`}
   return h+'</div>';
 }
 const gbox=(cap,g)=>`<div class="gw"><div class="gcap">${cap}</div>${g}</div>`;
@@ -422,7 +466,7 @@ const SHORT={in:'IN',ark:'ARK',sb:'SB',sr:'SR',mc:'MC',isb:'ISB',isr:'ISR',imc:'
 
 /* ---------- tabs ---------- */
 const ST={tab:'ov',step:{},round:{sb:1,sr:1,mc:1,ark:1},mode:'enc',playing:false,timer:null,built:'',pick:null,sbInv:false,flip:{i:0,b:7},
-  gfA:0x57,gfB:0x83,mcPlay:[0xdb,0x13,0x53,0x45],mcPrev:null,trk:null};
+  fmt:'hex',srInv:false,srSel:null,srHov:null,gfA:0x57,gfB:0x83,mcPlay:[0xdb,0x13,0x53,0x45],mcPrev:null,trk:null};
 const stage=$('#stage');
 const T={};
 
@@ -545,90 +589,142 @@ T.gf={n:()=>9,render(k){
 }};
 
 /* 3 · SubBytes */
-function sboxTable(box,hit,pick){
-  let h='<table class="sbt"><tr><th></th>';
-  for(let j=0;j<16;j++)h+=`<th class="${hit!=null&&j===(hit&15)?'hit':''}">${j.toString(16)}</th>`;
+const b4=v=>v.toString(2).padStart(4,'0');
+function sboxTable(box,hit,pick,bin){
+  const hr=hit!=null?hit>>4:-1,hc=hit!=null?hit&15:-1;
+  let h='<table class="sbt'+(bin?' bin':'')+'"><tr><th class="corner">x \\ y</th>';
+  for(let j=0;j<16;j++)h+=`<th class="${j===hc?'hitc':''}" data-hc="${j}">${j.toString(16)}${bin?`<small>${b4(j)}</small>`:''}</th>`;
   h+='</tr>';
-  for(let a=0;a<16;a++){h+=`<tr><th class="${hit!=null&&a===hit>>4?'hit':''}">${a.toString(16)}</th>`;
-    for(let b=0;b<16;b++){const x=16*a+b;const cl=[x===hit?'hit':(hit!=null&&(a===hit>>4||b===(hit&15))?'ax':''),x===pick?'pick':''].join(' ');
+  for(let a=0;a<16;a++){h+=`<tr><th class="${a===hr?'hitr':''}" data-hr="${a}">${a.toString(16)}${bin?`<small>${b4(a)}</small>`:''}</th>`;
+    for(let b=0;b<16;b++){const x=16*a+b;const cl=[x===hit?'hit':(a===hr?'axr':(b===hc?'axc':'')),x===pick?'pick':''].join(' ');
       h+=`<td class="${cl}" data-x="${x}">${hx(box[x])}</td>`}
     h+='</tr>'}
   return h+'</table>';
 }
 function sbBuild(x){
   const v=GINV[x],y=SBOX[x];
-  const rows=[['b<sub>i</sub>',v],['b<sub>i+4</sub>',[0,1,2,3,4,5,6,7].reduce((a,i)=>a|(((v>>((i+4)&7))&1)<<i),0)],
-    ['b<sub>i+5</sub>',[0,1,2,3,4,5,6,7].reduce((a,i)=>a|(((v>>((i+5)&7))&1)<<i),0)],
-    ['b<sub>i+6</sub>',[0,1,2,3,4,5,6,7].reduce((a,i)=>a|(((v>>((i+6)&7))&1)<<i),0)],
-    ['b<sub>i+7</sub>',[0,1,2,3,4,5,6,7].reduce((a,i)=>a|(((v>>((i+7)&7))&1)<<i),0)],
-    ['c<sub>i</sub>',0x63],['b′<sub>i</sub>',y,'res']];
+  const rot=s=>[0,1,2,3,4,5,6,7].reduce((a,i)=>a|(((v>>((i+s)&7))&1)<<i),0);
+  const rows=[['b<sub>i</sub>',v],['b<sub>i+4</sub>',rot(4)],['b<sub>i+5</sub>',rot(5)],['b<sub>i+6</sub>',rot(6)],['b<sub>i+7</sub>',rot(7)],['c<sub>i</sub>',0x63],['b′<sub>i</sub>',y,'res']];
   return `<h3>How S(${hx(x)}) = ${hx(y)} is built</h3>
-  <p><b>1. Inverse in GF(2<sup>8</sup>).</b> ${x?`<span class="mono">${hx(x)}<sup>−1</sup> = ${hx(v)}</span>, because <span class="mono">${hx(x)} • ${hx(v)} = 01</span>.`:'The byte 00 has no inverse, so it is mapped to 00.'}</p>
+  <p><b>1. Inverse in GF(2<sup>8</sup>).</b> ${x?`<span class="mono">${hx(x)}<sup>−1</sup> = ${hx(v)}</span>, because <span class="mono">${hx(x)} • ${hx(v)} = 01</span>. <button class="link" data-goto="gf">How?</button>`:'The byte 00 has no inverse, so it is mapped to 00.'}</p>
   <p><b>2. Affine map</b> on the bits of b = <span class="mono">${hx(v)}</span>:<br>
   b′<sub>i</sub> = b<sub>i</sub> ⊕ b<sub>i+4</sub> ⊕ b<sub>i+5</sub> ⊕ b<sub>i+6</sub> ⊕ b<sub>i+7</sub> ⊕ c<sub>i</sub>, indices mod 8, c = 63.</p>
   <div class="scroll">${bitRows(rows)}</div>
   <p style="margin-top:6px;font-size:13px;color:var(--muted)">Columns are bits 7 … 0. Each column is XORed from top to bottom.</p>`;
 }
+// the four-step lookup: byte -> two halves -> row and column -> table entry
+function sbLookup(x,cur){
+  const hi=x>>4,lo=x&15,y=SBOX[x],s=sp=>`<span class="lkarr">→</span>`;
+  return `<div class="lkup">
+    <div class="lks"><div class="lkh">1. Take the byte ${rcN(cur)}</div><div class="lkbig mono"><span class="hn">${h4(hi)}</span><span class="ln">${h4(lo)}</span></div><div class="lksub">hex</div></div>${s()}
+    <div class="lks"><div class="lkh">2. Write it in binary, cut in half</div><div class="lkbig mono"><span class="hn">${b4(hi)}</span> <span class="ln">${b4(lo)}</span></div><div class="lksub">4 bits + 4 bits</div></div>${s()}
+    <div class="lks"><div class="lkh">3. First half = row, second = column</div><div class="mono lkmid">row x = <span class="hn">${b4(hi)}₂ = ${h4(hi)} = ${hi}</span><br>column y = <span class="ln">${b4(lo)}₂ = ${h4(lo)} = ${lo}</span></div></div>${s()}
+    <div class="lks"><div class="lkh">4. Read the table</div><div class="lkbig mono">S[<span class="hn">${h4(hi)}</span>,<span class="ln">${h4(lo)}</span>] = <b>${hx(y)}</b></div><div class="lksub mono">${b4(y>>4)} ${b4(y&15)}</div></div>
+  </div>`;
+}
+const h4=v=>v.toString(16);
+function drawSbArrows(cur){
+  const svg=$('#sbArr'),wrap=$('#sbWrap');if(!svg||!wrap)return;
+  svg.innerHTML='';if(cur<0||ST.sbInv)return;
+  const W=wrap.getBoundingClientRect(),R=e=>{const b=e.getBoundingClientRect();return {l:b.left-W.left,r:b.right-W.left,t:b.top-W.top,b:b.bottom-W.top,cx:(b.left+b.right)/2-W.left,cy:(b.top+b.bottom)/2-W.top}};
+  const ing=$('#sbIn .g4'),outg=$('#sbOut .g4'),tab=$('#sbWrap .sbt');if(!ing||!outg||!tab)return;
+  const gi=R(ing),go=R(outg),gt=R(tab);
+  if(!(gi.r<gt.l&&gt.r<go.l))return;            // only when the three are side by side
+  const ci=R(ing.querySelector(`[data-i="${cur}"]`)),co=R(outg.querySelector(`[data-i="${cur}"]`));
+  const rh=R(tab.querySelector('th.hitr')),ch=R(tab.querySelector('th.hitc')),hc=R(tab.querySelector('td.hit'));
+  svg.setAttribute('viewBox',`0 0 ${W.width} ${W.height}`);svg.setAttribute('width',W.width);svg.setAttribute('height',W.height);
+  const cap=R($('#sbWrap > .gw .gcap')),top=Math.min(gi.t,cap.t)-10,xm=(gi.r+gt.l)/2,xo=(gt.r+go.l)/2;
+  svg.innerHTML=`<defs>${['r','c','o'].map(k=>`<marker id="m${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9z" class="ar${k}"/></marker>`).join('')}</defs>
+    <path class="pr" d="M${gi.r+2} ${ci.cy} H${xm} V${rh.cy} H${rh.l-3}" marker-end="url(#mr)"/>
+    <path class="pc" d="M${ci.cx} ${gi.t-2} V${top} H${ch.cx} V${ch.t-3}" marker-end="url(#mc)"/>
+    <path class="po" d="M${gt.r+2} ${hc.cy} H${xo} V${co.cy} H${go.l-3}" marker-end="url(#mo)"/>
+    <text class="tr" x="${xm+4}" y="${(ci.cy+rh.cy)/2}">x</text><text class="tc" x="${(ci.cx+ch.cx)/2}" y="${top-4}">y</text>`;
+}
 T.sb={n:()=>17,rounds:()=>range(1,D.K.Nr),render(k){
-  const r=ST.round.sb,o=findOp('sb',r),cur=k>0?k-1:-1;
+  const r=ST.round.sb,o=findOp('sb',r),cur=k>0?k-1:-1,bin=ST.fmt==='bin';
   const out=o.s.map((v,i)=>i<k?v:null),x=cur>=0?o.p[cur]:null;
-  stage.innerHTML=`<div class="flow">
-    ${gbox(`Input · round ${r}`,grid(o.p,{cls:i=>i===cur?'cur':(i<cur?'done':'')}))}
-    ${opx('→','S-box')}
-    ${gbox('Output',grid(out,{cls:i=>i===cur?'cur chg':(i<k?'chg':'')}))}
-  </div>
-  <div class="sec"><div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="h3" style="margin:0">${ST.sbInv?'Inverse S-box (used by InvSubBytes)':'The AES S-box: row = first hex digit, column = second hex digit'}</div>
-    <span class="seg sm" id="sbV"><button data-v="0" class="${ST.sbInv?'':'on'}">S-box</button><button data-v="1" class="${ST.sbInv?'on':''}">Inverse</button></span></div>
-    <div class="scroll">${sboxTable(ST.sbInv?ISBOX:SBOX,ST.sbInv?null:x,ST.pick)}</div>
-    <p style="font-size:13px;color:var(--muted);margin:8px 0 0">Click any S-box entry to see how it is computed.</p></div>`;
-  $('#explain').innerHTML=cur<0?`<div class="step">SubBytes · round ${r}</div>
-    <p>Every byte of the state is replaced by S(byte). The same S-box is used for all 16 bytes in every round.</p>
-    <p>This is the only <b>non-linear</b> step of AES. Without it, AES would be a linear map and easy to break.</p>
-    <p>Press <b>Step</b> to go through the bytes one by one.</p>`
-   :`<div class="step">Byte ${cur+1} of 16 · ${rcN(cur)}</div>
-    <p>Input byte <span class="mono"><b>${hx(x)}</b></span>: row <b>${(x>>4).toString(16)}</b>, column <b>${(x&15).toString(16)}</b> of the table.</p>
-    <p>S(${hx(x)}) = <span class="mono"><b>${hx(SBOX[x])}</b></span></p>`;
-  const show=ST.pick!=null?ST.pick:(x!=null?x:o.p[0]);
-  $('#extra').innerHTML=sbBuild(show);
-}};
-
-/* 3 · ShiftRows */
-T.sr={n:()=>5,rounds:()=>range(1,D.K.Nr),render(k,anim,dir){
-  const r=ST.round.sr,o=findOp('sr',r),inp=o.p;
-  const key='sr'+r+hexs(inp),W=`(var(--cs) + 4px)`;
-  if(ST.built!==key){
-    stage.innerHTML=`<div class="flow">
-      ${gbox(`Before · round ${r}`,grid(inp,{style:i=>`background:var(--g${i>>2})`,cls:()=>'colr'}))}
-      ${opx('→','ShiftRows')}
-      <div class="gw"><div class="gcap">After</div><div class="anim" id="srA" style="width:calc(4*var(--cs) + 12px);height:calc(4*var(--cs) + 12px)">
-      ${inp.map((b,i)=>`<div class="c colr" data-i="${i}" style="background:var(--g${i>>2})">${hx(b)}</div>`).join('')}</div></div>
+  stage.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:6px">
+      <span class="row" style="gap:6px"><span class="flh">Show bytes as</span><span class="seg sm"><button data-fmt="hex" class="${bin?'':'on'}">Hex</button><button data-fmt="bin" class="${bin?'on':''}">Binary</button></span></span>
+      <span class="seg sm" id="sbV"><button data-v="0" class="${ST.sbInv?'':'on'}">S-box</button><button data-v="1" class="${ST.sbInv?'on':''}">Inverse S-box</button></span></div>
+    <div class="sbwrap" id="sbWrap">
+      <div id="sbIn">${gbox(`Input · round ${r}`,grid(o.p,{bin,nib:i=>i===cur,cls:i=>i===cur?'cur':(i<cur?'done':'')}))}</div>
+      <div class="gw" style="width:auto"><div class="gcap">${ST.sbInv?'Inverse S-box (used by InvSubBytes)':'S-box: row x = first half, column y = second half'}</div><div class="scroll">${sboxTable(ST.sbInv?ISBOX:SBOX,ST.sbInv?null:x,ST.pick,bin)}</div></div>
+      <div id="sbOut">${gbox('Output',grid(out,{bin,cls:i=>i===cur?'cur chg':(i<k?'chg':'')}))}</div>
+      <svg class="sbarr" id="sbArr" aria-hidden="true"></svg>
     </div>
-    <div class="sec"><div class="h3">Shift per row</div>
-      <table class="vt" style="max-width:420px"><tr><th>Row</th><th>Shift left</th><th>Row after</th></tr>
-      ${[0,1,2,3].map(rr=>`<tr id="srRow${rr}"><td>${rr}</td><td>${rr}</td><td class="mono">${[0,1,2,3].map(c=>hx(o.s[rr+4*c])).join(' ')}</td></tr>`).join('')}</table></div>`;
-    ST.built=key;ST.srPos=null;
-  }
-  const cells=$$('#srA .c');const old=ST.srPos||[];const pos=[];
-  cells.forEach(el=>{const i=+el.dataset.i,rr=i&3,c=i>>2,sh=rr<k?rr:0,nc=(c-sh+4)&3;pos[i]=nc;
-    const tr=`translate(calc(${nc} * ${W}),calc(${rr} * ${W}))`;
-    const wrapped=anim&&old.length&&(dir>0?nc>old[i]:nc<old[i]);
-    if(wrapped){el.style.transition='none';el.style.opacity='0';el.style.transform=tr;void el.offsetWidth;
-      setTimeout(()=>{el.style.transition='';el.style.opacity='1'},380)}
-    else{if(!anim)el.style.transition='none';el.style.transform=tr;el.style.opacity='1';if(!anim){void el.offsetWidth;el.style.transition=''}}
-    el.classList.toggle('cur',anim&&rr===k-1&&dir>0);
-  });
-  ST.srPos=pos;
-  [0,1,2,3].forEach(rr=>{const t=$('#srRow'+rr);if(t)t.style.background=rr<k?'var(--accentBg)':''});
-  const msg=['ShiftRows rotates each row of the state to the left. Row <b>r</b> moves <b>r</b> positions. Bytes that fall off the left end come back on the right.',
-    'Row 0 is not shifted.','Row 1 moves 1 position left. Its first byte goes to the end.','Row 2 moves 2 positions left.','Row 3 moves 3 positions left (the same as 1 position right).'];
-  $('#explain').innerHTML=`<div class="step">${k===0?`ShiftRows · round ${r}`:`Row ${k-1}`}</div><p>${msg[k]}</p>${k===4?`<p>Look at the colours: <b>every column now holds one byte from each of the four original columns.</b></p>`:''}`;
-  $('#extra').innerHTML=`<h3>Formula</h3><p class="mono">s′<sub>r,c</sub> = s<sub>r,(c+r) mod 4</sub></p>
-  <h3 style="margin-top:12px">Why?</h3><p>MixColumns mixes bytes only inside one column. ShiftRows moves bytes into other columns, so in the next round they mix with new bytes. After two rounds every output byte depends on every input byte.</p>
-  <p class="note">InvShiftRows (for decryption) rotates row r to the <b>right</b> by r.</p>
-  <p style="margin-top:8px">Colours = the original column of each byte.</p>`;
+    ${cur>=0&&!ST.sbInv?sbLookup(x,cur):''}
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Click any S-box entry to see how it is computed.</p>`;
+  requestAnimationFrame(()=>drawSbArrows(cur));
+  $('#explain').innerHTML=cur<0?`<div class="step">SubBytes · round ${r}</div>
+    <p>Every byte of the state is replaced by S(byte), using one fixed table of 256 entries. The same table is used for all 16 bytes in every round.</p>
+    <p>How to read the table: split the byte into two halves of 4 bits. The first half picks the <b class="hn">row</b>, the second half picks the <b class="ln">column</b>.</p>
+    <p>This is the only <b>non-linear</b> step of AES. Press <b>Step</b> to go byte by byte.</p>`
+   :`<div class="step">Byte ${cur+1} of 16 · ${rcN(cur)}</div>
+    <p>Byte <span class="mono"><b>${hx(x)}</b></span> = <span class="mono"><span class="hn">${b4(x>>4)}</span> <span class="ln">${b4(x&15)}</span></span></p>
+    <p>Row <b class="hn">${h4(x>>4)}</b>, column <b class="ln">${h4(x&15)}</b> → S(${hx(x)}) = <span class="mono"><b>${hx(SBOX[x])}</b></span></p>`;
+  const pk=ST.pick!=null?ST.pick:(x!=null?x:o.p[0]);
+  $('#extra').innerHTML=sbBuild(pk);
 }};
+addEventListener('resize',()=>{if(ST.tab==='sb')drawSbArrows((ST.step.sb||0)-1)});
 
-/* 4 · MixColumns */
+/* 4 · ShiftRows */
+// one step = one row moves one position; row r needs r steps
+const SR_SEQ=[[1,1],[2,1],[2,2],[3,1],[3,2],[3,3]];
+const srShift=k=>[0,1,2,3].map(r=>SR_SEQ.slice(0,k).filter(s=>s[0]===r).reduce((m,s)=>Math.max(m,s[1]),0));
+T.sr={n:()=>7,rounds:()=>range(1,D.K.Nr),render(k,anim){
+  const r=ST.round.sr,o=findOp('sr',r),inv=ST.srInv;
+  // start state, and the colour of every byte = its column in the ShiftRows input
+  const start=inv?o.s:o.p,colOf=i=>inv?(((i>>2)+(i&3))&3):(i>>2);
+  const key='sr'+r+(inv?'i':'f')+hexs(start);
+  if(ST.built!==key){
+    let rails='';
+    for(let rr=0;rr<4;rr++){
+      let cells='';for(let m=0;m<12;m++){const c=m&3,i=rr+4*c;cells+=`<div class="c colr" data-o="${i}" style="background:var(--g${colOf(i)})">${hx(start[i])}</div>`}
+      rails+=`<div class="srline"><div class="srlab" id="srLab${rr}">row ${rr}</div><div class="srtrack" id="srT${rr}"><div class="srrail" id="srR${rr}">${cells}</div></div><div class="srdots" id="srD${rr}"></div></div>`;
+    }
+    stage.innerHTML=`<div class="row" style="justify-content:center;margin-bottom:14px"><span class="seg sm" id="srMode"><button data-srm="0" class="${inv?'':'on'}">ShiftRows (left)</button><button data-srm="1" class="${inv?'on':''}">InvShiftRows (right)</button></span></div>
+      <div class="flow" style="align-items:flex-start">
+        ${gbox(`${inv?'Input = ShiftRows output':'Before'} · round ${r}`,grid(start,{style:i=>`background:var(--g${colOf(i)})`,cls:()=>'colr'}).replace(/data-i="(\d+)"/g,'data-o="$1"'))}
+        ${opx(inv?'⇢':'⇠',inv?'rotate right':'rotate left')}
+        <div class="gw"><div class="gcap">After (rows slide one step at a time)</div><div class="srbox">${rails}</div></div>
+      </div>
+      <div class="sec" id="srSel"></div>`;
+    ST.built=key;
+  }
+  const sh=srShift(k),moving=k>0?SR_SEQ[k-1][0]:-1;
+  for(let rr=0;rr<4;rr++){
+    const rail=$('#srR'+rr),off=inv?4-sh[rr]:4+sh[rr];
+    if(!anim)rail.style.transition='none';
+    rail.style.transform=`translateX(calc(-${off} * (var(--cs) + 4px)))`;
+    if(!anim){void rail.offsetWidth;rail.style.transition=''}
+    $('#srT'+rr).classList.toggle('mv',rr===moving);
+    $('#srD'+rr).innerHTML=range(1,rr).map(j=>`<i class="${j<=sh[rr]?'on':''}"></i>`).join('')||'<span>no shift</span>';
+  }
+  srLink();
+  const done=k===6,nm=inv?'InvShiftRows':'ShiftRows',dir=inv?'right':'left';
+  let ex;
+  if(k===0)ex=`<div class="step">${nm} · round ${r}</div><p>Row <b>r</b> of the state is rotated ${dir} by <b>r</b> positions: row 0 by 0, row 1 by 1, row 2 by 2, row 3 by 3.</p><p>Press <b>Step</b>: each step moves one row by one position.</p><p style="font-size:14px;color:var(--muted)">Point at a byte to see the same byte on both sides. Click it to follow it.</p>`;
+  else{const [rr,c]=SR_SEQ[k-1],row=[0,1,2,3].map(cc=>start[rr+4*cc]);const edge=inv?row[(3-(c-1)+4)&3]:row[(c-1)&3];
+    ex=`<div class="step">Row ${rr} · move ${c} of ${rr}</div><p>All bytes of row ${rr} move one position ${dir}. The byte <span class="mono"><b>${hx(edge)}</b></span> falls off the ${inv?'right':'left'} end and comes back on the ${inv?'left':'right'}.</p>
+      ${c===rr?`<p>Row ${rr} is finished.</p>`:''}${done?`<p><b>Look at the colours:</b> ${inv?'every column has its own colour again. InvShiftRows undid ShiftRows.':'every column now holds one byte from each of the four original columns.'}</p>`:''}`}
+  $('#explain').innerHTML=ex;
+  $('#extra').innerHTML=`<h3>Formula</h3><p class="mono">${inv?'s′<sub>r,(c+r) mod 4</sub> = s<sub>r,c</sub>':'s′<sub>r,c</sub> = s<sub>r,(c+r) mod 4</sub>'}</p>
+    <h3 style="margin-top:12px">Why?</h3><p>MixColumns mixes bytes only inside one column. ShiftRows moves bytes into other columns, so in the next round they mix with new bytes. After two rounds every output byte depends on every input byte.</p>
+    <p>Colours = the column each byte has in the ShiftRows input.</p>
+    <p class="note">Rotating left by 3 is the same as rotating right by 1, because a row has 4 bytes.</p>`;
+}};
+// highlight the hovered or selected byte on both sides
+function srLink(){
+  if(ST.tab!=='sr')return;
+  const sel=ST.srSel,hov=ST.srHov;
+  $$('#stage [data-o]').forEach(e=>{const o=+e.dataset.o;e.classList.toggle('lk',o===hov);e.classList.toggle('pin',o===sel)});
+  const box=$('#srSel');if(!box)return;
+  if(sel==null){box.innerHTML='';return}
+  const o=findOp('sr',ST.round.sr),inv=ST.srInv,start=inv?o.s:o.p,r=sel&3,c=sel>>2,to=inv?(c+r)&3:(c-r+4)&3;
+  box.innerHTML=`<p class="note" style="margin:0">Byte <span class="mono"><b>${hx(start[sel])}</b></span> starts in row ${r}, column ${c}. Row ${r} is rotated ${inv?'right':'left'} by ${r}, so it ends in <b>column ${to}</b>${r===0?' (row 0 does not move)':''}. <button class="link" data-srsel="-1">Clear</button></p>`;
+}
+
+/* 5 · MixColumns */
 function xtimeLines(a){
   const s=(a<<1)&0xff,hi=a>>7;
   return bitRows([[`${hx(a)}`,a],['shift left',s],...(hi?[['⊕ 1b (top bit was 1)',0x1b]]:[]),['= 02 • '+hx(a),xt(a),'res']]);
@@ -881,6 +977,10 @@ $('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;stop();ST
   $$('#mode button').forEach(x=>x.classList.toggle('on',x===b));ST.step.x=0;show(false)};
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-goto]');if(g){setTab(g.dataset.goto,g.dataset.round);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  const fm=e.target.closest('[data-fmt]');if(fm){ST.fmt=fm.dataset.fmt;show(false);return}
+  const sm=e.target.closest('[data-srm]');if(sm){stop();ST.srInv=sm.dataset.srm==='1';ST.step.sr=0;ST.srSel=null;ST.built='';show(false);return}
+  const ss=e.target.closest('[data-srsel]');if(ss){ST.srSel=null;srLink();return}
+  const so=ST.tab==='sr'&&e.target.closest('#stage [data-o]');if(so){const v=+so.dataset.o;ST.srSel=ST.srSel===v?null:v;srLink();return}
   const tk=e.target.closest('[data-trk] .c');if(tk){const k=ST.step.x||0,side=tk.closest('[data-trk]').dataset.trk;
     ST.trk={mode:ST.mode,k0:side==='b'?k-1:k,pos:+tk.dataset.i};show(false);return}
   if(e.target.closest('[data-trkoff]')){ST.trk=null;show(false);return}
@@ -901,6 +1001,8 @@ document.addEventListener('keydown',e=>{
 });
 $('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="custom" disabled>Your own input</option>';
 $('#pre').onchange=e=>loadPreset(e.target.value);
+stage.addEventListener('mouseover',e=>{if(ST.tab!=='sr')return;const c=e.target.closest('[data-o]');const v=c?+c.dataset.o:null;if(v!==ST.srHov){ST.srHov=v;srLink()}});
+stage.addEventListener('mouseleave',()=>{if(ST.srHov!=null){ST.srHov=null;srLink()}});
 // typing in the GF(2^8) and MixColumns inputs updates only the result, so the input keeps focus
 stage.addEventListener('input',e=>{
   const t=e.target,v=t.value.trim();
