@@ -1177,7 +1177,9 @@ T.ark={n:()=>17,rounds:()=>range(0,D.K.Nr),render(k){
     ${opx('=')}
     <div id="arkO">${gbox('Output',grid(out,{cls:i=>i===cur?'cur chg':(i<k?'chg':'')}))}</div>
   </div>
-  ${cur>=0?`<div class="sec"><div class="h3">Byte ${rcN(cur)}: bit-by-bit XOR</div><div class="scroll">${bitRows([['state',o.p[cur]],['⊕ key',rk[cur]],['= output',o.s[cur],'res']])}</div></div>`:''}`;
+  ${cur>=0?`<div class="sec"><div class="h3">Byte ${rcN(cur)}: the state byte and the key byte meet here</div>
+    <div class="mcw" id="arkW"><div class="mct"><div class="mcp"><span class="mcb" style="background:var(--accent)">${hx(o.p[cur])}</span></div><small>state</small></div><span class="mcx">⊕</span><div class="mct"><div class="mcp"><span class="mcb" style="background:var(--key)">${hx(rk[cur])}</span></div><small>key</small></div><span class="mcx">=</span><div class="mct"><div class="mcp"><span class="mcr">${hx(o.s[cur])}</span></div><small>output</small></div></div>
+    <div class="scroll" id="arkB" style="margin-top:12px">${bitRows([['state',o.p[cur]],['⊕ key',rk[cur]],['= output',o.s[cur],'res']])}</div></div>`:''}`;
   $('#explain').innerHTML=cur<0?`<div class="step">AddRoundKey · round ${r}</div>
     <p>The state is XORed with the round key K${r}, byte by byte.</p>
     <p>This is the <b>only step that uses the key</b>. All other steps are fixed and public.</p>
@@ -1189,16 +1191,24 @@ T.ark={n:()=>17,rounds:()=>range(0,D.K.Nr),render(k){
     <p class="note">XOR is its own inverse: (x ⊕ k) ⊕ k = x. So decryption uses the same AddRoundKey, with the round keys in reverse order.</p>`;
 }};
 
-// the key byte drops onto the state byte, ⊕ flashes, the token becomes the result and goes to the output
+// the state byte and the key byte both go down to the line under the grids (no grid is covered),
+// meet at ⊕ there, and the result goes up into the output
 T.ark.plan=k=>{
   const r=ST.round.ark,o=findOp('ark',r),rk=D.K.rk(r),cur=k-1;
-  return{dur:2000,start(){
-    const s=$(`#arkS [data-i="${cur}"]`),kk=$(`#arkK [data-i="${cur}"]`),out=$(`#arkO [data-i="${cur}"]`),op=$('#arkX');if(!s||!kk||!out)return null;
-    const S=rectOf(s),K=rectOf(kk),O=rectOf(out),up=S.h*1.1;hide([out]);
+  return{dur:2400,start(){
+    const s=$(`#arkS [data-i="${cur}"]`),kk=$(`#arkK [data-i="${cur}"]`),out=$(`#arkO [data-i="${cur}"]`),op=$('#arkX'),w=$('#arkW');if(!s||!kk||!out||!w)return null;
+    const [ca,cb]=[...w.querySelectorAll('.mcb')],cr=w.querySelector('.mcr'),rows=[...$$('#arkB tr')];
+    const S=rectOf(s),K=rectOf(kk),O=rectOf(out),A=rectOf(ca),B=rectOf(cb),R=rectOf(cr),W=rectOf(w);
+    const gy=(Math.max(...['#arkS .g4','#arkK .g4','#arkO .g4'].map(q=>{const g=rectOf($(q));return g.y+g.h/2}))+W.y-W.h/2)/2;   // a lane between the grids and the line
+    const lane=(p,q)=>[xy(p),[p.x,gy],[q.x,gy],xy(q)];
+    hide([out,ca,cb,cr,...rows]);
+    const show=(...els)=>()=>els.forEach(e=>{if(e)e.style.opacity=1});
     return both(mover([
-      {node:fxNode(tok(hx(o.p[cur]),S.w,S.h,[AC])),legs:[[0,.44,[xy(S),xy(S)]],[.56,1,[xy(S),[S.x,S.y-up],[O.x,O.y-up],xy(O)]]],at:[[.5,retok(hx(o.s[cur]),S.w,S.h,[AC,KC])]]},
-      {node:fxNode(tok(hx(rk[cur]),K.w,K.h,[KC])),pts:[xy(K),[K.x,K.y-up],[S.x,S.y-up],[S.x,S.y-S.h*.2]],a:.04,b:.42,end:.5}]),
-      cues([[.4,()=>op&&op.classList.add('pulse')],[.62,()=>op&&op.classList.remove('pulse')]]));
+      {node:fxNode(tok(hx(o.p[cur]),S.w,S.h,[AC])),pts:lane(S,A),a:0,b:.32,end:.32,at:[[.2,retok(hx(o.p[cur]),A.w,A.h,[AC])]]},
+      {node:fxNode(tok(hx(rk[cur]),K.w,K.h,[KC])),pts:lane(K,B),a:.12,b:.44,end:.44,at:[[.32,retok(hx(rk[cur]),B.w,B.h,[KC])]]},
+      {node:fxNode(tok(hx(o.s[cur]),R.w,R.h,[AC,KC])),pts:lane(R,O),a:.62,b:1,fadeIn:true,at:[[.75,retok(hx(o.s[cur]),O.w,O.h,[AC,KC])]]}]),
+      cues([[.32,show(ca,rows[0])],[.44,show(cb,rows[1])],[.48,()=>op&&op.classList.add('pulse')],
+        [.54,()=>{show(cr,rows[2])();cr.parentNode.classList.add('flash')}],[.66,()=>op&&op.classList.remove('pulse')]]));
   }};
 };
 
