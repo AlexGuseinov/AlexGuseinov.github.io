@@ -1,0 +1,1205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRESENT, step by step (v2)</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;
+  --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;
+  --g0:#3f72c9;--g1:#c97a2e;--g2:#2f8c60;--g3:#bd4a4a;
+  --rowc:#8ab8ee;--rowBg:#1f3048;--colc:#f0a35e;--colBg:#3a2716;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:36px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.seg.sm button{padding:2px 9px;font-size:12.5px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{font-family:var(--mono);width:100%}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.mono{font-family:var(--mono)}
+.k{color:var(--key);font-weight:600}
+.x{color:var(--xor);font-weight:600}
+button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+
+/* input bar */
+.inbar{display:grid;grid-template-columns:minmax(200px,auto) minmax(0,1fr) minmax(0,1fr) auto;gap:10px 14px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.meta{font-size:13px;color:var(--muted);white-space:nowrap;padding-bottom:8px}
+.meta b{color:var(--ink)}
+.err{grid-column:1/-1;color:var(--xor);font-size:13px;margin-top:-4px}
+.err:empty{display:none}
+@media (max-width:900px){.inbar{grid-template-columns:1fr}.meta{padding:0}}
+
+/* state grids */
+.g4{display:grid;grid-template-columns:repeat(4,var(--cs));gap:4px}
+.g4.sm{--cs:26px;gap:2px}
+.c{height:var(--cs);display:flex;align-items:center;justify-content:center;font:600 15px var(--mono);border-radius:6px;background:var(--panel);border:1px solid var(--line2);transition:background .25s,border-color .25s}
+.g4.sm .c{font-size:10px;border-radius:3px;font-weight:500}
+.c.emp{color:var(--faint);border-style:dashed;background:transparent;font-weight:400}
+.c.done{color:var(--faint)}
+.c.chg{background:var(--accentBg);border-color:var(--accent)}
+.c.key{background:var(--keyBg);border-color:var(--key)}
+.c.cur{outline:3px solid var(--ink);outline-offset:1px}
+.c.src{outline:3px solid var(--accent);outline-offset:1px}
+.c.src2{outline:3px solid var(--key);outline-offset:1px}
+.c.colr{color:#fff;border-color:rgba(0,0,0,.15)}
+.c small{font:400 9px var(--sans);opacity:.75;margin-left:2px;align-self:flex-end;margin-bottom:4px}
+.gw{display:flex;flex-direction:column;align-items:center;gap:6px}
+.gcap{font-size:13px;color:var(--muted);text-align:center}
+.gcap b{color:var(--ink)}
+.flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 16px}
+.op{font-size:15px;color:var(--muted);text-align:center;font-weight:600}
+.op big{display:block;font-size:24px;line-height:1;color:var(--ink)}
+.sec{margin-top:22px}
+.sec>.h3{text-align:left}
+.scroll{overflow-x:auto;max-width:100%}
+
+/* S-box table */
+.sbt{border-collapse:collapse;font:12px var(--mono);margin:0 auto}
+.sbt th{font-weight:700;color:var(--muted);padding:2px 4px;font-size:11.5px}
+.sbt td{padding:2px 3px;text-align:center;border:1px solid var(--line);cursor:pointer;min-width:22px}
+.sbt td:hover{border-color:var(--accent)}
+.sbt td.ax{background:var(--accentBg)}
+.sbt td.hit{background:var(--ink);color:var(--bg);font-weight:700}
+.sbt td.pick{outline:2px solid var(--key);outline-offset:-2px}
+.sbt th.hit{color:var(--accent)}
+
+/* bit tables */
+.bt{border-collapse:collapse;font:13px var(--mono)}
+.bt th{font:600 12px var(--sans);color:var(--muted);text-align:left;padding:2px 8px 2px 0;white-space:nowrap}
+.bt td{width:20px;text-align:center;padding:2px 0}
+.bt tr.res td,.bt tr.res th{border-top:2px solid var(--ink);font-weight:700;color:var(--ink)}
+.bt td.hx{width:auto;padding-left:10px;color:var(--muted)}
+.bt tr.res td.hx{color:var(--ink)}
+
+/* shift rows animation */
+.anim{position:relative}
+.anim .c{position:absolute;left:0;top:0;width:var(--cs);transition:transform .5s ease,opacity .25s}
+
+/* mixcolumns matrix */
+.mx{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font:14px var(--mono)}
+.mt{border-collapse:separate;border-spacing:2px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);border-radius:4px;padding:0 3px}
+.mt td{padding:3px 6px;text-align:center;border-radius:4px}
+.mt tr.on td{background:var(--accentBg);font-weight:700}
+.mt td.on{background:var(--accent);color:var(--onAccent);font-weight:700}
+.terms{font:14px var(--mono);line-height:1.9;margin-top:12px}
+.terms .t{display:block}
+.terms .why{color:var(--muted);font-family:var(--sans);font-size:13px}
+
+/* key expansion */
+.kdet{font:14px var(--mono);line-height:1.8;padding:10px 12px;border-radius:8px;background:var(--accentBg);margin-bottom:16px}
+.kdet .why{font:13px var(--sans);color:var(--muted)}
+.kgrid{display:flex;flex-wrap:wrap;gap:16px 18px;justify-content:center}
+.rc{display:flex;flex-wrap:wrap;gap:4px}
+.rc span{font:12px var(--mono);padding:2px 6px;border:1px solid var(--line);border-radius:4px}
+.rc span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+
+/* round chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.rg{display:flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:2px 4px}
+.rg b{font-size:11px;color:var(--muted);margin-right:3px;font-weight:600}
+.chip{font:12px var(--mono);padding:2px 5px;border-radius:4px;border:0;background:transparent;color:var(--faint)}
+.chip.done{color:var(--ink)}
+.chip.on{background:var(--accent);color:var(--onAccent)}
+.result{margin-top:18px;padding:10px 12px;border-radius:8px;background:var(--okBg);font-size:15px}
+.result .mono{word-break:break-all}
+.rt{border-collapse:collapse;font-size:12.5px;width:100%}
+.rt td,.rt th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:left}
+.rt th{color:var(--muted);font-weight:600}
+.rt td.mono{font-size:11.5px;word-break:break-all}
+.rt tr.on td{background:var(--accentBg)}
+
+/* overview */
+.ov{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:760px){.ov{grid-template-columns:1fr}}
+.fl{display:flex;flex-direction:column;align-items:center;gap:0}
+.fb{min-width:210px;text-align:center;padding:8px 12px;border:1.5px solid var(--line2);border-radius:8px;background:var(--panel);font-weight:600;font-size:15px}
+.fb[data-goto]{cursor:pointer}
+.fb[data-goto]:hover{border-color:var(--accent);color:var(--accent)}
+.fb.io{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.fb.kb{border-color:var(--key);color:var(--key)}
+.fb .kk{font:600 13px var(--mono);color:var(--key);margin-left:6px}
+.fa{color:var(--muted);font-size:18px;line-height:1.3}
+.fgrp{border:1.5px dashed var(--line2);border-radius:12px;padding:8px 14px 12px;display:flex;flex-direction:column;align-items:center}
+.fgl{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.vt{border-collapse:collapse;font-size:14px;width:100%;margin-top:6px}
+.vt td,.vt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+.vt th{color:var(--muted);font-weight:600;font-size:13px}
+.inrow{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-bottom:10px}
+.inrow .c{width:32px;height:38px;flex-direction:column;font-size:13px;line-height:1.1}
+.inrow .c small,.g4 .c small{margin:0}
+.lay .c{flex-direction:column;line-height:1.05}
+
+/* diffusion */
+.bits{display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center}
+.by8{display:flex;flex-direction:column;align-items:center;gap:2px}
+.by8 span{font:11px var(--mono);color:var(--muted)}
+.by8 div{display:flex;gap:1px}
+.by8 i{width:11px;height:16px;border-radius:2px;background:var(--line);cursor:pointer;display:block}
+.by8 i.one{background:var(--line2)}
+.by8 i.flip{background:var(--xor)}
+.by8 i:hover{outline:2px solid var(--accent)}
+.dgr{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.dgr .c{transition:none}
+.bars{display:flex;align-items:flex-end;gap:6px;height:130px;position:relative;margin:10px auto 0;max-width:560px;border-bottom:1px solid var(--line2);padding:0 4px}
+.bars .bar{flex:1;background:var(--accent);border-radius:3px 3px 0 0;position:relative;min-height:1px}
+.bars .bar span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font:11px var(--mono);color:var(--muted)}
+.bars .ref{position:absolute;left:0;right:0;border-top:1.5px dashed var(--xor)}
+.bars .ref span{position:absolute;right:0;top:-17px;font-size:11px;color:var(--xor)}
+.blbl{display:flex;gap:6px;max-width:560px;margin:4px auto 0;padding:0 4px}
+.blbl span{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+
+/* One round picture */
+.rdw svg{width:100%;height:auto;display:block}
+.rdw .rl{stroke:var(--line2);stroke-width:1.4;fill:none}
+.rdw .rl.hl{stroke:var(--xor);stroke-width:2.6}
+.rdw .rl.dash{stroke-dasharray:4 3}
+.rdw .rmn{fill:var(--line2)}.rdw .rmh{fill:var(--xor)}
+.rdw .rb{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+.rdw .rb.hl{stroke:var(--xor);stroke-width:2.4;fill:var(--xorBg)}
+.rdw .rbt{font:700 11px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .go{cursor:pointer}
+.rdw .rbox:hover .rb,.rdw .rbox:hover .rx{stroke:var(--accent);stroke-width:2.4}
+.rdw .srbx{fill:none;stroke:var(--ink);stroke-width:2}
+.rdw .srband{fill:transparent}.rdw .srband.a{fill:color-mix(in srgb,var(--ink) 6%,transparent)}
+.rdw .rrow{font:10.5px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab{font:600 12px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab.go{fill:var(--ink);text-decoration:underline}
+.rdw .rlab.on{fill:var(--accent);font-weight:700}
+.rdw .rgl{font:11px var(--sans);fill:var(--faint);text-anchor:middle}
+.rdw .rdot{fill:var(--line2)}.rdw .rdot.hl{fill:var(--xor)}
+.rdw .rx{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}.rdw .rx.hl{stroke:var(--xor);fill:var(--xorBg);stroke-width:2.2}
+.rdw .rxp{stroke:var(--ink);stroke-width:1.3;pointer-events:none}
+.rdw .rkt{fill:var(--keyBg);stroke:var(--key);stroke-width:.8}
+.rdw .rkv{font:8.5px var(--mono);fill:var(--key);text-anchor:middle;dominant-baseline:central}
+.rdw .rka{stroke:var(--key);stroke-width:1}
+.rdw .rq{stroke:var(--line2);stroke-width:1}
+.rdw .rq.hl{fill:var(--xor);stroke:var(--xor)}
+.rdw .rq.new{stroke:var(--accent);stroke-width:2.2}
+.rdw .rct{font:600 12.5px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .rct.hl{fill:#fff}.rdw .rct.emp{fill:var(--faint);font-weight:400}
+.rdw .rcell{cursor:pointer}
+.rdw .rcell:hover .rq{stroke:var(--ink);stroke-width:2}
+.rdw .rnote{font:12px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+
+/* Key expansion picture */
+.ked svg{width:100%;height:auto;display:block}
+.ked .kl{stroke:var(--line2);stroke-width:1.6;fill:none}
+.ked .kl.a{stroke:var(--accent);stroke-width:2.8}
+.ked .kl.k{stroke:var(--key);stroke-width:2.8}
+.ked .kmn{fill:var(--line2)}.ked .kma{fill:var(--accent)}.ked .kmk{fill:var(--key)}
+.ked .kdot{fill:var(--line2)}.ked .kdot.a{fill:var(--accent)}
+.ked .wb{fill:var(--panel);stroke:var(--line2);stroke-width:1.3}
+.ked .wb.key{fill:var(--keyBg);stroke:var(--key)}
+.ked .wb.emp{fill:none;stroke-dasharray:4 3}
+.ked .wb.cur{stroke:var(--ink);stroke-width:2.6}
+.ked .wb.src{stroke:var(--accent);stroke-width:2.6}
+.ked .wb.src2{stroke:var(--key);stroke-width:2.6}
+.ked .wt{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .wt.emp{fill:var(--faint);font-weight:400}
+.ked .kcap{font:11px var(--sans);fill:var(--muted);text-anchor:middle}
+.ked .kcap .kr{fill:var(--key);font-weight:600}
+.ked .gb{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}
+.ked .gb.on{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.5}
+.ked .gt{font:italic 700 16px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .gt.sm{font:600 10px var(--sans)}
+.ked .xo{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}.ked .xo.on{stroke:var(--accent);stroke-width:2.5}
+.ked .xp{stroke:var(--line2);stroke-width:1.5}.ked .xp.on{stroke:var(--accent)}
+.g4.kcol{grid-template-columns:var(--cs)}
+.gpf{gap:10px 12px}
+.gp{padding:4px;border-radius:8px;border:2px solid transparent}.gp.on{border-color:var(--accent);background:var(--accentBg)}
+.c.mvb{background:var(--xor);border-color:var(--xor);color:#fff}
+.kr{cursor:pointer;border-radius:8px;padding:2px}.kr:hover{background:var(--accentBg)}
+
+/* SubBytes lookup */
+.hn{color:var(--rowc);font-weight:700}
+.ln{color:var(--colc);font-weight:700}
+.c .q{color:inherit;font-weight:600}
+.g4.bin .c{flex-direction:column;font-size:12px;line-height:1.15;gap:1px}
+.g4.bin .c .q+.q{opacity:.75}
+.sbwrap{position:relative;display:flex;flex-wrap:wrap;gap:22px 24px;justify-content:center;align-items:center;padding-top:30px}
+#sbIn .gw,#sbOut .gw{flex-direction:column-reverse}
+.sbarr{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.sbarr path{fill:none;stroke-width:2.2}
+.sbarr .pr{stroke:var(--rowc)}.sbarr .pc{stroke:var(--colc)}.sbarr .po{stroke:var(--ink);stroke-dasharray:6 4}
+.sbarr .arr{fill:var(--rowc)}.sbarr .arc{fill:var(--colc)}.sbarr .aro{fill:var(--ink)}
+.sbarr text{font:700 14px var(--sans)}.sbarr .tr{fill:var(--rowc)}.sbarr .tc{fill:var(--colc)}
+.sbt th.corner{font-size:10px;color:var(--faint)}
+.sbt th small{display:block;font-size:8.5px;font-weight:400;color:var(--faint)}
+.sbt.bin th{padding:2px 1px}.sbt.bin th small{font-size:8px;letter-spacing:-.2px}.sbt.bin td{padding:2px 1px}
+.sbt th.hitr{background:var(--rowc);color:#fff}.sbt th.hitc{background:var(--colc);color:#fff}
+.sbt th.hitr small,.sbt th.hitc small{color:#fff}
+.sbt td.axr{background:var(--rowBg)}.sbt td.axc{background:var(--colBg)}
+.lkup{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:8px;margin-top:22px}
+.lks{border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:130px}
+.lkh{font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+.lkbig{font-size:22px;font-weight:600}
+.lkmid{font-size:13px;line-height:1.7}
+.lksub{font-size:12px;color:var(--muted)}
+.lkarr{align-self:center;color:var(--muted);font-size:18px}
+@media (max-width:700px){.lkarr{display:none}.lks{min-width:0;flex:1 1 40%}}
+
+/* ShiftRows rails */
+.srbox{display:flex;flex-direction:column;gap:4px}
+.srline{display:flex;align-items:center;gap:8px}
+.srlab{font-size:12px;color:var(--muted);width:38px;text-align:right}
+.srtrack{width:calc(4 * var(--cs) + 12px);overflow:hidden;border-radius:7px;outline:2px solid transparent;outline-offset:2px;transition:outline-color .3s}
+.srtrack.mv{outline-color:var(--ink)}
+.srrail{display:flex;gap:4px;width:max-content;transition:transform .65s cubic-bezier(.45,.05,.3,1)}
+.srrail .c{width:var(--cs);flex:none}
+.srdots{display:flex;gap:3px;width:44px;font-size:11px;color:var(--faint)}
+.srdots i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line2);display:block}
+.srdots i.on{background:var(--ink);border-color:var(--ink)}
+#stage [data-o]{cursor:pointer}
+.c.lk{outline:3px solid var(--ink);outline-offset:1px}
+.c.pin{outline:3px solid var(--ink);outline-offset:1px;box-shadow:0 0 0 6px color-mix(in srgb,var(--ink) 18%,transparent)}
+
+/* GF(2^8) tab */
+.gfin{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-top:10px}
+.gfin .fld{font-size:13px;color:var(--muted);width:90px}
+.gfin .row button{padding:4px 9px;font-size:13px}
+.gft td,.gft th{text-align:center}
+.gft tr.on td{background:var(--accentBg)}
+.gfr th{font-weight:600;color:var(--muted);text-align:right;padding-right:10px;white-space:nowrap}
+.gfr td{font-size:13px;letter-spacing:1px;white-space:pre}
+.gfr tr.sub td{color:var(--xor)}
+.gfr tr.res td{font-weight:700}
+
+/* MixColumns playground, tracking, round strip */
+.play{padding-top:14px;border-top:1px solid var(--line)}
+.play .row{gap:6px}
+.mcin{width:52px!important;text-align:center;font-size:15px}
+.play button{padding:5px 10px;font-size:13px}
+.c.hi{background:var(--xorBg);border-color:var(--xor)}
+.c.trk{background:var(--xor);border-color:var(--xor);color:#fff}
+[data-trk] .c{cursor:pointer}
+.strip{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+.stp{cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent}
+.stp:hover{border-color:var(--line2)}
+.stp.on{border-color:var(--accent)}
+
+
+/* v2: animation layer (tokens fly over the stage, like the DES demo) */
+.stage{position:relative}
+#fx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5}
+.tok text{font-family:var(--mono);font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:3px;stroke-linejoin:round}
+.tok .edge{fill:none;stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.mini .bg{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.flash{animation:flash .7s ease-out}
+@keyframes flash{from{background:var(--xor);color:#fff;border-color:var(--xor)}}
+.op.pulse big{color:var(--accent);animation:pz .4s ease-in-out infinite alternate}
+@keyframes pz{to{transform:scale(1.35)}}
+.mt td.hot{background:var(--xor);color:#fff}
+.rg.band{background:var(--accentBg);border-color:var(--accent)}
+.c.ghost{opacity:0}
+/* overview chart */
+.ov2{display:grid;grid-template-columns:minmax(0,600px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.ov2{grid-template-columns:minmax(0,1fr)}}
+.ovw{width:100%;max-width:600px;height:auto;display:block}
+.ovw .ob{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
+.ovw .ob.io{fill:var(--ink);stroke:var(--ink)}
+.ovw .ob.kb{stroke:var(--key)}
+.ovw .ob.on{stroke:var(--accent);stroke-width:2.6;fill:var(--accentBg)}
+.ovw .ob.pulse{animation:opulse .4s ease-in-out infinite alternate}
+.ovw .ob.io.on,.ovw .ob.io.pulse{fill:var(--ink);stroke:var(--accent);stroke-width:3;animation:none}
+@keyframes opulse{from{fill:var(--accentBg)}to{fill:var(--panel)}}
+.ovw .ot{font:600 15px var(--sans);fill:var(--ink);dominant-baseline:central}
+.ovw .ot.io{fill:var(--bg)}
+.ovw .okk{font:600 12.5px var(--mono);fill:var(--key);dominant-baseline:central;text-anchor:end}
+.ovw .ow{stroke:var(--line2);stroke-width:2;fill:none}
+.ovw .ow.k{stroke:var(--key);stroke-dasharray:4 3}
+.ovw .ow.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 5;animation:flow .55s linear infinite}
+.ovw .ow.k.on{stroke:var(--key)}
+@keyframes flow{to{stroke-dashoffset:-13}}
+.ovw .om{fill:var(--line2)}.ovw .omk{fill:var(--key)}
+.ovw .og{fill:none;stroke:var(--line2);stroke-width:1.5;stroke-dasharray:6 4}
+.ovw .ogl{font:600 12.5px var(--sans);fill:var(--muted)}
+.ovw .lane{stroke:var(--line);stroke-width:2;stroke-dasharray:2 4}
+.ovw [data-goto]{cursor:pointer}
+.ovw [data-goto]:hover .ob{stroke:var(--accent)}
+.c.colv{color:#fff;border-color:transparent;text-shadow:0 0 3px rgba(0,0,0,.6)}
+/* GF(2^8) close-up of one step */
+.bl{border-collapse:separate;border-spacing:3px}
+.bl tr{transition:opacity .2s}
+.bl td.bc{width:24px;height:26px;border:1px solid var(--line2);border-radius:4px;background:var(--panel)}
+.bl td.out{width:24px;color:var(--xor);text-decoration:line-through}
+.bl tr.sub td.bc{border-color:var(--xor);color:var(--xor)}
+.bl tr.res td.bc{border:1.5px solid var(--ink)}
+.bl tr.res td,.bl tr.res th{border-top:0}
+/* ShiftRows rows */
+.srcells{display:flex;gap:4px;border-radius:7px;outline:2px solid transparent;outline-offset:3px}
+.srcells .c{width:var(--cs);flex:none}
+.srline.mv .srcells{outline-color:var(--ink)}
+.srdots{width:auto;min-width:44px;align-items:center}
+.srsh{font-size:12px;color:var(--muted);white-space:nowrap;margin-right:3px}
+/* One round: wires and boxes of the active stage */
+.rdw .rl.on{stroke:var(--accent);stroke-width:2.2}
+.rdw .rb.on,.rdw .rx.on{stroke:var(--accent);stroke-width:2.4;fill:var(--accentBg)}
+/* Diffusion */
+.dg .c{transition:none}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* MixColumns: where the matrix row meets the column */
+.mcw{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:8px 6px;margin-top:16px;font:14px var(--mono)}
+.mcl,.mcx{margin-top:12px;font-weight:700;color:var(--muted)}
+.mcl{color:var(--ink)}
+.mct{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mct small{font-size:12px;color:var(--ink)}
+.mcp{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--line2);border-radius:8px}
+.mcc,.mcb,.mcr{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-weight:700}
+.mcc{background:var(--accentBg);color:var(--accent);border:1px solid var(--accent)}
+.mcb{color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55)}
+.mcr{width:36px;background:var(--accent);color:var(--onAccent)}
+.mcd{color:var(--muted)}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* ---------- PRESENT ---------- */
+:root{--ns:32px}
+@media (max-width:560px){:root{--ns:18px}}
+.nr{display:flex;gap:3px;justify-content:center}
+.nr .c{width:var(--ns);height:42px;flex-direction:column;font-size:16px;line-height:1.05;flex:none}
+.nr .c small{font:400 8.5px var(--sans);opacity:.7;margin:2px 0 0}
+@media (max-width:560px){.nr{gap:2px}.nr .c{height:34px;font-size:13px;border-radius:4px}.nr .c small{display:none}}
+.nr .c.colv{color:#fff;border-color:transparent;text-shadow:0 0 3px rgba(0,0,0,.6)}
+.stack{display:flex;flex-direction:column;align-items:center;gap:10px}
+.st{border-collapse:separate;border-spacing:3px;font:14px var(--mono);margin:0 auto}
+.st th{font:600 12px var(--sans);color:var(--muted);text-align:right;padding-right:6px}
+.st td{width:30px;height:30px;text-align:center;border:1px solid var(--line2);border-radius:5px;background:var(--panel)}
+.st tr.y td{font-weight:700}
+.st td.on{background:var(--accentBg);border-color:var(--accent)}
+.st td.hit{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ddt{border-collapse:collapse;font:11px var(--mono);margin:0 auto}
+.ddt th,.ddt td{width:22px;height:20px;text-align:center;border:1px solid var(--line)}
+.ddt th{color:var(--muted);font-weight:600}
+/* the round figure and the bit permutation */
+.prw svg{width:100%;height:auto;display:block}
+.prw .nc{stroke:var(--line2);stroke-width:1}
+.prw .nt{font:700 15px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.prw .nt.emp{fill:var(--faint);font-weight:400}
+.prw .ni{font:9px var(--sans);fill:var(--faint);text-anchor:middle}
+.prw .lab{font:600 13px var(--sans);fill:var(--muted)}
+.prw .w{stroke:var(--line2);stroke-width:1.4;fill:none}
+.prw .w.on{stroke-width:2.6}
+.prw .w.dim{opacity:.18}
+.prw .sb{fill:var(--panel);stroke:var(--ink);stroke-width:1.4}
+.prw .sb.on{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.4}
+.prw .sb.pick{fill:var(--xorBg);stroke:var(--xor);stroke-width:2.4}
+.prw .sbt{font:700 13px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.prw [data-sj]{cursor:pointer}
+.prw .xo{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}.prw .xo.on{stroke:var(--accent);stroke-width:2.4;fill:var(--accentBg)}
+.prw .xp{stroke:var(--ink);stroke-width:1.3}
+.prw .kt{fill:var(--keyBg);stroke:var(--key);stroke-width:.9}
+.prw .kv{font:700 11px var(--mono);fill:var(--key);text-anchor:middle;dominant-baseline:central}
+.prw .bb{stroke:var(--line2);stroke-width:1}
+.prw .bv{font:700 9.5px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.prw .mk{fill:var(--line2)}
+/* key register */
+.kreg{display:flex;gap:1px;flex-wrap:nowrap}
+.kreg i{display:flex;align-items:center;justify-content:center;flex:none;width:12px;height:22px;font:700 10px var(--mono);font-style:normal;border-radius:2px;background:var(--line);color:var(--muted)}
+.kreg i.one{background:var(--ink);color:var(--bg)}
+.kreg i.kk{box-shadow:inset 0 -3px 0 var(--key)}
+.kreg i.sb{outline:2px solid var(--accent);outline-offset:-1px}
+.kreg i.ct{outline:2px solid var(--xor);outline-offset:-1px}
+.kreg i.g4{margin-left:4px}
+.klab{font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+.klab b{color:var(--ink)}
+.rkl{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:3px 12px;font:12.5px var(--mono)}
+.rkl div{padding:2px 6px;border-radius:5px;cursor:pointer}
+.rkl div:hover{background:var(--accentBg)}
+.rkl div.on{background:var(--accent);color:var(--onAccent)}
+.rkl span{color:var(--muted);font-family:var(--sans);margin-right:6px}
+/* diffusion */
+.dg16{display:grid;grid-template-columns:repeat(4,10px);gap:1px}
+.dg16 i{width:10px;height:10px;border-radius:2px;background:var(--line);display:block}
+.dgw{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--muted)}
+.dgw b{color:var(--ink)}
+.dgr{display:flex;flex-wrap:wrap;gap:10px 12px;justify-content:center}
+.bitpick{display:flex;flex-wrap:wrap;gap:4px 8px;justify-content:center}
+.n4{display:flex;flex-direction:column;align-items:center;gap:2px}
+.n4 span{font:11px var(--mono);color:var(--muted)}
+.n4 div{display:flex;gap:1px}
+.n4 i{width:11px;height:16px;border-radius:2px;background:var(--line);cursor:pointer;display:block}
+.n4 i.one{background:var(--line2)}
+.n4 i.flip{background:var(--xor)}
+.chips .rg{flex-wrap:wrap}
+/* key register ring */
+.kringw{max-width:440px;margin:0 auto}
+.kringw svg{width:100%;height:auto;display:block}
+.kring{fill:none;stroke:var(--line);stroke-width:1}
+.kbit{fill:var(--line2);stroke:none}
+.kbit.one{fill:var(--ink)}
+.kbit.sbm{stroke:var(--accent);stroke-width:2.4}
+.kbit.ctm{stroke:var(--xor);stroke-width:2.4}
+.karc{fill:none;stroke:var(--key);stroke-width:5;stroke-linecap:round;opacity:.85}
+.kal{font:700 15px var(--sans);fill:var(--key);text-anchor:middle;dominant-baseline:central}
+.kix{font:10px var(--sans);fill:var(--faint);text-anchor:middle;dominant-baseline:central}
+.kc1{font:600 15px var(--sans);fill:var(--ink);text-anchor:middle}
+.kc2{font:13px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+.ksb{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}.ksb.on{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.5}
+.nr .c.hi{background:var(--xorBg);border-color:var(--xor)}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>PRESENT, step by step (v2)</h1>
+  <p class="sub">How the lightweight block cipher PRESENT works: one 4-bit S-box, one bit permutation and a simple key schedule, 31 rounds</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="ov" class="on">1 · Overview</button>
+    <button data-tab="rd">2 · One round</button>
+    <button data-tab="sl">3 · sBoxLayer</button>
+    <button data-tab="pl">4 · pLayer</button>
+    <button data-tab="ark">5 · addRoundKey</button>
+    <button data-tab="ks">6 · Key schedule</button>
+    <button data-tab="x">7 · Encrypt / Decrypt</button>
+    <button data-tab="df">8 · Diffusion</button>
+  </nav>
+</header>
+
+<section class="wrap">
+  <div class="card inbar">
+    <label class="fld"><span class="flh"><b>Example</b></span><select id="pre"></select></label>
+    <div class="fld"><div class="flh"><b>Plaintext</b> <span>64 bits = 16 hex digits</span></div><input type="text" id="ptI" spellcheck="false" autocomplete="off"></div>
+    <div class="fld"><div class="flh"><b>Key</b> <span>80 or 128 bits = 20 or 32 hex digits</span></div><input type="text" id="kI" spellcheck="false" autocomplete="off"></div>
+    <div class="meta" id="meta"></div>
+    <div class="err" id="err"></div>
+  </div>
+</section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stageCard"><div id="stage"></div><svg id="fx" aria-hidden="true"></svg></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row" id="ctrlTop">
+        <div class="seg" id="mode"><button data-m="enc" class="on">Encrypt</button><button data-m="dec">Decrypt</button></div>
+        <label class="inl" id="rWrap">Round <select id="rSel"></select></label>
+      </div>
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label>
+        <label class="inl" id="fWrap" title="Scroll so the moving part stays in view"><input type="checkbox" id="follow" checked> follow</label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline. Test vectors from Bogdanov et al., CHES 2007.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const h1=v=>v.toString(16);
+const hex=(v,n=16)=>v.toString(16).padStart(n,'0');
+const B=BigInt;
+const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹',sup=n=>String(n).split('').map(d=>SUP[+d]).join('');
+
+/* ---------- PRESENT (Bogdanov et al., CHES 2007) ---------- */
+const S=[0xC,5,6,0xB,9,0,0xA,0xD,3,0xE,0xF,8,4,7,1,2];
+const SI=[];S.forEach((y,x)=>SI[y]=x);
+const P=i=>i===63?63:(16*i)%63;                      // pLayer: bit i goes to position P(i)
+const PI=[];for(let i=0;i<64;i++)PI[P(i)]=i;
+const nib=(s,n)=>Number((s>>B(4*n))&15n);
+const bit=(s,i)=>Number((s>>B(i))&1n);
+function sLayer(s,box=S){let o=0n;for(let n=0;n<16;n++)o|=B(box[nib(s,n)])<<B(4*n);return o}
+function pLayer(s,inv){let o=0n;for(let i=0;i<64;i++)if((s>>B(i))&1n)o|=1n<<B(inv?PI[i]:P(i));return o}
+function schedule(key,kb){
+  const M=(1n<<B(kb))-1n;let k=key;const K=[],st=[];
+  for(let r=1;r<=32;r++){
+    K.push(k>>B(kb-64));if(r===32)break;
+    const rot=((k<<61n)|(k>>B(kb-61)))&M;let sb;
+    if(kb===80)sb=(B(S[Number(rot>>76n)])<<76n)|(rot&((1n<<76n)-1n));
+    else sb=(B(S[Number(rot>>124n)])<<124n)|(B(S[Number((rot>>120n)&15n)])<<120n)|(rot&((1n<<120n)-1n));
+    const nx=sb^(B(r)<<(kb===80?15n:62n));
+    st.push({r,reg:k,rot,sb,nx});k=nx;
+  }
+  return {K,st,kb};
+}
+function encTrace(pt,KS){
+  let s=pt;const ops=[{r:0,op:'in',s}];
+  const add=(r,op,f,ki)=>{const p=s;s=f(s);ops.push({r,op,p,s,ki})};
+  for(let r=1;r<=31;r++){add(r,'ark',x=>x^KS.K[r-1],r);add(r,'sl',x=>sLayer(x));add(r,'pl',x=>pLayer(x))}
+  add(32,'ark',x=>x^KS.K[31],32);
+  return ops;
+}
+function decTrace(ct,KS){
+  let s=ct;const ops=[{r:0,op:'in',s}];
+  const add=(r,op,f,ki)=>{const p=s;s=f(s);ops.push({r,op,p,s,ki})};
+  add(0,'ark',x=>x^KS.K[31],32);
+  for(let r=1;r<=31;r++){add(r,'ipl',x=>pLayer(x,true));add(r,'isl',x=>sLayer(x,SI));add(r,'ark',x=>x^KS.K[31-r],32-r)}
+  return ops;
+}
+// S-box properties, computed here
+const DDT=[...Array(16)].map(()=>Array(16).fill(0));
+for(let x=0;x<16;x++)for(let a=0;a<16;a++)DDT[a][S[x]^S[x^a]]++;
+const DU=Math.max(...DDT.slice(1).flat());
+const par=v=>{let p=0;while(v){p^=v&1;v>>=1}return p};
+let LIN=0;for(let a=1;a<16;a++)for(let b=1;b<16;b++){let w=0;for(let x=0;x<16;x++)w+=par((a&x)^(b&S[x]))?-1:1;LIN=Math.max(LIN,Math.abs(w))}
+
+/* ---------- data and inputs ---------- */
+const F16='ffffffffffffffff';
+const PRE=[
+  {id:'a',name:'Paper vector 1 · PRESENT-80',pt:'0000000000000000',key:'00000000000000000000',ct:'5579c1387b228445'},
+  {id:'b',name:'Paper vector 2 · PRESENT-80',pt:'0000000000000000',key:'ffffffffffffffffffff',ct:'e72c46c0f5945049'},
+  {id:'c',name:'Paper vector 3 · PRESENT-80',pt:F16,key:'00000000000000000000',ct:'a112ffc72f68417b'},
+  {id:'d',name:'Paper vector 4 · PRESENT-80',pt:F16,key:'ffffffffffffffffffff',ct:'3333dcd3213210d2'},
+  {id:'e',name:'Zero vector · PRESENT-128',pt:'0000000000000000',key:'0'.repeat(32),ct:'96db702a2e6900af'},
+  {id:'f',name:'Mixed example · PRESENT-80',pt:'0123456789abcdef',key:'00112233445566778899'},
+];
+const D={pt:0n,key:0n,kb:80,KS:null,enc:[],dec:[],ct:0n,expect:null};
+function recompute(){D.KS=schedule(D.key,D.kb);D.enc=encTrace(D.pt,D.KS);D.ct=D.enc.at(-1).s;D.dec=decTrace(D.ct,D.KS)}
+function loadPreset(id){const p=PRE.find(x=>x.id===id);$('#ptI').value=p.pt;$('#kI').value=p.key;$('#pre').value=id;onInput()}
+function onInput(){
+  const a=$('#ptI').value.replace(/\s+/g,''),b=$('#kI').value.replace(/\s+/g,'');const e=[];
+  if(!/^[0-9a-fA-F]{16}$/.test(a))e.push(`Plaintext: needs 16 hex digits (now ${a.length}).`);
+  if(!/^[0-9a-fA-F]*$/.test(b)||![20,32].includes(b.length))e.push(`Key: needs 20 or 32 hex digits (now ${b.length}).`);
+  $('#err').textContent=e.join(' ');if(e.length)return;
+  D.pt=B('0x'+a);D.key=B('0x'+b);D.kb=b.length*4;
+  const p=PRE.find(p=>p.pt===a.toLowerCase()&&p.key===b.toLowerCase());
+  $('#pre').value=p?p.id:'custom';D.expect=p?p.ct||null:null;
+  recompute();
+  $('#meta').innerHTML=`<b>PRESENT-${D.kb}</b> · 31 rounds · 32 round keys`;
+  ST.built='';fillRounds();show();
+}
+
+/* ---------- small renderers ---------- */
+const ncol=v=>`hsl(${Math.round(v*360/16)},58%,44%)`;      // one colour for every nibble value
+const bcol=j=>`var(--g${j})`;                               // bit j of a nibble (0 … 3): the colour of its pLayer block
+// a 64-bit state as 16 nibbles, nibble 15 on the left; o.cls(n), o.style(n), o.id
+function nibs(get,o={}){
+  const N=o.n||16;let h=`<div class="nr"${o.id?` id="${o.id}"`:''}>`;
+  for(let n=N-1;n>=0;n--){const v=get(n);h+=`<div class="c${v==null?' emp':''}${o.cls?' '+(o.cls(n)||''):''}" data-n="${n}"${o.style&&v!=null?` style="${o.style(n)}"`:''}>${v==null?'·':h1(v)}<small>${n}</small></div>`}
+  return h+'</div>';
+}
+const nv=s=>n=>nib(s,n);
+const gbox=(cap,g)=>`<div class="gw"><div class="gcap">${cap}</div>${g}</div>`;
+const opx=(sym,name)=>`<div class="op"><big>${sym}</big>${name||''}</div>`;
+const b4=v=>v.toString(2).padStart(4,'0');
+function bitRows(rows,w=4){let h='<table class="bt">';for(const [l,v,c] of rows)h+=`<tr class="${c||''}"><th>${l}</th>${[...v.toString(2).padStart(w,'0')].map(x=>`<td>${x}</td>`).join('')}<td class="hx">${h1(v)}</td></tr>`;return h+'</table>'}
+function findOp(op,r){return D.enc.find(o=>o.op===op&&o.r===r)}
+const NAME={in:'Input',ark:'addRoundKey',sl:'sBoxLayer',pl:'pLayer',isl:'inverse sBoxLayer',ipl:'inverse pLayer'};
+const SHORT={in:'IN',ark:'K',sl:'S',pl:'P',isl:'S⁻¹',ipl:'P⁻¹'};
+
+/* ---------- tabs ---------- */
+const ST={tab:'ov',step:{},round:{rd:1,sl:1,pl:1,ark:1,ks:1},mode:'enc',built:'',pick:null,rdPick:null,plPick:null,flip:63};
+const stage=$('#stage');
+const T={};
+/* ---------- animation helpers (one set for all tabs, as in the DES demo) ---------- */
+const NS='http://www.w3.org/2000/svg';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+let UID=0;
+// point at fraction t of the way along a polyline
+function along(pts,t){
+  const seg=[];let tot=0;for(let j=1;j<pts.length;j++){const d=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);seg.push(d);tot+=d}
+  if(tot===0)return pts[0];let d=t*tot;
+  for(let j=0;j<seg.length;j++){if(d<=seg[j]||j===seg.length-1){const u=seg[j]?Math.min(1,d/seg[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u]}d-=seg[j]}
+}
+function stripes(x,y,w,h,colors,rx){
+  const id='c'+(++UID);let s=`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><g clip-path="url(#${id})">`;
+  const sw=w/colors.length;colors.forEach((c,j)=>{s+=`<rect x="${(x+j*sw).toFixed(2)}" y="${y}" width="${(sw+.6).toFixed(2)}" height="${h}" style="fill:${c}"/>`});
+  return s+'</g>';
+}
+const gc=c=>`var(--g${c})`;                       // colour of state column (or row) c
+const KC='var(--key)',AC='var(--accent)';
+// a token: a box with colour stripes (where the value came from) and its value; label may be ['0001','1001'] for two lines
+function tok(label,w,h,colors){
+  const L=Array.isArray(label)?label:[label],n=Math.max(...L.map(x=>String(x).length)),rx=Math.min(7,h/4);
+  const fs=Math.max(8,Math.min(L.length>1?h*.34:h*.44,w/n*1.45));
+  let t='';L.forEach((x,j)=>{t+=`<text y="${((j-(L.length-1)/2)*fs*1.05+fs*.36).toFixed(1)}" text-anchor="middle" style="font-size:${fs.toFixed(1)}px">${x}</text>`});
+  return stripes(-w/2,-h/2,w,h,colors,rx)+`<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${rx}"/>`+t;
+}
+const FX=$('#fx');
+const fxClear=()=>{FX.innerHTML=''};
+// centre and size of any element (HTML or SVG), in overlay pixels
+function rectOf(el){const f=FX.getBoundingClientRect(),b=el.getBoundingClientRect();return{x:b.left-f.left+b.width/2,y:b.top-f.top+b.height/2,w:b.width,h:b.height}}
+const xy=r=>[r.x,r.y];
+// maps user coordinates of an SVG drawing to overlay pixels; .s = scale
+function svgMap(svg){const m=svg.getScreenCTM(),f=FX.getBoundingClientRect(),pt=svg.createSVGPoint();
+  const g=(x,y)=>{pt.x=x;pt.y=y;const q=pt.matrixTransform(m);return[q.x-f.left,q.y-f.top]};g.s=m.a;return g}
+function fxNode(inner,cls){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;FX.appendChild(g);return g}
+/* a move: {node, pts (with a, b) or legs:[[a,b,pts],…], fadeIn, fadeOut, end, at:[[p,fn(node)],…]} → tick(p), p in [0,1].
+   Between legs the token waits at the end of the last leg. end: hidden from then on. at: run once (morph, resize). */
+function mover(moves){
+  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0});
+  return p=>{for(const m of moves){
+    const L=m.legs,A=L[0][0],B=L[L.length-1][1];let g=L[0];for(const l of L)if(p>=l[0])g=l;
+    const pt=along(g[2],ease(clamp((p-g[0])/((g[1]-g[0])||1),0,1)));
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
+    const fw=Math.max(.04,(B-A)*.15);let op=p<A?0:1;
+    if(m.fadeIn&&p>=A)op=clamp((p-A)/fw,0,1);
+    if(m.fadeOut)op=Math.min(op,clamp((B-p)/fw,0,1));
+    if(m.end!=null&&p>=m.end)op=0;
+    m.node.style.opacity=op;
+    if(m.at)while(m.fired<m.at.length&&p>=m.at[m.fired][0]){m.at[m.fired][1](m.node);m.fired++}
+  }};
+}
+// run each fn once when p passes its time
+function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.length&&p>=list[i][0]){list[i][1]();i++}}}
+const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
+const hide=els=>els.forEach(e=>{if(e)e.style.opacity=0});
+const tgl=(els,c,on)=>els.forEach(e=>{if(e)e.classList.toggle(c,on)});
+// the same token, new value / size / colours
+const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
+
+
+/* 1 · overview: a stepped flowchart; a small picture of the 16 nibbles travels down it */
+// steps: 0 plaintext, 1 … 31 rounds, 32 the last addRoundKey (K32), 33 ciphertext
+const ovState=k=>k===0?D.pt:k<=31?findOp('pl',k).s:D.ct;
+// 16 nibbles as 4×4 squares (nibble 15 top left), one colour per value
+function mini(s,cs){
+  const g=cs*.2,pd=cs*.45,W=4*cs+3*g+2*pd,o=-W/2;
+  let h=`<rect class="bg" x="${o}" y="${o}" width="${W}" height="${W}" rx="${cs*.6}"/>`;
+  for(let q=0;q<16;q++){const n=15-q;h+=`<rect x="${(o+pd+(q&3)*(cs+g)).toFixed(1)}" y="${(o+pd+(q>>2)*(cs+g)).toFixed(1)}" width="${cs}" height="${cs}" rx="${cs*.2}" style="fill:${ncol(nib(s,n))}"/>`}
+  return h;
+}
+const OV={W:600,H:434,bx:92,bw:238,bh:42,wx:126,tx:160,kx:410,kw:180,bus:366,
+  y:{P:10,AK:92,SL:152,PL:212,AK2:300,C:380,KEY:10,KS:70,RK:130},g1:[66,272],loopx:72};
+const ovc=id=>OV.y[id]+OV.bh/2;
+const ovRest=k=>k===0?'P':k<=31?'PL':k===32?'AK2':'C';
+T.ov={n:()=>34,render(k){
+  const r=k>=1&&k<=31?k:null,rest=ovRest(k),s=ovState(k),{bx,bw,bh,wx,tx}=OV;
+  const arrow=(d,w,kind)=>`<path class="ow${kind?' k':''}" data-w="${w}" d="${d}" marker-end="url(#${kind?'omk':'om'})"/>`;
+  const box=(id,label,o={})=>`<g${o.go?` data-goto="${o.go}"${o.round!=null?` data-round="${o.round}"`:''}><title>Open ${label}</title`:''}><rect class="ob${o.cls?' '+o.cls:''}${id===rest?' on':''}" id="ov-${id}" x="${o.x||bx}" y="${OV.y[id]}" width="${o.w||bw}" height="${bh}" rx="8"/><text class="ot${o.cls==='io'?' io':''}" x="${o.tx||tx}" y="${ovc(id)}"${o.mid?' text-anchor="middle"':''}>${label}</text>${o.key?`<text class="okk" x="${bx+bw-12}" y="${ovc(id)}">${o.key}</text>`:''}</g>`;
+  let h=`<svg class="ovw" id="ovSvg" viewBox="0 0 ${OV.W} ${OV.H}" role="img" aria-label="PRESENT encryption as a flowchart"><defs>
+    <marker id="om" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="om" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="omk" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="omk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
+  h+=`<rect class="og" x="54" y="${OV.g1[0]}" width="294" height="${OV.g1[1]-OV.g1[0]}" rx="12"/><text class="ogl" x="${tx-4}" y="${OV.g1[0]+16}">Rounds 1 … 31${r?` · now round ${r}`:''}</text>`;
+  const dn=(a,b,w)=>arrow(`M${wx} ${OV.y[a]+bh} V${OV.y[b]-1}`,w);
+  h+=dn('P','AK','g')+dn('AK','SL','g')+dn('SL','PL','g')+dn('PL','AK2','last')+dn('AK2','C','out');
+  h+=arrow(`M${bx} ${ovc('PL')} H${OV.loopx} V${ovc('AK')} H${bx-1}`,'loop');
+  h+=`<text class="ogl" transform="translate(${OV.loopx-8} ${(ovc('AK')+ovc('PL'))/2}) rotate(-90)" text-anchor="middle">next round</text>`;
+  const kc=OV.kx+OV.kw/2;
+  h+=arrow(`M${kc} ${OV.y.KEY+bh} V${OV.y.KS-1}`,'',1)+arrow(`M${kc} ${OV.y.KS+bh} V${OV.y.RK-1}`,'',1);
+  h+=`<path class="ow k" data-w="kbus" d="M${OV.kx} ${ovc('RK')} H${OV.bus} M${OV.bus} ${ovc('AK')} V${ovc('AK2')}"/>`;
+  [['AK','kg'],['AK2','klast']].forEach(([id,w])=>{h+=arrow(`M${OV.bus} ${ovc(id)} H${bx+bw+1}`,w,1)});
+  h+=box('KEY',`Key · ${D.kb} bits`,{x:OV.kx,w:OV.kw,cls:'kb',tx:kc,mid:1});
+  h+=box('KS','Key schedule',{x:OV.kx,w:OV.kw,cls:'kb',tx:kc,mid:1,go:'ks'});
+  h+=box('RK','Round keys K1 … K32',{x:OV.kx,w:OV.kw,cls:'kb',tx:kc,mid:1,go:'ks'});
+  h+=box('P','Plaintext · 64 bits',{cls:'io'});
+  h+=box('AK','addRoundKey',{go:'ark',round:r||1,key:r?`K${r}`:'K1…K31'})+box('SL','sBoxLayer',{go:'sl',round:r||1})+box('PL','pLayer',{go:'pl',round:r||1});
+  h+=box('AK2','addRoundKey',{go:'ark',round:32,key:'K32'})+box('C','Ciphertext · 64 bits',{cls:'io'});
+  h+=`<g id="ovTok" transform="translate(${wx} ${ovc(rest)})" class="mini">${mini(s,7)}</g></svg>`;
+  stage.innerHTML=`<div class="ov2">
+  <div><div class="h3">PRESENT-${D.kb} encryption · 31 rounds. The small picture is the state; click a box to open that step.</div>${h}</div>
+  <div>
+    <div class="h3">The state now ${k===0?'(plaintext)':k===33?'(ciphertext)':k===32?'(after K32)':`(after round ${k})`}</div>
+    ${nibs(nv(s),{style:n=>`background:${ncol(nib(s,n))}`,cls:()=>'colv'})}
+    <p class="mono" style="text-align:center;margin:8px 0 4px;font-size:14px"><b>${hex(s)}</b></p>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 18px">64 bits = 16 nibbles of 4 bits; nibble 15 on the left. Each nibble value has its own colour, the same as on the chart.</p>
+    <div class="h3">Two versions</div>
+    <table class="vt"><tr><th>Version</th><th>Block</th><th>Key</th><th>Rounds</th></tr>
+      ${[80,128].map(kb=>`<tr${kb===D.kb?' style="background:var(--accentBg)"':''}><td>PRESENT-${kb}</td><td>64 bits</td><td>${kb} bits</td><td>31</td></tr>`).join('')}</table>
+  </div></div>`;
+  $('#explain').innerHTML=k===0?`<div class="step">What is PRESENT?</div>
+    <p>PRESENT is a <b>lightweight</b> block cipher by Bogdanov et al. (CHES 2007), designed for very small hardware such as RFID tags and sensors. It is standardised in ISO/IEC 29192-2.</p>
+    <p>It is a substitution–permutation network, like AES, but much simpler: <b>one 4-bit S-box</b> and <b>one bit permutation</b>. In hardware the bit permutation is only wires, so it costs nothing.</p>
+    <p>Press <b>Step</b> to send the state through the chart.</p>`
+   :r?`<div class="step">Round ${r} of 31</div><p>addRoundKey with K${r} → sBoxLayer (16 copies of the same S-box) → pLayer (every bit moves to a new place).</p>${r===1?'<p>All 31 rounds are the same; only the round key changes.</p>':''}<p><button class="link" data-goto="rd" data-round="${r}">See this round in detail →</button></p>`
+   :k===32?`<div class="step">Final key addition</div><p>After round 31 the state is XORed with one more round key, <b>K32</b>. Without it, the last sBoxLayer and pLayer could simply be undone by anyone.</p>`
+   :`<div class="step">Done</div><p>The state is now the ciphertext:<br><span class="mono"><b>${hex(D.ct)}</b></span></p>`;
+  $('#extra').innerHTML=`<h3>Compared with AES</h3>
+    <table class="vt"><tr><th></th><th>AES</th><th>PRESENT</th></tr>
+    <tr><td>Block</td><td>128 bits</td><td>64 bits</td></tr>
+    <tr><td>S-box</td><td>8-bit</td><td>4-bit</td></tr>
+    <tr><td>Linear layer</td><td>ShiftRows + MixColumns</td><td>bit permutation</td></tr>
+    <tr><td>Rounds</td><td>10 / 12 / 14</td><td>31</td></tr></table>
+    <p class="note" style="margin-top:10px">A small S-box and a simple linear layer make each round weak, so PRESENT needs many rounds.</p>`;
+},
+plan(k){
+  const r=k;
+  const stops=k<=31?[['AK',findOp('ark',r).s],['SL',findOp('sl',r).s],['PL',findOp('pl',r).s]]:k===32?[['AK2',D.ct]]:[['C',D.ct]];
+  const wires=k<=31?['g','kg','kbus'].concat(k>1?['loop']:[]):k===32?['last','klast','kbus']:['out'];
+  return{dur:k<=31?3000:1200,start(){
+    const svg=$('#ovSvg');if(!svg)return null;
+    const P_=svgMap(svg),s=P_.s,{wx}=OV,fy=ovc(ovRest(k-1));
+    $('#ovTok').style.opacity=0;$$('#ovSvg .ob.on').forEach(x=>x.classList.remove('on'));
+    wires.forEach(w=>$$(`#ovSvg [data-w="${w}"]`).forEach(x=>x.classList.add('on')));
+    const n=fxNode(mini(ovState(k-1),7*s),'tok mini');
+    const pre=k>1&&k<=31?[[wx,fy],[OV.loopx,fy],[OV.loopx,ovc('AK')],[wx,ovc('AK')]]:null;
+    const m=stops.length,t0=pre?.2:0,seg=(1-t0)/m,legs=[],at=[],cu=[];let y=fy;
+    if(pre){legs.push([0,t0*.9,pre.map(q=>P_(q[0],q[1]))]);y=ovc('AK')}
+    stops.forEach(([id,st],j)=>{const a=t0+j*seg,ty=ovc(id),b=a+seg*(ty===y?.3:.62),el=$('#ov-'+id);
+      if(ty!==y)legs.push([a,b,[P_(wx,y),P_(wx,ty)]]);
+      at.push([b,nd=>{nd.innerHTML=mini(st,7*s)}]);
+      cu.push([b,()=>el.classList.add('on','pulse')],[Math.min(1,a+seg*.98),()=>{el.classList.remove('pulse');if(j<m-1)el.classList.remove('on')}]);y=ty});
+    const mv=[{node:n,legs,at}];
+    const ak=stops.find(x=>x[0].startsWith('AK'));
+    if(ak){const j=stops.indexOf(ak),ay=ovc(ak[0]),arr=t0+j*seg+seg*(ay===(pre?ovc('AK'):fy)?.3:.62);
+      mv.push({node:fxNode(tok(`K${k<=31?r:32}`,38*s,20*s,[KC])),legs:[[Math.max(0,arr-.3),arr,[P_(OV.kx,ovc('RK')),P_(OV.bus,ovc('RK')),P_(OV.bus,ay),P_(OV.bx+OV.bw-22,ay)]]],fadeIn:true,end:arr+.02})}
+    return both(mover(mv),cues(cu));
+  }};
+},
+focus(k){follow($('#ov-'+ovRest(k)))}};
+
+/* 2 · one round, drawn like Figure 1 of the PRESENT paper, with the real values */
+const RD={W:1150,H:548,Y0:34,XY:104,Y1:136,SBY:196,Y2:256,BT:296,WB:470,Y3:500,NW:46,NH:30};
+const rcx=n=>170+(15-n)*60;                            // centre of nibble n (nibble 15 on the left); the names of the rows sit left of it
+const rbx=i=>rcx(i>>2)+(1.5-(i&3))*12;                  // bit i inside its nibble
+const wirePts=(i,steps=14)=>{const x0=rbx(i),x1=rbx(P(i)),y0=RD.BT+12,y1=RD.WB,ym=(y0+y1)/2,pts=[];
+  for(let q=0;q<=steps;q++){const t=q/steps,u=1-t;pts.push([u*u*u*x0+3*u*u*t*x0+3*u*t*t*x1+t*t*t*x1,u*u*u*y0+3*u*u*t*ym+3*u*t*t*ym+t*t*t*y1])}return pts};
+function rdData(r){const a=findOp('ark',r),s=findOp('sl',r),p=findOp('pl',r);return{L:[a.p,a.s,s.s,p.s],K:D.KS.K[r-1]}}
+T.rd={n:()=>4,rounds:()=>range(1,31),render(k){
+  const r=ST.round.rd,{L,K}=rdData(r),g=RD,pk=ST.rdPick,tg=pk!=null?[0,1,2,3].map(j=>P(4*pk+j)>>2):[];
+  const row=(l,y,id)=>{let s='';for(let n=0;n<16;n++){const sh=k>=l,v=nib(L[l],n),hi=l===3&&tg.includes(n)||l===2&&pk===n;
+    s+=`<g data-rl="${l}" data-n="${n}"><rect class="nc" x="${rcx(n)-g.NW/2}" y="${y}" width="${g.NW}" height="${g.NH}" rx="5" style="fill:${sh?`color-mix(in srgb,${ncol(v)} 26%,var(--panel))`:'none'};${hi?'stroke:var(--xor);stroke-width:2.4':''}"/><text class="nt${sh?'':' emp'}" x="${rcx(n)}" y="${y+g.NH/2}">${sh?h1(v):'·'}</text></g>`}return s};
+  const bits=(l,y,shown)=>{let s='';for(let i=0;i<64;i++){const v=bit(L[l],i);s+=`<g data-bl="${l}" data-i="${i}"><rect class="bb" x="${rbx(i)-5}" y="${y}" width="10" height="12" rx="2" style="fill:${shown?(v?bcol(i&3):'var(--panel)'):'none'}"/>${shown?`<text class="bv" x="${rbx(i)}" y="${y+6}" style="${v?'fill:#fff':''}">${v}</text>`:''}</g>`}return s};
+  let s=`<svg id="rdSvg" viewBox="0 0 ${g.W} ${g.H}" role="img" aria-label="One PRESENT round">`;
+  const lab=(y,t)=>`<text class="lab" x="8" y="${y}" dominant-baseline="central">${t}</text>`,mid=y=>y+g.NH/2;
+  s+=lab(mid(g.Y0),`round ${r} input`)+lab(g.XY,`⊕ round key K${r}`)+lab(mid(g.Y1),'after addRoundKey')+lab(mid(g.SBY),'sBoxLayer: 16 × S')+lab(mid(g.Y2),'after sBoxLayer')+lab((g.BT+g.WB)/2,'pLayer: 64 wires')+lab(mid(g.Y3),`round ${r} output`);
+  // wires (pLayer) under everything else
+  for(let i=0;i<64;i++){const on=pk!=null&&(i>>2)===pk,d=wirePts(i).map((q,j)=>(j?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('');
+    s+=`<path class="w${on?' on':pk!=null?' dim':''}" data-w="${i}" d="${d}" style="stroke:${bcol(i&3)};opacity:${on?1:pk!=null?'':'.55'}"/>`}
+  for(let n=0;n<16;n++){const x=rcx(n);
+    s+=`<path class="w" d="M${x} ${g.Y0+g.NH} V${g.XY-11}"/><path class="w" d="M${x} ${g.XY+11} V${g.Y1}"/><path class="w" d="M${x} ${g.Y1+g.NH} V${g.SBY}"/><path class="w" d="M${x} ${g.SBY+g.NH} V${g.Y2}"/>`;
+    s+=`<g data-xo="${n}"><circle class="xo" cx="${x}" cy="${g.XY}" r="10"/><path class="xp" d="M${x-6} ${g.XY}H${x+6}M${x} ${g.XY-6}V${g.XY+6}"/></g>`;
+    s+=`<g data-kt="${n}"><rect class="kt" x="${x+13}" y="${g.XY-9}" width="15" height="18" rx="3"/><text class="kv" x="${x+20.5}" y="${g.XY}">${h1(nib(K,n))}</text></g>`;
+    s+=`<g data-sj="${n}"><title>S-box ${n}: click to see where its 4 bits go</title><rect class="sb${pk===n?' pick':''}" x="${x-g.NW/2}" y="${g.SBY}" width="${g.NW}" height="${g.NH}" rx="5"/><text class="sbt" x="${x}" y="${g.SBY+g.NH/2}">S</text></g>`}
+  s+=row(0,g.Y0)+row(1,g.Y1)+row(2,g.Y2)+bits(2,g.BT,k>=2)+bits(3,g.WB-12,k>=3)+row(3,g.Y3);
+  for(let n=0;n<16;n++)s+=`<text class="ni" x="${rcx(n)}" y="${g.Y0-4}">${n}</text>`;
+  s+='</svg>';
+  stage.innerHTML=`<div class="h3">Round ${r} of 31 with the real values (nibble 15 on the left). Wire colours: bit 0, 1, 2, 3 of each nibble. Click an S-box to follow its 4 output bits.</div><div class="prw scroll"><div style="min-width:820px">${s}</div></div>`;
+  const msg=[`<p>One PRESENT round has three steps. Press <b>Step</b> to go through them with the real values.</p>`,
+    `<p><b>addRoundKey</b>: every nibble is XORed with the matching nibble of K${r} (the small purple numbers).</p>`,
+    `<p><b>sBoxLayer</b>: every nibble goes through the same 4-bit S-box. This is the only non-linear step.</p>`,
+    `<p><b>pLayer</b>: the 64 bits move along the wires. Bit i goes to position 16·i mod 63. The 4 bits of one S-box always go to <b>4 different</b> S-boxes of the next round.</p>`][k];
+  $('#explain').innerHTML=`<div class="step">One round · round ${r} · step ${k} of 3</div>${msg}${pk!=null?`<p class="note">S-box ${pk} sends its bits ${[3,2,1,0].map(j=>4*pk+j).join(', ')} to positions ${[3,2,1,0].map(j=>P(4*pk+j)).join(', ')}: into nibbles <b>${[3,2,1,0].map(j=>P(4*pk+j)>>2).join(', ')}</b> (red). <button class="link" data-sj="${pk}">Clear</button></p>`:'<p style="font-size:14px;color:var(--muted)">Tip: click an S-box to see which S-boxes of the next round its outputs reach.</p>'}`;
+  const nm=['round input','after addRoundKey','after sBoxLayer','after pLayer'];
+  $('#extra').innerHTML=`<h3>Round ${r} in hex</h3><table class="rt">${nm.map((t,l)=>`<tr class="${l===k?'on':''}"><td>${t}</td><td class="mono">${l<=k?hex(L[l]):'·'.repeat(16)}</td></tr>`).join('')}<tr><td class="k">K${r}</td><td class="mono k">${hex(K)}</td></tr></table>
+    <p style="margin-top:10px;font-size:13px;color:var(--muted)">After 2 rounds every output bit depends on every input bit: one S-box reaches 4 S-boxes, and those reach all 16.</p>`;
+},
+plan(k){const r=ST.round.rd,{L,K}=rdData(r),g=RD;
+  return{dur:[0,2000,1900,2600][k],start(){
+    const svg=$('#rdSvg');if(!svg)return null;const P_=svgMap(svg),s=P_.s,w=g.NW*s,h=g.NH*s,mv=[],cu=[];
+    const cy=y=>y+g.NH/2,T_=(v,c)=>fxNode(tok(h1(v),w,h,c));
+    hide($$(`#rdSvg [data-rl="${k}"]`));
+    // stagger ≤ .18 so that every move ends before p = 1
+    if(k===1){for(let n=0;n<16;n++){const a=.012*(15-n),X=P_(rcx(n),g.XY);
+      mv.push({node:T_(nib(L[0],n),[ncol(nib(L[0],n))]),legs:[[a,a+.34,[P_(rcx(n),cy(g.Y0)),X]],[a+.46,a+.8,[X,P_(rcx(n),cy(g.Y1))]]],at:[[a+.42,retok(h1(nib(L[1],n)),w,h,[ncol(nib(L[1],n)),KC])]]});
+      mv.push({node:fxNode(tok(h1(nib(K,n)),15*s,18*s,[KC])),pts:[P_(rcx(n)+20.5,g.XY),X],a:a+.2,b:a+.36,end:a+.38})}
+      cu.push([.36,()=>tgl($$('#rdSvg .xo'),'on',true)],[.7,()=>tgl($$('#rdSvg .xo'),'on',false)])}
+    if(k===2){hide($$('#rdSvg [data-bl="2"]'));for(let n=0;n<16;n++){const a=.012*(15-n),Sx=P_(rcx(n),cy(g.SBY));
+      mv.push({node:T_(nib(L[1],n),[ncol(nib(L[1],n))]),legs:[[a,a+.34,[P_(rcx(n),cy(g.Y1)),Sx]],[a+.46,a+.8,[Sx,P_(rcx(n),cy(g.Y2))]]],at:[[a+.4,retok(h1(nib(L[2],n)),w,h,[ncol(nib(L[2],n))])]]})}
+      cu.push([.3,()=>tgl($$('#rdSvg .sb'),'on',true)],[.7,()=>tgl($$('#rdSvg .sb'),'on',false)],[.95,()=>$$('#rdSvg [data-bl="2"]').forEach(x=>x.style.opacity=1)])}
+    if(k===3){hide($$('#rdSvg [data-bl="3"]'));for(let i=0;i<64;i++){const v=bit(L[2],i),a=.03*(15-(i>>2));
+      mv.push({node:fxNode(tok(String(v),10*s,12*s,[v?bcol(i&3):'var(--muted)'])),pts:wirePts(i).map(q=>P_(q[0],q[1])),a,b:a+.5,end:.97})}
+      cu.push([.97,()=>{$$('#rdSvg [data-bl="3"]').forEach(x=>x.style.opacity=1);$$('#rdSvg [data-rl="3"]').forEach(x=>x.style.opacity=1)}])}
+    return both(mover(mv),cues(cu));
+  }};
+},
+focus(k){follow($(`#rdSvg [data-rl="${k}"]`))}};
+
+/* 3 · sBoxLayer: every nibble through the same 4-bit S-box (nibble 15 first) */
+T.sl={n:()=>17,rounds:()=>range(1,31),render(k){
+  const r=ST.round.sl,o=findOp('sl',r),cur=k>0?16-k:-1,x=cur>=0?nib(o.p,cur):null;
+  let ddt='<table class="ddt"><tr><th>Δin\\Δout</th>'+range(0,15).map(b=>`<th>${h1(b)}</th>`).join('')+'</tr>';
+  for(let a=0;a<16;a++)ddt+=`<tr><th>${h1(a)}</th>`+DDT[a].map(v=>`<td style="${v&&a?`background:color-mix(in srgb,var(--accent) ${v*20}%,transparent)`:''}">${v||''}</td>`).join('')+'</tr>';
+  stage.innerHTML=`<div class="stack">
+    ${gbox(`Input · round ${r} (after addRoundKey)`,nibs(nv(o.p),{id:'slIn',cls:n=>n===cur?'cur':(cur>=0&&n>cur?'done':'')}))}
+    <div class="gw"><div class="gcap">The PRESENT S-box: find x in the top row, read S(x) under it</div><div class="scroll" id="slS"><table class="st" id="slTab">
+      <tr><th>x</th>${range(0,15).map(v=>`<td data-x="${v}" class="${v===x?'on':''}">${h1(v)}</td>`).join('')}</tr>
+      <tr class="y"><th>S(x)</th>${S.map((v,i)=>`<td data-y="${i}" class="${i===x?'hit':''}">${h1(v)}</td>`).join('')}</tr></table></div></div>
+    ${gbox('Output',nibs(n=>k>0&&n>=16-k?nib(o.s,n):null,{id:'slOut',cls:n=>n===cur?'cur chg':(k>0&&n>=16-k?'chg':'')}))}
+  </div>
+  ${cur>=0?`<div class="sec stack"><div class="h3">Nibble ${cur} (bits ${4*cur+3} … ${4*cur}) in binary</div>${bitRows([['x',x],['S(x)',S[x],'res']])}</div>`:''}
+  <div class="sec"><div class="h3">Difference distribution table: how many x give S(x) ⊕ S(x ⊕ Δin) = Δout</div><div class="scroll">${ddt}</div></div>`;
+  $('#explain').innerHTML=cur<0?`<div class="step">sBoxLayer · round ${r}</div>
+    <p>The 64-bit state is cut into 16 nibbles of 4 bits. Every nibble goes through the <b>same 4-bit S-box</b>.</p>
+    <p>This is the only non-linear step of PRESENT. Press <b>Step</b>: one nibble at a time, from nibble 15 (left) to nibble 0.</p>`
+   :`<div class="step">Nibble ${cur} · ${k} of 16</div><p>S(<span class="mono"><b>${h1(x)}</b></span>) = <span class="mono"><b>${h1(S[x])}</b></span></p><p class="mono">${b4(x)} → ${b4(S[x])}</p>`;
+  $('#extra').innerHTML=`<h3>Why this S-box? (computed from the table)</h3>
+    <p>Differential uniformity: <b>${DU}</b>. The best difference holds with probability ${DU}/16 = 2<sup>−${Math.log2(16/DU)}</sup>.</p>
+    <p>Linearity (max |Walsh value|): <b>${LIN}</b>. The best linear approximation has bias ${LIN}/32 = 2<sup>−${Math.log2(32/LIN)}</sup>.</p>
+    <p>For a 4-bit bijective S-box these are the best possible values.</p>
+    <p class="note">Decryption uses the inverse S-box S⁻¹ = ${SI.map(h1).join('').toUpperCase()}.</p>`;
+},
+// the nibble goes up to x in the table, down to S(x), and into the output
+plan(k){const o=findOp('sl',ST.round.sl),cur=16-k,x=nib(o.p,cur),y=S[x];
+  return{dur:1800,start(){
+    const a=$(`#slIn [data-n="${cur}"]`),b=$(`#slOut [data-n="${cur}"]`),tx=$(`#slTab td[data-x="${x}"]`),ty=$(`#slTab td[data-y="${x}"]`);if(!a||!b||!tx)return null;
+    const sc=$('#slS');if(sc.scrollWidth>sc.clientWidth){const hb=tx.getBoundingClientRect(),sb=sc.getBoundingClientRect();if(hb.left<sb.left+20||hb.right>sb.right-20)sc.scrollLeft+=hb.left-(sb.left+sb.width/2)}
+    tx.classList.remove('on');ty.classList.remove('hit');hide([b]);
+    const A=rectOf(a),X=rectOf(tx),Y=rectOf(ty),O=rectOf(b);
+    return both(mover([{node:fxNode(tok(h1(x),A.w,A.h,[ncol(x)])),legs:[[0,.32,[xy(A),xy(X)]],[.38,.52,[xy(X),xy(Y)]],[.62,1,[xy(Y),xy(O)]]],
+      at:[[.32,retok(h1(x),X.w+4,X.h+4,[ncol(x)])],[.52,retok(h1(y),Y.w+4,Y.h+4,[ncol(y)])],[.62,retok(h1(y),O.w,O.h,[ncol(y)])]]}]),
+      cues([[.32,()=>tx.classList.add('on')],[.52,()=>ty.classList.add('hit','flash')]]));
+  }};
+}};
+
+/* 4 · pLayer: bit i moves to position 16·i mod 63 (bit 63 stays) */
+const PLG={W:12,L:26,Y1:26,Y2:300,BH:16};
+const plX=i=>PLG.L+(63-i)*PLG.W+PLG.W/2;
+function plPts(i,steps=16){const x0=plX(i),x1=plX(P(i)),y0=PLG.Y1+PLG.BH,y1=PLG.Y2,ym=(y0+y1)/2,pts=[];
+  for(let q=0;q<=steps;q++){const t=q/steps,u=1-t;pts.push([u*u*u*x0+3*u*u*t*x0+3*u*t*t*x1+t*t*t*x1,u*u*u*y0+3*u*u*t*ym+3*u*t*t*ym+t*t*t*y1])}return pts}
+T.pl={n:()=>17,rounds:()=>range(1,31),render(k){
+  const r=ST.round.pl,o=findOp('pl',r),cur=k>0?16-k:-1,done=i=>k>0&&(i>>2)>=16-k,pk=ST.plPick,{W,L,Y1,Y2,BH}=PLG;
+  let s=`<svg id="plSvg" viewBox="0 0 ${2*L+64*W} ${Y2+44}" role="img" aria-label="PRESENT bit permutation">`;
+  for(let n=0;n<16;n++)s+=`<text class="ni" x="${plX(4*n+1.5)}" y="14">nibble ${n}</text>`;
+  for(let i=0;i<64;i++){const on=(i>>2)===cur||pk===i,d=plPts(i).map((q,j)=>(j?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('');
+    s+=`<path class="w${on?' on':''}" data-w="${i}" d="${d}" style="stroke:${on||done(i)?bcol(i&3):'var(--line2)'};opacity:${on?1:done(i)?.75:.35}"/>`}
+  for(let i=0;i<64;i++){const v=bit(o.p,i),t=P(i),sh=done(t===63?63:PI[t]);
+    s+=`<g data-pb="${i}" style="cursor:pointer"><rect class="bb" x="${plX(i)-5}" y="${Y1}" width="10" height="${BH}" rx="2" style="fill:${v?bcol(i&3):'var(--panel)'};${(i>>2)===cur||pk===i?'stroke:var(--ink);stroke-width:2':''}"/><text class="bv" x="${plX(i)}" y="${Y1+BH/2}" style="${v?'fill:#fff':''}">${v}</text></g>`;
+    const src=PI[i],vb=bit(o.s,i),shb=done(src);
+    s+=`<g data-pt="${i}"><rect class="bb" x="${plX(i)-5}" y="${Y2}" width="10" height="${BH}" rx="2" style="fill:${shb?(vb?bcol(src&3):'var(--panel)'):'none'}"/>${shb?`<text class="bv" x="${plX(i)}" y="${Y2+BH/2}" style="${vb?'fill:#fff':''}">${vb}</text>`:''}</g>`}
+  for(let q=0;q<4;q++)s+=`<text class="ni" style="fill:${bcol(q)};font-weight:700" x="${(plX(16*q+15)+plX(16*q))/2}" y="${Y2+36}">bits ${16*q+15} … ${16*q}: bit ${q} of every nibble</text>`;
+  s+='</svg>';
+  stage.innerHTML=`<div class="gcap" style="margin-bottom:6px">Top: the state after sBoxLayer (round ${r}). Bottom: after pLayer. Bit 63 is on the left. Click a top bit to follow it.</div>
+    <div class="prw scroll"><div style="min-width:640px">${s}</div></div>
+    <div class="sec stack">${gbox('Before (hex)',nibs(nv(o.p),{cls:n=>n===cur?'cur':''}))}${gbox('After (hex)',nibs(n=>k===16?nib(o.s,n):null,{cls:()=>k===16?'chg':''}))}</div>`;
+  $('#explain').innerHTML=cur<0?`<div class="step">pLayer · round ${r}</div>
+    <p>Bit <b>i</b> moves to position <b>P(i) = 16·i mod 63</b>; bit 63 stays at 63.</p><p>Press <b>Step</b>: the 4 output bits of one S-box at a time.</p>`
+   :`<div class="step">Output of S-box ${cur} · ${k} of 16</div>
+    <p>Its bits ${[3,2,1,0].map(j=>4*cur+j).join(', ')} go to positions <b>${[3,2,1,0].map(j=>P(4*cur+j)).join(', ')}</b>.</p>
+    <p>These are in <b>4 different nibbles</b>, so in the next round they enter 4 different S-boxes.</p>`;
+  $('#extra').innerHTML=`<h3>The rule, in nibbles</h3>
+    <p>Bit j of nibble n goes to position 16·j + n. So the output is 4 blocks of 16 bits, and block j collects bit j of every S-box (the colours).</p>
+    ${pk!=null?`<p class="mono">P(${pk}) = 16·${pk} mod 63 = ${P(pk)}</p>`:''}
+    <p class="note">In hardware pLayer is only wires: it costs zero gates. Decryption uses the inverse permutation P⁻¹(i) = 4·i mod 63.</p>`;
+},
+// the 4 bits of one S-box travel along their wires
+plan(k){const o=findOp('pl',ST.round.pl),cur=16-k;
+  return{dur:1700,start(){
+    const svg=$('#plSvg');if(!svg)return null;const P_=svgMap(svg),s=P_.s,mv=[];
+    for(let j=3;j>=0;j--){const i=4*cur+j,v=bit(o.p,i),t=$(`#plSvg [data-pt="${P(i)}"]`);hide([t]);
+      mv.push({node:fxNode(tok(String(v),11*s,PLG.BH*s,[v?bcol(j):'var(--muted)'])),pts:plPts(i).map(q=>P_(q[0],q[1]+PLG.BH/2*(1-q[1]/PLG.Y2))),a:.06*(3-j),b:.06*(3-j)+.8})}
+    return mover(mv);
+  }};
+}};
+
+/* 5 · addRoundKey: XOR with the 64-bit round key, nibble by nibble (nibble 15 first) */
+T.ark={n:()=>17,rounds:()=>range(1,32),render(k){
+  const r=ST.round.ark,o=findOp('ark',r),K=D.KS.K[r-1],cur=k>0?16-k:-1;
+  const chip=(v,lab,bg,res)=>`<div class="mct"><div class="mcp"><span class="${res?'mcr':'mcb'}"${bg?` style="background:${bg}"`:''}>${h1(v)}</span></div><small>${lab}</small></div>`;
+  stage.innerHTML=`<div class="stack">
+    ${gbox(`State · ${r===1?'plaintext':r===32?'after round 31':`after round ${r-1}`}`,nibs(nv(o.p),{id:'akS',cls:n=>n===cur?'cur':''}))}
+    ${opx('⊕')}
+    ${gbox(`Round key <b class="k">K${r}</b>`,nibs(nv(K),{id:'akK',cls:n=>'key'+(n===cur?' cur':'')}))}
+    ${opx('=')}
+    ${gbox('Output',nibs(n=>k>0&&n>=16-k?nib(o.s,n):null,{id:'akO',cls:n=>n===cur?'cur chg':(k>0&&n>=16-k?'chg':'')}))}
+  </div>
+  ${cur>=0?`<div class="sec"><div class="h3">Nibble ${cur}: the state nibble and the key nibble meet here</div>
+    <div class="mcw" id="akW">${chip(nib(o.p,cur),'state','var(--accent)')}<span class="mcx">⊕</span>${chip(nib(K,cur),'key','var(--key)')}<span class="mcx">=</span>${chip(nib(o.s,cur),'output','',1)}</div>
+    <div class="scroll stack" id="akB" style="margin-top:10px">${bitRows([['state',nib(o.p,cur)],['⊕ key',nib(K,cur)],['= output',nib(o.s,cur),'res']])}</div></div>`:''}`;
+  $('#explain').innerHTML=cur<0?`<div class="step">addRoundKey · K${r}</div>
+    <p>The state is XORed with the 64-bit round key K${r}.</p>
+    <p>K${r} is the <b>leftmost 64 bits</b> of the key register at round ${r}. See the <button class="link" data-goto="ks" data-round="${Math.min(r,31)}">key schedule</button>.</p>
+    ${r===32?'<p>K32 is used once more after round 31. This final key addition makes the last pLayer depend on the key.</p>':''}`
+   :`<div class="step">Nibble ${cur} · ${k} of 16</div><p class="mono" style="font-size:15px">${h1(nib(o.p,cur))} ⊕ <span class="k">${h1(nib(K,cur))}</span> = <b>${h1(nib(o.s,cur))}</b></p>`;
+  $('#extra').innerHTML=`<h3>All round keys</h3><div class="scroll" style="max-height:360px;overflow:auto"><table class="rt"><tr><th>i</th><th>K<sub>i</sub></th></tr>${D.KS.K.map((v,i)=>`<tr class="${i+1===r?'on':''}"><td>${i+1}</td><td class="mono">${hex(v)}</td></tr>`).join('')}</table></div>`;
+},
+// the state nibble and the key nibble go down to the line under the rows, meet at ⊕, the result goes up into the output
+plan(k){const r=ST.round.ark,o=findOp('ark',r),K=D.KS.K[r-1],cur=16-k;
+  return{dur:2300,start(){
+    const s=$(`#akS [data-n="${cur}"]`),kk=$(`#akK [data-n="${cur}"]`),out=$(`#akO [data-n="${cur}"]`),w=$('#akW');if(!s||!kk||!out||!w)return null;
+    const [ca,cb]=[...w.querySelectorAll('.mcb')],cr=w.querySelector('.mcr'),rows=[...$$('#akB tr')];
+    const S_=rectOf(s),K_=rectOf(kk),O=rectOf(out),A=rectOf(ca),Bc=rectOf(cb),R=rectOf(cr),W=rectOf(w),last=rectOf($('#akO'));
+    const gy=(last.y+last.h/2+W.y-W.h/2)/2,lane=(p,q)=>[xy(p),[p.x,gy],[q.x,gy],xy(q)];
+    hide([out,ca,cb,cr,...rows]);const showE=(...els)=>()=>els.forEach(x=>{if(x)x.style.opacity=1});
+    return both(mover([
+      {node:fxNode(tok(h1(nib(o.p,cur)),S_.w,S_.h,[AC])),pts:lane(S_,A),a:0,b:.32,end:.32,at:[[.2,retok(h1(nib(o.p,cur)),A.w,A.h,[AC])]]},
+      {node:fxNode(tok(h1(nib(K,cur)),K_.w,K_.h,[KC])),pts:lane(K_,Bc),a:.12,b:.44,end:.44,at:[[.32,retok(h1(nib(K,cur)),Bc.w,Bc.h,[KC])]]},
+      {node:fxNode(tok(h1(nib(o.s,cur)),R.w,R.h,[AC,KC])),pts:lane(R,O),a:.62,b:1,fadeIn:true,at:[[.75,retok(h1(nib(o.s,cur)),O.w,O.h,[AC,KC])]]}]),
+      cues([[.32,showE(ca,rows[0])],[.44,showE(cb,rows[1])],[.54,()=>{showE(cr,rows[2])();cr.parentNode.classList.add('flash')}]]));
+  }};
+}};
+
+/* 6 · key schedule: K(r) = leftmost 64 bits; then rotate left by 61, S-box on the top nibble(s), XOR the round counter.
+   The register is drawn as a ring (bit kb−1 at the top, then clockwise), so the rotation is a real turn of the ring. */
+const KR={W:440,C:220,R:172};
+const kAng=(i,kb)=>(-90+360*(kb-1-i)/kb)*Math.PI/180;
+const kPos=(a,r)=>[KR.C+r*Math.cos(a),KR.C+r*Math.sin(a)];
+const kTurn=kb=>2*Math.PI*(kb-61)/kb;                    // rotating left by 61 = turning clockwise by kb − 61 places
+// the colour of a place: which bit of the original key is there (only the rotations count), so the turning is visible;
+// a 1 is a full colour, a 0 a pale one
+const kOrig=(p,kb,turns)=>((p-61*turns)%kb+kb)%kb;
+const kFill=(o,kb,v)=>{const c=`hsl(${Math.round(360*o/kb)},62%,46%)`;return v?c:`color-mix(in srgb,${c} 22%,var(--panel))`};
+function ringSVG(val,kb,k,r){
+  const turns=k===0?r-1:r;
+  const cs=kb===80?11:7.4,top=kb-64,sbLo=kb===80?76:120,ctrLo=kb===80?15:62;
+  let s=`<svg id="ksSvg" viewBox="0 0 ${KR.W} ${KR.W}" role="img" aria-label="Key register as a ring">`;
+  s+=`<circle cx="${KR.C}" cy="${KR.C}" r="${KR.R}" class="kring"/>`;
+  if(k===0){const a0=kAng(kb-1,kb)-.03,a1=kAng(top,kb)+.03,[x0,y0]=kPos(a0,KR.R+13),[x1,y1]=kPos(a1,KR.R+13),[lx,ly]=kPos((a0+a1)/2,KR.R+30);
+    s+=`<path class="karc" d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${KR.R+13} ${KR.R+13} 0 1 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"/><text class="kal" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}">K${r}</text>`}
+  for(let i=0;i<kb;i++){const [x,y]=kPos(kAng(i,kb),KR.R),v=Number((val>>B(i))&1n),mk=k===2&&i>=sbLo?' sbm':k===3&&i>=ctrLo&&i<=ctrLo+4?' ctm':'';
+    s+=`<g data-b="${i}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><title>bit ${i} = ${v} (key bit ${kOrig(i,kb,turns)} moved here)</title><rect class="kbit${v?' one':''}${mk}" x="${-cs/2}" y="${-cs/2}" width="${cs}" height="${cs}" rx="2" style="fill:${kFill(kOrig(i,kb,turns),kb,v)}"/></g>`}
+  for(let i=kb-1;i>=0;i-=(kb===80?10:16)){const [x,y]=kPos(kAng(i,kb),KR.R-20);s+=`<text class="kix" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${i}</text>`}
+  s+=`<text class="kc1" x="${KR.C}" y="${KR.C-18}">${kb}-bit key register</text>`;
+  s+=k===2?`<g id="ksS"><rect class="ksb" x="${KR.C-26}" y="${KR.C-2}" width="52" height="34" rx="6"/><text class="kc2" x="${KR.C}" y="${KR.C+15}" style="font-weight:700">S</text></g>`
+    :k===3?`<g id="ksCtr">${[4,3,2,1,0].map((j,q)=>`<g data-c="${j}" transform="translate(${KR.C-36+q*18},${KR.C+14})"><rect class="kbit ctm${(r>>j)&1?' one':''}" x="-7" y="-7" width="14" height="14" rx="2"/></g>`).join('')}<text class="kc2" x="${KR.C}" y="${KR.C+40}">counter ${r} = ${r.toString(2).padStart(5,'0')}</text></g>`
+    :`<text class="kc2" x="${KR.C}" y="${KR.C+6}">bit ${kb-1} at the top, then clockwise</text>`;
+  return s+'</svg>';
+}
+T.ks={n:()=>4,rounds:()=>range(1,31),render(k){
+  const r=ST.round.ks,st=D.KS.st[r-1],kb=D.kb,top=kb-64,sbLo=kb===80?76:120,ctrLo=kb===80?15:62;
+  const val=[st.reg,st.rot,st.sb,st.nx][k];
+  const cap=[`The key register at the start of round ${r}`,`1 · turned: rotated left by 61 = clockwise by ${kb-61}`,`2 · S-box on the top ${kb===80?'nibble':'two nibbles'}`,`3 · round counter ${r} XORed into bits ${ctrLo+4} … ${ctrLo}`][k];
+  stage.innerHTML=`<div class="klab" style="text-align:center"><b>${cap}</b></div>
+    <div class="kringw">${ringSVG(val,kb,k,r)}</div>
+    <div class="klab">The same register in hex (nibble ${kb/4-1} on the left)${k===0?' · purple: the round key K'+r:''}</div>
+    <div class="scroll"><div style="width:max-content;margin:0 auto">${nibs(nv(val),{n:kb/4,cls:n=>k===0&&4*n>=top?'key':k===2&&4*n>=sbLo?'chg':k===3&&4*n<=ctrLo+4&&4*n+3>=ctrLo?'hi':''})}</div></div>
+    <div class="sec"><div class="h3">Round key K${r} = the leftmost 64 bits of the register at round ${r}</div><p class="mono k" style="text-align:center;font-size:16px;margin:0">${hex(D.KS.K[r-1])}</p></div>
+    <div class="sec"><div class="h3">All round keys (click one)</div><div class="rkl">${D.KS.K.map((v,i)=>`<div data-kr="${Math.min(i+1,31)}" class="${i+1===r?'on':''}"><span>K${i+1}</span>${hex(v)}</div>`).join('')}</div></div>`;
+  const ex=[`<p>PRESENT-${kb} keeps the key in a ${kb}-bit register, drawn here as a ring. At round ${r}, the round key K${r} is its <b>leftmost 64 bits</b> (the purple arc).</p><p>Then the register is updated in 3 steps for the next round. Press <b>Step</b>.</p>`,
+    `<p>The register rotates left by 61 places. On the ring that is one turn of ${kb-61} places clockwise: every bit keeps its neighbours, only the starting point moves.</p><p style="font-size:14px;color:var(--muted)">Colour = which bit of the original key is at that place (full colour = 1, pale = 0), so you can see the ring turn from round to round.</p>`,
+    `<p>The top ${kb===80?'4 bits go':'8 bits go (two nibbles)'} through the PRESENT S-box. This makes the key schedule non-linear.</p><p class="mono">${kb===80?`S(${h1(Number(st.rot>>76n))}) = ${h1(Number(st.sb>>76n))}`:`S(${h1(Number(st.rot>>124n))}) = ${h1(Number(st.sb>>124n))}, S(${h1(Number((st.rot>>120n)&15n))}) = ${h1(Number((st.sb>>120n)&15n))}`}</p>`,
+    `<p>The 5-bit round counter <span class="mono">${r} = ${r.toString(2).padStart(5,'0')}</span> is XORed into bits ${ctrLo+4} … ${ctrLo} (red). This makes every round different.</p><p>Next round key: K${r+1} = <span class="mono k">${hex(D.KS.K[r])}</span></p>`];
+  $('#explain').innerHTML=`<div class="step">Key schedule · round ${r} · step ${k} of 3</div>${ex[k]}`;
+  $('#extra').innerHTML=`<h3>Update rule (PRESENT-${kb})</h3>
+    <p class="mono" style="font-size:13px">[k${kb-1} … k0] ← [k${kb-1} … k0] ⋘ 61<br>${kb===80?'[k79 … k76] ← S[k79 … k76]':'[k127 … k124] ← S[k127 … k124]<br>[k123 … k120] ← S[k123 … k120]'}<br>[k${ctrLo+4} … k${ctrLo}] ← [k${ctrLo+4} … k${ctrLo}] ⊕ counter</p>
+    <p class="note">Only ${kb===80?'one S-box':'two S-boxes'} per round, so the key schedule is cheap in hardware.</p>`;
+},
+plan(k){const r=ST.round.ks,st=D.KS.st[r-1],kb=D.kb,sbLo=kb===80?76:120,ctrLo=kb===80?15:62;
+  return{dur:[0,2200,1600,1700][k],start(){
+    const svg=$('#ksSvg');if(!svg)return null;const P_=svgMap(svg),s=P_.s,cs=(kb===80?11:7.4)*s,mv=[];
+    const cell=i=>svg.querySelector(`[data-b="${i}"]`),bt=(v,c)=>fxNode(tok('',cs,cs,[c||(v?'var(--ink)':'var(--line2)')]));
+    if(k===1){
+      // the ring turns: every bit starts at its old place (values before the turn) and moves clockwise
+      const gs=[...svg.querySelectorAll('[data-b]')],turn=kTurn(kb);
+      gs.forEach(g=>{const i=+g.dataset.b,v=Number((st.reg>>B(i))&1n),q=g.querySelector('rect');q.setAttribute('class','kbit'+(v?' one':''));q.style.fill=kFill(kOrig(i,kb,r-1),kb,v)});
+      return p=>{const t=ease(p);gs.forEach(g=>{const i=+g.dataset.b,[x,y]=kPos(kAng(i,kb)+t*turn,KR.R);g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`)})};
+    }
+    if(k===2){const S0=P_(KR.C,KR.C+15);for(let i=sbLo;i<kb;i++){const [x,y]=kPos(kAng(i,kb),KR.R),a=P_(x,y),v=Number((st.rot>>B(i))&1n),w=Number((st.sb>>B(i))&1n);cell(i).style.opacity=0;
+      mv.push({node:bt(v),legs:[[0,.36,[a,S0]],[.6,.95,[S0,a]]],at:[[.48,retok('',cs,cs,[w?'var(--accent)':'var(--line2)'])]]})}
+      return both(mover(mv),cues([[.36,()=>$('#ksS rect').classList.add('on')],[.6,()=>$('#ksS rect').classList.remove('on')]]))}
+    for(let j=0;j<5;j++){const i=ctrLo+j,c=svg.querySelector(`#ksCtr [data-c="${j}"]`),[x,y]=kPos(kAng(i,kb),KR.R),a=P_(x,y),w=Number((st.nx>>B(i))&1n);cell(i).style.opacity=0;
+      if(c){const q=rectOf(c);mv.push({node:fxNode(tok('',q.w,q.h,[(r>>j)&1?'var(--xor)':'var(--line2)'])),pts:[xy(q),a],a:.05+.05*j,b:.6+.05*j,at:[[.62+.05*j,retok('',cs,cs,[w?'var(--ink)':'var(--line2)'])]]})}}
+    return mover(mv);
+  }};
+},
+focus(){follow($('#ksSvg'))}};
+
+/* 7 · encrypt / decrypt: every step of one run */
+const isP=op=>op==='pl'||op==='ipl';
+function bitRowX(v,id){let h=`<div class="kreg" id="${id}" style="justify-content:center;flex-wrap:wrap;max-width:560px;margin:0 auto">`;for(let i=63;i>=0;i--){const b=bit(v,i);h+=`<i data-b="${i}" class="${b?'one':''}${i<63&&i%4===3?' g4':''}">${b}</i>`}return h+`</div><p class="mono" style="text-align:center;font-size:13px;margin:4px 0 0">${hex(v)}</p>`}
+T.x={n:()=>(ST.mode==='enc'?D.enc:D.dec).length,render(k){
+  const ops=ST.mode==='enc'?D.enc:D.dec,o=ops[k],enc=ST.mode==='enc';
+  let ch='',i=0;const last=ops.at(-1).r;
+  for(let r=0;r<=last;r++){if(!ops.some(x=>x.r===r))continue;let h=`<span class="rg${o.r===r?' band':''}"><b>${r===0?'start':(r===32?'end':r)}</b>`;
+    while(i<ops.length&&ops[i].r===r){h+=`<button class="chip ${i===k?'on':(i<k?'done':'')}" data-jump="${i}">${SHORT[ops[i].op]}${ops[i].op==='ark'?ops[i].ki:''}</button>`;i++}
+    ch+=h+'</span>'}
+  let main;
+  if(o.op==='in')main=gbox(`<b>${enc?'Plaintext':'Ciphertext'}</b>`,nibs(nv(o.s),{id:'xA'}));
+  else if(isP(o.op))main=`<div class="stack">${gbox('Before (bits, bit 63 first)',bitRowX(o.p,'xB'))}<div class="op" id="xOp"><big>↓</big>${NAME[o.op]}</div>${gbox('After',bitRowX(o.s,'xA'))}</div>`;
+  else main=`<div class="stack">${gbox('Before',nibs(nv(o.p),{id:'xB'}))}<div class="op" id="xOp"><big>↓</big>${NAME[o.op]}</div>${o.op==='ark'?gbox(`<b class="k">K${o.ki}</b>`,nibs(nv(D.KS.K[o.ki-1]),{id:'xK',cls:()=>'key'}))+opx('='):''}${gbox('After',nibs(nv(o.s),{id:'xA',cls:n=>nib(o.s,n)!==nib(o.p,n)?'chg':''}))}</div>`;
+  let res='';
+  if(k===ops.length-1){
+    if(enc){const got=hex(o.s),okv=D.expect?got===D.expect:null;res=`<div class="result">Ciphertext: <span class="mono"><b>${got}</b></span>${okv===true?'<br>✓ Same as the test vector in the PRESENT paper.':okv===false?'<br>✗ Does not match the expected value.':''}</div>`}
+    else{const okv=o.s===D.pt;res=`<div class="result">Recovered plaintext: <span class="mono"><b>${hex(o.s)}</b></span><br>${okv?'✓ Same as the original plaintext.':'✗ Different from the original plaintext.'}</div>`}}
+  stage.innerHTML=`<div class="chips">${ch}</div>${main}${res}`;
+  const desc={in:enc?'The plaintext is the starting state.':`We start from the ciphertext <span class="mono">${hex(D.ct)}</span>.`,
+    ark:`XOR with round key K${o.ki}.`,sl:'Each nibble goes through the S-box.',pl:'Bit i moves to position 16·i mod 63.',
+    isl:'Each nibble goes through the inverse S-box.',ipl:'Bit i moves back to position 4·i mod 63.'}[o.op];
+  const nchg=o.p!=null?range(0,15).filter(n=>nib(o.s,n)!==nib(o.p,n)).length:0,tabOf={ark:'ark',sl:'sl',pl:'pl'}[o.op];
+  $('#explain').innerHTML=`<div class="step">${NAME[o.op]}${o.r&&o.r<32?' · round '+o.r:''} · step ${k} of ${ops.length-1}</div><p>${desc}</p>
+    ${o.p!=null?`<p>${nchg} of 16 nibbles changed.</p>`:''}
+    ${enc&&tabOf?`<p><button class="link" data-goto="${tabOf}" data-round="${o.op==='ark'?o.ki:o.r}">Look inside this step →</button></p>`:''}`;
+  const rows=[];for(let r=0;r<=last;r++){const l=ops.filter(x=>x.r===r).at(-1);if(l)rows.push(`<tr class="${o.r===r?'on':''}"><td>${r===0?'start':r===32?'end':r}</td><td class="mono">${hex(l.s)}</td></tr>`)}
+  $('#extra').innerHTML=`<h3>State at the end of each round</h3><div class="scroll" style="max-height:420px;overflow:auto"><table class="rt"><tr><th>Round</th><th>State</th></tr>${rows.join('')}</table></div>`;
+},
+// compact moves: key nibbles join (addRoundKey), nibbles change in flight (S-box), bits fly to their new places (pLayer)
+plan(k){const o=(ST.mode==='enc'?D.enc:D.dec)[k];
+  return{dur:{ark:1600,sl:1500,isl:1500,pl:2000,ipl:2000}[o.op]||1200,start(){
+    const op=$('#xOp'),mv=[],cu=[[0,()=>op&&op.classList.add('pulse')],[.85,()=>op&&op.classList.remove('pulse')]];
+    if(isP(o.op)){const Bs=$$('#xB i'),As=$$('#xA i');if(Bs.length<64)return null;hide(As);
+      const pos=i=>63-i,to=o.op==='pl'?P:(i=>PI[i]);
+      for(let i=0;i<64;i++){const a=rectOf(Bs[pos(i)]),b=rectOf(As[pos(to(i))]),v=bit(o.p,i),t=.008*(63-i);mv.push({node:fxNode(tok(String(v),a.w,a.h,[v?bcol(i&3):'var(--muted)'])),pts:[xy(a),xy(b)],a:t,b:t+.45})}}
+    else{const g=id=>range(0,15).map(n=>$(`#${id} [data-n="${n}"]`)),Bn=g('xB'),An=g('xA');if(!Bn[0]||!An[0])return null;hide(An);
+      for(let n=0;n<16;n++){const a=rectOf(Bn[n]),b=rectOf(An[n]),v=nib(o.p,n),w=nib(o.s,n),t=.03*(15-n);
+        if(o.op==='ark'){const kn=$(`#xK [data-n="${n}"]`),q=rectOf(kn);
+          mv.push({node:fxNode(tok(h1(v),a.w,a.h,[AC])),pts:[xy(a),xy(b)],a:t,b:t+.5,at:[[t+.5,retok(h1(w),b.w,b.h,[AC,KC])]]});
+          mv.push({node:fxNode(tok(h1(nib(D.KS.K[o.ki-1],n)),q.w,q.h,[KC])),pts:[xy(q),xy(b)],a:t+.05,b:t+.5,end:t+.52})}
+        else mv.push({node:fxNode(tok(h1(v),a.w,a.h,[ncol(v)])),pts:[xy(a),xy(b)],a:t,b:t+.5,at:[[t+.25,retok(h1(w),a.w,a.h,[ncol(w)])]]})}}
+    return both(mover(mv),cues(cu));
+  }};
+},
+focus(){follow($('#xA'))}};
+
+/* 8 · diffusion: two plaintexts that differ in one bit, round by round */
+const pc64=v=>{let n=0;while(v){n+=Number(v&1n);v>>=1n}return n};
+T.df={n:()=>32,render(k){
+  const fb=ST.flip,pt2=D.pt^(1n<<B(fb)),t2=encTrace(pt2,D.KS),st=(ops,r)=>ops.filter(x=>x.r===r).at(-1).s;
+  let pick='';for(let n=15;n>=0;n--)pick+=`<div class="n4"><span>${h1(nib(pt2,n))}</span><div>${[3,2,1,0].map(j=>{const i=4*n+j;return `<i class="${i===fb?'flip':(bit(D.pt,i)?'one':'')}" data-fb="${i}" title="bit ${i}"></i>`}).join('')}</div></div>`;
+  const diffs=range(0,31).map(r=>st(D.enc,r)^st(t2,r)),counts=diffs.map(pc64);
+  const grid=(d,on)=>`<div class="dg16">${range(0,15).map(q=>{const n=15-q,v=nib(d,n),c=v?((v&1)+((v>>1)&1)+((v>>2)&1)+((v>>3)&1)):0;return `<i style="${on&&c?`background:color-mix(in srgb,var(--xor) ${30+17*c}%,var(--panel))`:''}"></i>`}).join('')}</div>`;
+  stage.innerHTML=`<div class="h3">Plaintext bits (bit 63 on the left). Click a bit to flip it. Now flipped: bit ${fb}.</div>
+    <div class="bitpick">${pick}</div>
+    <div class="sec"><div class="h3">Which nibbles differ after each round (darker = more different bits). Press Step to go round by round.</div>
+      <div class="dgr">${diffs.map((d,r)=>`<div class="dgw" data-dr="${r}">${r===0?'start':'r'+r}<b>${r<=k?counts[r]:'–'}</b>${grid(d,r<=k)}</div>`).join('')}</div></div>
+    <div class="sec"><div class="h3">Number of different bits after each round (out of 64)</div>
+      <div class="bars"><div class="ref" style="bottom:50%"><span>32 = half</span></div>${counts.map((n,r)=>`<div class="bar" data-br="${r}" data-n="${n}" style="height:${r<=k?n/64*100:0}%"></div>`).join('')}</div>
+      <div class="blbl"><span>start</span><span>round 16</span><span>round 31</span></div></div>`;
+  $('#explain').innerHTML=`<div class="step">Diffusion · ${k===0?'start':`round ${k} of 31`}</div>
+    <p>${k===0?'At the start the two plaintexts differ in 1 bit.':`After round ${k}: <b>${counts[k]}</b> of 64 bits differ, in ${range(0,15).filter(n=>nib(diffs[k],n)).length} of 16 nibbles.`}</p>
+    <p>We flip one plaintext bit and compare the two encryptions round by round.</p>
+    <p>Each S-box output bit goes to a different S-box (pLayer), so 1 active nibble becomes up to 4, then up to 16. After a few rounds about half of the 64 bits differ.</p>`;
+  $('#extra').innerHTML=`<h3>Ciphertexts</h3><p class="mono" style="font-size:13px;word-break:break-all">${hex(D.ct)}<br>${hex(t2.at(-1).s)}</p><p>They differ in <b>${pc64(D.ct^t2.at(-1).s)}</b> of 64 bits. (The last key addition does not change the difference.)</p>`;
+},
+plan(k){return{dur:1100,start(){
+  const g=$(`#stage [data-dr="${k}"]`),bar=$(`#stage [data-br="${k}"]`);if(!g||!bar)return null;
+  const cells=[...g.querySelectorAll('.dg16 i')],cnt=g.querySelector('b'),N=+bar.dataset.n;hide(cells);
+  return p=>{cells.forEach((e,i)=>{e.style.opacity=clamp(p*2-i*.04,0,1)});const q=ease(clamp(p*1.25-.25,0,1));bar.style.height=(q*N/64*100)+'%';cnt.textContent=Math.round(q*N)};
+}}}};
+
+/* ---------- step engine: one animation at a time (as in the DES demo) ----------
+   Each tab: n() = number of states, render(k) = static picture after step k,
+   plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
+const ENG={playing:false,anim:null,playT:null};
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const speed=()=>+$('#spd').value;
+function curN(){return T[ST.tab].n()}
+function controls(k){
+  const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
+  $('#ctrl').hidden=!stepped&&!t.rounds;
+  $('#prog').textContent=stepped?`Step ${k} of ${n-1}`:'';
+  $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
+  $('#fWrap').hidden=!t.focus;
+}
+// static picture of the current step; any running animation or pending play step is dropped
+function show(){
+  if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
+  const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
+  fxClear();t.render(k);controls(k);
+}
+function startStage(to){
+  stopAnim(true);
+  const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
+  ST.step[tab]=to;fxClear();t.render(to);            // the target picture; start() hides what is still to come
+  const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
+  if(!tick){fxClear();t.render(to);controls(to);next();return}
+  const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
+  ENG.anim=a;controls(to);tick(0);
+  if(t.focus&&$('#follow').checked)t.focus(to);
+  requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
+}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();T[a.tab].render(a.to);controls(a.to);next()}
+// when playing, the next step starts only after this one has finished, plus a short pause
+function next(){
+  if(!ENG.playing)return;const k=ST.step[ST.tab];
+  if(k<curN()-1)ENG.playT=setTimeout(()=>{ENG.playT=null;startStage(k+1)},(RM.matches?60:380)/speed());else setPlaying(false);
+}
+// complete = jump to the end of the running step, otherwise back to its start
+function stopAnim(complete){
+  if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
+  const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
+  if(a.tab===ST.tab){T[a.tab].render(ST.step[a.tab]);controls(ST.step[a.tab])}
+}
+function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
+// keep the moving part in view (the "follow" box); only the page scrolls, never a wide drawing sideways
+function follow(el){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
+  if(r.top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+}
+function fillRounds(){
+  const t=T[ST.tab];
+  $('#rWrap').hidden=!t.rounds;$('#mode').hidden=ST.tab!=='x';
+  if(!t.rounds)return;
+  const rs=t.rounds();if(!rs.includes(ST.round[ST.tab]))ST.round[ST.tab]=rs[0];
+  $('#rSel').innerHTML=rs.map(r=>`<option${r===ST.round[ST.tab]?' selected':''}>${r}</option>`).join('');
+}
+function goStep(tab,r,step){setTab(tab,r);ST.step[tab]=step;show();window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'})}
+function setTab(id,round){
+  setPlaying(false);stopAnim(true);ST.tab=id;ST.built='';ST.pick=null;
+  if(round!=null&&ST.round[id]!==undefined){ST.round[id]=+round;ST.step[id]=0}
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  fillRounds();show();
+  try{localStorage.setItem('present2-tab',id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(true);return}startStage((ST.step[ST.tab]||0)+1)};
+$('#bBack').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(false);return}const k=ST.step[ST.tab]||0;if(k>0){ST.step[ST.tab]=k-1;show()}};
+$('#bReset').onclick=()=>{setPlaying(false);stopAnim(false);ST.step[ST.tab]=0;ST.built='';show()};
+$('#bPlay').onclick=()=>{
+  if(ENG.playing){setPlaying(false);return}
+  const n=curN();if(n<2)return;
+  if((ST.step[ST.tab]||0)>=n-1&&!ENG.anim){ST.step[ST.tab]=0;ST.built='';show()}
+  setPlaying(true);if(!ENG.anim)startStage(ST.step[ST.tab]+1);
+};
+$('#rSel').onchange=e=>{setPlaying(false);stopAnim(false);ST.round[ST.tab]=+e.target.value;ST.step[ST.tab]=0;ST.built='';show()};
+$('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;setPlaying(false);stopAnim(false);ST.mode=b.dataset.m;
+  $$('#mode button').forEach(x=>x.classList.toggle('on',x===b));ST.step.x=0;show()};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');if(g){setTab(g.dataset.goto,g.dataset.round);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  const sj=e.target.closest('[data-sj]');if(sj){const n=+sj.dataset.sj;ST.rdPick=ST.rdPick===n?null:n;show();return}
+  const pb=e.target.closest('[data-pb]');if(pb){const i=+pb.dataset.pb;ST.plPick=ST.plPick===i?null:i;show();return}
+  const j=e.target.closest('[data-jump]');if(j){setPlaying(false);ST.step.x=+j.dataset.jump;show();return}
+  const kr=e.target.closest('[data-kr]');if(kr){setPlaying(false);ST.round.ks=+kr.dataset.kr;fillRounds();ST.step.ks=0;show();return}
+  const fb=e.target.closest('[data-fb]');if(fb){ST.flip=+fb.dataset.fb;show();return}
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
+});
+$('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="custom" disabled>Your own input</option>';
+$('#pre').onchange=e=>loadPreset(e.target.value);
+$('#ptI').oninput=$('#kI').oninput=onInput;
+let startTab='ov';try{const t=localStorage.getItem('present2-tab');if(t&&T[t])startTab=t}catch(e){}
+ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
+loadPreset('a');
+
+</script>
+</body>
+</html>
