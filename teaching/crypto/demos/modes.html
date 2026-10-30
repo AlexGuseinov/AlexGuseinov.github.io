@@ -624,6 +624,29 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
 .chipb .tw{width:46px;height:46px}
 .gq{font:600 14px var(--mono)}
 @media (max-width:560px){.er{grid-template-columns:minmax(0,1fr)}}
+/* padding oracle */
+.pog{display:grid;grid-template-columns:minmax(0,1fr) 216px;gap:18px;align-items:start}
+@media (max-width:800px){.pog{grid-template-columns:minmax(0,1fr)}}
+.pow{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pol{display:block;font:600 12.5px var(--sans);color:var(--muted);margin-bottom:3px}
+.poc{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:2px}
+.poc i{font:600 12px/26px var(--mono);font-style:normal;text-align:center;border-radius:4px;background:var(--line);color:var(--faint);transition:background .15s}
+.por.pr-a .kn{background:color-mix(in srgb,var(--xor) 26%,transparent);color:var(--ink)}
+.por.pr-a .on{background:var(--xor);color:#fff;outline:2px solid var(--ink);outline-offset:1px}
+.por.pr-k .kn{background:color-mix(in srgb,var(--key) 28%,transparent);color:var(--ink)}
+.por.pr-x .pdb{background:color-mix(in srgb,var(--ri) 30%,transparent);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ri)}
+.por.pr-p .kn{background:var(--ok);color:#fff;font-size:13px}
+@media (max-width:560px){.poc i{font-size:10px;line-height:22px}.por.pr-p .kn{font-size:11px}}
+.lamp{font:700 13px/1 var(--sans);text-align:center;padding:9px;border-radius:8px;background:var(--line);color:var(--muted);margin-bottom:8px;transition:background .12s}
+.lamp.ok{background:var(--okBg);color:var(--ok);box-shadow:0 0 12px color-mix(in srgb,var(--ok) 45%,transparent)}
+.lamp.bad{background:var(--xorBg);color:var(--xor)}
+.pob{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:1px}
+.pob i{aspect-ratio:1;border-radius:2px;background:var(--line)}
+.pob i.t{background:color-mix(in srgb,var(--xor) 55%,transparent)}
+.pob i.n{background:var(--ink)}
+.pob i.h{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.pon{display:flex;justify-content:space-between;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.pon b{font-family:var(--mono);color:var(--ink)}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -1430,6 +1453,53 @@ function gFlip(){
       say:ch(`Step ${3+i} · the server decrypts block ${i+1}`,i?'Block 2 is untouched. No error anywhere, and the text looks normal.':'The server uses the changed IV. The result differs from the real message in exactly the bit that was flipped.',fm(i?`P₂ = ${toText(P2[1])}`:`P₁ = ${sh(P2[0],AI)}`))})});
   return G;
 }
+// the padding oracle: the server only says whether the padding is fine, and that is enough
+const POC={};
+function poData(){
+  if(POC.v===D.v&&POC.iv===D.iv.cbc)return POC;
+  const iv=fromHex(D.iv.cbc),P=[...te.encode(AM)],C=E(D.rk,xorB(P,iv)),D1=Dk(D.rk,C);
+  let q=0;
+  const oracle=pre=>{q++;const p=xorB(D1,pre),n=p[15];return n>=1&&n<=16&&p.slice(16-n).every(x=>x===n)};   // all the attacker can see
+  const I=Array(16).fill(0),log=[];
+  for(let pos=15;pos>=0;pos--){
+    const v=16-pos,pre=Array(16).fill(0);for(let j=pos+1;j<16;j++)pre[j]=I[j]^v;
+    let g=0;
+    for(;g<256;g++){pre[pos]=g;if(!oracle(pre))continue;
+      if(pos===15){const t=pre.slice();t[14]^=1;if(!oracle(t))continue}                                     // 01 and not, by luck, 02 02
+      break}
+    I[pos]=g^v;log.push({pos,v,g,pre:pre.slice(),q,I:g^v,P:g^v^iv[pos]});
+  }
+  Object.assign(POC,{v:D.v,iv:D.iv.cbc,ivb:iv,C,log,got:log.map(e=>e.P).reverse(),q});
+  return POC;
+}
+const showCh=b=>b===32?'␣':safeCh(b);
+function renderPO(k,tabs){
+  const d=poData(),e=d.log[k-1],pos=e?e.pos:16,done=k===16,cols=[...Array(16).keys()];
+  const row=(lab,cls,id,f)=>`<div class="por ${cls}"><span class="pol">${lab}</span><div class="poc">${cols.map(j=>{const[v,c]=f(j);return`<i id="${id}${j}" class="${c}">${v}</i>`}).join('')}</div></div>`;
+  const known=j=>j>=pos,val=j=>d.log[15-j];
+  stage.innerHTML=tabs+`<div class="pog"><div class="pow">
+    ${row('Fake IV, chosen by the attacker','pr-a','pf',j=>[e?hx(e.pre[j]):'00',j===pos?'on':known(j)?'kn':''])}
+    ${row('AES⁻¹ of the real C₁','pr-k','pi',j=>known(j)?[hx(val(j).I),'kn']:['??',''])}
+    ${row('XOR of the two: the server checks its end','pr-x','pv',j=>known(j)?[hx(e.v),'pdb']:['??',''])}
+    ${row('Plaintext found so far','pr-p','pt',j=>known(j)?[showCh(val(j).P),'kn']:['·',''])}
+    ${done?`<div class="res r-bad"><span class="rl">Recovered</span><span class="rv rt">${toText(d.got)}</span><span class="vbad">no key used</span></div>`:''}
+  </div><div class="poside"><div class="lamp ${k?'ok':''}" id="poL">${k?'padding OK':'waiting'}</div><div class="pob" id="poG">${Array(256).fill(0).map((_,i)=>`<i class="${e&&i<e.g?'t':e&&i===e.g?'h':''}"></i>`).join('')}</div><div class="pon"><span>Guess <b id="poB">${e?hx(e.g):'··'}</b></span><span>Queries <b id="poQ">${e?e.q:0}</b></span></div></div></div>`;
+  $('#explain').innerHTML=k===0?say('Padding oracle','A server decrypts CBC messages and answers either “bad padding” or “OK”. That one bit looks harmless. It is enough to read the message, and the key stays unknown.','The attacker sends the real C₁ with a fake IV, and changes the fake IV again and again. Press <b>Step</b> for each byte, or <b>Play</b> for all 16.'):
+    say(`Byte ${pos} · found after ${e.g+1} guess${e.g?'es':''}`,`The attacker wants the block to end in ${e.v===1?'one byte 01':`${e.v} bytes of ${hx(e.v)}`}. The bytes after this one are already set, so it tries all values here until the server says OK.`,fm(`AES⁻¹(C₁)[${pos}] = ${hx(e.g)} ⊕ ${hx(e.v)} = ${hx(e.I)}<br>P[${pos}] = ${hx(e.I)} ⊕ IV[${pos}] = ${hx(e.P)}${e.P>=32&&e.P<127?` = '${String.fromCharCode(e.P)}'`:''}`),done?`<span class="warn">All 16 bytes in ${d.q} queries: ${Math.round(d.q/16)} per byte here, and never more than 256 per byte. Guessing the block directly would take 2¹²⁸ tries.</span>`:'');
+  $('#extra').innerHTML=`<h3>Why it works</h3>${fm('P′ = AES⁻¹(C₁) ⊕ fake IV')}<p>The attacker controls the second part, so it controls P′ bit by bit. The answer shows when P′ ends in valid padding, and from that one byte of AES⁻¹(C₁) follows.</p><p>Found by Vaudenay in 2002. It came back as POODLE (2014), and a timing version as Lucky Thirteen (2013).</p><p class="note">Hiding the error message is not enough. Check a MAC before touching the padding, or use <button class="link" data-goto="gcm">GCM</button>, which has no padding at all.</p>`;
+}
+function planPO(k){
+  const d=poData(),e=d.log[k-1];
+  return{dur:1200+Math.min(1400,e.g*7),start(){
+    const{pos,g,v}=e,cf=$('#pf'+pos),ci=$('#pi'+pos),cv=$('#pv'+pos),ct=$('#pt'+pos),L=$('#poL'),B=$('#poB'),Q=$('#poQ'),cs=$$('#poG i');if(!cf)return null;
+    const cl=[ci,cv,ct].map(c=>c.className),tx=[ci,cv,ct].map(c=>c.textContent);
+    ci.textContent=cv.textContent='??';ct.textContent='·';[ci,cv,ct].forEach(c=>c.className='');cs.forEach(c=>c.className='');L.className='lamp bad';L.textContent='bad padding';
+    let last=-1,sh=false;
+    return p=>{const t=Math.min(g,Math.floor(p/.8*(g+1)));
+      if(t!==last){for(let i=last+1;i<=t;i++)if(cs[i-1])cs[i-1].className='t';if(cs[t])cs[t].className='n';cf.textContent=hx(t);B.textContent=hx(t);Q.textContent=e.q-(g-t);last=t}
+      if(p>=.82&&!sh){sh=true;cs[g].className='h';L.className='lamp ok';L.textContent='padding OK';[ci,cv,ct].forEach((c,i)=>{c.className=cl[i];c.textContent=tx[i]})}};
+  }};
+}
 // GCM with a repeated nonce: two tags reveal H, and then any message can be forged
 function gnData(){
   const rk=D.rk,N=fromHex(D.iv.gcm),M=['PAY ALI 0100 AZN','PAY BOB 0050 AZN','PAY EVE 9999 AZN'].map(s=>[...te.encode(s)]);
@@ -1465,10 +1535,11 @@ function paintN(q){ // the pictures of the nonce attack; q = how far the last on
 }
 function wipe(id,d,q){const c=$('#'+id);if(!c)return;const h=Math.round(PW*q);if(h>0)c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(d),PW,PW),0,0,0,0,PW,h)}
 T.atk={dir:false,
-  n:()=>ST.atk==='flip'?chart('atk',gFlip).st.length+1:ST.atk==='gnon'?6:4,
+  n:()=>ST.atk==='flip'?chart('atk',gFlip).st.length+1:ST.atk==='gnon'?6:ST.atk==='oracle'?17:4,
   render(k){
-    const tabs=`<div class="row subs"><span class="seg sm"><button data-atk="flip" class="${ST.atk==='flip'?'on':''}">CBC bit flipping</button><button data-atk="nonce" class="${ST.atk==='nonce'?'on':''}">CTR nonce reuse</button><button data-atk="gnon" class="${ST.atk==='gnon'?'on':''}">GCM nonce reuse</button></span></div>`;
+    const tabs=`<div class="row subs"><span class="seg sm"><button data-atk="flip" class="${ST.atk==='flip'?'on':''}">CBC bit flipping</button><button data-atk="oracle" class="${ST.atk==='oracle'?'on':''}">Padding oracle</button><button data-atk="nonce" class="${ST.atk==='nonce'?'on':''}">CTR nonce reuse</button><button data-atk="gnon" class="${ST.atk==='gnon'?'on':''}">GCM nonce reuse</button></span></div>`;
     if(ST.atk==='gnon')return renderGN(k,tabs);
+    if(ST.atk==='oracle')return renderPO(k,tabs);
     if(ST.atk==='flip'){
       const G=chart('atk',gFlip),done=k>=G.st.length-1;
       stage.innerHTML=tabs+drawGraph(G,k)+`<div class="res r-p"><span class="rl">Sent</span><span class="rv rt">${AM} ${AM2}</span></div>`+(done?`<div class="res r-bad"><span class="rl">Received</span><span class="rv rt">${AM.slice(0,AI)}<b class="x">9</b>${AM.slice(AI+1)} ${AM2}</span><span class="vbad">no error, no warning</span></div>`:'');
@@ -1491,6 +1562,7 @@ T.atk={dir:false,
   },
   plan(k){
     if(ST.atk==='flip')return planGraph(chart('atk',gFlip),k);
+    if(ST.atk==='oracle')return planPO(k);
     if(ST.atk==='gnon')return{dur:800,start(){const r=$('#er'+k);if(!r)return null;r.style.opacity=0;return p=>{r.style.opacity=p}}};
     return{dur:1500,start(){const{ea,eb,x,y}=paintN();
       const c=id=>{const e=$('#'+id);if(e)e.getContext('2d').clearRect(0,0,PW,PW)};
