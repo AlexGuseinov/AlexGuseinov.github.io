@@ -96,7 +96,7 @@ button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inh
 .c.src2{outline:3px solid var(--key);outline-offset:1px}
 .c.colr{color:#fff;border-color:rgba(0,0,0,.15)}
 .c small{font:400 9px var(--sans);opacity:.75;margin-left:2px;align-self:flex-end;margin-bottom:4px}
-.gw{display:flex;flex-direction:column;align-items:center;gap:6px}
+.gw{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%}
 .gcap{font-size:13px;color:var(--muted);text-align:center}
 .gcap b{color:var(--ink)}
 .flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 16px}
@@ -346,9 +346,9 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .rg.band{background:var(--accentBg);border-color:var(--accent)}
 .c.ghost{opacity:0}
 /* overview chart */
-.ov2{display:grid;grid-template-columns:minmax(0,600px) minmax(0,1fr);gap:24px;align-items:start}
-@media (max-width:900px){.ov2{grid-template-columns:minmax(0,1fr)}}
-.ovw{width:100%;max-width:600px;height:auto;display:block}
+.ov2{display:grid;grid-template-columns:minmax(0,600px) minmax(300px,1fr);gap:24px;align-items:start}
+@media (max-width:1240px){.ov2{grid-template-columns:minmax(0,1fr)}}
+.ovw{width:100%;max-width:600px;height:auto;display:block;margin:0 auto}
 .ovw .ob{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
 .ovw .ob.io{fill:var(--ink);stroke:var(--ink)}
 .ovw .ob.kb{stroke:var(--key)}
@@ -406,13 +406,20 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .mcd{color:var(--muted)}
 footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
 /* ---------- PRESENT ---------- */
-:root{--ns:32px}
-@media (max-width:560px){:root{--ns:18px}}
+:root{--ns:min(32px,calc((100vw - 580px)/16))}
+@media (max-width:1000px){:root{--ns:min(32px,calc((100vw - 196px)/16))}}
+@media (max-width:560px){:root{--ns:calc((100vw - 144px)/16)}}
 .nr{display:flex;gap:3px;justify-content:center}
 .nr .c{width:var(--ns);height:42px;flex-direction:column;font-size:16px;line-height:1.05;flex:none}
 .nr .c small{font:400 8.5px var(--sans);opacity:.7;margin:2px 0 0}
 @media (max-width:560px){.nr{gap:2px}.nr .c{height:34px;font-size:13px;border-radius:4px}.nr .c small{display:none}}
 .nr .c.colv{color:#fff;border-color:transparent;text-shadow:0 0 3px rgba(0,0,0,.6)}
+/* the state on the overview: the same 4 × 4 picture as the small one on the chart */
+.ov2 .nr{display:grid;grid-template-columns:repeat(4,40px);grid-auto-rows:40px;gap:3px;justify-content:center}
+.ov2 .nr .c{width:auto;height:auto}
+.ov2 .nr .c small{display:block}
+.sgw{display:flex;justify-content:center;gap:8px}
+.sgl{display:grid;grid-auto-rows:40px;gap:3px;align-items:center;font:700 14px var(--sans)}
 .stack{display:flex;flex-direction:column;align-items:center;gap:10px}
 .st{border-collapse:separate;border-spacing:3px;font:14px var(--mono);margin:0 auto}
 .st th{font:600 12px var(--sans);color:var(--muted);text-align:right;padding-right:6px}
@@ -499,7 +506,9 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 .wbox.on{border-color:var(--ink)}
 /* 16-bit words as bit rows (rotations and additions) */
 :root{--bw:22px}
+@media (max-width:620px){:root{--bw:18px}}
 @media (max-width:560px){:root{--bw:15px}}
+@media (max-width:359px){:root{--bw:12px}}
 .brow{display:flex;align-items:center;gap:8px;margin:4px 0}
 .brow>.bl{width:54px;text-align:right;font:600 13px var(--sans);flex:none}
 .brow>.bh{font:600 13px var(--mono);color:var(--muted);flex:none;width:44px}
@@ -534,7 +543,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 .brow.rcrow .bits16 i.emp{visibility:hidden}
 .rtag{font:700 12px var(--sans);padding:2px 8px;border-radius:10px;border:1.5px solid var(--line2);color:var(--muted);flex:none}
 .rtag.on{border-color:var(--accent);color:var(--accent);background:var(--accentBg)}
-@media (max-width:560px){.rtag{display:none}}
+@media (max-width:650px),(min-width:1001px) and (max-width:1035px){.rtag{display:none}}
 #fx rect.colhi{fill:color-mix(in srgb,var(--accent) 13%,transparent);stroke:var(--accent);stroke-width:1.6}
 .wbox .mono{font-size:14px}
 .ksrc{font:600 11px var(--mono);color:var(--accent);min-height:14px}
@@ -814,9 +823,9 @@ T.ov={n:()=>30,render(k){
   <div><div class="h3">Dipper-64/${D.kb} encryption · 28 rounds. The small picture is the state; click a box to open that step.</div>${h}</div>
   <div>
     <div class="h3">The state now ${k===0?'(plaintext)':k===29?'(ciphertext)':`(after round ${k})`}</div>
-    ${nibs(nv(s),{style:n=>`background:${ncol(nib(s,n))}`,cls:()=>'colv',words:1})}
-    <div class="words" style="margin-top:4px">${WN.map((w,j)=>`<b style="color:${wcol(j)};font-size:13px">${w} = ${hex(words(s)[j],4)}</b>`).join('')}</div>
-    <p style="font-size:13px;color:var(--muted);margin:8px 0 18px">64 bits = four 16-bit words A, B, C, D = 16 nibbles; nibble 15 on the left. Each nibble value has its own colour, the same as on the chart.</p>
+    <div class="sgw"><div class="sgl">${WN.map((w,j)=>`<b style="color:${wcol(j)}">${w}</b>`).join('')}</div>${nibs(nv(s),{style:n=>`background:${ncol(nib(s,n))}`,cls:()=>'colv'})}</div>
+    <p class="mono" style="text-align:center;margin:8px 0 4px;font-size:14px"><b>${hex(s)}</b></p>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 18px">64 bits = four 16-bit words A, B, C, D = 16 nibbles. Each row is one word and nibble 15 is top left, the same picture as on the chart. Each nibble value has its own colour.</p>
     <div class="h3">Two versions</div>
     <table class="vt"><tr><th>Version</th><th>Block</th><th>Key</th><th>Rounds</th></tr>
       ${[96,128].map(kb=>`<tr${kb===D.kb?' style="background:var(--accentBg)"':''}><td>Dipper-64/${kb}</td><td>64 bits</td><td>${kb} bits</td><td>28</td></tr>`).join('')}</table>

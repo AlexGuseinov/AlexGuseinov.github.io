@@ -96,7 +96,7 @@ button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inh
 .c.src2{outline:3px solid var(--key);outline-offset:1px}
 .c.colr{color:#fff;border-color:rgba(0,0,0,.15)}
 .c small{font:400 9px var(--sans);opacity:.75;margin-left:2px;align-self:flex-end;margin-bottom:4px}
-.gw{display:flex;flex-direction:column;align-items:center;gap:6px}
+.gw{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%}
 .gcap{font-size:13px;color:var(--muted);text-align:center}
 .gcap b{color:var(--ink)}
 .flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 16px}
@@ -346,9 +346,9 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .rg.band{background:var(--accentBg);border-color:var(--accent)}
 .c.ghost{opacity:0}
 /* overview chart */
-.ov2{display:grid;grid-template-columns:minmax(0,600px) minmax(0,1fr);gap:24px;align-items:start}
-@media (max-width:900px){.ov2{grid-template-columns:minmax(0,1fr)}}
-.ovw{width:100%;max-width:600px;height:auto;display:block}
+.ov2{display:grid;grid-template-columns:minmax(0,600px) minmax(300px,1fr);gap:24px;align-items:start}
+@media (max-width:1240px){.ov2{grid-template-columns:minmax(0,1fr)}}
+.ovw{width:100%;max-width:600px;height:auto;display:block;margin:0 auto}
 .ovw .ob{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
 .ovw .ob.io{fill:var(--ink);stroke:var(--ink)}
 .ovw .ob.kb{stroke:var(--key)}
