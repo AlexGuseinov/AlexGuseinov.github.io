@@ -575,6 +575,31 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
 .mln{fill:none;stroke:var(--line2);stroke-width:1.4}
 .mln.hl{stroke:var(--ri);stroke-width:1.6}
 .mmk{fill:var(--line2)}
+/* why an IV */
+.twg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.twg{grid-template-columns:minmax(0,1fr)}}
+.twr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:9px 11px;border-radius:9px;border-left:3px solid var(--ok);background:color-mix(in srgb,var(--ok) 7%,transparent)}
+.twr.eq{border-left-color:var(--xor);background:color-mix(in srgb,var(--xor) 8%,transparent)}
+.twn{font-size:13px;color:var(--muted)}.twn b{display:block;color:var(--ink);font-size:14.5px}
+.twp{display:flex;gap:6px;grid-row:span 2;grid-column:2}
+.tw{width:58px;height:58px;display:block}
+.twv{font:600 12.5px var(--sans);color:var(--ok)}.twr.eq .twv{color:var(--xor)}
+@media (max-width:420px){.tw{width:44px;height:44px}.twp{gap:4px}}
+.seg.wr{display:inline-flex;flex-wrap:wrap;overflow:visible}
+.plyr{fill:color-mix(in srgb,var(--ink) 3%,transparent);stroke:var(--line2);stroke-width:1.4;stroke-dasharray:6 4}
+.plyr.k{stroke:var(--key)}
+.plyt{font:700 13px var(--sans);fill:var(--muted)}.plyt.k{fill:var(--key)}
+.coin circle{fill:var(--panel);stroke:var(--ri);stroke-width:2.2}
+.coin text{font:700 13px var(--mono);fill:var(--ri);text-anchor:middle}
+.ivt{display:flex;flex-direction:column;gap:6px}
+.ivr{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr) 44px 70px;gap:10px;align-items:center;font-size:13px}
+.ivn{color:var(--muted)}.ivn b{color:var(--ink)}
+.ivb{position:relative;height:16px;border-radius:5px;background:var(--line);overflow:hidden;display:block}
+.ivb i{position:absolute;left:0;top:0;bottom:0;background:var(--ok);border-radius:5px;transition:width .08s linear}
+.ivb i.hi{background:var(--xor)}
+.ivb u{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--ink);opacity:.45}
+.ivp{font:700 13px var(--mono);text-align:right}
+@media (max-width:640px){.ivr{grid-template-columns:minmax(0,1fr) 44px 70px}.ivn{grid-column:1/-1}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -588,10 +613,11 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
     <button data-tab="cbc">3 · CBC</button>
     <button data-tab="ctr">4 · CTR</button>
     <button data-tab="cf">5 · CFB + OFB</button>
-    <button data-tab="gcm">6 · GCM</button>
-    <button data-tab="fl">7 · Flip a bit</button>
-    <button data-tab="atk">8 · Attacks</button>
-    <button data-tab="cmp">9 · Compare</button>
+    <button data-tab="iv">6 · Why an IV</button>
+    <button data-tab="gcm">7 · GCM</button>
+    <button data-tab="fl">8 · Flip a bit</button>
+    <button data-tab="atk">9 · Attacks</button>
+    <button data-tab="cmp">10 · Compare</button>
   </nav>
 </header>
 
@@ -762,7 +788,7 @@ const PRE=[
 ];
 const IVDEF={cbc:IV0,cfb:IV0,ofb:IV0,ctr:CT0,gcm:GN};
 const D={msg:[],key:[],rk:null,iv:{...IVDEF},aad:[],mF:'text',usePad:true,pm:[],sm:[],exp:null,v:0,preset:'rep'};
-const ST={tab:'ov',step:{},round:{},mode:'enc',built:'',pick:null,sub:'cfb',atk:'flip',pic:'lock',fb:{b:0,i:5,bit:0}};
+const ST={tab:'ov',step:{},round:{},mode:'enc',built:'',pick:null,sub:'cfb',atk:'flip',pic:'lock',fb:{b:0,i:5,bit:0},ivV:'twice',ivS:'ecb',ivR:{},roll:0};
 const stage=$('#stage');
 const T={};
 const toText=b=>String.fromCharCode(...b);
@@ -1099,7 +1125,7 @@ T.cbc=chainTab({tag:()=>'cbc',build:gCBC,
     return strip(dec?'Plaintext':'Ciphertext',dec?D.pm:g.Cb,i=>g.by[(dec?'p':'c')+i].t,k,dec?'p':'c',done?(dec?okB('back to the message'):e&&e[0]===hexs(g.Cb.flat())?okB(e[1]):''):'')+(done&&dec?textStrip('As text',D.msg,1):'')},
   intro:()=>say('Cipher Block Chaining','Each plaintext block is mixed with the ciphertext block before it, so one block depends on all earlier ones.','The first block has nothing before it, so a random <b>IV</b> takes that place. Press <b>Step</b>.'),
   outro:g=>{const r=g.Cb.length-new Set(g.Cb.map(hexs)).size;return ST.mode==='enc'&&D.pm.length-new Set(D.pm.map(hexs)).size&&!r?'<p>The message has repeated blocks, the ciphertext has none. CBC hid them.</p>':''},
-  extra:()=>`<h3>CBC in one line</h3>${fm('C<sub>i</sub> = E<sub>K</sub>(P<sub>i</sub> ⊕ C<sub>i−1</sub>), C<sub>0</sub> = IV')}${fm('P<sub>i</sub> = D<sub>K</sub>(C<sub>i</sub>) ⊕ C<sub>i−1</sub>')}${pc(['Hides repeats','Decryption can run in parallel'],['Encryption cannot: each block waits for the last','Padding is needed','The IV must be random and unpredictable','No integrity: <button class="link" data-goto="atk">see the bit-flipping attack</button>'])}`});
+  extra:()=>`<h3>CBC in one line</h3>${fm('C<sub>i</sub> = E<sub>K</sub>(P<sub>i</sub> ⊕ C<sub>i−1</sub>), C<sub>0</sub> = IV')}${fm('P<sub>i</sub> = D<sub>K</sub>(C<sub>i</sub>) ⊕ C<sub>i−1</sub>')}${pc(['Hides repeats','Decryption can run in parallel'],['Encryption cannot: each block waits for the last','Padding is needed','The IV must be random and unpredictable: <button class="link" data-goto="iv">see why</button>','No integrity: <button class="link" data-goto="atk">see the bit-flipping attack</button>'])}`});
 
 /* ---------- CTR, CFB and OFB: the block cipher makes a keystream ---------- */
 function gStream(mode,dec){
@@ -1142,6 +1168,89 @@ T.cf=chainTab({tag:()=>'cf'+ST.sub,build:d=>gStream(ST.sub,d),
   below:(g,k)=>streamBelow(ST.sub)(g,k),
   intro:()=>ST.sub==='cfb'?say('Cipher Feedback','Like CBC turned into a stream cipher: AES encrypts the previous ciphertext block, and the result is XORed with the plaintext.','Press <b>Step</b>, then switch to OFB and spot the one wire that moves.'):say('Output Feedback','AES encrypts its own previous output again and again. The keystream does not depend on the message at all.','Press <b>Step</b>, then switch to CFB and spot the one wire that moves.'),
   extra:()=>ST.sub==='cfb'?`<h3>CFB in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(C<sub>i−1</sub>), C<sub>0</sub> = IV')}${pc(['No padding, and AES⁻¹ is not needed','Decryption can run in parallel'],['Encryption cannot','A bit error also garbles the next block','No integrity'])}<p class="note">Here CFB feeds back whole 16-byte blocks (CFB-128).</p>`:`<h3>OFB in one line</h3>${fm('S<sub>i</sub> = E<sub>K</sub>(S<sub>i−1</sub>), S<sub>0</sub> = IV')}${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ S<sub>i</sub>')}${pc(['No padding, and AES⁻¹ is not needed','A bit error stays one bit error','The keystream can be made in advance'],['Neither direction runs in parallel','The IV must never repeat under one key','No integrity'])}`});
+/* ---------- why an IV: the same message many times, and the IND-CPA game ---------- */
+const M0=[...te.encode('ATTACK AT DAWN!!')],M1=[...te.encode('RETREAT AT DUSK!')];
+const rnd16=()=>[...crypto.getRandomValues(new Uint8Array(16))];
+const SCH=[['ecb','ECB','no IV at all'],['cbcf','CBC','the same IV every time'],['ctrf','CTR','the same counter every time'],['cbcp','CBC','next IV = last IV + 1'],['cbcr','CBC','a fresh random IV'],['ctrn','CTR','a counter that never repeats']];
+// a scheme with its own state; each call encrypts one block and returns the IV it used
+function mkScheme(id,rk){
+  const st={iv:rnd16()};
+  return m=>{
+    if(id==='ecb')return{iv:null,c:E(rk,m)};
+    if(id==='cbcf')return{iv:st.iv,c:E(rk,xorB(m,st.iv))};
+    if(id==='ctrf')return{iv:st.iv,c:xorB(m,E(rk,st.iv))};
+    if(id==='cbcr'){const iv=rnd16();return{iv,c:E(rk,xorB(m,iv))}}
+    const iv=st.iv;st.iv=incr(st.iv);
+    return{iv,c:id==='cbcp'?E(rk,xorB(m,iv)):xorB(m,E(rk,iv))};
+  };
+}
+// one round of the game. The attacker asks for an encryption and compares it with the challenge
+function gameRound(id,rk){
+  const enc=mkScheme(id,rk),b=crypto.getRandomValues(new Uint8Array(1))[0]&1,ch=enc(b?M1:M0);
+  const q=id==='cbcp'?xorB(xorB(M0,ch.iv),incr(ch.iv)):M0,r=enc(q);
+  return{b,ch,q,r,guess:hexs(r.c)===hexs(ch.c)?0:1};
+}
+const IVC={};
+function twiceRows(){
+  const k=`${D.v}|${ST.roll}`;
+  return IVC[k]||(IVC[k]=SCH.map(([id])=>{const enc=mkScheme(id,D.rk);return[0,1,2,3].map(()=>enc(M0).c)}));
+}
+const tw=b=>`<svg class="tw" viewBox="-24 -24 48 48" aria-hidden="true">${patch(b,10)}</svg>`;
+function gGame(){
+  const id=ST.ivS,R=gameRound(id,D.rk),{b,ch,q,r,guess}=R,pred=id==='cbcp',same=hexs(r.c)===hexs(ch.c),name=SCH.find(s=>s[0]===id)[1],G=Graph(900,424,'The IND-CPA game');
+  G.minW=720;G.R=R;
+  G.decor=`<rect class="plyr" x="14" y="24" width="330" height="396" rx="12"/><text class="plyt" x="30" y="46">Attacker: no key</text><rect class="plyr k" x="566" y="24" width="320" height="396" rx="12"/><text class="plyt k" x="582" y="46">Challenger: has the key</text>`;
+  G.bk('m0',90,110,M0,'M₀','p',{given:1});G.bk('m1',214,110,M1,'M₁','p',{given:1});G.bk('mb',726,110,b?M1:M0,`M${b?'₁':'₀'}`,'p',{});
+  G.box('a1',726,226,name);G.bk('c',214,226,ch.c,'C','c',{});G.bk('q',214,342,q,pred?'M′':'M₀','p',{});G.box('a2',726,342,name);G.bk('cp',90,342,r.c,'C′','c',{capB:0});
+  const w1=G.w('m',[[255,110],[685,110]]),w2=G.w('b',[[726,151],[726,189]]),w3=G.w('c',[[647,226],[255,226]]),w4=G.w('q',[[255,342],[647,342]]),w5=G.w('r',[[726,379],[726,408],[90,408],[90,383]]);
+  G.lab(470,102,'M₀, M₁');G.lab(470,218,'C');G.lab(470,334,pred?'M′':'M₀');G.lab(470,402,'C′');
+  G.after=k=>k>=2?`<g class="coin"><circle cx="836" cy="110" r="25"/><text x="836" y="115">b=${b}</text></g>`:'';
+  G.step({x:470,dur:1800,hot:['m'],toks:[{v:M0,legs:[[0,.96,[[90,110],[726,110]]]],end:.97},{v:M1,legs:[[.1,1,[[214,110],[726,110]]]],end:1}],
+    say:say('Step 1 · two messages','The attacker chooses any two messages of the same length and sends both.',fm(`M₀ = ${toText(M0)}<br>M₁ = ${toText(M1)}`))});
+  G.step({x:470,dur:2600,open:[['mb',.2],['c',.96]],hot:['b','c'],pulse:[['a1',.34,.62]],boxes:['a1'],toks:[{v:b?M1:M0,legs:[[.2,.36,[[726,110],[726,226]]],[.6,.96,[[726,226],[214,226]]]],at:[[.48,ch.c]],end:.97}],
+    say:say('Step 2 · the challenge',`The challenger flips a coin: <b>b = ${b}</b>. It encrypts only M<sub>b</sub> and sends the result back. The attacker must find out which one it was.`,fm(`C =<br>${fH(ch.c)}`))});
+  G.step({x:470,dur:2600,open:[['q',.1],['cp',.96]],hot:['q','r'],pulse:[['a2',.42,.62]],boxes:['a2'],toks:[{v:q,legs:[[.1,.42,w4]],at:[[.5,r.c]],end:.5},{v:r.c,legs:[[.56,.96,w5]],end:.97}],
+    say:pred?say('Step 3 · a clever question','The attacker saw the IV of the challenge and can predict the next one. So it builds a message that cancels the difference between them.',fm(`M′ = M₀ ⊕ IV ⊕ IV<sub>next</sub> =<br>${fH(q)}`),`If C came from M₀, AES now gets exactly the same input as before: M′ ⊕ IV<sub>next</sub> = M₀ ⊕ IV.`):
+      say('Step 3 · a free question','This is the “chosen plaintext” part: the attacker may ask for the encryption of anything. Here it simply asks for M₀.',fm(`C′ =<br>${fH(r.c)}`))});
+  G.step({x:150,dur:1500,pulse:[],toks:[],
+    say:say('Step 4 · the guess',same?'C′ equals C, so the challenge must have been M₀.':'C′ differs from C.',fm(`guess = ${guess}, real b = ${b}`),
+      id==='cbcr'||id==='ctrn'?`<span class="okn">C′ is different whichever message was chosen, so comparing says nothing. The attacker can only guess.</span>`:guess===b?`<span class="warn">The attacker wins, and this comparison wins every round: ${same?'equal means M₀':'different means M₁'}. No key was needed.</span>`:'')});
+  return G;
+}
+const ivResult=(w,n)=>{const p=100*w/n;return n?`${p.toFixed(0)}%`:''};
+function ivTable(){
+  return`<div class="sec"><div class="pich"><div><div class="h3">Play it many times</div><div class="pics-s">The same attacker against each scheme, with a new coin every round. A good scheme leaves the attacker at 50%.</div></div><button class="pri" data-ivrun="1">Play 200 rounds</button></div>
+  <div class="ivt">${SCH.map(([id,n,d])=>{const v=ST.ivR[id];return`<div class="ivr"><span class="ivn"><b>${n}</b> ${d}</span><span class="ivb"><i id="ivb-${id}" style="width:${v?100*v.w/v.n:0}%"></i><u></u></span><span class="ivp" id="ivp-${id}">${v?ivResult(v.w,v.n):''}</span><span class="ivv" id="ivv-${id}">${v?ivVerdict(v):''}</span></div>`}).join('')}</div></div>`;
+}
+const ivVerdict=v=>v.n<200?'':v.w/v.n>.9?'<span class="st bad">broken</span>':'<span class="st best">coin flip</span>';
+function ivRun(){
+  const R=ST.ivR={},N=200;SCH.forEach(([id])=>{R[id]={w:0,n:0}});
+  $$('[data-ivrun]').forEach(b=>b.disabled=true);
+  (function go(){
+    SCH.forEach(([id])=>{const v=R[id];for(let i=0;i<10;i++){const r=gameRound(id,D.rk);v.n++;if(r.guess===r.b)v.w++}
+      const b=$('#ivb-'+id);if(b){b.style.width=100*v.w/v.n+'%';b.classList.toggle('hi',v.w/v.n>.9&&v.n>60);$('#ivp-'+id).textContent=ivResult(v.w,v.n);$('#ivv-'+id).innerHTML=ivVerdict(v)}});
+    if(R[SCH[0][0]].n<N&&ST.tab==='iv')setTimeout(go,RM.matches?0:24);else $$('[data-ivrun]').forEach(b=>b.disabled=false);
+  })();
+}
+T.iv={
+  n:()=>ST.ivV==='game'?chart(`iv${ST.ivS}${ST.roll}`,gGame).st.length+1:1,
+  render(k){
+    const sw=`<div class="row subs"><span class="seg sm"><button data-ivv="twice" class="${ST.ivV==='twice'?'on':''}">Same message, four times</button><button data-ivv="game" class="${ST.ivV==='game'?'on':''}">The IND-CPA game</button></span></div>`;
+    if(ST.ivV==='twice'){
+      const R=twiceRows();
+      stage.innerHTML=sw+`<div class="pich"><div><div class="h3">One block sent four times: ${toText(M0)}</div><div class="pics-s">Each square is the ciphertext of the same message under the same key.</div></div><button data-roll="1">Send again</button></div>
+      <div class="twg">${SCH.map(([id,n,d],i)=>{const h=R[i].map(hexs),eq=new Set(h).size===1;return`<div class="twr ${eq?'eq':'df'}"><div class="twn"><b>${n}</b>${d}</div><div class="twp">${R[i].map(tw).join('')}</div><div class="twv">${eq?'all equal':'all different'}</div></div>`}).join('')}</div>`;
+      $('#explain').innerHTML=say('Why an IV?','Without an IV, encryption is a fixed function: the same message always gives the same ciphertext. An attacker sees when you repeat yourself.','The green rows give a new ciphertext every time, because each encryption starts from a new value.','Press <b>Send again</b> and watch which rows change.');
+      $('#extra').innerHTML=`<h3>Is different enough?</h3><p>CBC with a counting IV looks fine here: all four differ. But different is not enough.</p><p class="note">Open <button class="link" data-ivv="game">the IND-CPA game</button> to see it broken.</p>`;
+      return;
+    }
+    const G=chart(`iv${ST.ivS}${ST.roll}`,gGame);
+    stage.innerHTML=sw+`<div class="row subs"><span class="flh">Scheme</span><span class="seg sm wr">${SCH.map(([id,n,d])=>`<button data-ivs="${id}" class="${ST.ivS===id?'on':''}">${n}: ${d}</button>`).join('')}</span><button data-roll="1">New round</button></div>`+drawGraph(G,k)+ivTable();panTo(G,k);
+    $('#explain').innerHTML=k===0?say('The IND-CPA game','This is how cryptographers define “hides everything”. The attacker may ask for encryptions of anything it likes, and then has to tell two messages apart.','Press <b>Step</b> to play one round.'):G.st[k-1].say;
+    $('#extra').innerHTML=`<h3>IND-CPA in one line</h3>${fm('Adv = | Pr[guess = b] − ½ |')}<p>A scheme is <b>IND-CPA secure</b> if every efficient attacker has a negligible advantage.</p><p>So a scheme that always gives the same ciphertext can never be secure.</p><ul class="pros"><li class="y"><b>CBC, CFB:</b> IV random and unpredictable</li><li class="y"><b>CTR, OFB, GCM:</b> nonce unique, a simple counter is fine</li></ul>`;
+  },
+  plan(k){return planGraph(chart(`iv${ST.ivS}${ST.roll}`,gGame),k)},
+  focus(){follow($('#chS'))}};
 /* ---------- GCM: CTR for secrecy, GHASH for the tag ---------- */
 const GC=11,GS=7;
 function gGCM(dec){
@@ -1322,7 +1431,7 @@ T.cmp={n:()=>1,render(){
     ['OFB','cf',y,n,n,n,'1 bit',m('unique'),n,'<span class="st old">Legacy</span>'],
     ['CTR','ctr',y,n,y,y,'1 bit',m('unique, never repeat'),n,'<span class="st ok">Good</span>'],
     ['GCM','gcm',y,n,y,y,'message rejected',m('unique, never repeat'),y,'<span class="st best">Best choice</span>']];
-  stage.innerHTML=`<div class="scroll"><table class="cmp"><tr><th>Mode</th><th>Hides<br>patterns</th><th>Needs<br>padding</th><th>Parallel<br>encrypt</th><th>Parallel<br>decrypt</th><th>A 1-bit error costs</th><th>IV or nonce</th><th>Detects<br>changes</th><th>Today</th></tr>
+  stage.innerHTML=`<div class="scroll"><table class="cmp"><tr><th>Mode</th><th>Hides patterns<br>(IND-CPA)</th><th>Needs<br>padding</th><th>Parallel<br>encrypt</th><th>Parallel<br>decrypt</th><th>A 1-bit error costs</th><th>IV or nonce</th><th>Detects<br>changes</th><th>Today</th></tr>
     ${R.map(r=>`<tr><td><button class="link mn" data-goto="${r[1]}"${r[0]==='OFB'?' data-sub="ofb"':r[0]==='CFB'?' data-sub="cfb"':''}>${r[0]}</button></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="txt">${r[6]}</td><td class="txt">${r[7]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('')}</table></div>
     <div class="sec"><div class="h3">Which one should I use?</div><div class="pick3">
       <div class="pk best"><b>Encrypting data</b>Use GCM. You get secrecy and integrity from one call.</div>
@@ -1460,6 +1569,10 @@ document.addEventListener('click',e=>{
   const s=e.target.closest('[data-sub]');if(s){setPlaying(false);stopAnim(false);setSub(s.dataset.sub);show();return}
   const a=e.target.closest('[data-atk]');if(a){setPlaying(false);stopAnim(false);ST.atk=a.dataset.atk;ST.step.atk=0;show();return}
   const p=e.target.closest('[data-pic]');if(p){ST.pic=p.dataset.pic;$$('#picS [data-pic]').forEach(x=>x.classList.toggle('on',x===p));$('#picS .pup').classList.remove('on');paintPics();return}
+  const iv=e.target.closest('[data-ivv]');if(iv){setPlaying(false);stopAnim(false);ST.ivV=iv.dataset.ivv;ST.step.iv=0;show();return}
+  const is=e.target.closest('[data-ivs]');if(is){setPlaying(false);stopAnim(false);ST.ivS=is.dataset.ivs;ST.step.iv=0;show();return}
+  const ro=e.target.closest('[data-roll]');if(ro){setPlaying(false);stopAnim(false);ST.roll++;ST.step.iv=0;show();return}
+  if(e.target.closest('[data-ivrun]')){ivRun();return}
   const f=e.target.closest('[data-fl]');if(f){const[b,i]=f.dataset.fl.split(',').map(Number);ST.fb.b=b;ST.fb.i=i;show();return}
   const b=e.target.closest('[data-fbit]');if(b){ST.fb.bit=+b.dataset.fbit;show();return}
 });
