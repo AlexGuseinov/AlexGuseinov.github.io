@@ -662,6 +662,13 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
 .frq button{font-size:12.5px;padding:4px 9px;border-radius:14px}
 .frq button:hover{background:var(--accentBg)}
 .flpr{gap:6px 14px}
+.why4{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.why4>div{padding:10px 12px;border-radius:9px;font-size:13.5px;border-top:3px solid var(--accent);background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.why4>div.wx{border-top-color:var(--xor)}
+.why4 b{display:block;margin-bottom:3px}
+.pics-s .vok{white-space:normal;display:inline-block}
+.why3 button.link,.why4 button.link{display:inline;text-align:left}
+.pob,.lamp,.pon{max-width:240px;margin-left:auto;margin-right:auto}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -1429,7 +1436,7 @@ T.gcm=chainTab({tag:()=>'gcm',build:gGCM,quiz:'gcm',
   after(g,k){const last=[...g.st.slice(0,k)].reverse().find(s=>s.mul);if(last)gfShow(last.mul,128)},
   intro:()=>say('Galois/Counter Mode','GCM does two jobs at once: <b>CTR</b> hides the message, and a fast hash called <b>GHASH</b> makes a tag that proves nobody changed it.','This is authenticated encryption. TLS 1.3 uses it, and so does most of the web.','Press <b>Step</b>.'),
   outro:()=>ST.mode==='dec'?'':'<p>The receiver gets the nonce, the additional data, the ciphertext and the tag.</p>',
-  extra:()=>`<h3>GCM in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(T<sub>i</sub>)')}${fm('Tag = GHASH<sub>H</sub>(A, C) ⊕ E<sub>K</sub>(J₀)')}${pc(['Secrecy and integrity together','Both directions run in parallel','Protects additional data too','No padding, and AES⁻¹ is not needed'],['A nonce must never repeat under one key: that breaks secrecy and <button class="link" data-goto="atk" data-atk="gnon">reveals H</button>'])}<p class="note">Change one bit and the tag fails: <button class="link" data-goto="fl">try it</button>.</p>`});
+  extra:()=>`<h3>GCM in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(T<sub>i</sub>)')}${fm('Tag = GHASH<sub>H</sub>(A, C) ⊕ E<sub>K</sub>(J₀)')}${pc(['Secrecy and integrity together','Both directions run in parallel','Protects additional data too','No padding, and AES⁻¹ is not needed'],['A nonce must never repeat under one key: that breaks secrecy and <button class="link" data-goto="atk" data-atk="gnon">reveals H</button>','With random nonces, about 2³² messages per key at most'])}<p class="note">Change one bit and the tag fails: <button class="link" data-goto="fl">try it</button>.</p>`});
 /* ---------- flip a bit: the same damage under every mode ---------- */
 const FM=[['ecb','ECB'],['cbc','CBC'],['cfb','CFB'],['ofb','OFB'],['ctr','CTR'],['gcm','GCM']];
 function flipRun(){
@@ -1613,14 +1620,19 @@ T.cmp={n:()=>1,render(){
     ['CFB','cf',y,n,n,y,'1 bit + the next block',m('random, unpredictable'),n,'<span class="st old">Legacy</span>'],
     ['OFB','cf',y,n,n,n,'1 bit',m('unique'),n,'<span class="st old">Legacy</span>'],
     ['CTR','ctr',y,n,y,y,'1 bit',m('unique, never repeat'),n,'<span class="st ok">Good</span>'],
-    ['GCM','gcm',y,n,y,y,'message rejected',m('unique, never repeat'),y,'<span class="st best">Best choice</span>']];
+    ['GCM','gcm',y,n,y,y,'message rejected',m('unique, never repeat'),y,'<span class="st best">Recommended</span>']];
   stage.innerHTML=`<div class="scroll"><table class="cmp"><tr><th>Mode</th><th>Hides patterns<br>(IND-CPA)</th><th>Needs<br>padding</th><th>Parallel<br>encrypt</th><th>Parallel<br>decrypt</th><th>A 1-bit error costs</th><th>IV or nonce</th><th>Detects<br>changes</th><th>Today</th></tr>
     ${R.map(r=>`<tr><td><button class="link mn" data-goto="${r[1]}"${r[0]==='OFB'?' data-sub="ofb"':r[0]==='CFB'?' data-sub="cfb"':''}>${r[0]}</button></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="txt">${r[6]}</td><td class="txt">${r[7]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('')}</table></div>
     <div class="sec"><div class="h3">Which one should I use?</div><div class="pick3">
-      <div class="pk best"><b>Encrypting data</b>Use GCM. You get secrecy and integrity from one call.</div>
-      <div class="pk ok"><b>Only raw speed or random access</b>CTR, with a MAC on top if the data can be changed.</div>
-      <div class="pk bad"><b>Avoid</b>ECB for anything longer than a block, and CBC without a MAC.</div></div></div>`;
-  $('#explain').innerHTML=say('All six side by side','The block cipher is the same everywhere. The mode decides what an attacker can see and change.','Click a mode to open it.');
+      <div class="pk best"><b>Encrypting data</b>Use an authenticated mode. AES-GCM is the usual choice, as long as every nonce is unique.</div>
+      <div class="pk ok"><b>Random access to stored data</b>CTR, with a MAC on top, because CTR alone detects nothing.</div>
+      <div class="pk bad"><b>Avoid</b>ECB for anything longer than a block, and CBC without a MAC.</div></div></div>
+    <div class="sec"><div class="h3">GCM is a good default, not a perfect one</div><div class="why4">
+      <div class="wx"><b>Its weak spot</b>One repeated nonce breaks it: <button class="link" data-atk="gnon" data-goto="atk">H is revealed and tags can be forged</button>. With random nonces, NIST allows about 2³² messages per key.</div>
+      <div><b>AES-GCM-SIV</b>RFC 8452. A repeated nonce shows only that the same message was sent twice. The price: encryption needs two passes over the data.</div>
+      <div><b>ChaCha20-Poly1305</b>RFC 8439. Not a block cipher mode: it is built on a stream cipher, and it has the same nonce rule as GCM. Also in TLS 1.3, and fast on devices without AES hardware.</div>
+      <div><b>Ascon-AEAD128</b>NIST SP 800-232 (2025). A lightweight standard for small IoT devices, not based on AES.</div></div></div>`;
+  $('#explain').innerHTML=say('All six side by side','The block cipher is the same everywhere. The mode decides what an attacker can see and change.','No mode is safe under every condition: each row below depends on using its IV or nonce correctly. Click a mode to open it.');
   $('#extra').innerHTML=`<h3>Three rules</h3><p><b>1.</b> Encryption alone does not protect against changes.</p><p><b>2.</b> Never use an IV or nonce twice under one key.</p><p><b>3.</b> Do not build your own mode: use a tested library.</p>`;
 }};
 
@@ -1637,7 +1649,7 @@ function miniD(kind){
   return`<svg class="mini-d" viewBox="0 0 190 80" aria-hidden="true"><defs><marker id="mm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path class="mmk" d="M0,0 L10,5 L0,10 z"/></marker></defs>${q[kind]}</svg>`;
 }
 const OC=[['ecb','ecb','ECB','Electronic Codebook','Each block alone. Patterns leak.','bad','Never'],['cbc','cbc','CBC','Cipher Block Chaining','Each block is mixed with the last one.','old','Legacy'],['ctr','ctr','CTR','Counter','AES encrypts a counter; XOR with the data.','ok','Good'],
-  ['cf','cfb','CFB','Cipher Feedback','The ciphertext feeds the next keystream block.','old','Legacy'],['cf','ofb','OFB','Output Feedback','AES encrypts its own output.','old','Legacy'],['gcm','gcm','GCM','Galois/Counter Mode','CTR plus a tag that detects changes.','best','Best choice']];
+  ['cf','cfb','CFB','Cipher Feedback','The ciphertext feeds the next keystream block.','old','Legacy'],['cf','ofb','OFB','Output Feedback','AES encrypts its own output.','old','Legacy'],['gcm','gcm','GCM','Galois/Counter Mode','CTR plus a tag that detects changes.','best','Recommended']];
 function msgCells(split,padded){
   const m=D.msg,txt=printable(m),cell=(b,i,c='')=>`<i class="mc ${c}" id="mc${i}" style="--h:${(i>>4)*67+200}">${txt&&b!==32?safeCh(b):txt?'&nbsp;':hx(b)}</i>`;
   if(!split)return`<div class="ml">${m.map((b,i)=>cell(b,i)).join('')}</div>`;
@@ -1651,7 +1663,7 @@ T.ov={n:()=>3,render(k){
   $('#explain').innerHTML=[say('The problem','AES encrypts exactly <b>16 bytes</b> at a time, no more and no less.',`This message has ${D.msg.length} bytes. A <b>mode of operation</b> is the recipe for using a block cipher on a message of any length.`,'Press <b>Step</b>.'),
     say('Step 1 · cut into blocks',`Every 16 bytes make a block.${left?` The last block is short: only ${left} bytes.`:''}`),
     say('Step 2 · padding',D.usePad?`ECB and CBC need full blocks, so PKCS#7 fills the rest: ${pn} bytes, each with the value ${pn}. That tells the receiver how much to remove.${left?'':' A message that fits exactly still gets a whole extra block of padding.'}`:'This example is a NIST test vector, which is already a whole number of blocks and uses no padding.','CTR, CFB, OFB and GCM work like stream ciphers and need no padding at all.','Now choose a mode below.')][k];
-  $('#extra').innerHTML=`<h3>Words you will meet</h3><p><b>Block</b>: 16 bytes for AES.</p><p><b>Key</b>: secret, the same for every block.</p><p><b>IV</b> or <b>nonce</b>: not secret, but different for every message, so that the same text encrypts differently.</p><p><b>Keystream</b>: random-looking bytes that are XORed with the data.</p><p><b>Tag</b>: a short value that proves nothing was changed.</p>`;
+  $('#extra').innerHTML=`<h3>Words you will meet</h3><p><b>Block</b>: 16 bytes for AES.</p><p><b>Key</b>: secret, the same for every block.</p><p><b>IV</b> or <b>nonce</b>: not secret, but different for every message, so that the same text encrypts differently.</p><p><b>Keystream</b>: random-looking bytes that are XORed with the data.</p><p><b>Tag</b>: a short value that proves nothing was changed.</p><p><b>AEAD</b>: encryption that also detects changes, such as GCM.</p>`;
 },
 plan(k){
   if(k===1)return{dur:1400,start(){
