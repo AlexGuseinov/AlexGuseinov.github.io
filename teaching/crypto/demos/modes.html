@@ -600,6 +600,30 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
 .ivb u{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--ink);opacity:.45}
 .ivp{font:700 13px var(--mono);text-align:right}
 @media (max-width:640px){.ivr{grid-template-columns:minmax(0,1fr) 44px 70px}.ivn{grid-column:1/-1}}
+/* GCM: the polynomial and the nonce attack */
+.nd{cursor:pointer}
+.pick{min-height:20px;margin-top:6px;font-size:12.5px;color:var(--muted);text-align:center;overflow-wrap:anywhere}
+.pick b{color:var(--ink)}.pick code{font:12.5px var(--mono);color:var(--ink)}
+.poly{font:14px/1.9 var(--mono);padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--rt) 8%,transparent);overflow-wrap:anywhere}
+.pm{padding:2px 5px;border-radius:5px;white-space:nowrap}
+.pm.dn{background:color-mix(in srgb,var(--rt) 20%,transparent)}
+.pm.now{background:var(--rt);color:#fff}
+.poly+.pics-s{margin:8px 0 10px;max-width:none}
+.why3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.why3{grid-template-columns:minmax(0,1fr)}}
+.why3>div{padding:10px 12px;border-radius:9px;font-size:13.5px;border-top:3px solid var(--rt);background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.why3 b{display:block;margin-bottom:3px}
+.eqs{display:flex;flex-direction:column;gap:8px}
+.er{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:12px;align-items:center;padding:8px 12px;border-radius:9px;background:color-mix(in srgb,var(--ink) 4%,transparent);min-height:64px;transition:opacity .25s}
+.er.off{opacity:.3}.er.off .ev{visibility:hidden}
+.el{font-size:13.5px;color:var(--muted)}
+.ev{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.eo{font:700 15px var(--mono);color:var(--muted)}
+.chipb{display:inline-flex;flex-direction:column;align-items:center;gap:1px}
+.chipb small{font:700 11.5px var(--sans);color:var(--r)}
+.chipb .tw{width:46px;height:46px}
+.gq{font:600 14px var(--mono)}
+@media (max-width:560px){.er{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -765,6 +789,11 @@ function gfMul(X,Y,steps){
 const zpad=b=>b.concat(Array(16-b.length).fill(0));
 const lenBlock=(a,c)=>fromB((BigInt(a*8)<<64n)|BigInt(c*8));
 function ghash(H,list){let X=Array(16).fill(0);for(const b of list)X=gfMul(xorB(X,b),H);return X}
+// the field element 1, and two powers that undo things: x^(2^128−2) = 1/x and x^(2^127) = √x
+const GF1=fromHex('80'+'00'.repeat(15));
+const gfSq=x=>gfMul(x,x);
+function gfInv(x){let r=GF1,s=x;for(let i=1;i<128;i++){s=gfSq(s);r=gfMul(r,s)}return r}
+function gfSqrt(x){let s=x;for(let i=0;i<127;i++)s=gfSq(s);return s}
 function gcmE(rk,iv,A,P){
   const H=E(rk,Array(16).fill(0)),J=iv.concat([0,0,0,1]);
   const C=ctrX(rk,inc32(J),P);                            // 32-bit counter, the short vectors never reach the wrap
@@ -935,15 +964,19 @@ function drawNode(n,k){
     return`<g class="ab${n.t<=k?' done':''}" id="n-${n.id}" ${at}><rect class="bx" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="9"/><text class="abl" x="${n.small?-w/2+8:-68}" y="${n.small?-7:-6}">${n.lab}</text><text class="akk" x="${n.small?-w/2+8:-68}" y="${n.small?10:13}">K</text>${t}</g>`;
   }
   const open=n.t<=k,c=n.c,f=pw(c)/2+4,ph=n.q===0?'':`<text class="nq">?</text>`;
-  return`<g class="nd r-${n.role}${open?' open':''}${n.t===k&&k>0?' cur':''}" id="n-${n.id}" ${at}><rect class="fr" x="${-f}" y="${-f}" width="${2*f}" height="${2*f}" rx="7"/>${ph}<g class="val">${patch(n.v,c,c>=14)}</g>${n.cap?`<text class="ncap" y="${n.capB?f+16:-f-7}">${n.cap}</text>`:''}</g>`;
+  return`<g class="nd r-${n.role}${open?' open':''}${n.t===k&&k>0?' cur':''}" id="n-${n.id}" data-nd="${n.id}" ${at}><rect class="fr" x="${-f}" y="${-f}" width="${2*f}" height="${2*f}" rx="7"/>${ph}<g class="val">${patch(n.v,c,c>=14)}</g>${n.cap?`<text class="ncap" y="${n.capB?f+16:-f-7}">${n.cap}</text>`:''}</g>`;
 }
+const ROLE={p:'Plaintext',c:'Ciphertext',iv:'Input block',s:'Keystream',x:'Value',g:'Hash value',t:'Tag',a:'Additional data',h:'Hash key H',bad:'Changed block'};
+let LASTG=null;
+function pickLine(G,k){const n=ST.pick&&G.by[ST.pick];
+  return`<div class="pick" id="pick">${n&&n.t<=k?`<b>${n.cap||ROLE[n.role]}</b> <code>${hexs(n.v)}</code>`:'Click a block to read its bytes'}</div>`}
 function drawGraph(G,k){
-  let h=`<div class="scroll" id="chS"><svg class="ch" id="ch" viewBox="0 0 ${G.W} ${G.H}" style="min-width:${Math.min(G.W,G.minW)}px;max-width:${Math.round(G.W*1.15)}px" role="img" aria-label="${G.label}"><defs>
+  LASTG=G;let h=`<div class="scroll" id="chS"><svg class="ch" id="ch" viewBox="0 0 ${G.W} ${G.H}" style="min-width:${Math.min(G.W,G.minW)}px;max-width:${Math.round(G.W*1.15)}px" role="img" aria-label="${G.label}"><defs>
     <marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="amk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
   for(const w of G.wires)h+=`<path class="mw ${w.cls}" id="w-${w.id}" d="${wpath(w.pts)}" marker-end="url(#am)"/>`;
   h+=G.decor+G.nodes.map(n=>drawNode(n,k)).join('');
   if(G.after)h+=G.after(k);
-  return h+'</svg></div>';
+  return h+'</svg></div>'+pickLine(G,k);
 }
 // a wide chart on a narrow screen: keep the column of this step in view
 function panTo(G,k){
@@ -1286,6 +1319,7 @@ function gGCM(dec){
     const nx=feed[j+1]?ax(feed[j+1].col):ax(tagC);G.w('gn'+j,[[m+24,yG],[nx-15,yG]]);
     const steps=[],inX=xorB(X,f.v),out=gfMul(inX,H,steps);mul.push({i:j,inX,out,steps,name:f.name});Xs.push(out);
     G.bk('X'+j,m,yG+38,out,'','g',{c:4.6,q:0});X=out;});
+  G.X=X;
   G.xor('gt',ax(tagC),yG);G.bk('tag',ax(tagC),yC,o.T,'Tag','t',{c:GC});G.w('gtt',[[ax(tagC),yG-15],[ax(tagC),yC+31]]);
   G.lab(ax(feed[0].col)-52,yG+5,'0');G.w('g0',[[ax(feed[0].col)-44,yG],[ax(feed[0].col)-15,yG]]);
   G.lab(10,yG-34,'GHASH','gl');
@@ -1312,6 +1346,19 @@ function gGCM(dec){
   else{feed.forEach((_,j)=>G.step(hashStep(j)));G.step(tagStep());for(let i=0;i<n;i++)G.step(ctrStep(i))}
   return G;
 }
+// the chain is Horner's rule; the same value computed directly as a polynomial in H
+const SUPS='⁰¹²³⁴⁵⁶⁷⁸⁹',sup_=n=>n===1?'':String(n).split('').map(d=>SUPS[+d]).join('');
+function polyPanel(g,k){
+  const f=g.feed,m=f.length,H=g.o.H,pw=[H];for(let i=1;i<m;i++)pw.unshift(gfMul(pw[0],H));
+  const sum=f.reduce((s,b,i)=>xorB(s,gfMul(b.v,pw[i])),Array(16).fill(0)),same=hexs(sum)===hexs(g.X);
+  const cur=g.st[k-1]&&g.st[k-1].mul?g.st[k-1].mul.i:-1,past=g.st.slice(0,k).filter(s=>s.mul).length;
+  return`<div class="sec"><div class="h3">What GHASH really computes</div>
+    <div class="poly">X = ${f.map((b,i)=>`<span class="pm${i===cur?' now':i<past?' dn':''}">${b.name}·H${sup_(m-i)}</span>`).join(' ⊕ ')}</div>
+    <p class="pics-s">The chain above is Horner's rule for this polynomial in H.${same?' <span class="vok">✓ computed directly, it gives the same 128 bits</span>':''}</p>
+    <div class="why3"><div><b>Why a polynomial?</b>Another message means another polynomial, and two different polynomials of degree ${m} agree on at most ${m} of the 2¹²⁸ values of H. A forger who does not know H almost never hits one.</div>
+    <div><b>Why hash the ciphertext?</b>The receiver can check the tag before decrypting anything, so a changed message never reaches the decryption step.</div>
+    <div><b>Why the mask S₀?</b>Without it, every tag would be a plain value of this polynomial, and H could be solved from it. S₀ is new for each nonce, so it hides each tag like a one-time pad. <button class="link" data-goto="atk" data-atk="gnon">See what happens if it repeats</button></div></div></div>`;
+}
 // the 128 bits of X · H: for each 1 bit, Z takes in V; V moves one place every time
 function gfPanel(M,i){
   return`<div class="sec gf"><div class="pich"><div><div class="h3">Inside · H: multiplication in GF(2¹²⁸)</div><div class="pics-s">For each bit of the input: if it is 1, Z ← Z ⊕ V. Then V moves right by one place, and if a 1 falls off the end, V ← V ⊕ e1 00…00.</div></div></div>
@@ -1325,12 +1372,12 @@ function gfShow(M,n){
 }
 T.gcm=chainTab({tag:()=>'gcm',build:gGCM,
   below(g,k){const dec=ST.mode==='dec',e=D.exp&&D.exp.gcm,last=[...g.st.slice(0,k)].reverse().find(s=>s.mul),done=k===g.st.length,o=g.o,sh=hexs(o.C.flat())+hexs(o.T);
-    return gfPanel(last&&last.mul)+legend(['a','Additional data'],['c','Ciphertext'],['s','Keystream'],['g','Hash value'],['t','Tag'])+
+    return gfPanel(last&&last.mul)+polyPanel(g,k)+legend(['a','Additional data'],['c','Ciphertext'],['s','Keystream'],['g','Hash value'],['t','Tag'])+
       strip('Ciphertext',o.C,i=>dec?0:g.by['p'+i].t,k,'c')+strip('Tag',[o.T],()=>dec?0:g.by.tag.t,k,'t',done?(dec?okB('verified'):e&&e[0]===sh?okB(e[1]):''):'')+(done&&dec?textStrip('As text',D.msg,1):'')},
   after(g,k){const last=[...g.st.slice(0,k)].reverse().find(s=>s.mul);if(last)gfShow(last.mul,128)},
   intro:()=>say('Galois/Counter Mode','GCM does two jobs at once: <b>CTR</b> hides the message, and a fast hash called <b>GHASH</b> makes a tag that proves nobody changed it.','This is authenticated encryption. TLS 1.3 uses it, and so does most of the web.','Press <b>Step</b>.'),
   outro:()=>ST.mode==='dec'?'':'<p>The receiver gets the nonce, the additional data, the ciphertext and the tag.</p>',
-  extra:()=>`<h3>GCM in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(T<sub>i</sub>)')}${fm('Tag = GHASH<sub>H</sub>(A, C) ⊕ E<sub>K</sub>(J₀)')}${pc(['Secrecy and integrity together','Both directions run in parallel','Protects additional data too','No padding, and AES⁻¹ is not needed'],['A nonce must never repeat under one key: that breaks secrecy and leaks H'])}<p class="note">Change one bit and the tag fails: <button class="link" data-goto="fl">try it</button>.</p>`});
+  extra:()=>`<h3>GCM in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(T<sub>i</sub>)')}${fm('Tag = GHASH<sub>H</sub>(A, C) ⊕ E<sub>K</sub>(J₀)')}${pc(['Secrecy and integrity together','Both directions run in parallel','Protects additional data too','No padding, and AES⁻¹ is not needed'],['A nonce must never repeat under one key: that breaks secrecy and <button class="link" data-goto="atk" data-atk="gnon">reveals H</button>'])}<p class="note">Change one bit and the tag fails: <button class="link" data-goto="fl">try it</button>.</p>`});
 /* ---------- flip a bit: the same damage under every mode ---------- */
 const FM=[['ecb','ECB'],['cbc','CBC'],['cfb','CFB'],['ofb','OFB'],['ctr','CTR'],['gcm','GCM']];
 function flipRun(){
@@ -1383,6 +1430,33 @@ function gFlip(){
       say:ch(`Step ${3+i} · the server decrypts block ${i+1}`,i?'Block 2 is untouched. No error anywhere, and the text looks normal.':'The server uses the changed IV. The result differs from the real message in exactly the bit that was flipped.',fm(i?`P₂ = ${toText(P2[1])}`:`P₁ = ${sh(P2[0],AI)}`))})});
   return G;
 }
+// GCM with a repeated nonce: two tags reveal H, and then any message can be forged
+function gnData(){
+  const rk=D.rk,N=fromHex(D.iv.gcm),M=['PAY ALI 0100 AZN','PAY BOB 0050 AZN','PAY EVE 9999 AZN'].map(s=>[...te.encode(s)]);
+  const a=gcmE(rk,N,[],[M[0]]),b=gcmE(rk,N,[],[M[1]]),C1=a.C[0],C2=b.C[0],T1=a.T,T2=b.T,L=lenBlock(0,16);
+  const dT=xorB(T1,T2),dC=xorB(C1,C2),H2=gfMul(dT,gfInv(dC)),H=gfSqrt(H2),S0=xorB(xorB(T1,gfMul(C1,H2)),gfMul(L,H));
+  const C3=xorB(M[2],xorB(C1,M[0])),T3=xorB(xorB(gfMul(C3,H2),gfMul(L,H)),S0),real=xorB(ghash(a.H,[C3,L]),E(rk,a.J));
+  return{M,C1,C2,T1,T2,dT,dC,H2,H,S0,C3,T3,hOK:hexs(H)===hexs(a.H),sOK:hexs(S0)===hexs(E(rk,a.J)),tagOK:hexs(real)===hexs(T3)};
+}
+const chipB=(b,t,r='x')=>`<span class="chipb r-${r}">${tw(b)}<small>${t}</small></span>`;
+function renderGN(k,tabs){
+  const q=gnData(),row=(i,l,v)=>`<div class="er${k<i?' off':''}" id="er${i}"><div class="el">${l}</div><div class="ev">${v}</div></div>`,op=s=>`<b class="eo">${s}</b>`;
+  stage.innerHTML=tabs+`<div class="eqs">
+    ${row(0,'Two messages, same key, <b class="x">same nonce</b>',chipB(q.C1,'C₁','c')+chipB(q.T1,'T₁','t')+op('and')+chipB(q.C2,'C₂','c')+chipB(q.T2,'T₂','t'))}
+    ${row(1,'XOR the tags: S₀ is gone',chipB(q.dT,'T₁ ⊕ T₂','t')+op('=')+chipB(q.dC,'C₁ ⊕ C₂','c')+op('· H²'))}
+    ${row(2,'Solve for H',chipB(q.H2,'H²','h')+op('√')+chipB(q.H,'H','h')+(q.hOK?'<span class="vok">✓ the real H</span>':''))}
+    ${row(3,'Get the mask',chipB(q.S0,'S₀','s')+(q.sOK?'<span class="vok">✓ the real S₀</span>':''))}
+    ${row(4,'Forge a message',chipB(q.C3,'C₃','c')+chipB(q.T3,'T₃','t')+`<span class="gq">${toText(q.M[2])}</span>`)}
+    ${row(5,'The server checks the tag',q.tagOK?`<span class="vbad">✓ tag valid: forged message accepted</span>`:'')}
+  </div>`;
+  $('#explain').innerHTML=[say('GCM nonce reuse','GCM is only as strong as its nonce. Here the same nonce is used for two short messages, and the attacker knows the first one.','This is a real attack, computed in your browser on real AES-GCM. Press <b>Step</b>.'),
+    say('Step 1 · XOR the two tags','Each tag is C·H² ⊕ len·H ⊕ S₀. The nonce repeated, so S₀ is the same in both, and the length too.',fm('T₁ ⊕ T₂ = (C₁ ⊕ C₂) · H²'),'One equation with one unknown.'),
+    say('Step 2 · solve for H','Field arithmetic does the rest: divide, then take the square root.',fm(`H² = (T₁ ⊕ T₂) · (C₁ ⊕ C₂)⁻¹<br>H = (H²)^(2¹²⁷) =<br>${fH(q.H)}`),'H was supposed to stay secret for the whole life of the key.'),
+    say('Step 3 · the mask','With H known, the mask of this nonce follows from any tag.',fm(`S₀ = T₁ ⊕ C₁·H² ⊕ len·H =<br>${fH(q.S0)}`)),
+    say('Step 4 · forge','The attacker knows M₁, so it has the keystream. It encrypts its own text and computes a tag for it.',fm(`C₃ = M₃ ⊕ (C₁ ⊕ M₁)<br>T₃ = C₃·H² ⊕ len·H ⊕ S₀`)),
+    say('Step 5 · accepted','The server computes the tag with the real key, and it matches.','<span class="warn">One repeated nonce and the attacker can forge messages for this nonce, and knows H for the rest of the key\'s life. No key was found.</span>')][k];
+  $('#extra').innerHTML=`<h3>Why this worked here</h3><p>With one-block messages the equation is of degree 2, so a square root solves it. Longer messages give a polynomial of higher degree, and its roots can still be found.</p><p>This is known as the forbidden attack (Joux, 2006).</p><p class="note">The fix: never repeat a nonce. If that cannot be guaranteed, use a mode built for it, such as AES-GCM-SIV.</p>`;
+}
 function paintN(q){ // the pictures of the nonce attack; q = how far the last one is drawn
   const k=ST.step.atk||0,a=picData('lock'),b=picData('aztu'),iv=fromHex(D.iv.ctr),ea=picOut('lock','ctr',iv),eb=picOut('aztu','ctr',iv),eb2=picOut('aztu','ctr',xorB(iv,[...Array(15).fill(0),1]));
   const x=new Uint8ClampedArray(ea.length),y=new Uint8ClampedArray(ea.length);for(let i=0;i<x.length;i++){x[i]=i%4===3?255:ea[i]^eb[i];y[i]=i%4===3?255:ea[i]^eb2[i]}
@@ -1391,9 +1465,10 @@ function paintN(q){ // the pictures of the nonce attack; q = how far the last on
 }
 function wipe(id,d,q){const c=$('#'+id);if(!c)return;const h=Math.round(PW*q);if(h>0)c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(d),PW,PW),0,0,0,0,PW,h)}
 T.atk={dir:false,
-  n:()=>ST.atk==='flip'?chart('atk',gFlip).st.length+1:4,
+  n:()=>ST.atk==='flip'?chart('atk',gFlip).st.length+1:ST.atk==='gnon'?6:4,
   render(k){
-    const tabs=`<div class="row subs"><span class="seg sm"><button data-atk="flip" class="${ST.atk==='flip'?'on':''}">CBC bit flipping</button><button data-atk="nonce" class="${ST.atk==='nonce'?'on':''}">CTR nonce reuse</button></span></div>`;
+    const tabs=`<div class="row subs"><span class="seg sm"><button data-atk="flip" class="${ST.atk==='flip'?'on':''}">CBC bit flipping</button><button data-atk="nonce" class="${ST.atk==='nonce'?'on':''}">CTR nonce reuse</button><button data-atk="gnon" class="${ST.atk==='gnon'?'on':''}">GCM nonce reuse</button></span></div>`;
+    if(ST.atk==='gnon')return renderGN(k,tabs);
     if(ST.atk==='flip'){
       const G=chart('atk',gFlip),done=k>=G.st.length-1;
       stage.innerHTML=tabs+drawGraph(G,k)+`<div class="res r-p"><span class="rl">Sent</span><span class="rv rt">${AM} ${AM2}</span></div>`+(done?`<div class="res r-bad"><span class="rl">Received</span><span class="rv rt">${AM.slice(0,AI)}<b class="x">9</b>${AM.slice(AI+1)} ${AM2}</span><span class="vbad">no error, no warning</span></div>`:'');
@@ -1411,11 +1486,12 @@ T.atk={dir:false,
     $('#explain').innerHTML=[say('CTR nonce reuse','CTR is safe only while every counter block is used once. Here two pictures are encrypted with the same key and the same starting counter.','Press <b>Step</b>.'),
       say('Step 1 · encrypt','Each ciphertext alone looks random. Nothing seems wrong.',fm('C₁ = P₁ ⊕ S<br>C₂ = P₂ ⊕ S')),
       say('Step 2 · XOR the two ciphertexts','The attacker needs no key: the keystream cancels out.',fm('C₁ ⊕ C₂ = P₁ ⊕ S ⊕ P₂ ⊕ S = P₁ ⊕ P₂'),'<span class="warn">Both pictures show through, with no key at all.</span>'),
-      say('Step 3 · the fix','With a different counter the two keystreams are unrelated, and the XOR of the ciphertexts looks random too. GCM has the same rule, and there a repeat also lets an attacker forge tags.')][k];
+      say('Step 3 · the fix','With a different counter the two keystreams are unrelated, and the XOR of the ciphertexts looks random too. GCM has the same rule, and there a repeat also lets an attacker forge tags: <button class="link" data-atk="gnon">see that attack</button>.')][k];
     $('#extra').innerHTML=`<h3>The same trick on text</h3><p>Two messages encrypted this way give P₁ ⊕ P₂. Guess a common word in one of them and the other message appears at that spot.</p><p class="note">The rule: a nonce is used once under a key. Never reset the counter.</p>`;
   },
   plan(k){
     if(ST.atk==='flip')return planGraph(chart('atk',gFlip),k);
+    if(ST.atk==='gnon')return{dur:800,start(){const r=$('#er'+k);if(!r)return null;r.style.opacity=0;return p=>{r.style.opacity=p}}};
     return{dur:1500,start(){const{ea,eb,x,y}=paintN();
       const c=id=>{const e=$('#'+id);if(e)e.getContext('2d').clearRect(0,0,PW,PW)};
       const list=k===1?[['n2',ea],['n3',eb]]:k===2?[['n4',x]]:[['n5',y]];list.forEach(([i])=>c(i));
@@ -1567,6 +1643,7 @@ document.addEventListener('click',e=>{
   const g=e.target.closest('[data-goto]');
   if(g){if(g.dataset.sub)setSub(g.dataset.sub);if(g.dataset.atk){ST.atk=g.dataset.atk;ST.step.atk=0}setTab(g.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
   const s=e.target.closest('[data-sub]');if(s){setPlaying(false);stopAnim(false);setSub(s.dataset.sub);show();return}
+  const nd=e.target.closest('[data-nd]');if(nd&&LASTG){ST.pick=nd.dataset.nd;$('#pick').outerHTML=pickLine(LASTG,ST.step[ST.tab]||0);return}
   const a=e.target.closest('[data-atk]');if(a){setPlaying(false);stopAnim(false);ST.atk=a.dataset.atk;ST.step.atk=0;show();return}
   const p=e.target.closest('[data-pic]');if(p){ST.pic=p.dataset.pic;$$('#picS [data-pic]').forEach(x=>x.classList.toggle('on',x===p));$('#picS .pup').classList.remove('on');paintPics();return}
   const iv=e.target.closest('[data-ivv]');if(iv){setPlaying(false);stopAnim(false);ST.ivV=iv.dataset.ivv;ST.step.iv=0;show();return}
