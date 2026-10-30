@@ -647,6 +647,21 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
 .pob i.h{background:var(--ok);box-shadow:0 0 6px var(--ok)}
 .pon{display:flex;justify-content:space-between;margin-top:8px;font-size:12.5px;color:var(--muted)}
 .pon b{font-family:var(--mono);color:var(--ink)}
+/* questions */
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);color:var(--ink);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor);color:var(--ink)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+.frq{display:flex;flex-wrap:wrap;gap:5px;grid-column:2/-1}
+.frq button{font-size:12.5px;padding:4px 9px;border-radius:14px}
+.frq button:hover{background:var(--accentBg)}
+.flpr{gap:6px 14px}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -840,7 +855,7 @@ const PRE=[
 ];
 const IVDEF={cbc:IV0,cfb:IV0,ofb:IV0,ctr:CT0,gcm:GN};
 const D={msg:[],key:[],rk:null,iv:{...IVDEF},aad:[],mF:'text',usePad:true,pm:[],sm:[],exp:null,v:0,preset:'rep'};
-const ST={tab:'ov',step:{},round:{},mode:'enc',built:'',pick:null,sub:'cfb',atk:'flip',pic:'lock',fb:{b:0,i:5,bit:0},ivV:'twice',ivS:'ecb',ivR:{},roll:0};
+const ST={tab:'ov',step:{},round:{},mode:'enc',built:'',pick:null,sub:'cfb',atk:'flip',pic:'lock',fb:{b:0,i:5,bit:0,pred:true,g:{}},ivV:'twice',ivS:'ecb',ivR:{},roll:0,q:{}};
 const stage=$('#stage');
 const T={};
 const toText=b=>String.fromCharCode(...b);
@@ -1047,7 +1062,7 @@ function chainTab(o){
     render(k){
       const g=G();stage.innerHTML=(o.top?o.top():'')+drawGraph(g,k)+(o.below?o.below(g,k):'');panTo(g,k);
       $('#explain').innerHTML=k===0?o.intro(g):g.st[k-1].say+(k===g.st.length&&o.outro?o.outro(g):'');
-      $('#extra').innerHTML=o.extra(g,k);
+      $('#extra').innerHTML=o.extra(g,k)+(o.quiz?quiz(o.quiz):'');
       if(o.after)o.after(g,k);
     },
     plan:k=>planGraph(G(),k),
@@ -1110,6 +1125,20 @@ const fm=s=>`<span class="fm">${s}</span>`;
 const pc=(good,bad)=>`<ul class="pros">${good.map(x=>`<li class="y">${x}</li>`).join('')}${bad.map(x=>`<li class="n">${x}</li>`).join('')}</ul>`;
 const nm=(l,i)=>`${l}${sub_(i)}`;
 
+/* ---------- one question per mode: answer first, then read why ---------- */
+const QZ={
+  ecb:{q:'P₁ and P₂ are equal, under the same key. What about C₁ and C₂?',o:['They are equal','They differ','It depends on the IV'],a:0,why:'ECB is a fixed function of the block, and there is no IV to change it.'},
+  cbc:{q:'Which direction of CBC can use several CPU cores at once?',o:['Encryption','Decryption','Both','Neither'],a:1,why:'To decrypt block i you need only C<sub>i</sub> and C<sub>i−1</sub>, and you have them all from the start. To encrypt block i you must wait for C<sub>i−1</sub>.'},
+  ctr:{q:'You want only block 1000 of a large encrypted file. How many AES calls do you need?',o:['1','999','1000'],a:0,why:'The counter of block 1000 can be computed directly, so one call to AES gives its keystream.'},
+  cf:{q:'In which mode does the keystream depend on the message?',o:['CFB','OFB','Both'],a:0,why:'CFB feeds the ciphertext back into AES. OFB feeds back only AES output, so its keystream is the same whatever you encrypt.'},
+  iv:{q:'CTR uses a counter that anyone can predict. Is that a problem?',o:['Yes, like the counting IV in CBC','No, it only has to be unique'],a:1,why:'In CTR the message never goes into AES, so an attacker cannot cancel the next counter the way it cancelled the next IV in CBC. It must simply never repeat.'},
+  gcm:{q:'An attacker changes one byte of the additional data. What happens?',o:['Nothing: it is not encrypted','The tag check fails','The plaintext is garbled'],a:1,why:'GHASH covers the additional data, so the tag no longer matches and nothing is released.'},
+};
+function quiz(id){
+  const z=QZ[id],p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
+}
+
 /* ---------- ECB ---------- */
 function gECB(dec){
   const Pb=D.pm,Cb=ecbE(D.rk,Pb),I=dec?Cb:Pb,O=dec?Pb:Cb,n=Pb.length,CW=n>3?228:250,L=24,G=Graph(2*L+n*CW,412,'ECB: every block goes through AES on its own');
@@ -1128,7 +1157,7 @@ function gECB(dec){
     const a=cx(i),b=cx(j),y=yB+64;h+=`<path class="same" d="M${a} ${y} C${a} ${y+34},${b} ${y+34},${b} ${y}"/><text class="samet" x="${(a+b)/2}" y="${y+40}">identical blocks</text>`}return h};
   return G;
 }
-T.ecb=chainTab({tag:()=>'ecb',build:gECB,
+T.ecb=chainTab({tag:()=>'ecb',build:gECB,quiz:'ecb',
   below(g,k){const dec=ST.mode==='dec',e=D.exp&&D.exp.ecb,done=k===g.st.length;
     return strip(dec?'Plaintext':'Ciphertext',dec?D.pm:g.Cb,i=>g.by['o'+i].t,k,dec?'p':'c',done?(dec?okB('back to the message'):e&&e[0]===hexs(g.Cb.flat())?okB(e[1]):''):'')+picSection()},
   intro:()=>say('Electronic Codebook','The simplest idea: cut the message into blocks and encrypt each one on its own with the same key.','Press <b>Step</b> and watch the first two blocks. Then look at the picture below.'),
@@ -1176,7 +1205,7 @@ function gCBC(dec){
   }
   return G;
 }
-T.cbc=chainTab({tag:()=>'cbc',build:gCBC,
+T.cbc=chainTab({tag:()=>'cbc',build:gCBC,quiz:'cbc',
   below(g,k){const dec=ST.mode==='dec',e=D.exp&&D.exp.cbc,done=k===g.st.length;
     return strip(dec?'Plaintext':'Ciphertext',dec?D.pm:g.Cb,i=>g.by[(dec?'p':'c')+i].t,k,dec?'p':'c',done?(dec?okB('back to the message'):e&&e[0]===hexs(g.Cb.flat())?okB(e[1]):''):'')+(done&&dec?textStrip('As text',D.msg,1):'')},
   intro:()=>say('Cipher Block Chaining','Each plaintext block is mixed with the ciphertext block before it, so one block depends on all earlier ones.','The first block has nothing before it, so a random <b>IV</b> takes that place. Press <b>Step</b>.'),
@@ -1215,11 +1244,11 @@ function gStream(mode,dec){
 }
 const streamBelow=m=>(g,k)=>{const dec=ST.mode==='dec',e=D.exp&&D.exp[m],done=k===g.st.length;
   return strip(dec?'Plaintext':'Ciphertext',dec?D.sm:g.Cb,i=>g.by['o'+i].t,k,dec?'p':'c',done?(dec?okB('back to the message'):e&&e[0]===hexs(g.Cb.flat())?okB(e[1]):''):'')+(done&&dec?textStrip('As text',D.msg,1):'')};
-T.ctr=chainTab({tag:()=>'ctr',build:d=>gStream('ctr',d),below:streamBelow('ctr'),
+T.ctr=chainTab({tag:()=>'ctr',build:d=>gStream('ctr',d),quiz:'ctr',below:streamBelow('ctr'),
   intro:()=>say('Counter mode','AES encrypts a <b>counter</b>, not the message. The output is a keystream, and the message is XORed with it, like a stream cipher.','Press <b>Step</b>. Then press <b>Decrypt</b> and notice that it is the same picture.'),
   outro:()=>'<p>Every counter block can be computed directly, so any block can be encrypted or decrypted without the others.</p>',
   extra:()=>`<h3>CTR in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(T<sub>i</sub>), T<sub>i+1</sub> = T<sub>i</sub> + 1')}${pc(['Encryption and decryption both run in parallel','Jump straight to any block','No padding, and AES⁻¹ is not needed','A bit error stays one bit error'],['A counter value must never repeat under one key: <button class="link" data-goto="atk" data-atk="nonce">see why</button>','No integrity'])}`});
-T.cf=chainTab({tag:()=>'cf'+ST.sub,build:d=>gStream(ST.sub,d),
+T.cf=chainTab({tag:()=>'cf'+ST.sub,build:d=>gStream(ST.sub,d),quiz:'cf',
   top:()=>`<div class="row subs"><span class="seg sm"><button data-sub="cfb" class="${ST.sub==='cfb'?'on':''}">CFB: Cipher Feedback</button><button data-sub="ofb" class="${ST.sub==='ofb'?'on':''}">OFB: Output Feedback</button></span><span class="flh">${ST.sub==='cfb'?'The ciphertext goes back into AES':'The AES output goes back into AES'}</span></div>`,
   below:(g,k)=>streamBelow(ST.sub)(g,k),
   intro:()=>ST.sub==='cfb'?say('Cipher Feedback','Like CBC turned into a stream cipher: AES encrypts the previous ciphertext block, and the result is XORed with the plaintext.','Press <b>Step</b>, then switch to OFB and spot the one wire that moves.'):say('Output Feedback','AES encrypts its own previous output again and again. The keystream does not depend on the message at all.','Press <b>Step</b>, then switch to CFB and spot the one wire that moves.'),
@@ -1297,13 +1326,13 @@ T.iv={
       stage.innerHTML=sw+`<div class="pich"><div><div class="h3">One block sent four times: ${toText(M0)}</div><div class="pics-s">Each square is the ciphertext of the same message under the same key.</div></div><button data-roll="1">Send again</button></div>
       <div class="twg">${SCH.map(([id,n,d],i)=>{const h=R[i].map(hexs),eq=new Set(h).size===1;return`<div class="twr ${eq?'eq':'df'}"><div class="twn"><b>${n}</b>${d}</div><div class="twp">${R[i].map(tw).join('')}</div><div class="twv">${eq?'all equal':'all different'}</div></div>`}).join('')}</div>`;
       $('#explain').innerHTML=say('Why an IV?','Without an IV, encryption is a fixed function: the same message always gives the same ciphertext. An attacker sees when you repeat yourself.','The green rows give a new ciphertext every time, because each encryption starts from a new value.','Press <b>Send again</b> and watch which rows change.');
-      $('#extra').innerHTML=`<h3>Is different enough?</h3><p>CBC with a counting IV looks fine here: all four differ. But different is not enough.</p><p class="note">Open <button class="link" data-ivv="game">the IND-CPA game</button> to see it broken.</p>`;
+      $('#extra').innerHTML=`<h3>Is different enough?</h3><p>CBC with a counting IV looks fine here: all four differ. But different is not enough.</p><p class="note">Open <button class="link" data-ivv="game">the IND-CPA game</button> to see it broken.</p>`+quiz('iv');
       return;
     }
     const G=chart(`iv${ST.ivS}${ST.roll}`,gGame);
     stage.innerHTML=sw+`<div class="row subs"><span class="flh">Scheme</span><span class="seg sm wr">${SCH.map(([id,n,d])=>`<button data-ivs="${id}" class="${ST.ivS===id?'on':''}">${n}: ${d}</button>`).join('')}</span><button data-roll="1">New round</button></div>`+drawGraph(G,k)+ivTable();panTo(G,k);
     $('#explain').innerHTML=k===0?say('The IND-CPA game','This is how cryptographers define “hides everything”. The attacker may ask for encryptions of anything it likes, and then has to tell two messages apart.','Press <b>Step</b> to play one round.'):G.st[k-1].say;
-    $('#extra').innerHTML=`<h3>IND-CPA in one line</h3>${fm('Adv = | Pr[guess = b] − ½ |')}<p>A scheme is <b>IND-CPA secure</b> if every efficient attacker has a negligible advantage.</p><p>So a scheme that always gives the same ciphertext can never be secure.</p><ul class="pros"><li class="y"><b>CBC, CFB:</b> IV random and unpredictable</li><li class="y"><b>CTR, OFB, GCM:</b> nonce unique, a simple counter is fine</li></ul>`;
+    $('#extra').innerHTML=`<h3>IND-CPA in one line</h3>${fm('Adv = | Pr[guess = b] − ½ |')}<p>A scheme is <b>IND-CPA secure</b> if every efficient attacker has a negligible advantage.</p><p>So a scheme that always gives the same ciphertext can never be secure.</p><ul class="pros"><li class="y"><b>CBC, CFB:</b> IV random and unpredictable</li><li class="y"><b>CTR, OFB, GCM:</b> nonce unique, a simple counter is fine</li></ul>`+quiz('iv');
   },
   plan(k){return planGraph(chart(`iv${ST.ivS}${ST.roll}`,gGame),k)},
   focus(){follow($('#chS'))}};
@@ -1393,7 +1422,7 @@ function gfShow(M,n){
   const s=M.steps[Math.min(n,127)],z=n?M.steps[n-1].z:0n;
   const V=$('#gfV'),Z=$('#gfZ');if(V)V.textContent=hexs(fromB(s.v));if(Z)Z.textContent=hexs(fromB(z));
 }
-T.gcm=chainTab({tag:()=>'gcm',build:gGCM,
+T.gcm=chainTab({tag:()=>'gcm',build:gGCM,quiz:'gcm',
   below(g,k){const dec=ST.mode==='dec',e=D.exp&&D.exp.gcm,last=[...g.st.slice(0,k)].reverse().find(s=>s.mul),done=k===g.st.length,o=g.o,sh=hexs(o.C.flat())+hexs(o.T);
     return gfPanel(last&&last.mul)+polyPanel(g,k)+legend(['a','Additional data'],['c','Ciphertext'],['s','Keystream'],['g','Hash value'],['t','Tag'])+
       strip('Ciphertext',o.C,i=>dec?0:g.by['p'+i].t,k,'c')+strip('Tag',[o.T],()=>dec?0:g.by.tag.t,k,'t',done?(dec?okB('verified'):e&&e[0]===sh?okB(e[1]):''):'')+(done&&dec?textStrip('As text',D.msg,1):'')},
@@ -1413,20 +1442,26 @@ function flipRun(){
 }
 const popc=v=>{let c=0;while(v){c+=v&1;v>>=1}return c};
 const safeCh=b=>b>=33&&b<127?String.fromCharCode(b).replace('&','&amp;').replace('<','&lt;'):'·';
+// what really happened to the block that was hit and to the next one
+const FOPT=[['bit','Only that bit'],['blk','That whole block'],['blkbit','That block, and 1 bit of the next'],['bitblk','That bit, and the whole next block'],['rej','The message is rejected']];
+function flipKind(O,Pb,b){const d=j=>O[j]?O[j].reduce((s,v,i)=>s+popc(v^Pb[j][i]),0):0,x=d(b),y=d(b+1);return x===1&&!y?'bit':x>1&&!y?'blk':x>1&&y===1?'blkbit':'bitblk'}
 T.fl={n:()=>1,render(){
-  const F=ST.fb,Pb=D.pm,n=Pb.length,{R,tagOK}=flipRun();
+  const F=ST.fb,Pb=D.pm,n=Pb.length,{R,tagOK}=flipRun(),truth=m=>m==='gcm'?'rej':flipKind(R[m],Pb,F.b),seen=FM.filter(([m])=>F.g[m]!=null),score=seen.filter(([m])=>F.g[m]===truth(m)).length,hidden=F.pred&&seen.length<FM.length;
   const picker=Pb.map((b,j)=>`<div class="fbk"><div class="fbl">C${sub_(j+1)}</div><div class="fg">${b.map((_,i)=>`<button class="fc${j===F.b&&i===F.i?' hit':''}" data-fl="${j},${i}" title="byte ${i} of block ${j+1}">${j===F.b&&i===F.i?'⚡':''}</button>`).join('')}</div></div>`).join('');
+  const mark=m=>F.pred?` <span class="${F.g[m]===truth(m)?'cy':'cn'}">${F.g[m]===truth(m)?'✓':'✗'}</span>`:'';
   const rows=FM.map(([m,name])=>{
-    if(m==='gcm')return`<div class="fr-r"><div class="frn">GCM</div><div class="frb rej"><span>✗ Tag check failed: <b>nothing</b> is released</span></div><div class="frs bad">rejected</div></div>`;
+    if(F.pred&&F.g[m]==null)return`<div class="fr-r"><div class="frn">${name}</div><div class="frq">${FOPT.map(([v,t])=>`<button data-fg="${m},${v}">${t}</button>`).join('')}</div></div>`;
+    if(m==='gcm')return`<div class="fr-r"><div class="frn">GCM</div><div class="frb rej"><span>✗ Tag check failed: <b>nothing</b> is released</span></div><div class="frs bad">rejected${mark(m)}</div></div>`;
     const O=R[m];let bytes=0,bits=0;
     const blk=O.map((b,j)=>`<div class="fo">${b.map((v,i)=>{const d=popc(v^Pb[j][i]);bytes+=d?1:0;bits+=d;return`<i class="${d?(d===1?'o1':'o2'):''}" style="--d:${(j*16+i)}">${safeCh(v)}</i>`}).join('')}</div>`).join('');
     const big=O.filter((b,j)=>b.filter((v,i)=>v!==Pb[j][i]).length>4).length;
-    return`<div class="fr-r"><div class="frn">${name}</div><div class="frb">${blk}</div><div class="frs ${big?'bad':'mild'}">${bytes} byte${bytes===1?'':'s'} wrong<br><small>${bits} bit${bits===1?'':'s'}</small></div></div>`}).join('');
+    return`<div class="fr-r"><div class="frn">${name}</div><div class="frb">${blk}</div><div class="frs ${big?'bad':'mild'}">${bytes} byte${bytes===1?'':'s'} wrong${mark(m)}<br><small>${bits} bit${bits===1?'':'s'}</small></div></div>`}).join('');
   stage.innerHTML=`<div class="h3">Pick where the error hits: click a byte of the ciphertext</div><div class="fp">${picker}</div>
     <div class="row fbit"><span class="flh">Bit of that byte</span><span class="seg sm">${[7,6,5,4,3,2,1,0].map(b=>`<button data-fbit="${b}" class="${F.bit===b?'on':''}">${b}</button>`).join('')}</span></div>
-    <div class="sec"><div class="h3">What the receiver gets after decrypting</div><div class="fres">${rows}</div>
+    <div class="sec"><div class="pich"><div class="h3">What the receiver gets after decrypting</div><span class="row flpr">${F.pred?`<span class="flh">Score: <b>${score} of ${seen.length}</b></span>`:''}<label class="inl"><input type="checkbox" id="fPred"${F.pred?' checked':''}> predict first</label></span></div><div class="fres">${rows}</div>
     <div class="leg"><span class="r-p"><i></i>correct</span><span class="r-o1"><i></i>one bit changed</span><span class="r-o2"><i></i>garbled</span></div></div>`;
-  $('#explain').innerHTML=say(`Block ${F.b+1}, byte ${F.i}, bit ${F.bit}`,'One flipped bit in the ciphertext, for example from a bad radio link. Every mode reacts in its own way, and each result here is a real decryption.','<b>CBC</b> and <b>CFB</b> spread the damage to a second block. <b>CTR</b> and <b>OFB</b> keep it to one bit. <b>GCM</b> refuses the whole message.');
+  $('#explain').innerHTML=hidden?say(`Block ${F.b+1}, byte ${F.i}, bit ${F.bit}`,'One bit of the ciphertext has flipped, for example on a bad radio link.','Before you look: what will each mode do to the message? Think of the decryption formula of each mode, then pick an answer.',F.b===n-1?'Careful: this is the last block, so there is no next block.':''):
+    say(`Block ${F.b+1}, byte ${F.i}, bit ${F.bit}`,'One flipped bit in the ciphertext. Each result here is a real decryption.','<b>CBC</b> and <b>CFB</b> spread the damage to a second block, because the ciphertext feeds the next step. <b>CTR</b> and <b>OFB</b> keep it to one bit, because AES never sees the ciphertext. <b>GCM</b> refuses the whole message.',F.pred?`<span class="okn">You got ${score} of ${FM.length}. Click another byte to try again.</span>`:'');
   $('#extra').innerHTML=`<h3>Why it matters</h3><p>Small damage sounds good, but it has a price. In CTR and OFB an attacker who flips a bit flips exactly that bit of the plaintext, on purpose and unnoticed.</p><p>Only <b>GCM</b> tells the receiver that something changed.</p><p><button class="link" data-goto="atk">See it as an attack →</button></p>`;
 }};
 
@@ -1722,10 +1757,13 @@ document.addEventListener('click',e=>{
   const is=e.target.closest('[data-ivs]');if(is){setPlaying(false);stopAnim(false);ST.ivS=is.dataset.ivs;ST.step.iv=0;show();return}
   const ro=e.target.closest('[data-roll]');if(ro){setPlaying(false);stopAnim(false);ST.roll++;ST.step.iv=0;show();return}
   if(e.target.closest('[data-ivrun]')){ivRun();return}
-  const f=e.target.closest('[data-fl]');if(f){const[b,i]=f.dataset.fl.split(',').map(Number);ST.fb.b=b;ST.fb.i=i;show();return}
-  const b=e.target.closest('[data-fbit]');if(b){ST.fb.bit=+b.dataset.fbit;show();return}
+  const f=e.target.closest('[data-fl]');if(f){const[b,i]=f.dataset.fl.split(',').map(Number);ST.fb.b=b;ST.fb.i=i;ST.fb.g={};show();return}
+  const b=e.target.closest('[data-fbit]');if(b){ST.fb.bit=+b.dataset.fbit;ST.fb.g={};show();return}
+  const fg=e.target.closest('[data-fg]');if(fg){const[m,v]=fg.dataset.fg.split(',');ST.fb.g[m]=v;show();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
 });
 document.addEventListener('change',async e=>{
+  if(e.target.id==='fPred'){ST.fb.pred=e.target.checked;ST.fb.g={};show();return}
   if(e.target.id!=='picF'||!e.target.files[0])return;
   await loadOwn(e.target.files[0]);show();
 });
