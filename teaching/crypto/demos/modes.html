@@ -1017,7 +1017,7 @@ function picSection(){
   const f=(id,t,s,cls='')=>`<figure class="${cls}"><canvas id="${id}" width="${PW}" height="${PW}"></canvas><figcaption><b>${t}</b>${s}</figcaption></figure>`;
   return`<div class="sec pics"><div class="pich"><div><div class="h3">The picture test</div><div class="pics-s">The same picture under the same key. Every 4 pixels are one AES block, computed here in your browser.</div></div>
     <span class="seg sm" id="picS">${PN.map(([id,n])=>`<button data-pic="${id}" class="${ST.pic===id?'on':''}">${n}</button>`).join('')}<label class="pup${ST.pic==='own'?' on':''}">Your picture<input type="file" id="picF" accept="image/*" hidden></label></span></div>
-    <div class="pgrid">${f('p0','Original','')}${f('p1','ECB','the shape is still there','bad')}${f('p2','CBC','only noise','good')}${f('p3','CTR','only noise','good')}</div></div>`;
+    <div class="pgrid">${f('p0','Original','')}${f('p1','ECB','the shape is still there','bad')}${f('p2','CBC','looks random','good')}${f('p3','CTR','looks random','good')}</div></div>`;
 }
 function paintPics(){
   const d=picData(ST.pic);put('p0',d);put('p1',picOut(ST.pic,'ecb',[]));put('p2',picOut(ST.pic,'cbc',fromHex(D.iv.cbc)));put('p3',picOut(ST.pic,'ctr',fromHex(D.iv.ctr)));
@@ -1296,13 +1296,13 @@ T.atk={dir:false,
     const f=(id,t,s,cls='',hide)=>`<figure class="${cls}${hide?' off':''}"><canvas id="${id}" width="${PW}" height="${PW}"></canvas><figcaption><b>${t}</b>${s}</figcaption></figure>`;
     stage.innerHTML=tabs+`<div class="ng">
       <div class="ngr"><div class="ngl">Two secret pictures</div>${f('n0','P₁','')}${f('n1','P₂','')}</div>
-      <div class="ngr"><div class="ngl">Encrypted with CTR, <b class="x">same key and same counter</b></div>${f('n2','C₁','noise',' ',k<1)}${f('n3','C₂','noise',' ',k<1)}</div>
-      <div class="ngr"><div class="ngl">What an attacker can compute</div>${f('n4','C₁ ⊕ C₂','both pictures appear','bad',k<2)}${f('n5','With a fresh counter','only noise','good',k<3)}</div></div>`;
+      <div class="ngr"><div class="ngl">Encrypted with CTR, <b class="x">same key and same counter</b></div>${f('n2','C₁','looks random',' ',k<1)}${f('n3','C₂','looks random',' ',k<1)}</div>
+      <div class="ngr"><div class="ngl">What an attacker can compute</div>${f('n4','C₁ ⊕ C₂','both pictures appear','bad',k<2)}${f('n5','With a fresh counter','looks random','good',k<3)}</div></div>`;
     paintN();
     $('#explain').innerHTML=[say('CTR nonce reuse','CTR is safe only while every counter block is used once. Here two pictures are encrypted with the same key and the same starting counter.','Press <b>Step</b>.'),
-      say('Step 1 · encrypt','Each ciphertext alone is perfect noise. Nothing seems wrong.',fm('C₁ = P₁ ⊕ S<br>C₂ = P₂ ⊕ S')),
+      say('Step 1 · encrypt','Each ciphertext alone looks random. Nothing seems wrong.',fm('C₁ = P₁ ⊕ S<br>C₂ = P₂ ⊕ S')),
       say('Step 2 · XOR the two ciphertexts','The attacker needs no key: the keystream cancels out.',fm('C₁ ⊕ C₂ = P₁ ⊕ S ⊕ P₂ ⊕ S = P₁ ⊕ P₂'),'<span class="warn">Both pictures show through, with no key at all.</span>'),
-      say('Step 3 · the fix','With a different counter the two keystreams are unrelated, and the XOR of the ciphertexts is noise. GCM has the same rule, and there a repeat also lets an attacker forge tags.')][k];
+      say('Step 3 · the fix','With a different counter the two keystreams are unrelated, and the XOR of the ciphertexts looks random too. GCM has the same rule, and there a repeat also lets an attacker forge tags.')][k];
     $('#extra').innerHTML=`<h3>The same trick on text</h3><p>Two messages encrypted this way give P₁ ⊕ P₂. Guess a common word in one of them and the other message appears at that spot.</p><p class="note">The rule: a nonce is used once under a key. Never reset the counter.</p>`;
   },
   plan(k){
