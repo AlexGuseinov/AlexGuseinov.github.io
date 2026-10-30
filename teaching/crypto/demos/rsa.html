@@ -800,7 +800,7 @@ function setFmt(f){
 }
 function onInput(){
   const p=parseN($('#pI').value),q=parseN($('#qI').value),e=parseN($('#eI').value),m=msgOf(),E=[];
-  const chk=(v,l)=>{if(v===null)return`${l}: type a whole number.`;if(!isPrime(v)){const f=smallDiv(v);return`${l} is not prime${f?`: ${f} divides it`:''}.`}return''};
+  const chk=(v,l)=>{if(v===null)return`${l}: type a whole number.`;if(!isPrime(v)){const f=smallDiv(v);return`${l} is not prime${f?`: ${f} divides it`:''}.`}if(v===2n)return`${l} must be an odd prime: with 2, n is even and anyone can factor it.`;return''};
   const a=chk(p,'p'),b=chk(q,'q');if(a)E.push(a);if(b)E.push(b);
   if(!a&&!b&&p===q)E.push('p and q must be different, or n would be easy to factor: its square root gives p.');
   const phi=!a&&!b?(p-1n)*(q-1n):null;

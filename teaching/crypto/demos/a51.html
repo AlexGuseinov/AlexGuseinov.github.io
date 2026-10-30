@@ -430,6 +430,7 @@ const A5 = (() => {
     const nk = tm.filter(x => x[0] === 'k').length, nf = tm.length - nk;
     let h = `<b>R${r + 1}[${j}] = ${A5.bit(s.R[r], j)}</b> · `;
     h += tm.length ? `made of ${tm.length} input bit${tm.length > 1 ? 's' : ''} (${nk} key, ${nf} frame):<div class="terms">${tm.join(' ⊕ ')}</div>` : 'empty: no input bit has reached this cell yet.';
+    if (tm.length) h += `<div class="small" style="margin-top:6px">${s.phase === 'key' || s.phase === 'frame' ? 'While loading, all three registers move at every step, so this expression is the same for every key and frame number.' : '<b>This holds only for this key and frame number.</b> Which registers moved depended on the majority votes, and those depend on the key. Another key gives other expressions, so A5/1 as a whole is not linear.'}</div>`;
     if (s.z !== undefined) {
       const zm = s.M[0][18] ^ s.M[1][21] ^ s.M[2][22];
       h += `<div class="small" style="margin-top:6px">The output bit z of this step is the XOR of ${A5.terms(zm).length} input bits.</div>`;

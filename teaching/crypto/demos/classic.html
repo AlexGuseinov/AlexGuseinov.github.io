@@ -965,7 +965,7 @@ T.kz={n:()=>{const A=kzA();return kzOK(A)?5+A.m:1},render(k){
       <div class="kbars" id="kzB">${F.map((f,i)=>`<div class="kbar${f===m?' on':''}" data-n="${cnt[i]}"><span>${cnt[i]}</span><i style="height:${cnt[i]/top*100}%"></i></div>`).join('')}</div>
       <div class="kbl">${F.map(f=>`<span${f===m?' class="on"':''}>${f}</span>`).join('')}</div>
       <div class="kbl ic">${F.map((f,i)=>`<span${f===m?' class="on"':''}>${ics[i].toFixed(3).slice(1)}</span>`).join('')}</div>
-      <p style="text-align:center;margin:8px 0 0">→ key length <b>m = ${m}</b></p></div>`}
+      <p style="text-align:center;margin:8px 0 0">→ best candidate: <b>m = ${m}</b></p></div>`}
   if(ok&&k>=3)h+=`<div class="sec"><div class="h3">The letters in ${m} columns: letter 1, ${m+1}, ${2*m+1}, … in column 1, and so on. Each column is a Caesar cipher.</div><div id="kzC">${cols.map((c,ci)=>`<div class="kcol" data-c="${ci}"><b class="kk${k>=4+ci?' on':''}">${k>=4+ci?AZ[c.best]:'?'}</b><span class="kln" style="color:${gcol(ci)}">column ${ci+1}</span><span class="kls">${c.col.map((ch,x)=>`<span data-i="${ci+x*m}">${ch}</span>`).join('')}</span></div>`).join('')}</div></div>`;
   if(ok&&k>=4){const ci=done?m-1:cur,c=cols[ci],s=c.best;h+=`<div class="sec" id="kzFq"><div class="h3">Column ${ci+1}: decrypt it with every shift and compare the letter counts with English. Best shift: <b>${s} = ${AZ[s]}</b></div>${kzFreq(c,s)}</div>`}
   if(ok&&cur>=0){const solved=cur+1;
@@ -981,16 +981,16 @@ T.kz={n:()=>{const A=kzA();return kzOK(A)?5+A.m:1},render(k){
    :[`<div class="step">Kasiski examination</div><p>Friedrich Kasiski (1863) showed how to break the Vigenère cipher <b>without the key</b>.</p>
       <p>The idea: when the same piece of plaintext meets the same part of the key, the same piece of ciphertext appears again. The distance between the two places is then a <b>multiple of the key length</b>.</p><p>Press <b>Step</b>.</p>`,
     `<div class="step">1 · Find repeats</div><p>Look for pieces of 3 or more letters that appear twice. Here are the ${reps.length} longest; each one has its own colour.</p><p>Most of them come from the same plaintext under the same key letters. A few can be chance.</p>`,
-    `<div class="step">2 · Distances → key length</div><p>${cnt[F.indexOf(m)]} of the ${reps.length} distances are multiples of <b>${m}</b>. Its divisors and multiples score too, so we check the columns: with ${m} columns the IC is ${ics[F.indexOf(m)].toFixed(3)} (English ≈ 0.066, random letters ≈ 0.038).</p><p>So the key word has <b>${m} letters</b>.</p>`,
+    `<div class="step">2 · Distances → key length</div><p>${cnt[F.indexOf(m)]} of the ${reps.length} distances are multiples of <b>${m}</b>. Its divisors and multiples score too, so we check the columns: with ${m} columns the IC is ${ics[F.indexOf(m)].toFixed(3)} (English ≈ 0.066, random letters ≈ 0.038).</p><p>So the best candidate is a key word of <b>${m} letters</b>. This is a statistical estimate, not a proof: the decrypted text will confirm it or not.</p>`,
     `<div class="step">3 · Split into ${m} columns</div><p>All letters of one column were encrypted with the same key letter. So every column is just a <b>Caesar cipher</b>, and we know how to break that.</p>`][k]||''
    +(cur>=0?`<div class="step">4 · Column ${cur+1} of ${m}</div><p>Decrypt the column with each of the 26 shifts and count its letters. The right shift gives a column that looks like English: many E, T, A, few Q, Z.</p><p class="mono">χ² = Σ (count − expected)² / expected</p><p>Smallest χ² at shift <b>${cols[cur].best}</b>, so key letter ${cur+1} is <b class="k">${AZ[cols[cur].best]}</b>.</p>`:'')
-   +(done?`<div class="step">5 · Decrypt</div><p>The key is <b class="k">${key}</b>. Write it again and again under the ciphertext and subtract it letter by letter, as in the <button class="link" data-goto="vg">Vigenère</button> tab: pᵢ = (cᵢ − kᵢ) mod 26.</p><p style="font-size:14px;color:var(--muted)">With short columns one letter of the key can come out wrong; the decrypted text then shows where, and it is easy to fix.</p>`:'');
+   +(done?`<div class="step">5 · Decrypt</div><p>The candidate key is <b class="k">${key}</b>. Write it again and again under the ciphertext and subtract it letter by letter, as in the <button class="link" data-goto="vg">Vigenère</button> tab: pᵢ = (cᵢ − kᵢ) mod 26.</p><p style="font-size:14px;color:var(--muted)">With short columns one letter of the key can come out wrong; the decrypted text then shows where, and it is easy to fix. If the whole text stays unreadable, the key length was wrong.</p>`:'');
   $('#explain').innerHTML=ex;
   $('#extra').innerHTML=`<h3>Why it works</h3>
-    <p>Vigenère with a key of m letters is m Caesar ciphers taking turns. Kasiski finds m; then letter counting breaks each Caesar cipher.</p>
+    <p>Vigenère with a key of m letters is m Caesar ciphers taking turns. Kasiski suggests m; then letter counting breaks each Caesar cipher. This page tries lengths from 2 to 16.</p>
     <h3 style="margin-top:12px">Index of coincidence</h3>
     <p>The chance that two letters taken from a text are the same. English: about 0.066. Random letters: 1/26 ≈ 0.038. The right column split gives columns with an English-like IC (Friedman, 1920s).</p>
-    <p class="note">Charles Babbage found the same attack some years before Kasiski, but he did not publish it. A key as long as the message, used once, has no repeats to find: that is the one-time pad (<button class="link" data-goto="vn">Vernam</button>).</p>`;
+    <p class="note">Charles Babbage found the same attack some years before Kasiski, but he did not publish it. A truly random key, as long as the message, independent of it and used once, has no repeats to find: that is the one-time pad (<button class="link" data-goto="vn">Vernam</button>).</p>`;
 },
 plan(k){
   const A=kzA(),{t,reps,F,m,cols}=A,done=k>=4+m;
@@ -1152,7 +1152,7 @@ $('#inbar').addEventListener('click',e=>{
   const ab=e.target.closest('[data-afb]');if(ab){afSetKey(AF.a,(AF.b+(+ab.dataset.afb)+26)%26);return}
   const af=e.target.closest('[data-afex]');if(af){const [s,a,b]=af.dataset.afex.split(',');AF.p=s;AF.a=+a;AF.b=+b;ST.step.af=0;ST.built='';show();return}
   const kx=e.target.closest('[data-kzex]');if(kx){const ex=KZ_EX[+kx.dataset.kzex];KZ.ct=kzEnc(ex.p,ex.key);KZ.known=ex.key;KZ.A=null;ST.step.kz=0;ST.built='';show();return}
-  if(e.target.closest('[data-kzmk]')){const w=$('#kzK').value.toUpperCase().replace(/[^A-Z]/g,'');if(!w)return setErr('Type a key word (letters A–Z).');KZ.mk=w;KZ.ct=kzEnc(KZ_EX[0].p,w);KZ.known=w;KZ.A=null;ST.step.kz=0;ST.built='';show();return}
+  if(e.target.closest('[data-kzmk]')){const w=$('#kzK').value.toUpperCase().replace(/[^A-Z]/g,'');if(!w)return setErr('Type a key word (letters A–Z).');KZ.mk=w;KZ.ct=kzEnc(KZ_EX[0].p,w);KZ.known=w;KZ.A=null;ST.step.kz=0;ST.built='';show();if(w.length<2||w.length>16)setErr(`This page only tries key lengths from 2 to 16, so a key of ${w.length} letter${w.length>1?'s':''} will give a wrong answer. That is a limit of this demo, not of the method.`);return}
   const vg=e.target.closest('[data-vgex]');if(vg){const [s,k]=vg.dataset.vgex.split(',');VG.p=s;VG.key=k;ST.step.vg=0;ST.built='';show();return}
   if(e.target.closest('[data-vnnew]')){const n=enc()?VN.p.length:VN.key.length,c=enc()?null:vernam(VN.p,VN.key);VN.key=randKey(n);if(c)VN.p=vernam(c,VN.key);ST.built='';show();return}
   if(e.target.closest('[data-vnex]')){VN.p=[...te.encode('HELLO')];VN.key=fromHex('3f9a07c2e1');ST.step.vn=0;ST.built='';show()}

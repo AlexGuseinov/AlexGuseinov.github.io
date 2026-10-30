@@ -1273,7 +1273,7 @@ function egView(k){
     say:[say('ElGamal','Diffie–Hellman gives two people a shared secret. ElGamal uses that secret at once, to hide one message.','Bob’s public key plays the part of B, and Alice makes a fresh a for each message. Here that one-time number is called k. Press <b>Step</b>.'),
       say('Step 1 · a one-time number','k must be random and used only once.'),say('Step 2 · the first part','This is Alice’s half of a Diffie–Hellman exchange.'),say('Step 3 · the second part','yᵏ is the shared secret, and it masks m by multiplication.'),say('Step 4 · Bob’s side','Bob gets the same shared secret from c₁ and his private key.',fm('c₁ˣ = (gᵏ)ˣ = (gˣ)ᵏ = yᵏ')),say('Step 5 · unmask','He divides, that is, he multiplies by the inverse.',fm('c₂ · s⁻¹ = m · yᵏ · y⁻ᵏ = m')),
       say('Step 6 · randomised','Unlike plain RSA, ElGamal is randomised by design: a new k gives a new ciphertext, and repeats do not show.',`<span class="okn">This is the idea of <a href="modes.html">Why an IV</a> again, built into a public-key scheme.</span>`)][k],
-    why:`<h3>ElGamal in one line</h3>${fm('(c₁, c₂) = (gᵏ, m · yᵏ)')}${fm('m = c₂ · c₁⁻ˣ')}${pc(['Randomised by design','Security rests on Diffie–Hellman'],['The ciphertext is twice as long as m','k must never repeat','Malleable, like plain RSA'])}<p class="note">For full IND-CPA security, g must generate a subgroup of prime order, as in a safe-prime group. With a generator of the whole group, c₁ and c₂ leak one bit about m.</p>`};
+    why:`<h3>ElGamal in one line</h3>${fm('(c₁, c₂) = (gᵏ, m · yᵏ)')}${fm('m = c₂ · c₁⁻ˣ')}${pc(['Randomised by design','Security rests on the DDH assumption'],['The ciphertext is twice as long as m','k must never repeat','Malleable, like plain RSA'])}<p class="note">IND-CPA needs three things: g of prime order, m encoded inside that subgroup, and DDH holding there. <button class="link" data-egv="leak">See what leaks otherwise</button>.</p>`};
 }
 function egReuse(k){
   const{p,g,B:y}=D,K=egKey(),m1=D.m,m2=(D.m*7n+3n)%p||2n,a=egEnc(m1,y,K.k,g,p),b=egEnc(m2,y,K.k,g,p),got=b.c2*modinv(a.c2,p)%p*m1%p;
@@ -1287,11 +1287,19 @@ function egMall(k){
     say:[say('Changing a message','Like plain RSA, ElGamal keeps the structure of multiplication.','Press <b>Step</b>.'),say('Step 1 · multiply','Eve needs no key.',fm('c₂′ = 2 · c₂')),say('Step 2 · Bob decrypts','<span class="warn">m became 2m and nothing complained.</span>','Real systems therefore use a hash-based form such as ECIES or DHIES, and an authenticated cipher.')][k],
     why:`<h3>What is used today</h3><p>Plain ElGamal is rare. The pattern lives on: do Diffie–Hellman with a fresh key, hash the shared secret, and encrypt with <a href="modes.html">AES-GCM</a>.</p>`};
 }
-const EGV={enc:egView,reuse:egReuse,mall:egMall},EGN={enc:7,reuse:3,mall:3};
+// a message outside the subgroup: the mask is always a square, so c₂ shows what kind of number m is
+function egLeak(k){
+  const p=23n,g=2n,y=modpow(g,5n,p),sq=a=>modpow(a,11n,p)===1n,m0=4n,m1=5n,N=200;let w=0;
+  for(let i=0;i<N;i++){const b=rndB(1)[0]&1,c=egEnc(b?m1:m0,y,BigInt(1+rndB(1)[0]%10),g,p);if((sq(c.c2)?0:1)===b)w++}
+  return{body:row(k,0,'p = 23, and g = 2 has prime order 11',`<span class="flh">every mask yᵏ is a square mod 23</span>`)+row(k,1,'Eve picks two messages',nv(m0,'m₀')+`<span class="flh">a square</span>`+nv(m1,'m₁')+`<span class="flh">not a square</span>`)+row(k,2,'She tests only c₂',`<span class="flh">is c₂¹¹ mod 23 equal to 1?</span>`)+row(k,3,'Right guesses',`<b class="gq">${w} of ${N}</b><span class="vbad">no key, no discrete log</span>`),
+    say:[say('A message outside the group','A subgroup of prime order is not enough. The message must lie in that subgroup too, and this page lets you type any m.','Press <b>Step</b>.'),say('Step 1 · two messages','One is a square modulo 23, the other is not.'),say('Step 2 · look at c₂','A square times a square is a square, and a non-square times a square is not. So c₂ has the same kind as m. Euler’s criterion tests it.',fm('c₂ = m · yᵏ<br>c₂¹¹ mod 23 = 1 ⟺ m is a square')),say('Step 3 · the result','<span class="warn">Eve tells the two messages apart every time. That breaks IND-CPA, although g has prime order.</span>','The fix is to encode messages as elements of the subgroup, or to hash the shared secret and use it as a key.')][k],
+    why:`<h3>What IND-CPA needs</h3><p>ElGamal is IND-CPA secure when g has prime order q, m is encoded in that subgroup, and the <b>decisional Diffie–Hellman (DDH)</b> assumption holds there.</p><p>DDH says that gᵃᵇ looks random, even to someone who knows gᵃ and gᵇ. That is a stronger assumption than “discrete logs are hard”.</p>`};
+}
+const EGV={enc:egView,reuse:egReuse,mall:egMall,leak:egLeak},EGN={enc:7,reuse:3,mall:3,leak:4};
 QZ.eg={q:'Alice encrypts the same message twice with ElGamal. What does Eve see?',o:['The same ciphertext twice','Two different ciphertexts','Half the message'],a:1,why:'A fresh random k makes c₁ and c₂ different each time. Plain RSA has no such randomness.'};
 T.eg={n:()=>EGN[ST.egV],render(k){
   const a=EGV[ST.egV](k);
-  stage.innerHTML=subs(seg('egv',ST.egV,[['enc','The scheme'],['reuse','k used twice'],['mall','Changing a message']]),`<button data-egr="1">New k</button>`)+`<div class="eqs">${a.body}</div>`+pickBox();
+  stage.innerHTML=subs(seg('egv',ST.egV,[['enc','The scheme'],['reuse','k used twice'],['mall','Changing a message'],['leak','Message outside the group']]),`<button data-egr="1">New k</button>`)+`<div class="eqs">${a.body}</div>`+pickBox();
   $('#explain').innerHTML=a.say;$('#extra').innerHTML=a.why+quiz('eg');
 },
 plan(k){return{dur:800,start(){const r=$('#er'+k);if(!r)return null;r.style.opacity=0;return p=>{r.style.opacity=p}}}}};

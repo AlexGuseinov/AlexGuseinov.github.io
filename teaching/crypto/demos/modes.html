@@ -1254,7 +1254,7 @@ const streamBelow=m=>(g,k)=>{const dec=ST.mode==='dec',e=D.exp&&D.exp[m],done=k=
 T.ctr=chainTab({tag:()=>'ctr',build:d=>gStream('ctr',d),quiz:'ctr',below:streamBelow('ctr'),
   intro:()=>say('Counter mode','AES encrypts a <b>counter</b>, not the message. The output is a keystream, and the message is XORed with it, like a stream cipher.','Press <b>Step</b>. Then press <b>Decrypt</b> and notice that it is the same picture.'),
   outro:()=>'<p>Every counter block can be computed directly, so any block can be encrypted or decrypted without the others.</p>',
-  extra:()=>`<h3>CTR in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(T<sub>i</sub>), T<sub>i+1</sub> = T<sub>i</sub> + 1')}${pc(['Encryption and decryption both run in parallel','Jump straight to any block','No padding, and AES⁻¹ is not needed','A bit error stays one bit error'],['A counter value must never repeat under one key: <button class="link" data-goto="atk" data-atk="nonce">see why</button>','No integrity'])}`});
+  extra:()=>`<h3>CTR in one line</h3>${fm('C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(T<sub>i</sub>), T<sub>i+1</sub> = T<sub>i</sub> + 1')}${pc(['Encryption and decryption both run in parallel','Jump straight to any block','No padding, and AES⁻¹ is not needed','A bit error stays one bit error'],['A counter block must never repeat under one key, so each message needs its own nonce: <button class="link" data-goto="atk" data-atk="nonce">see why</button>','No integrity'])}`});
 T.cf=chainTab({tag:()=>'cf'+ST.sub,build:d=>gStream(ST.sub,d),quiz:'cf',
   top:()=>`<div class="row subs"><span class="seg sm"><button data-sub="cfb" class="${ST.sub==='cfb'?'on':''}">CFB: Cipher Feedback</button><button data-sub="ofb" class="${ST.sub==='ofb'?'on':''}">OFB: Output Feedback</button></span><span class="flh">${ST.sub==='cfb'?'The ciphertext goes back into AES':'The AES output goes back into AES'}</span></div>`,
   below:(g,k)=>streamBelow(ST.sub)(g,k),
@@ -1569,15 +1569,17 @@ function renderGN(k,tabs){
     say('Step 5 · accepted','The server computes the tag with the real key, and it matches.','<span class="warn">One repeated nonce and the attacker can forge messages for this nonce, and knows H for the rest of the key\'s life. No key was found.</span>')][k];
   $('#extra').innerHTML=`<h3>Why this worked here</h3><p>With one-block messages the equation is of degree 2, so a square root solves it. Longer messages give a polynomial of higher degree, and its roots can still be found.</p><p>This is known as the forbidden attack (Joux, 2006).</p><p class="note">The fix: never repeat a nonce. If that cannot be guaranteed, use a mode built for it, such as AES-GCM-SIV.</p>`;
 }
-function paintN(q){ // the pictures of the nonce attack; q = how far the last one is drawn
-  const k=ST.step.atk||0,a=picData('lock'),b=picData('aztu'),iv=fromHex(D.iv.ctr),ea=picOut('lock','ctr',iv),eb=picOut('aztu','ctr',iv),eb2=picOut('aztu','ctr',xorB(iv,[...Array(15).fill(0),1]));
-  const x=new Uint8ClampedArray(ea.length),y=new Uint8ClampedArray(ea.length);for(let i=0;i<x.length;i++){x[i]=i%4===3?255:ea[i]^eb[i];y[i]=i%4===3?255:ea[i]^eb2[i]}
-  put('n0',a);put('n1',b);if(k>=1){put('n2',ea);put('n3',eb)}if(k>=2)put('n4',x);if(k>=3)put('n5',y);
-  return{ea,eb,x,y};
+function paintN(){ // the pictures of the nonce attack
+  const k=ST.step.atk||0,a=picData('lock'),b=picData('aztu'),iv=fromHex(D.iv.ctr),nn=iv.slice();nn[0]^=1;   // nn: another nonce, in the first half of the counter block
+  const ea=picOut('lock','ctr',iv),eb=picOut('aztu','ctr',iv),ec=picOut('aztu','ctr',incr(iv)),ed=picOut('aztu','ctr',nn),L=ea.length;
+  const x=new Uint8ClampedArray(L),y=new Uint8ClampedArray(L),w=new Uint8ClampedArray(L),z=new Uint8ClampedArray(L);
+  for(let i=0;i<L;i++){const al=i%4===3;x[i]=al?255:ea[i]^eb[i];y[i]=al?255:ea[i]^ec[i];w[i]=al?255:i+16<L?ea[i+16]^ec[i]:0;z[i]=al?255:ea[i]^ed[i]}
+  put('n0',a);put('n1',b);if(k>=1){put('n2',ea);put('n3',eb)}if(k>=2)put('n4',x);if(k>=3)put('n5',y);if(k>=4)put('n6',w);if(k>=5)put('n7',z);
+  return{ea,eb,x,y,w,z};
 }
 function wipe(id,d,q){const c=$('#'+id);if(!c)return;const h=Math.round(PW*q);if(h>0)c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(d),PW,PW),0,0,0,0,PW,h)}
 T.atk={dir:false,
-  n:()=>ST.atk==='flip'?chart('atk',gFlip).st.length+1:ST.atk==='gnon'?6:ST.atk==='oracle'?17:4,
+  n:()=>ST.atk==='flip'?chart('atk',gFlip).st.length+1:ST.atk==='gnon'?6:ST.atk==='oracle'?17:6,
   render(k){
     const tabs=`<div class="row subs"><span class="seg sm"><button data-atk="flip" class="${ST.atk==='flip'?'on':''}">CBC bit flipping</button><button data-atk="oracle" class="${ST.atk==='oracle'?'on':''}">Padding oracle</button><button data-atk="nonce" class="${ST.atk==='nonce'?'on':''}">CTR nonce reuse</button><button data-atk="gnon" class="${ST.atk==='gnon'?'on':''}">GCM nonce reuse</button></span></div>`;
     if(ST.atk==='gnon')return renderGN(k,tabs);
@@ -1594,21 +1596,25 @@ T.atk={dir:false,
     stage.innerHTML=tabs+`<div class="ng">
       <div class="ngr"><div class="ngl">Two secret pictures</div>${f('n0','P₁','')}${f('n1','P₂','')}</div>
       <div class="ngr"><div class="ngl">Encrypted with CTR, <b class="x">same key and same counter</b></div>${f('n2','C₁','looks random',' ',k<1)}${f('n3','C₂','looks random',' ',k<1)}</div>
-      <div class="ngr"><div class="ngl">What an attacker can compute</div>${f('n4','C₁ ⊕ C₂','both pictures appear','bad',k<2)}${f('n5','With a fresh counter','looks random','good',k<3)}</div></div>`;
+      <div class="ngr"><div class="ngl">What an attacker can compute</div>${f('n4','C₁ ⊕ C₂','both pictures appear','bad',k<2)}</div>
+      <div class="ngr"><div class="ngl">A tempting fix: start the second counter one block later</div>${f('n5','C₁ ⊕ C₂','looks random','',k<3)}${f('n6','Shifted by one block','both pictures are back','bad',k<4)}</div>
+      <div class="ngr"><div class="ngl">The real fix: a new nonce for each message</div>${f('n7','C₁ ⊕ C₂','looks random','good',k<5)}</div></div>`;
     paintN();
     $('#explain').innerHTML=[say('CTR nonce reuse','CTR is safe only while every counter block is used once. Here two pictures are encrypted with the same key and the same starting counter.','Press <b>Step</b>.'),
       say('Step 1 · encrypt','Each ciphertext alone looks random. Nothing seems wrong.',fm('C₁ = P₁ ⊕ S<br>C₂ = P₂ ⊕ S')),
       say('Step 2 · XOR the two ciphertexts','The attacker needs no key: the keystream cancels out.',fm('C₁ ⊕ C₂ = P₁ ⊕ S ⊕ P₂ ⊕ S = P₁ ⊕ P₂'),'<span class="warn">Both pictures show through, with no key at all.</span>'),
-      say('Step 3 · the fix','With a different counter the two keystreams are unrelated, and the XOR of the ciphertexts looks random too. GCM has the same rule, and there a repeat also lets an attacker forge tags: <button class="link" data-atk="gnon">see that attack</button>.')][k];
-    $('#extra').innerHTML=`<h3>The same trick on text</h3><p>Two messages encrypted this way give P₁ ⊕ P₂. Guess a common word in one of them and the other message appears at that spot.</p><p class="note">The rule: a nonce is used once under a key. Never reset the counter.</p>`;
+      say('Step 3 · a tempting fix','Start the second message one counter later. The XOR of the two ciphertexts now looks random. Is that safe?'),
+      say('Step 4 · shift by one block','No. Both messages still use the same keystream blocks, just one position apart. The attacker tries small shifts of one ciphertext against the other.',fm('C₁[i+1] ⊕ C₂[i] = P₁[i+1] ⊕ P₂[i]'),'<span class="warn">Both pictures are back, 4 pixels apart. A different starting value does not help if the two ranges overlap.</span>'),
+      say('Step 5 · the real fix','No counter block may ever be used twice under one key. So each message gets its own nonce in the first half of the counter block, and it counts only in the second half.','As long as that counter never runs over, two messages cannot reach the same block.','GCM has the same rule, and there a repeat also lets an attacker forge tags: <button class="link" data-atk="gnon">see that attack</button>.')][k];
+    $('#extra').innerHTML=`<h3>The same trick on text</h3><p>Two messages encrypted this way give P₁ ⊕ P₂. Guess a common word in one of them and the other message appears at that spot.</p><p class="note">The rule: no counter block is ever used twice under one key. A new start value is not enough, the ranges must not overlap.</p>`;
   },
   plan(k){
     if(ST.atk==='flip')return planGraph(chart('atk',gFlip),k);
     if(ST.atk==='oracle')return planPO(k);
     if(ST.atk==='gnon')return{dur:800,start(){const r=$('#er'+k);if(!r)return null;r.style.opacity=0;return p=>{r.style.opacity=p}}};
-    return{dur:1500,start(){const{ea,eb,x,y}=paintN();
+    return{dur:1500,start(){const{ea,eb,x,y,w,z}=paintN();
       const c=id=>{const e=$('#'+id);if(e)e.getContext('2d').clearRect(0,0,PW,PW)};
-      const list=k===1?[['n2',ea],['n3',eb]]:k===2?[['n4',x]]:[['n5',y]];list.forEach(([i])=>c(i));
+      const list=k===1?[['n2',ea],['n3',eb]]:k===2?[['n4',x]]:k===3?[['n5',y]]:k===4?[['n6',w]]:[['n7',z]];list.forEach(([i])=>c(i));
       return p=>list.forEach(([i,d])=>wipe(i,d,ease(p)))}};
   }};
 
