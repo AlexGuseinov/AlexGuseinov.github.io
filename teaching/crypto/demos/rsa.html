@@ -603,6 +603,7 @@ button.nv:hover{outline:1.5px solid var(--accent)}
 .ow2.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 5;animation:flow .55s linear infinite}
 #extra a,#explain a{color:var(--accent)}
 .nvs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:8px}
+.wd .ch{min-width:640px}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -770,6 +771,7 @@ function quiz(id){
   return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
 }
 const seg=(attr,cur,items,cls='')=>`<span class="seg sm ${cls}">${items.map(([v,t])=>`<button data-${attr}="${v}" class="${cur===v?'on':''}">${t}</button>`).join('')}</span>`;
+const wide=s=>`<div class="scroll wd">${s}</div>`;
 const subs=(...x)=>`<div class="row subs">${x.join('')}</div>`;
 // byte colours, as on the other pages
 const bcol=b=>`hsl(${Math.round(b*360/256)},58%,44%)`;
@@ -907,7 +909,7 @@ function meshDraw(){
 }
 QZ.ov={q:'100 people, and every pair wants to talk in private. How many secret keys does symmetric encryption need?',o:['100','4950','10000'],a:1,why:'One key per pair: 100 · 99 / 2 = 4950. With public keys, each person needs just one key pair, so 100 pairs in total.'};
 T.ov={n:()=>6,render(k){
-  stage.innerHTML=ovScene(k)+`<div class="sec"><div class="pich"><div><div class="h3">How many keys do n people need?</div><div class="pics-s">Move the slider. Each line on the left is one secret key that two people must agree on in advance.</div></div>
+  stage.innerHTML=wide(ovScene(k))+`<div class="sec"><div class="pich"><div><div class="h3">How many keys do n people need?</div><div class="pics-s">Move the slider. Each line on the left is one secret key that two people must agree on in advance.</div></div>
     <label class="inl">n = <b id="mV"></b> <input type="range" id="mR" min="2" max="40" value="${ST.meshN}"></label></div>
     <div class="m2"><div class="mc2 bad"><div class="mct">Symmetric: one shared key per pair</div><div id="mS"></div><div class="mn"><b id="mSn"></b> secret keys</div></div>
     <div class="mc2 good"><div class="mct">Public key: one key pair per person</div><div id="mP"></div><div class="mn"><b id="mPn"></b> key pairs</div></div></div></div>
@@ -1041,7 +1043,7 @@ CLICK.push(e=>{const b=e.target.closest('[data-hb]');if(b&&!(ST.kg&&ST.kg.run)){
   if(e.target.closest('[data-hunt]')){ST.kg={bits:HB.v,run:true,tested:0,small:0,mr:0,found:[],log:[],t0:performance.now()};e.target.disabled=true;huntStep();return true}});
 const HB={v:1024};
 T.kg={n:()=>7,render(k){
-  stage.innerHTML=kgScene(k)+huntView();
+  stage.innerHTML=wide(kgScene(k))+huntView();
   if(!ST.kg)$$('[data-hb]').forEach(x=>x.classList.toggle('on',+x.dataset.hb===HB.v));
   $('#explain').innerHTML=[say('Making a key pair','Bob does this once. Everything follows from two secret primes.','Press <b>Step</b>.'),
     say('Step 1 · two primes',`Bob picks p and q at random and tells nobody. Below you can watch a browser do it for real numbers.`),
@@ -1092,7 +1094,7 @@ function proofHtml(){
 QZ.ed={q:'Alice wants to send a secret to Bob. Which key does she use?',o:['Her own private key','Bob’s public key','Bob’s private key'],a:1,why:'Anyone may use Bob’s public key to encrypt, and only Bob’s private key can undo it. Alice does not even need a key pair of her own.'};
 T.ed={n:()=>6,render(k){
   const txt=D.mF==='text',b=fromHex((D.m.toString(16).length%2?'0':'')+D.m.toString(16));
-  stage.innerHTML=edScene(k)+pickBox()+`<div class="nvs"><span class="flh">Numbers</span>${nv(D.m,'m')}${k>=2?nv(D.c,'c'):''}${k>=4?nv(modpow(D.c,D.d,D.n),'decrypted'):''}</div>`+
+  stage.innerHTML=wide(edScene(k))+pickBox()+`<div class="nvs"><span class="flh">Numbers</span>${nv(D.m,'m')}${k>=2?nv(D.c,'c'):''}${k>=4?nv(modpow(D.c,D.d,D.n),'decrypted'):''}</div>`+
     (k>=5?proofHtml():'');
   const big=D.m>1n&&D.e<100000n?expDigits(D.m,D.e):0;
   $('#explain').innerHTML=[say('RSA in two lines',`Encryption and decryption are the same operation with different exponents. Each one is a jump between two points on this ring.`,D.n<=121n?'The thin lines show where every number goes under the public key: a full shuffle.':'','Press <b>Step</b>.'),
@@ -1323,7 +1325,7 @@ QZ.oa={q:'Bob decrypts a ciphertext and the padding check fails. What should he 
 CLICK.push(e=>{if(e.target.closest('[data-oar]')){setPlaying(false);stopAnim(false);ST.seed++;ST.step.oa=7;show();return true}});
 T.oa={n:()=>8,render(k){
   const d=oaData(),t=oaTest();
-  stage.innerHTML=oaScene(k)+pickBox()+(k>=6?`<div class="res r-pri"><span class="rl">c = EM<sup>e</sup> mod n</span><span class="rv">${nv(d.c,'c')}</span></div>`:'')+(k>=7?`<div class="pich" style="margin-top:12px"><div class="res r-ok" style="margin:0;flex:1"><span class="rl">Decrypt</span><span class="rv">the padding checks out, and the message is “${OM}” ${t.ok?'✓':'✗'}. One changed bit of c: ${t.rej?'rejected ✓':'not rejected ✗'}</span></div><button class="pri" data-oar="1">Encrypt the same message again</button></div>${d.prev&&d.prev!==d.c?`<div class="res r-ok"><span class="rl">Compare</span><span class="rv">same message, new seed: ciphertext was ${fmtN(d.prev)}, now ${fmtN(d.c)}</span></div>`:''}`:'');
+  stage.innerHTML=wide(oaScene(k))+pickBox()+(k>=6?`<div class="res r-pri"><span class="rl">c = EM<sup>e</sup> mod n</span><span class="rv">${nv(d.c,'c')}</span></div>`:'')+(k>=7?`<div class="pich" style="margin-top:12px"><div class="res r-ok" style="margin:0;flex:1"><span class="rl">Decrypt</span><span class="rv">the padding checks out, and the message is “${OM}” ${t.ok?'✓':'✗'}. One changed bit of c: ${t.rej?'rejected ✓':'not rejected ✗'}</span></div><button class="pri" data-oar="1">Encrypt the same message again</button></div>${d.prev&&d.prev!==d.c?`<div class="res r-ok"><span class="rl">Compare</span><span class="rv">same message, new seed: ciphertext was ${fmtN(d.prev)}, now ${fmtN(d.c)}</span></div>`:''}`:'');
   $('#explain').innerHTML=[say('OAEP','Every attack in the last tab worked on plain RSA. Real RSA first turns the message into a random-looking block as long as n.','Press <b>Step</b>.'),
     say('Step 1 · the data block','The message is placed at the end of a long block. Most of it is zeros: see how plain the strip looks. The start holds a hash, used later as a check.'),
     say('Step 2 · a random seed','32 fresh random bytes. This is the IV of RSA: new for every encryption.'),
