@@ -1,0 +1,1456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSA, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;
+  --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;
+  --g0:#3f72c9;--g1:#c97a2e;--g2:#2f8c60;--g3:#bd4a4a;
+  --rowc:#8ab8ee;--rowBg:#1f3048;--colc:#f0a35e;--colBg:#3a2716;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:36px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.seg.sm button{padding:2px 9px;font-size:12.5px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{font-family:var(--mono);width:100%}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.mono{font-family:var(--mono)}
+.k{color:var(--key);font-weight:600}
+.x{color:var(--xor);font-weight:600}
+button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+
+/* input bar */
+.inbar{display:grid;grid-template-columns:minmax(200px,auto) minmax(0,1fr) minmax(0,1fr) auto;gap:10px 14px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.meta{font-size:13px;color:var(--muted);white-space:nowrap;padding-bottom:8px}
+.meta b{color:var(--ink)}
+.err{grid-column:1/-1;color:var(--xor);font-size:13px;margin-top:-4px}
+.err:empty{display:none}
+@media (max-width:900px){.inbar{grid-template-columns:1fr}.meta{padding:0}}
+
+/* state grids */
+.g4{display:grid;grid-template-columns:repeat(4,var(--cs));gap:4px}
+.g4.sm{--cs:26px;gap:2px}
+.c{height:var(--cs);display:flex;align-items:center;justify-content:center;font:600 15px var(--mono);border-radius:6px;background:var(--panel);border:1px solid var(--line2);transition:background .25s,border-color .25s}
+.g4.sm .c{font-size:10px;border-radius:3px;font-weight:500}
+.c.emp{color:var(--faint);border-style:dashed;background:transparent;font-weight:400}
+.c.done{color:var(--faint)}
+.c.chg{background:var(--accentBg);border-color:var(--accent)}
+.c.key{background:var(--keyBg);border-color:var(--key)}
+.c.cur{outline:3px solid var(--ink);outline-offset:1px}
+.c.src{outline:3px solid var(--accent);outline-offset:1px}
+.c.src2{outline:3px solid var(--key);outline-offset:1px}
+.c.colr{color:#fff;border-color:rgba(0,0,0,.15)}
+.c small{font:400 9px var(--sans);opacity:.75;margin-left:2px;align-self:flex-end;margin-bottom:4px}
+.gw{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%}
+.gcap{font-size:13px;color:var(--muted);text-align:center}
+.gcap b{color:var(--ink)}
+.flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 16px}
+.op{font-size:15px;color:var(--muted);text-align:center;font-weight:600}
+.op big{display:block;font-size:24px;line-height:1;color:var(--ink)}
+.sec{margin-top:22px}
+.sec>.h3{text-align:left}
+.scroll{overflow-x:auto;max-width:100%}
+
+/* S-box table */
+.sbt{border-collapse:collapse;font:12px var(--mono);margin:0 auto}
+.sbt th{font-weight:700;color:var(--muted);padding:2px 4px;font-size:11.5px}
+.sbt td{padding:2px 3px;text-align:center;border:1px solid var(--line);cursor:pointer;min-width:22px}
+.sbt td:hover{border-color:var(--accent)}
+.sbt td.ax{background:var(--accentBg)}
+.sbt td.hit{background:var(--ink);color:var(--bg);font-weight:700}
+.sbt td.pick{outline:2px solid var(--key);outline-offset:-2px}
+.sbt th.hit{color:var(--accent)}
+
+/* bit tables */
+.bt{border-collapse:collapse;font:13px var(--mono)}
+.bt th{font:600 12px var(--sans);color:var(--muted);text-align:left;padding:2px 8px 2px 0;white-space:nowrap}
+.bt td{width:20px;text-align:center;padding:2px 0}
+.bt tr.res td,.bt tr.res th{border-top:2px solid var(--ink);font-weight:700;color:var(--ink)}
+.bt td.hx{width:auto;padding-left:10px;color:var(--muted)}
+.bt tr.res td.hx{color:var(--ink)}
+
+/* shift rows animation */
+.anim{position:relative}
+.anim .c{position:absolute;left:0;top:0;width:var(--cs);transition:transform .5s ease,opacity .25s}
+
+/* mixcolumns matrix */
+.mx{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font:14px var(--mono)}
+.mt{border-collapse:separate;border-spacing:2px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);border-radius:4px;padding:0 3px}
+.mt td{padding:3px 6px;text-align:center;border-radius:4px}
+.mt tr.on td{background:var(--accentBg);font-weight:700}
+.mt td.on{background:var(--accent);color:var(--onAccent);font-weight:700}
+.terms{font:14px var(--mono);line-height:1.9;margin-top:12px}
+.terms .t{display:block}
+.terms .why{color:var(--muted);font-family:var(--sans);font-size:13px}
+
+/* key expansion */
+.kdet{font:14px var(--mono);line-height:1.8;padding:10px 12px;border-radius:8px;background:var(--accentBg);margin-bottom:16px}
+.kdet .why{font:13px var(--sans);color:var(--muted)}
+.kgrid{display:flex;flex-wrap:wrap;gap:16px 18px;justify-content:center}
+.rc{display:flex;flex-wrap:wrap;gap:4px}
+.rc span{font:12px var(--mono);padding:2px 6px;border:1px solid var(--line);border-radius:4px}
+.rc span.on{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+
+/* round chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.rg{display:flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:2px 4px}
+.rg b{font-size:11px;color:var(--muted);margin-right:3px;font-weight:600}
+.chip{font:12px var(--mono);padding:2px 5px;border-radius:4px;border:0;background:transparent;color:var(--faint)}
+.chip.done{color:var(--ink)}
+.chip.on{background:var(--accent);color:var(--onAccent)}
+.result{margin-top:18px;padding:10px 12px;border-radius:8px;background:var(--okBg);font-size:15px}
+.result .mono{word-break:break-all}
+.rt{border-collapse:collapse;font-size:12.5px;width:100%}
+.rt td,.rt th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:left}
+.rt th{color:var(--muted);font-weight:600}
+.rt td.mono{font-size:11.5px;word-break:break-all}
+.rt tr.on td{background:var(--accentBg)}
+
+/* overview */
+.ov{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:760px){.ov{grid-template-columns:1fr}}
+.fl{display:flex;flex-direction:column;align-items:center;gap:0}
+.fb{min-width:210px;text-align:center;padding:8px 12px;border:1.5px solid var(--line2);border-radius:8px;background:var(--panel);font-weight:600;font-size:15px}
+.fb[data-goto]{cursor:pointer}
+.fb[data-goto]:hover{border-color:var(--accent);color:var(--accent)}
+.fb.io{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.fb.kb{border-color:var(--key);color:var(--key)}
+.fb .kk{font:600 13px var(--mono);color:var(--key);margin-left:6px}
+.fa{color:var(--muted);font-size:18px;line-height:1.3}
+.fgrp{border:1.5px dashed var(--line2);border-radius:12px;padding:8px 14px 12px;display:flex;flex-direction:column;align-items:center}
+.fgl{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.vt{border-collapse:collapse;font-size:14px;width:100%;margin-top:6px}
+.vt td,.vt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+.vt th{color:var(--muted);font-weight:600;font-size:13px}
+.inrow{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-bottom:10px}
+.inrow .c{width:32px;height:38px;flex-direction:column;font-size:13px;line-height:1.1}
+.inrow .c small,.g4 .c small{margin:0}
+.lay .c{flex-direction:column;line-height:1.05}
+
+/* diffusion */
+.bits{display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center}
+.by8{display:flex;flex-direction:column;align-items:center;gap:2px}
+.by8 span{font:11px var(--mono);color:var(--muted)}
+.by8 div{display:flex;gap:1px}
+.by8 i{width:11px;height:16px;border-radius:2px;background:var(--line);cursor:pointer;display:block}
+.by8 i.one{background:var(--line2)}
+.by8 i.flip{background:var(--xor)}
+.by8 i:hover{outline:2px solid var(--accent)}
+.dgr{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.dgr .c{transition:none}
+.bars{display:flex;align-items:flex-end;gap:6px;height:130px;position:relative;margin:10px auto 0;max-width:560px;border-bottom:1px solid var(--line2);padding:0 4px}
+.bars .bar{flex:1;background:var(--accent);border-radius:3px 3px 0 0;position:relative;min-height:1px}
+.bars .bar span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font:11px var(--mono);color:var(--muted)}
+.bars .ref{position:absolute;left:0;right:0;border-top:1.5px dashed var(--xor)}
+.bars .ref span{position:absolute;right:0;top:-17px;font-size:11px;color:var(--xor)}
+.blbl{display:flex;gap:6px;max-width:560px;margin:4px auto 0;padding:0 4px}
+.blbl span{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+
+/* One round picture */
+.rdw svg{width:100%;height:auto;display:block}
+.rdw .rl{stroke:var(--line2);stroke-width:1.4;fill:none}
+.rdw .rl.hl{stroke:var(--xor);stroke-width:2.6}
+.rdw .rl.dash{stroke-dasharray:4 3}
+.rdw .rmn{fill:var(--line2)}.rdw .rmh{fill:var(--xor)}
+.rdw .rb{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+.rdw .rb.hl{stroke:var(--xor);stroke-width:2.4;fill:var(--xorBg)}
+.rdw .rbt{font:700 11px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .go{cursor:pointer}
+.rdw .rbox:hover .rb,.rdw .rbox:hover .rx{stroke:var(--accent);stroke-width:2.4}
+.rdw .srbx{fill:none;stroke:var(--ink);stroke-width:2}
+.rdw .srband{fill:transparent}.rdw .srband.a{fill:color-mix(in srgb,var(--ink) 6%,transparent)}
+.rdw .rrow{font:10.5px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab{font:600 12px var(--sans);fill:var(--muted);text-anchor:end;dominant-baseline:central}
+.rdw .rlab.go{fill:var(--ink);text-decoration:underline}
+.rdw .rlab.on{fill:var(--accent);font-weight:700}
+.rdw .rgl{font:11px var(--sans);fill:var(--faint);text-anchor:middle}
+.rdw .rdot{fill:var(--line2)}.rdw .rdot.hl{fill:var(--xor)}
+.rdw .rx{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}.rdw .rx.hl{stroke:var(--xor);fill:var(--xorBg);stroke-width:2.2}
+.rdw .rxp{stroke:var(--ink);stroke-width:1.3;pointer-events:none}
+.rdw .rkt{fill:var(--keyBg);stroke:var(--key);stroke-width:.8}
+.rdw .rkv{font:8.5px var(--mono);fill:var(--key);text-anchor:middle;dominant-baseline:central}
+.rdw .rka{stroke:var(--key);stroke-width:1}
+.rdw .rq{stroke:var(--line2);stroke-width:1}
+.rdw .rq.hl{fill:var(--xor);stroke:var(--xor)}
+.rdw .rq.new{stroke:var(--accent);stroke-width:2.2}
+.rdw .rct{font:600 12.5px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.rdw .rct.hl{fill:#fff}.rdw .rct.emp{fill:var(--faint);font-weight:400}
+.rdw .rcell{cursor:pointer}
+.rdw .rcell:hover .rq{stroke:var(--ink);stroke-width:2}
+.rdw .rnote{font:12px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+
+/* Key expansion picture */
+.ked svg{width:100%;height:auto;display:block}
+.ked .kl{stroke:var(--line2);stroke-width:1.6;fill:none}
+.ked .kl.a{stroke:var(--accent);stroke-width:2.8}
+.ked .kl.k{stroke:var(--key);stroke-width:2.8}
+.ked .kmn{fill:var(--line2)}.ked .kma{fill:var(--accent)}.ked .kmk{fill:var(--key)}
+.ked .kdot{fill:var(--line2)}.ked .kdot.a{fill:var(--accent)}
+.ked .wb{fill:var(--panel);stroke:var(--line2);stroke-width:1.3}
+.ked .wb.key{fill:var(--keyBg);stroke:var(--key)}
+.ked .wb.emp{fill:none;stroke-dasharray:4 3}
+.ked .wb.cur{stroke:var(--ink);stroke-width:2.6}
+.ked .wb.src{stroke:var(--accent);stroke-width:2.6}
+.ked .wb.src2{stroke:var(--key);stroke-width:2.6}
+.ked .wt{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .wt.emp{fill:var(--faint);font-weight:400}
+.ked .kcap{font:11px var(--sans);fill:var(--muted);text-anchor:middle}
+.ked .kcap .kr{fill:var(--key);font-weight:600}
+.ked .gb{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}
+.ked .gb.on{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.5}
+.ked .gt{font:italic 700 16px var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.ked .gt.sm{font:600 10px var(--sans)}
+.ked .xo{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}.ked .xo.on{stroke:var(--accent);stroke-width:2.5}
+.ked .xp{stroke:var(--line2);stroke-width:1.5}.ked .xp.on{stroke:var(--accent)}
+.g4.kcol{grid-template-columns:var(--cs)}
+.gpf{gap:10px 12px}
+.gp{padding:4px;border-radius:8px;border:2px solid transparent}.gp.on{border-color:var(--accent);background:var(--accentBg)}
+.c.mvb{background:var(--xor);border-color:var(--xor);color:#fff}
+.kr{cursor:pointer;border-radius:8px;padding:2px}.kr:hover{background:var(--accentBg)}
+
+/* SubBytes lookup */
+.hn{color:var(--rowc);font-weight:700}
+.ln{color:var(--colc);font-weight:700}
+.c .q{color:inherit;font-weight:600}
+.g4.bin .c{flex-direction:column;font-size:12px;line-height:1.15;gap:1px}
+.g4.bin .c .q+.q{opacity:.75}
+.sbwrap{position:relative;display:flex;flex-wrap:wrap;gap:22px 24px;justify-content:center;align-items:center;padding-top:30px}
+#sbIn .gw,#sbOut .gw{flex-direction:column-reverse}
+.sbarr{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.sbarr path{fill:none;stroke-width:2.2}
+.sbarr .pr{stroke:var(--rowc)}.sbarr .pc{stroke:var(--colc)}.sbarr .po{stroke:var(--ink);stroke-dasharray:6 4}
+.sbarr .arr{fill:var(--rowc)}.sbarr .arc{fill:var(--colc)}.sbarr .aro{fill:var(--ink)}
+.sbarr text{font:700 14px var(--sans)}.sbarr .tr{fill:var(--rowc)}.sbarr .tc{fill:var(--colc)}
+.sbt th.corner{font-size:10px;color:var(--faint)}
+.sbt th small{display:block;font-size:8.5px;font-weight:400;color:var(--faint)}
+.sbt.bin th{padding:2px 1px}.sbt.bin th small{font-size:8px;letter-spacing:-.2px}.sbt.bin td{padding:2px 1px}
+.sbt th.hitr{background:var(--rowc);color:#fff}.sbt th.hitc{background:var(--colc);color:#fff}
+.sbt th.hitr small,.sbt th.hitc small{color:#fff}
+.sbt td.axr{background:var(--rowBg)}.sbt td.axc{background:var(--colBg)}
+.lkup{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:8px;margin-top:22px}
+.lks{border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:130px}
+.lkh{font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+.lkbig{font-size:22px;font-weight:600}
+.lkmid{font-size:13px;line-height:1.7}
+.lksub{font-size:12px;color:var(--muted)}
+.lkarr{align-self:center;color:var(--muted);font-size:18px}
+@media (max-width:700px){.lkarr{display:none}.lks{min-width:0;flex:1 1 40%}}
+
+/* ShiftRows rails */
+.srbox{display:flex;flex-direction:column;gap:4px}
+.srline{display:flex;align-items:center;gap:8px}
+.srlab{font-size:12px;color:var(--muted);width:38px;text-align:right}
+.srtrack{width:calc(4 * var(--cs) + 12px);overflow:hidden;border-radius:7px;outline:2px solid transparent;outline-offset:2px;transition:outline-color .3s}
+.srtrack.mv{outline-color:var(--ink)}
+.srrail{display:flex;gap:4px;width:max-content;transition:transform .65s cubic-bezier(.45,.05,.3,1)}
+.srrail .c{width:var(--cs);flex:none}
+.srdots{display:flex;gap:3px;width:44px;font-size:11px;color:var(--faint)}
+.srdots i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line2);display:block}
+.srdots i.on{background:var(--ink);border-color:var(--ink)}
+#stage [data-o]{cursor:pointer}
+.c.lk{outline:3px solid var(--ink);outline-offset:1px}
+.c.pin{outline:3px solid var(--ink);outline-offset:1px;box-shadow:0 0 0 6px color-mix(in srgb,var(--ink) 18%,transparent)}
+
+/* GF(2^8) tab */
+.gfin{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-top:10px}
+.gfin .fld{font-size:13px;color:var(--muted);width:90px}
+.gfin .row button{padding:4px 9px;font-size:13px}
+.gft td,.gft th{text-align:center}
+.gft tr.on td{background:var(--accentBg)}
+.gfr th{font-weight:600;color:var(--muted);text-align:right;padding-right:10px;white-space:nowrap}
+.gfr td{font-size:13px;letter-spacing:1px;white-space:pre}
+.gfr tr.sub td{color:var(--xor)}
+.gfr tr.res td{font-weight:700}
+
+/* MixColumns playground, tracking, round strip */
+.play{padding-top:14px;border-top:1px solid var(--line)}
+.play .row{gap:6px}
+.mcin{width:52px!important;text-align:center;font-size:15px}
+.play button{padding:5px 10px;font-size:13px}
+.c.hi{background:var(--xorBg);border-color:var(--xor)}
+.c.trk{background:var(--xor);border-color:var(--xor);color:#fff}
+[data-trk] .c{cursor:pointer}
+.strip{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+.stp{cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent}
+.stp:hover{border-color:var(--line2)}
+.stp.on{border-color:var(--accent)}
+
+
+/* v2: animation layer (tokens fly over the stage, like the DES demo) */
+.stage{position:relative}
+#fx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5}
+.tok text{font-family:var(--mono);font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:3px;stroke-linejoin:round}
+.tok .edge{fill:none;stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.mini .bg{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.flash{animation:flash .7s ease-out}
+@keyframes flash{from{background:var(--xor);color:#fff;border-color:var(--xor)}}
+.op.pulse big{color:var(--accent);animation:pz .4s ease-in-out infinite alternate}
+@keyframes pz{to{transform:scale(1.35)}}
+.mt td.hot{background:var(--xor);color:#fff}
+.rg.band{background:var(--accentBg);border-color:var(--accent)}
+.c.ghost{opacity:0}
+/* overview chart */
+.ov2{display:grid;grid-template-columns:minmax(0,600px) minmax(300px,1fr);gap:24px;align-items:start}
+@media (max-width:1240px){.ov2{grid-template-columns:minmax(0,1fr)}}
+.ovw{width:100%;max-width:600px;height:auto;display:block;margin:0 auto}
+.ovw .ob{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
+.ovw .ob.io{fill:var(--ink);stroke:var(--ink)}
+.ovw .ob.kb{stroke:var(--key)}
+.ovw .ob.on{stroke:var(--accent);stroke-width:2.6;fill:var(--accentBg)}
+.ovw .ob.pulse{animation:opulse .4s ease-in-out infinite alternate}
+.ovw .ob.io.on,.ovw .ob.io.pulse{fill:var(--ink);stroke:var(--accent);stroke-width:3;animation:none}
+@keyframes opulse{from{fill:var(--accentBg)}to{fill:var(--panel)}}
+.ovw .ot{font:600 15px var(--sans);fill:var(--ink);dominant-baseline:central}
+.ovw .ot.io{fill:var(--bg)}
+.ovw .okk{font:600 12.5px var(--mono);fill:var(--key);dominant-baseline:central;text-anchor:end}
+.ovw .ow{stroke:var(--line2);stroke-width:2;fill:none}
+.ovw .ow.k{stroke:var(--key);stroke-dasharray:4 3}
+.ovw .ow.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 5;animation:flow .55s linear infinite}
+.ovw .ow.k.on{stroke:var(--key)}
+@keyframes flow{to{stroke-dashoffset:-13}}
+.ovw .om{fill:var(--line2)}.ovw .omk{fill:var(--key)}
+.ovw .og{fill:none;stroke:var(--line2);stroke-width:1.5;stroke-dasharray:6 4}
+.ovw .ogl{font:600 12.5px var(--sans);fill:var(--muted)}
+.ovw .lane{stroke:var(--line);stroke-width:2;stroke-dasharray:2 4}
+.ovw [data-goto]{cursor:pointer}
+.ovw [data-goto]:hover .ob{stroke:var(--accent)}
+.c.colv{color:#fff;border-color:transparent;text-shadow:0 0 3px rgba(0,0,0,.6)}
+/* GF(2^8) close-up of one step */
+.bl{border-collapse:separate;border-spacing:3px}
+.bl tr{transition:opacity .2s}
+.bl td.bc{width:24px;height:26px;border:1px solid var(--line2);border-radius:4px;background:var(--panel)}
+.bl td.out{width:24px;color:var(--xor);text-decoration:line-through}
+.bl tr.sub td.bc{border-color:var(--xor);color:var(--xor)}
+.bl tr.res td.bc{border:1.5px solid var(--ink)}
+.bl tr.res td,.bl tr.res th{border-top:0}
+/* ShiftRows rows */
+.srcells{display:flex;gap:4px;border-radius:7px;outline:2px solid transparent;outline-offset:3px}
+.srcells .c{width:var(--cs);flex:none}
+.srline.mv .srcells{outline-color:var(--ink)}
+.srdots{width:auto;min-width:44px;align-items:center}
+.srsh{font-size:12px;color:var(--muted);white-space:nowrap;margin-right:3px}
+/* One round: wires and boxes of the active stage */
+.rdw .rl.on{stroke:var(--accent);stroke-width:2.2}
+.rdw .rb.on,.rdw .rx.on{stroke:var(--accent);stroke-width:2.4;fill:var(--accentBg)}
+/* Diffusion */
+.dg .c{transition:none}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* MixColumns: where the matrix row meets the column */
+.mcw{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:8px 6px;margin-top:16px;font:14px var(--mono)}
+.mcl,.mcx{margin-top:12px;font-weight:700;color:var(--muted)}
+.mcl{color:var(--ink)}
+.mct{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mct small{font-size:12px;color:var(--ink)}
+.mcp{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--line2);border-radius:8px}
+.mcc,.mcb,.mcr{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-weight:700}
+.mcc{background:var(--accentBg);color:var(--accent);border:1px solid var(--accent)}
+.mcb{color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55)}
+.mcr{width:36px;background:var(--accent);color:var(--onAccent)}
+.mcd{color:var(--muted)}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* ---------- RSA ---------- */
+:root{--pub:#1f7a45;--pri:#7d55c7;--rp:#1d5fa6;--ri:#c2570c;--rt:#b3268a;--s1:#1d5fa6;--s2:#c2570c}
+@media (prefers-color-scheme:dark){:root{--pub:#5fd08f;--pri:#b49aec;--rp:#8ab8ee;--ri:#f0a35e;--rt:#ef86c8;--s1:#3f7fd0;--s2:#d4762a}}
+.rbar{grid-template-columns:minmax(190px,auto) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,1.1fr)}
+.rbar .meta{grid-column:1/-1;padding:0;white-space:normal}
+@media (max-width:1100px){.rbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:700px){.rbar{grid-template-columns:minmax(0,1fr)}}
+.subs{margin-bottom:12px}
+.ch{width:100%;height:auto;display:block;margin:0 auto}
+.res{--r:var(--accent);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 12px;margin-top:10px;border-radius:8px;background:color-mix(in srgb,var(--r) 8%,transparent);border-left:3px solid var(--r)}
+.res.r-ok{--r:var(--ok)}.res.r-bad{--r:var(--xor)}.res.r-pub{--r:var(--pub)}.res.r-pri{--r:var(--pri)}
+.res .rl{font:600 12.5px var(--sans);color:var(--r);min-width:70px}
+.res .rv{font:13px var(--mono);overflow-wrap:anywhere;flex:1 1 200px;min-width:0}
+.vok{font:600 12.5px var(--sans);color:var(--ok);background:var(--okBg);padding:2px 8px;border-radius:10px}
+.vbad{font:600 12.5px var(--sans);color:var(--xor);background:var(--xorBg);padding:2px 8px;border-radius:10px}
+.fm{display:block;font:12.5px/1.5 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.warn{display:block;padding:7px 10px;border-radius:7px;background:var(--xorBg);color:var(--ink);font-size:14px;border-left:3px solid var(--xor)}
+.okn{display:block;padding:7px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.pros{list-style:none;margin:8px 0;padding:0;font-size:14px}
+.pros li{padding:2px 0 2px 22px;position:relative}
+.pros li::before{position:absolute;left:3px;font-weight:700}
+.pros .y::before{content:'+';color:var(--ok)}.pros .n::before{content:'−';color:var(--xor)}
+.pich{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
+.pics-s{font-size:13px;color:var(--muted);max-width:64ch}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.st{font:600 11.5px var(--sans);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.st.bad{background:var(--xorBg);color:var(--xor)}.st.ok{background:var(--okBg);color:var(--ok)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.leg .lp{background:color-mix(in srgb,var(--xor) 55%,transparent)}.leg .lq{background:color-mix(in srgb,var(--ri) 60%,transparent)}.leg .lk{background:var(--ok)}
+.nv{font:600 13px var(--mono);padding:1px 6px;border-radius:6px;background:color-mix(in srgb,var(--ink) 7%,transparent);border:0;color:var(--ink);display:inline-flex;gap:7px;align-items:baseline}
+.nv small{font:500 10.5px var(--sans);color:var(--muted)}
+button.nv:hover{outline:1.5px solid var(--accent)}
+.pick{min-height:18px;margin-top:6px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.pick b{color:var(--ink)}.pick code{font:12px var(--mono);color:var(--ink)}
+/* questions */
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);color:var(--ink);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor);color:var(--ink)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+/* padlock story */
+.chn{stroke:var(--line2);stroke-width:2.2;stroke-dasharray:7 5;fill:none}
+.chn.e{stroke:var(--xor);stroke-dasharray:3 4}
+.chl{font:600 12.5px var(--sans);fill:var(--muted);text-anchor:middle}
+.prs circle{fill:var(--panel);stroke:var(--c);stroke-width:2.6}
+.prs text{font:800 24px var(--sans);fill:var(--c);text-anchor:middle}
+.prs .pn{font:700 14px var(--sans)}
+.prs.a{--c:var(--rp)}.prs.b{--c:var(--pub)}.prs.e{--c:var(--xor)}
+.ilk .sh{fill:none;stroke:var(--c);stroke-width:4.4;stroke-linecap:round}
+.ilk .bd{fill:var(--c)}.ilk .kh{fill:var(--panel)}
+.ilk.pub{--c:var(--pub)}
+.iky circle,.iky path{fill:none;stroke:var(--pri);stroke-width:3.6;stroke-linecap:round}
+.ibx rect{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.ibx text{font:700 11px var(--mono);fill:var(--ink);text-anchor:middle}
+.sm{font:600 12.5px var(--sans);fill:var(--muted);text-anchor:middle}
+.sm.pri{fill:var(--pri)}
+/* key counting */
+.m2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mc2{padding:12px;border-radius:10px;box-shadow:inset 0 3px 0 var(--ok);background:color-mix(in srgb,var(--ink) 4%,transparent);text-align:center}
+.mc2.bad{box-shadow:inset 0 3px 0 var(--xor)}
+.mct{font:600 13px var(--sans);color:var(--muted)}
+.mn{font-size:14px}.mn b{font-size:22px}
+.mc2.bad .mn b{color:var(--xor)}.mc2.good .mn b{color:var(--ok)}
+.msh{width:100%;max-width:228px;height:auto;display:block;margin:0 auto}
+.msy{stroke:var(--xor);stroke-width:.8;opacity:.55}.mpu{stroke:var(--ok);stroke-width:1.1;opacity:.7}
+.mnd{fill:var(--ink)}.mdir{fill:var(--panel);stroke:var(--ok);stroke-width:1.6}
+.mdt{font:700 11px var(--sans);fill:var(--ok);text-anchor:middle}
+.trap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.trap>div{padding:12px 14px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.tm{font:700 17px var(--mono);overflow-wrap:anywhere}
+@media (max-width:560px){.trap,.m2{grid-template-columns:minmax(0,1fr)}}
+/* modular maths */
+.sv{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px}
+.sv i{font:600 13px/30px var(--mono);font-style:normal;text-align:center;border-radius:5px;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink);transition:background .2s,color .2s}
+.sv i.xp{background:color-mix(in srgb,var(--xor) 55%,transparent);text-decoration:line-through;color:#fff}
+.sv i.xq{background:color-mix(in srgb,var(--ri) 60%,transparent);text-decoration:line-through;color:#fff}
+.sv i.ok{background:var(--ok);color:#fff}
+@media (max-width:560px){.sv i{font-size:11px;line-height:26px}}
+.rw{display:grid;grid-template-columns:minmax(0,392px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:800px){.rw{grid-template-columns:minmax(0,1fr)}}
+.ring{width:100%;max-width:392px;height:auto;display:block;margin:0 auto}
+.rd{fill:var(--ink);opacity:.75}.rd.nc{fill:var(--xor);opacity:.8}
+.rt2{font:600 10px var(--mono);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+.ch2{stroke:var(--accent);stroke-width:1.5;fill:none;opacity:.6}
+.ch2.now{stroke:var(--ri);stroke-width:2.6;opacity:1}
+.rdc{fill:var(--ri);stroke:var(--panel);stroke-width:2.5}
+.pwl{display:flex;flex-wrap:wrap;gap:4px 8px;font:12.5px var(--mono)}
+.pwl span{padding:1px 6px;border-radius:5px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.pwl span.now{background:var(--ri);color:#fff}
+.eu{border-collapse:collapse;width:100%;font:14px var(--mono)}
+.eu th{font:600 12.5px var(--sans);color:var(--muted);padding:5px 10px;border-bottom:2px solid var(--line2);text-align:right}
+.eu td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right}
+.eu tr.hid td{color:transparent}
+.eu tr.cur td{background:var(--accentBg)}
+.eu td.m{color:var(--muted);font-size:13px}
+/* key generation */
+.kc rect{fill:var(--panel);stroke:var(--c);stroke-width:2}
+.kc.pub{--c:var(--pub)}.kc.sec{--c:var(--pri)}
+.kc text{text-anchor:middle}
+.kt{font:600 12.5px var(--sans);fill:var(--muted)}
+.kv{font:700 15px var(--mono);fill:var(--ink)}
+.kc.big rect{stroke-width:3;fill:color-mix(in srgb,var(--c) 12%,var(--panel))}
+.kc.off{opacity:.14}
+.kc.pop rect{animation:kpop .4s ease}
+@keyframes kpop{from{stroke-width:6}to{stroke-width:2}}
+.kw{stroke:var(--line2);stroke-width:2;fill:none}
+.kw.pub{stroke:var(--pub)}.kw.pri{stroke:var(--pri)}
+.kw.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 5;animation:flow .55s linear infinite}
+.kam{fill:var(--line2)}
+.hs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;font-size:12.5px;color:var(--muted)}
+.hs span{padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.hs b{display:block;font:700 19px var(--mono);color:var(--ink)}
+@media (max-width:640px){.hs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hl{margin-top:8px;font:12.5px var(--mono);color:var(--muted);min-height:106px}
+.hl i{display:block;font-style:normal;line-height:21px}
+.hl code{font:12.5px var(--mono);color:var(--ink)}
+.hl i.hit{color:var(--ok);font-weight:700}
+/* encrypt and decrypt */
+.ern{fill:none;stroke:var(--line2);stroke-width:2}
+.emap{stroke:var(--accent);stroke-width:1;opacity:.28;fill:none}
+.etk{fill:var(--ink);opacity:.8}.etl{font:600 10.5px var(--mono);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+.ecn{font:600 13px var(--sans);fill:var(--muted);text-anchor:middle}.ecn.s{font-weight:500;font-size:12px}
+.eju{fill:none;stroke-width:2.6}.eju.e{stroke:var(--rp)}.eju.d{stroke:var(--pri)}
+.ept{stroke:var(--panel);stroke-width:2.5}.ept.m{fill:var(--rp)}.ept.c{fill:var(--ri)}
+.ecd rect{fill:var(--panel);stroke:var(--c);stroke-width:2}
+.ecd text{text-anchor:middle}
+.ecd.msg{--c:var(--rp)}.ecd.cip{--c:var(--ri)}.ecd.pub{--c:var(--pub)}.ecd.pri{--c:var(--pri)}
+.ecd.off{opacity:.15}
+/* square and multiply */
+.bts{display:flex;flex-wrap:wrap;gap:3px;margin:6px 0 12px;align-items:center}
+.bts i{width:24px;font:700 14px/30px var(--mono);font-style:normal;text-align:center;border-radius:4px;background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--muted)}
+.bts i.b1{color:var(--ink)}
+.bts i.dn{background:color-mix(in srgb,var(--rp) 22%,transparent)}
+.bts i.dn.b1{background:color-mix(in srgb,var(--ri) 40%,transparent)}
+.bts i.cur{outline:2px solid var(--accent);outline-offset:1px}
+.bts em{font:700 16px var(--mono);color:var(--muted);padding-left:6px}
+@media (max-width:560px){.bts i{width:18px;font-size:12px;line-height:26px}}
+.reg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.reg div{padding:9px 12px;border-radius:9px;background:color-mix(in srgb,var(--ink) 5%,transparent);min-width:0}
+.reg span{display:block;font:600 12.5px var(--sans);color:var(--muted)}
+.reg b{font:700 20px var(--mono);overflow-wrap:anywhere}
+.trc{width:100%;height:auto;display:block}
+.spb{stroke:var(--line2);stroke-width:1.5}
+.sp.S{fill:var(--s1)}.sp.M{fill:var(--s2)}
+.spl{font:600 9px var(--mono);fill:var(--muted);text-anchor:middle}
+.leg .ls{background:var(--s1)}.leg .lm{background:var(--s2)}
+.cnt>div{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;gap:10px;align-items:center;font-size:13px;margin-top:6px}
+.cnt>div>span{color:var(--muted)}
+.cnt i{height:14px;border-radius:0 4px 4px 0;background:var(--pub);display:block}
+.cnt i.bad{background:var(--xor)}
+.cnt b{font:700 13px var(--mono);text-align:right}
+@media (max-width:560px){.cnt>div{grid-template-columns:minmax(0,1fr) 100px}.cnt>div>span{grid-column:1/-1}}
+/* factoring */
+.fbox{position:relative}
+.fch{width:100%;height:auto;display:block}
+.fg{stroke:var(--line);stroke-width:1}
+.fax{font:500 12px var(--sans);fill:var(--muted)}.fax.t{font-weight:600}
+.fln{fill:none;stroke-width:2.2}
+.fln.s1,.fd.s1{stroke:var(--s1)}.fln.s2,.fd.s2{stroke:var(--s2)}
+.fd{fill:var(--panel);stroke-width:2.4}
+.fh{fill:transparent;cursor:pointer}
+.fdl{font:600 12.5px var(--sans);fill:var(--ink)}
+.ftip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font:600 12.5px var(--sans);padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:3}
+.leg .l1{background:var(--s1);border-radius:50%}.leg .l2{background:var(--s2);border-radius:50%}
+.ftb{margin-top:8px;font-size:13px}.ftb summary{cursor:pointer;color:var(--muted)}
+.rec{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.rec>div{display:grid;grid-template-columns:44px 74px minmax(0,1fr) 72px;gap:8px;align-items:center;font-size:13px}
+.ry{color:var(--muted);font-family:var(--mono)}.rn{font-weight:600}.rv2{text-align:right;font:600 12.5px var(--mono)}
+.rb{height:13px;background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:3px;overflow:hidden;display:block}
+.rb i{display:block;height:100%;background:var(--rp);border-radius:0 3px 3px 0}
+.rec .tg .rb i{background:var(--pub)}
+.kt2 td:first-child,.kt2 th:first-child{text-align:left;font-family:var(--sans)}
+/* attacks */
+.eqs{display:flex;flex-direction:column;gap:8px}
+.er{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:12px;align-items:center;padding:9px 12px;border-radius:9px;background:color-mix(in srgb,var(--ink) 4%,transparent);min-height:56px;transition:opacity .25s}
+.er.off{opacity:.3}.er.off .ev{visibility:hidden}
+.el{font-size:13.5px;color:var(--muted)}
+.ev{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0}
+.gq{font:700 16px var(--mono)}
+@media (max-width:560px){.er{grid-template-columns:minmax(0,1fr)}}
+/* OAEP */
+.brf{fill:none;stroke:var(--line2);stroke-width:1}
+.brc{font:600 12.5px var(--sans);fill:var(--muted)}
+.obx rect{fill:var(--panel);stroke:var(--pri);stroke-width:2}
+.obx text{font:700 12.5px var(--sans);fill:var(--pri);text-anchor:middle}
+.oxr circle{fill:var(--panel);stroke:var(--xor);stroke-width:2.2}
+.oxr path{stroke:var(--xor);stroke-width:2.2;fill:none}
+.ow2{stroke:var(--line2);stroke-width:2;fill:none}
+.ow2.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 5;animation:flow .55s linear infinite}
+#extra a,#explain a{color:var(--accent)}
+.nvs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:8px}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>RSA, step by step</h1>
+  <p class="sub">Public-key cryptography from the ground up: why it is needed, the maths behind it, real keys, and how it breaks without padding</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="ov" class="on">1 · Why public key</button>
+    <button data-tab="mod">2 · Modular maths</button>
+    <button data-tab="kg">3 · Key generation</button>
+    <button data-tab="ed">4 · Encrypt + decrypt</button>
+    <button data-tab="sm">5 · Square and multiply</button>
+    <button data-tab="fa">6 · Factoring</button>
+    <button data-tab="atk">7 · Attacks</button>
+    <button data-tab="oa">8 · OAEP</button>
+  </nav>
+</header>
+
+<section class="wrap">
+  <div class="card inbar rbar">
+    <label class="fld"><span class="flh"><b>Example</b></span><select id="pre"></select></label>
+    <div class="fld"><div class="flh"><b>Prime p</b> <span id="pN"></span></div><input type="text" id="pI" spellcheck="false" autocomplete="off"></div>
+    <div class="fld"><div class="flh"><b>Prime q</b> <span id="qN"></span></div><input type="text" id="qI" spellcheck="false" autocomplete="off"></div>
+    <div class="fld"><div class="flh"><b>e</b></div><input type="text" id="eI" spellcheck="false" autocomplete="off"></div>
+    <div class="fld"><div class="flh"><b>Message</b><span class="seg sm" id="mF"><button data-f="num" class="on">Number</button><button data-f="text">Text</button></span></div><input type="text" id="mI" spellcheck="false" autocomplete="off"></div>
+    <div class="meta" id="meta"></div>
+    <div class="err" id="err"></div>
+  </div>
+</section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stageCard"><div id="stage"></div><svg id="fx" aria-hidden="true"></svg></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row" id="ctrlTop">
+        <div class="seg" id="mode" hidden><button data-m="enc" class="on">Encrypt</button><button data-m="dec">Decrypt</button></div>
+        <label class="inl" id="rWrap" hidden>Round <select id="rSel"></select></label>
+      </div>
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label>
+        <label class="inl" id="fWrap" title="Scroll so the moving part stays in view"><input type="checkbox" id="follow" checked> follow</label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: all numbers are computed in this browser. Never use the demo keys for real data.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const hx=b=>b.toString(16).padStart(2,'0');
+const hexs=a=>[...a].map(hx).join('');
+const fromHex=h=>(h.match(/../g)||[]).map(x=>parseInt(x,16));
+const SUBS='₀₁₂₃₄₅₆₇₈₉',sub_=n=>String(n).split('').map(d=>SUBS[+d]).join('');
+const SUPS='⁰¹²³⁴⁵⁶⁷⁸⁹',sup_=n=>String(n).split('').map(d=>SUPS[+d]).join('');
+
+/* ---------- number theory on BigInt ---------- */
+const modpow=(b,e,n)=>{let r=1n;b=((b%n)+n)%n;while(e>0n){if(e&1n)r=r*b%n;b=b*b%n;e>>=1n}return r};
+const gcd=(a,b)=>{while(b)[a,b]=[b,a%b];return a};
+const bitLen=v=>v?v.toString(2).length:0;
+// the extended Euclidean algorithm, one row per division: r = s·a + t·b
+function egcd(a,b){
+  const rows=[{r:a,s:1n,t:0n,q:null},{r:b,s:0n,t:1n,q:null}];
+  while(rows.at(-1).r){const x=rows.at(-2),y=rows.at(-1),q=x.r/y.r;rows.push({r:x.r-q*y.r,s:x.s-q*y.s,t:x.t-q*y.t,q})}
+  return rows;
+}
+function modinv(a,n){const R=egcd(((a%n)+n)%n,n),g=R.at(-2);return g.r===1n?((g.s%n)+n)%n:null}
+const rndB=n=>[...crypto.getRandomValues(new Uint8Array(n))];
+const B2I=b=>b.length?BigInt('0x'+hexs(b)):0n;
+const I2B=(v,k)=>fromHex(v.toString(16).padStart(2*k,'0'));
+function randBits(bits){const b=rndB(Math.ceil(bits/8));let v=B2I(b)&((1n<<BigInt(bits))-1n);return v|(1n<<BigInt(bits-1))}
+const SMALLP=[];for(let i=2;i<2000;i++){if(SMALLP.every(p=>i%p))SMALLP.push(i)}
+// the small prime that divides n, or 0
+function smallDiv(n){for(const p of SMALLP){const P=BigInt(p);if(n===P)return 0;if(n%P===0n)return p}return 0}
+// one Miller–Rabin round: is n a probable prime to base a?
+function mrPass(n,a){
+  let d=n-1n,s=0;while(!(d&1n)){d>>=1n;s++}
+  let x=modpow(a,d,n);if(x===1n||x===n-1n)return true;
+  for(let i=1;i<s;i++){x=x*x%n;if(x===n-1n)return true}
+  return false;
+}
+function isPrime(n,rounds=24){
+  if(n<2n)return false;if(smallDiv(n))return false;if(n<4000000n)return true;
+  for(let i=0;i<rounds;i++)if(!mrPass(n,BigInt(SMALLP[i])))return false;
+  return true;
+}
+// integer k-th root, rounded down
+function iroot(n,k){
+  if(n<2n)return n;const K=BigInt(k);let x=1n<<BigInt(Math.ceil(bitLen(n)/k));
+  for(;;){const y=((K-1n)*x+n/x**(K-1n))/K;if(y>=x)return x;x=y}
+}
+/* Pollard's rho, as a generator so that the page can stay alive: it yields the number of steps so far */
+function* rho(n,c=1n){
+  if(!(n&1n))return{f:2n,steps:0};
+  let x=2n,y=2n,g=1n,steps=0,prod=1n,sx=x,sy=y;
+  while(g===1n){
+    sx=x;sy=y;prod=1n;
+    for(let i=0;i<128;i++){x=(x*x+c)%n;y=(y*y+c)%n;y=(y*y+c)%n;const d=x>y?x-y:y-x;prod=prod*d%n;steps++}
+    g=gcd(prod,n);yield steps;
+  }
+  if(g===n){x=sx;y=sy;g=1n;while(g===1n){x=(x*x+c)%n;y=(y*y+c)%n;y=(y*y+c)%n;g=gcd(x>y?x-y:y-x,n);steps++}}
+  return g===n?null:{f:g,steps};
+}
+function* trial(n){
+  if(!(n&1n))return{f:2n,steps:1};
+  let d=3n,steps=0;
+  for(;d*d<=n;d+=2n){steps++;if(n%d===0n)return{f:d,steps};if(!(steps&4095))yield steps}
+  return null;
+}
+
+/* ---------- SHA-256 and OAEP (RFC 8017), for the padded version of RSA ---------- */
+const SHK=[],SHI=[];
+{const fr=x=>Math.floor((x-Math.floor(x))*2**32);for(let n=2;SHK.length<64;n++){let p=true;for(let i=2;i*i<=n;i++)if(n%i===0)p=false;if(p){if(SHI.length<8)SHI.push(fr(Math.sqrt(n)));SHK.push(fr(Math.cbrt(n)))}}}
+function sha256(msg){
+  const m=msg.slice(),l=m.length,rr=(x,n)=>(x>>>n)|(x<<(32-n));m.push(0x80);while(m.length%64!==56)m.push(0);
+  const hi=Math.floor(l/2**29),lo=(l<<3)>>>0;for(let i=3;i>=0;i--)m.push((hi>>>(8*i))&255);for(let i=3;i>=0;i--)m.push((lo>>>(8*i))&255);
+  const H=SHI.slice(),w=new Uint32Array(64);
+  for(let o=0;o<m.length;o+=64){
+    for(let i=0;i<16;i++)w[i]=((m[o+4*i]<<24)|(m[o+4*i+1]<<16)|(m[o+4*i+2]<<8)|m[o+4*i+3])>>>0;
+    for(let i=16;i<64;i++){const a=w[i-15],b=w[i-2];w[i]=(w[i-16]+(rr(a,7)^rr(a,18)^(a>>>3))+w[i-7]+(rr(b,17)^rr(b,19)^(b>>>10)))>>>0}
+    let[a,b,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){const t1=(h+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+SHK[i]+w[i])>>>0,t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0}
+    [a,b,c,d,e,f,g,h].forEach((v,i)=>{H[i]=(H[i]+v)>>>0});
+  }
+  return H.flatMap(v=>[v>>>24,(v>>>16)&255,(v>>>8)&255,v&255]);
+}
+const xorB=(a,b)=>a.map((x,i)=>x^b[i]);
+function mgf1(seed,len){const o=[];for(let c=0;o.length<len;c++)o.push(...sha256(seed.concat(I2B(BigInt(c),4))));return o.slice(0,len)}
+function oaepPad(m,k,seed){
+  const h=32,db=sha256([]).concat(Array(k-m.length-2*h-2).fill(0),[1],m),dm=mgf1(seed,k-h-1),mdb=xorB(db,dm),sm=mgf1(mdb,h),ms=xorB(seed,sm);
+  return{db,dm,mdb,sm,ms,em:[0].concat(ms,mdb)};
+}
+function oaepUnpad(em){
+  const h=32,ms=em.slice(1,h+1),mdb=em.slice(h+1),seed=xorB(ms,mgf1(mdb,h)),db=xorB(mdb,mgf1(seed,mdb.length));
+  if(em[0]||hexs(db.slice(0,h))!==hexs(sha256([])))return null;
+  let i=h;while(i<db.length&&!db[i])i++;
+  return db[i]===1?db.slice(i+1):null;
+}
+const txtB=s=>[...new TextEncoder().encode(s)];
+const toText=b=>String.fromCharCode(...b);
+const printable=b=>b.length>0&&b.every(x=>x>=32&&x<127);
+/* ---------- small pieces shared by the tabs ---------- */
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const pc=(good,bad)=>`<ul class="pros">${good.map(x=>`<li class="y">${x}</li>`).join('')}${bad.map(x=>`<li class="n">${x}</li>`).join('')}</ul>`;
+const dig=v=>v.toString().length;
+// a number that fits, or its two ends
+const fmtN=(v,w=14)=>{const s=v.toString();return s.length<=w?s:`${s.slice(0,6)}…${s.slice(-6)}`};
+// the same, as something you can click to read every digit
+const nv=(v,lab,cls='')=>{const s=v.toString(),big=s.length>14;return big?`<button class="nv ${cls}" data-full="${s}" data-lab="${lab}" title="${s.length} digits: click to read them all">${fmtN(v)}<small>${s.length} digits</small></button>`:`<span class="nv ${cls}">${s}</span>`};
+const pickBox=()=>`<div class="pick" id="pick"></div>`;
+const showFull=b=>{const p=$('#pick');if(p)p.innerHTML=`<b>${b.dataset.lab}</b> <code>${b.dataset.full}</code>`};
+const QZ={};
+function quiz(id){
+  const z=QZ[id],p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
+}
+const seg=(attr,cur,items,cls='')=>`<span class="seg sm ${cls}">${items.map(([v,t])=>`<button data-${attr}="${v}" class="${cur===v?'on':''}">${t}</button>`).join('')}</span>`;
+const subs=(...x)=>`<div class="row subs">${x.join('')}</div>`;
+// byte colours, as on the other pages
+const bcol=b=>`hsl(${Math.round(b*360/256)},58%,44%)`;
+/* ---------- data and inputs ---------- */
+const HP=0xe0a00d87a6c7169e2083171e05993d3996d46d141c5983e5f17f4b26799c499d18d37f37460caca1805f24faf8db59292b6eef6947d7663b9349738bfa62ba5a97a6c1e1337c29ff4529e364a8cb223960427579ca2f6807e1ec19793cb3522f560c40bbb5c70434c6b09990c5337c95cc631d28a042b7a3051561b10ea2a5d7n,HQ=0xcbbc788880c53f5f9889d66800345cbb34d985b7ef203a0abfd6c28cc23583cf18208605d1f1282377803f45ff0e8a228ebdcef1e6814f61da7a40792f6654900c81a0a453a5348169e7dae993836b143955e9b60710de258cbb63903ca5547991cf0ce16f7eac41f1fbc5e73dc197b2a89bbd725073bf5f997f0a49baa1c3b7n,HR=0xd1c72fffd8085d1525bc6b622648af41f14923c0aaf804d33d62c2a31004605405c6aa91f19d7e9141509487135eaaaba78266a718711e58b075e573ea209e2a14cb7f0cb843715e957896cd52ed7bd920cc9101bd0ca678f3a763e0c2de5892478602cc50136110f496f052a99010daf142dc87a6bd99b7a17dc5dd81d50781n;   // a demonstration key made with OpenSSL: public on this page, so never use it
+const PRE=[
+  {id:'small',name:'Textbook · p = 61, q = 53',p:'61',q:'53',e:'17',m:'65',mF:'num'},
+  {id:'tiny',name:'Tiny · p = 3, q = 11',p:'3',q:'11',e:'3',m:'4',mF:'num'},
+  {id:'mid',name:'32-bit key',p:'65521',q:'65519',e:'65537',m:'123456789',mF:'num'},
+  {id:'r2048',name:'RSA-2048 · demo key',p:HP.toString(),q:HQ.toString(),e:'65537',m:'ATTACK AT DAWN',mF:'text'},
+];
+const D={p:61n,q:53n,n:3233n,phi:3120n,e:17n,d:2753n,m:65n,c:0n,mF:'num',bits:12,v:0,preset:'small',gen:false};
+const ST={tab:'ov',step:{},round:{},mode:'enc',built:'',pick:null,modV:'phi',x:2n,meshN:8,smE:'e',atk:'guess',q:{},seed:0,fa:null,kg:null,oaR:null,vote:null};
+const stage=$('#stage');
+const T={};
+const parseN=s=>{s=s.trim().replace(/[\s_,]/g,'');return /^\d+$/.test(s)||/^0x[0-9a-fA-F]+$/.test(s)?BigInt(s):null};
+const msgOf=()=>{const v=$('#mI').value;return D.mF==='text'?(v?B2I(txtB(v)):null):parseN(v)};
+function loadPreset(id){
+  const p=PRE.find(x=>x.id===id);D.preset=id;D.mF=p.mF;
+  $$('#mF button').forEach(x=>x.classList.toggle('on',x.dataset.f===D.mF));
+  $('#pI').value=p.p;$('#qI').value=p.q;$('#eI').value=p.e;$('#mI').value=p.m;$('#pre').value=id;onInput();
+}
+function setFmt(f){
+  if(f===D.mF)return;const m=msgOf();D.mF=f;$$('#mF button').forEach(x=>x.classList.toggle('on',x.dataset.f===f));
+  if(m!==null){const b=fromHex((m.toString(16).length%2?'0':'')+m.toString(16));$('#mI').value=f==='num'?m.toString():printable(b)?toText(b):''}onInput();
+}
+function onInput(){
+  const p=parseN($('#pI').value),q=parseN($('#qI').value),e=parseN($('#eI').value),m=msgOf(),E=[];
+  const chk=(v,l)=>{if(v===null)return`${l}: type a whole number.`;if(!isPrime(v)){const f=smallDiv(v);return`${l} is not prime${f?`: ${f} divides it`:''}.`}return''};
+  const a=chk(p,'p'),b=chk(q,'q');if(a)E.push(a);if(b)E.push(b);
+  if(!a&&!b&&p===q)E.push('p and q must be different, or n would be easy to factor: its square root gives p.');
+  const phi=!a&&!b?(p-1n)*(q-1n):null;
+  if(e===null||e<3n||!(e&1n))E.push('e: needs an odd number, at least 3.');
+  else if(phi&&gcd(e,phi)!==1n)E.push(`e shares a factor with φ(n) = ${fmtN(phi)}, so no d exists. Try another e.`);
+  const n=phi?p*q:null;
+  if(m===null)E.push('Message: type a number or some text.');else if(n&&m>=n)E.push(`Message: as a number it must be smaller than n = ${fmtN(n)}. Make it shorter or use a bigger key.`);
+  $('#err').textContent=E.join(' ');if(E.length)return;
+  Object.assign(D,{p,q,n,phi,e,d:modinv(e,phi),m,bits:bitLen(n)});D.c=modpow(m,e,n);D.v++;
+  const P=PRE.find(x=>x.id===D.preset),same=P&&p.toString()===P.p&&q.toString()===P.q&&e.toString()===P.e;
+  $('#pre').value=same?D.preset:'custom';
+  $('#pN').textContent=bitLen(p)>16?`${bitLen(p)} bits`:'';$('#qN').textContent=bitLen(q)>16?`${bitLen(q)} bits`:'';
+  $('#meta').innerHTML=`<b>RSA-${D.bits}</b> · n has ${n.toString().length} digit${n.toString().length>1?'s':''} · public key (n, e) · private key d`;
+  ST.built='';show();
+}
+/* ---------- animation helpers (one set for all tabs, as in the DES demo) ---------- */
+const NS='http://www.w3.org/2000/svg';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+let UID=0;
+// point at fraction t of the way along a polyline
+function along(pts,t){
+  const seg=[];let tot=0;for(let j=1;j<pts.length;j++){const d=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);seg.push(d);tot+=d}
+  if(tot===0)return pts[0];let d=t*tot;
+  for(let j=0;j<seg.length;j++){if(d<=seg[j]||j===seg.length-1){const u=seg[j]?Math.min(1,d/seg[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u]}d-=seg[j]}
+}
+function stripes(x,y,w,h,colors,rx){
+  const id='c'+(++UID);let s=`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><g clip-path="url(#${id})">`;
+  const sw=w/colors.length;colors.forEach((c,j)=>{s+=`<rect x="${(x+j*sw).toFixed(2)}" y="${y}" width="${(sw+.6).toFixed(2)}" height="${h}" style="fill:${c}"/>`});
+  return s+'</g>';
+}
+const gc=c=>`var(--g${c})`;                       // colour of state column (or row) c
+const KC='var(--key)',AC='var(--accent)';
+// a token: a box with colour stripes (where the value came from) and its value; label may be ['0001','1001'] for two lines
+function tok(label,w,h,colors){
+  const L=Array.isArray(label)?label:[label],n=Math.max(...L.map(x=>String(x).length)),rx=Math.min(7,h/4);
+  const fs=Math.max(8,Math.min(L.length>1?h*.34:h*.44,w/n*1.45));
+  let t='';L.forEach((x,j)=>{t+=`<text y="${((j-(L.length-1)/2)*fs*1.05+fs*.36).toFixed(1)}" text-anchor="middle" style="font-size:${fs.toFixed(1)}px">${x}</text>`});
+  return stripes(-w/2,-h/2,w,h,colors,rx)+`<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${rx}"/>`+t;
+}
+const FX=$('#fx');
+const fxClear=()=>{FX.innerHTML=''};
+// centre and size of any element (HTML or SVG), in overlay pixels
+function rectOf(el){const f=FX.getBoundingClientRect(),b=el.getBoundingClientRect();return{x:b.left-f.left+b.width/2,y:b.top-f.top+b.height/2,w:b.width,h:b.height}}
+const xy=r=>[r.x,r.y];
+// maps user coordinates of an SVG drawing to overlay pixels; .s = scale
+function svgMap(svg){const m=svg.getScreenCTM(),f=FX.getBoundingClientRect(),pt=svg.createSVGPoint();
+  const g=(x,y)=>{pt.x=x;pt.y=y;const q=pt.matrixTransform(m);return[q.x-f.left,q.y-f.top]};g.s=m.a;return g}
+function fxNode(inner,cls){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;FX.appendChild(g);return g}
+/* a move: {node, pts (with a, b) or legs:[[a,b,pts],…], fadeIn, fadeOut, end, at:[[p,fn(node)],…]} → tick(p), p in [0,1].
+   Between legs the token waits at the end of the last leg. end: hidden from then on. at: run once (morph, resize). */
+function mover(moves){
+  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0});
+  return p=>{for(const m of moves){
+    const L=m.legs,A=L[0][0],B=L[L.length-1][1];let g=L[0];for(const l of L)if(p>=l[0])g=l;
+    const pt=along(g[2],ease(clamp((p-g[0])/((g[1]-g[0])||1),0,1)));
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
+    const fw=Math.max(.04,(B-A)*.15);let op=p<A?0:1;
+    if(m.fadeIn&&p>=A)op=clamp((p-A)/fw,0,1);
+    if(m.fadeOut)op=Math.min(op,clamp((B-p)/fw,0,1));
+    if(m.end!=null&&p>=m.end)op=0;
+    m.node.style.opacity=op;
+    if(m.at)while(m.fired<m.at.length&&p>=m.at[m.fired][0]){m.at[m.fired][1](m.node);m.fired++}
+  }};
+}
+// run each fn once when p passes its time
+function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.length&&p>=list[i][0]){list[i][1]();i++}}}
+const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
+const hide=els=>els.forEach(e=>{if(e)e.style.opacity=0});
+const tgl=(els,c,on)=>els.forEach(e=>{if(e)e.classList.toggle(c,on)});
+// the same token, new value / size / colours
+const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
+
+
+const CLICK=[];
+/* ---------- why public key: the padlock story and the number of keys ---------- */
+const OW=880,OH=300,PA=[100,126],PB=[780,126],PE=[440,246];
+const iLock=(open,c)=>`<g class="ilk ${c}"><path class="sh" d="${open?'M-9 -6 V-19 a9 9 0 0 1 18 0 V-14':'M-9 -6 V-15 a9 9 0 0 1 18 0 V-6'}"/><rect class="bd" x="-14" y="-7" width="28" height="23" rx="4"/><circle class="kh" cx="0" cy="4" r="3"/></g>`;
+const iKey=c=>`<g class="iky ${c}"><circle cx="-11" cy="0" r="7"/><path d="M-4 0 H15 M9 0 V6 M14 0 V5"/></g>`;
+const iBox=(locked,msg)=>`<g class="ibx"><rect x="-24" y="-17" width="48" height="34" rx="5"/>${msg?`<text y="5">${msg}</text>`:''}${locked?`<g transform="translate(0 -3) scale(.82)">${iLock(false,'pub')}</g>`:''}</g>`;
+const person=(x,y,n,c)=>`<g class="prs ${c}" transform="translate(${x} ${y})"><circle r="32"/><text y="7">${n[0]}</text><text class="pn" y="52">${n}</text></g>`;
+const at=(x,y,inner,id='')=>`<g${id?` id="${id}"`:''} transform="translate(${x} ${y})">${inner}</g>`;
+function ovScene(k){
+  let h=`<svg class="ch" id="ovS" viewBox="0 0 ${OW} ${OH}" role="img" aria-label="Alice sends Bob a locked box; Eve only sees the padlock and the box">
+    <path class="chn" d="M${PA[0]+40} ${PA[1]} H${PB[0]-40}"/><text class="chl" x="${OW/2}" y="${PA[1]-10}">open network: everyone can read it</text>
+    <path class="chn e" d="M${PE[0]} ${PA[1]} V${PE[1]-36}"/>`;
+  h+=person(...PA,'Alice','a')+person(...PB,'Bob','b')+person(...PE,'Eve','e');
+  if(k>=1){h+=at(PB[0]-74,PB[1]-46,iLock(true,'pub'),'oLk')+at(PB[0],PB[1]+84,iKey('pri'),'oKy')+`<text class="sm pri" x="${PB[0]}" y="${PB[1]+108}">private key: stays with Bob</text>`}
+  if(k>=2){h+=at(PA[0]+74,PA[1]-46,iLock(true,'pub'),'oLa')+at(PE[0]+62,PE[1],iLock(true,'pub'),'oLe')+`<text class="sm" x="${PE[0]+84}" y="${PE[1]+4}" style="text-anchor:start">Eve has the padlock too</text>`}
+  if(k===3)h+=at(PA[0]+84,PA[1]+50,iBox(true),'oBa');
+  if(k>=4)h+=at(PB[0]-84,PB[1]+50,iBox(k<5,k>=5?'hi Bob':''),'oBb');
+  if(k>=4)h+=at(PE[0]-62,PE[1],iBox(true))+`<text class="sm" x="${PE[0]-92}" y="${PE[1]+4}" style="text-anchor:end">a locked box: useless</text>`;
+  return h+'</svg>';
+}
+function meshS(n,kind){
+  const R=96,c=114,pt=i=>[c+R*Math.cos(2*Math.PI*i/n-Math.PI/2),c+R*Math.sin(2*Math.PI*i/n-Math.PI/2)];let h='';
+  if(kind==='sym')for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=pt(i),b=pt(j);h+=`<path class="msy" d="M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}"/>`}
+  else for(let i=0;i<n;i++){const a=pt(i);h+=`<path class="mpu" d="M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${c} ${c}"/>`}
+  for(let i=0;i<n;i++){const a=pt(i);h+=`<circle class="mnd" cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="${n>24?3:5}"/>`}
+  if(kind!=='sym')h+=`<rect class="mdir" x="${c-27}" y="${c-14}" width="54" height="28" rx="6"/><text class="mdt" x="${c}" y="${c+4}">public</text>`;
+  return`<svg class="msh" viewBox="0 0 228 228" aria-hidden="true">${h}</svg>`;
+}
+function meshDraw(){
+  const n=ST.meshN;$('#mV').textContent=n;$('#mS').innerHTML=meshS(n,'sym');$('#mP').innerHTML=meshS(n,'pub');
+  $('#mSn').textContent=(n*(n-1)/2).toLocaleString('en-US');$('#mPn').textContent=n;
+}
+QZ.ov={q:'100 people, and every pair wants to talk in private. How many secret keys does symmetric encryption need?',o:['100','4950','10000'],a:1,why:'One key per pair: 100 · 99 / 2 = 4950. With public keys, each person needs just one key pair, so 100 pairs in total.'};
+T.ov={n:()=>6,render(k){
+  stage.innerHTML=ovScene(k)+`<div class="sec"><div class="pich"><div><div class="h3">How many keys do n people need?</div><div class="pics-s">Move the slider. Each line on the left is one secret key that two people must agree on in advance.</div></div>
+    <label class="inl">n = <b id="mV"></b> <input type="range" id="mR" min="2" max="40" value="${ST.meshN}"></label></div>
+    <div class="m2"><div class="mc2 bad"><div class="mct">Symmetric: one shared key per pair</div><div id="mS"></div><div class="mn"><b id="mSn"></b> secret keys</div></div>
+    <div class="mc2 good"><div class="mct">Public key: one key pair per person</div><div id="mP"></div><div class="mn"><b id="mPn"></b> key pairs</div></div></div></div>
+    <div class="sec"><div class="h3">The idea behind RSA: a one-way street</div><div class="trap"><div><span class="st ok">easy</span><span class="tm">${fmtN(D.p)} × ${fmtN(D.q)} = ${fmtN(D.n)}</span></div><div><span class="st bad">hard</span><span class="tm">${fmtN(D.n)} = ? × ?</span></div></div></div>`;
+  meshDraw();
+  $('#explain').innerHTML=[say('The problem','Alice wants to send Bob a secret. They have never met, and everything they send can be read by Eve.','With AES they would first need a shared key. But how do they share it without Eve seeing it?','Press <b>Step</b>.'),
+    say('Step 1 · Bob makes two keys','A <b>public key</b> works like an open padlock: anyone can close it. A <b>private key</b> is the only thing that opens it.'),
+    say('Step 2 · the padlock travels','Bob sends the open padlock to Alice. Eve sees it and may keep a copy. That does not matter: a padlock locks, it cannot unlock.'),
+    say('Step 3 · Alice locks','Alice puts her message in a box and closes the padlock. She needs no secret to do it, and now even she cannot open the box.'),
+    say('Step 4 · the box travels','Eve can copy the box as often as she likes. She has the padlock, but no key.'),
+    say('Step 5 · Bob opens it','Only Bob has the private key. No secret ever crossed the network.','RSA is this padlock, made out of numbers. The next tabs build it.')][k];
+  $('#extra').innerHTML=`<h3>What public keys are for</h3><p><b>Key exchange:</b> agree on an AES key across an open network.</p><p><b>Digital signatures:</b> prove who wrote something.</p><p class="note">RSA is far slower than AES, so real systems use both: RSA protects a random AES key, and AES encrypts the data with one of the <a href="modes.html">modes of operation</a>.</p>`+quiz('ov');
+},
+plan(k){
+  const toks={2:[['oLk','oLa',iLock(true,'pub')],['oLk','oLe',iLock(true,'pub')]],4:[['oBa','oBb',iBox(true)]]}[k];
+  if(k===1)return{dur:1000,start(){const a=['oLk','oKy'].map(i=>$('#'+i));hide(a);return cues(a.map((e,i)=>[.2+.4*i,()=>{e.style.opacity=1}]))}};
+  if(k===3)return{dur:900,start(){const a=$('#oBa');if(!a)return null;hide([a]);return p=>{a.style.opacity=p}}};
+  if(k===5)return{dur:900,start(){const a=$('#oBb');if(!a)return null;a.innerHTML=iBox(true);return cues([[.55,()=>{a.innerHTML=iBox(false,'hi Bob')}]])}};
+  return{dur:2000,start(){
+    const svg=$('#ovS');if(!svg)return null;const M=svgMap(svg),s=M.s,mv=[];
+    if(k===2){const[a,b]=[[PB[0]-74,PB[1]-46],[PA[0]+74,PA[1]-46]],e=[PE[0]+62,PE[1]];hide([$('#oLa'),$('#oLe')]);
+      const n1=fxNode(`<g transform="scale(${s})">${iLock(true,'pub')}</g>`),n2=fxNode(`<g transform="scale(${s})">${iLock(true,'pub')}</g>`);
+      mv.push({node:n1,pts:[M(...a),M(...b)],a:0,b:1,end:1},{node:n2,pts:[M(...a),M(PE[0],PA[1]-46),M(...e)],a:.1,b:1,end:1});
+      return both(mover(mv),cues([[.99,()=>{$('#oLa').style.opacity=1;$('#oLe').style.opacity=1}]]))}
+    const a=[PA[0]+84,PA[1]+50],b=[PB[0]-84,PB[1]+50],B=$('#oBb');hide([B]);
+    const n=fxNode(`<g transform="scale(${s})">${iBox(true)}</g>`);mv.push({node:n,pts:[M(...a),M(a[0]+60,PA[1]),M(b[0]-60,PB[1]),M(...b)],a:0,b:1,end:1});
+    return both(mover(mv),cues([[.99,()=>{B.style.opacity=1}]]));
+  }};
+}};
+/* ---------- modular maths: φ(n), Euler's theorem and the modular inverse ---------- */
+const MP=7n,MQ=11n,MN=77n;
+const ringPt=(i,n,R,c)=>{const a=2*Math.PI*i/n-Math.PI/2;return[c+R*Math.cos(a),c+R*Math.sin(a)]};
+function phiView(k){
+  const n=Number(MN),cells=[];for(let i=1;i<=n;i++){const a=i%Number(MP)===0,b=i%Number(MQ)===0;cells.push(`<i class="${k>=1&&a?'xp':''} ${k>=2&&b?'xq':''} ${k>=3&&!a&&!b?'ok':''}" data-a="${a?1:0}" data-b="${b?1:0}">${i}</i>`)}
+  return`<div class="pich"><div><div class="h3">The numbers from 1 to n = ${MP} × ${MQ} = ${MN}</div><div class="pics-s">φ(n) counts those that share no factor with n.</div></div></div><div class="sv" id="sv">${cells.join('')}</div>
+    <div class="leg"><span class="r-p"><i class="lp"></i>multiple of ${MP}</span><span><i class="lq"></i>multiple of ${MQ}</span><span><i class="lk"></i>coprime to n</span></div>
+    ${k>=3?`<div class="res r-ok"><span class="rl">Count</span><span class="rv">φ(${MN}) = (${MP} − 1) · (${MQ} − 1) = ${(MP-1n)*(MQ-1n)}</span></div>`:''}`;
+}
+function ordOf(x,n){let v=x%n,k=1;const o=[1n,v];while(v!==1n){v=v*x%n;o.push(v);k++}return o}
+const XS=[2n,3n,5n,6n,9n,10n,13n,15n];
+function powView(k){
+  const n=Number(MN),x=ST.x,o=ordOf(x,MN),R=170,c=196,sh=Math.min(k,o.length-1);let h='';
+  for(let i=0;i<n;i++){const[a,b]=ringPt(i,n,R,c),[ta,tb]=ringPt(i,n,R+13,c);h+=`<circle class="rd${gcd(BigInt(i),MN)===1n?'':' nc'}" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="2.6"/>`;if(n<=100&&i%7===0)h+=`<text class="rt2" x="${ta.toFixed(1)}" y="${tb.toFixed(1)}">${i}</text>`}
+  for(let i=0;i<sh;i++){const[a,b]=ringPt(Number(o[i]),n,R,c),[e,f]=ringPt(Number(o[i+1]),n,R,c);h+=`<path class="ch2${i===sh-1?' now':''}" id="rc${i}" d="M${a.toFixed(1)} ${b.toFixed(1)}L${e.toFixed(1)} ${f.toFixed(1)}"/>`}
+  const cur=Number(o[sh]),[px,py]=ringPt(cur,n,R,c);h+=`<circle class="rdc" id="rdc" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="8"/>`;
+  const list=o.slice(0,sh+1).map((v,i)=>`<span class="${i===sh?'now':''}">${x}${sup_(i)} = ${v}</span>`).join('');
+  return subs(`<span class="flh">x =</span>`,seg('x',x.toString(),XS.map(v=>[v.toString(),v.toString()])))+`<div class="rw"><svg class="ring" id="ringS" viewBox="0 0 392 392" role="img" aria-label="Powers of x on a ring of ${n} numbers">${h}</svg><div class="rl2"><div class="h3">Powers of ${x} mod ${MN}</div><div class="pwl">${list}</div>${k>=o.length-1?`<div class="res r-ok"><span class="rl">Back at 1</span><span class="rv">${x}${sup_(o.length-1)} ≡ 1 after ${o.length-1} steps, and ${o.length-1} divides φ(${MN}) = 60</span></div>`:''}</div></div>`;
+}
+function euclidRows(){const big=D.phi>=1n<<40n;return{a:big?3120n:D.phi,b:big?17n:D.e,big}}
+function eucView(k){
+  const{a,b,big}=euclidRows(),R=egcd(a,b).slice(0,-1),last=R.length-1,sh=Math.min(k+1,last);
+  const t=((R[last].t%a)+a)%a;
+  return`<div class="pich"><div><div class="h3">Find d so that ${b} · d ≡ 1 (mod ${a})</div><div class="pics-s">${big?'This key is too big for a table, so these are the numbers of the textbook example. ':''}Each row divides, and keeps track of how the remainder is built from ${b}.</div></div></div>
+  <div class="scroll"><table class="eu"><tr><th>row</th><th>quotient q</th><th>remainder r</th><th>t</th><th>r ≡ t · ${b} (mod ${a})</th></tr>${R.map((r,i)=>`<tr class="${i>sh?'hid':i===sh?'cur':''}"><td>${i}</td><td>${r.q===null?'':r.q}</td><td><b>${r.r}</b></td><td>${r.t}</td><td class="m">${i?`${r.r} ≡ ${r.t} · ${b}`:`${r.r} ≡ 0`}</td></tr>`).join('')}</table></div>
+  ${sh===last?`<div class="res r-ok"><span class="rl">Inverse</span><span class="rv">remainder 1 reached: d = ${R[last].t} mod ${a} = <b>${t}</b>. Check: ${b} · ${t} mod ${a} = ${b*t%a}</span></div>`:''}`;
+}
+QZ.mod={q:'n = 35 = 5 × 7. What is φ(35)?',o:['34','24','12'],a:1,why:'(5 − 1) · (7 − 1) = 24. That is 34 numbers below 35, minus the 6 multiples of 5 and the 4 multiples of 7.'};
+const modN=()=>ST.modV==='phi'?4:ST.modV==='pow'?ordOf(ST.x,MN).length:egcd(euclidRows().a,euclidRows().b).length-2;
+T.mod={n:()=>modN(),render(k){
+  const sw=subs(seg('modv',ST.modV,[['phi','1 · Euler’s φ(n)'],['pow','2 · Euler’s theorem'],['euc','3 · Modular inverse']]));
+  stage.innerHTML=sw+(ST.modV==='phi'?phiView(k):ST.modV==='pow'?powView(k):eucView(k));
+  if(ST.modV==='phi'){
+    $('#explain').innerHTML=[say('Euler’s φ function','RSA is built on one number: how many values below n have no common factor with n.','Press <b>Step</b> to cross out the ones that do.'),
+      say(`Step 1 · multiples of ${MP}`,`There are ${MQ} of them, up to ${MN}.`),say(`Step 2 · multiples of ${MQ}`,`There are ${MP} of them. ${MN} itself was already crossed out.`),
+      say('Step 3 · what is left',`${MN} − ${MQ} − ${MP} + 1 = ${(MP-1n)*(MQ-1n)}, which is exactly (${MP} − 1)(${MQ} − 1).`,'<span class="warn">Computing φ(n) needs p and q. Whoever can factor n can find φ(n), and that breaks RSA.</span>')][k];
+    $('#extra').innerHTML=`<h3>φ(n) in one line</h3>${fm('φ(p · q) = (p − 1)(q − 1)')}<p>This works for two different primes p and q.</p>`+quiz('mod');
+  }else if(ST.modV==='pow'){
+    const o=ordOf(ST.x,MN),e=k>=o.length-1;
+    $('#explain').innerHTML=e?say('Euler’s theorem',`The powers of ${ST.x} came back to 1. That always happens when x has no common factor with n, and φ(n) steps are always enough.`,fm('x<sup>φ(n)</sup> ≡ 1 (mod n)'),`Here ${ST.x}${sup_(o.length-1)} ≡ 1, so also ${ST.x}⁶⁰ ≡ 1, and ${ST.x}⁶¹ ≡ ${ST.x}. That last line is the whole trick of RSA.`):
+      say('Euler’s theorem',`Multiply by ${ST.x} again and again, modulo ${MN}. The chord jumps around the ring, but it cannot go on for ever: it has to come back.`,k?fm(`${ST.x}${sup_(k)} mod ${MN} = ${o[k]}`):'Press <b>Step</b>.');
+    $('#extra').innerHTML=`<h3>Euler’s theorem</h3>${fm('gcd(x, n) = 1 ⟹ x<sup>φ(n)</sup> ≡ 1 (mod n)')}<p>Try another x above: the star changes, and the length of the cycle always divides 60.</p>`+quiz('mod');
+  }else{
+    const{a,b}=euclidRows(),R=egcd(a,b).slice(0,-1),r=R[Math.min(k+1,R.length-1)];
+    $('#explain').innerHTML=say('The modular inverse',`We need the number that undoes ${b}: its inverse modulo ${a}. The extended Euclidean algorithm finds it quickly, even for numbers with hundreds of digits.`,k?fm(`r = ${R[Math.min(k-1,R.length-1)].r} − ${r.q}·${R[Math.min(k,R.length-1)].r} = ${r.r}<br>t = ${R[Math.min(k-1,R.length-1)].t} − ${r.q}·${R[Math.min(k,R.length-1)].t} = ${r.t}`):'Press <b>Step</b>.');
+    $('#extra').innerHTML=`<h3>Why it is fast</h3><p>The remainders shrink at least by half every two rows, so the number of rows grows with the number of digits, not with the value.</p><p>d is computed with no search at all, once φ(n) is known.</p>`+quiz('mod');
+  }
+},
+plan(k){
+  if(ST.modV==='phi')return{dur:1200,start(){const c=k<3?$$(`#sv i[data-${k===1?'a':'b'}="1"]`):$$('#sv i.ok');c.forEach(e=>e.classList.remove(k===1?'xp':k===2?'xq':'ok'));if(!c.length)return null;return cues(c.map((e,i)=>[(i+1)/(c.length+1),()=>e.classList.add(k===1?'xp':k===2?'xq':'ok')]))}};
+  if(ST.modV==='pow')return{dur:650,start(){const e=$('#rc'+(k-1));if(!e)return null;const L=e.getTotalLength();e.style.strokeDasharray=L;e.style.strokeDashoffset=L;const d=$('#rdc');if(d)d.style.opacity=0;return p=>{e.style.strokeDashoffset=L*(1-ease(p));if(p>=1&&d)d.style.opacity=1}}};
+  return null;
+}};
+/* ---------- key generation: the recipe, then a real search for primes ---------- */
+const KW=900,KH=348,KPOS={p:[92,64],q:[92,176],n:[330,64],f:[330,176],e:[330,288],d:[560,232],P:[796,92],S:[796,232]};
+const kcBox=(id,t,v,cls,o={})=>{const[x,y]=KPOS[id],w=o.w||156,h=o.h||68;
+  return`<g class="kc ${cls}" id="k-${id}" transform="translate(${x} ${y})"><rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="9"/><text class="kt" y="-11">${t}</text><text class="kv" y="15">${v}</text></g>`};
+const kW=(id,pts,cls='')=>`<path class="kw ${cls}" id="kw-${id}" d="M${pts.map(p=>p.join(' ')).join(' L')}" marker-end="url(#ka)"/>`;
+const KEDGE={pn:[[170,64],[250,64]],qn:[[170,160],[250,84]],pf:[[170,84],[250,156]],qf:[[170,176],[250,176]],fd:[[408,186],[480,222]],ed:[[408,282],[480,244]],nP:[[408,64],[716,84]],eP:[[408,276],[440,276],[640,120],[716,104]],dS:[[640,232],[716,232]]};
+function kgScene(k){
+  const on=(t,x)=>k>=t?x:x.replace('class="kc ','class="kc off ');
+  let h=`<svg class="ch" id="kgS" viewBox="0 0 ${KW} ${KH}" role="img" aria-label="RSA key generation from two primes to the public and private keys"><defs><marker id="ka" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="kam" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
+  for(const[id,p]of Object.entries(KEDGE)){const t={pn:2,qn:2,pf:3,qf:3,fd:5,ed:5,nP:6,eP:6,dS:6}[id];if(k>=t)h+=kW(id,p,id==='eP'||id==='nP'?'pub':id==='dS'?'pri':'')}
+  h+=on(1,kcBox('p','prime p',fmtN(D.p),'sec'))+on(1,kcBox('q','prime q',fmtN(D.q),'sec'))+on(2,kcBox('n','n = p · q',fmtN(D.n),'pub'))+on(3,kcBox('f','φ(n) = (p−1)(q−1)',fmtN(D.phi),'sec'))+on(4,kcBox('e','e, coprime to φ(n)',fmtN(D.e),'pub'))+on(5,kcBox('d','d = e⁻¹ mod φ(n)',fmtN(D.d),'sec'));
+  h+=on(6,kcBox('P','Public key',`(${fmtN(D.n,9)}, ${fmtN(D.e,6)})`,'pub big',{w:176,h:80}))+on(6,kcBox('S','Private key',`d = ${fmtN(D.d,10)}`,'sec big',{w:176,h:80}));
+  return h+'</svg>';
+}
+const SIZES=[256,512,1024,2048];
+function huntView(){
+  const S=ST.kg,b=S?S.bits:1024;
+  return`<div class="sec"><div class="pich"><div><div class="h3">Make your own key</div><div class="pics-s">Real keys use primes hundreds of digits long. Your browser picks random numbers and tests them until two are prime. Nothing leaves this page.</div></div>
+    <span class="row">${seg('hb',String(b),SIZES.map(v=>[String(v),`${v} bits`]))}<button class="pri" data-hunt="1"${S&&S.run?' disabled':''}>Generate</button></span></div>
+    <div class="hunt" id="hunt">${huntBody()}</div></div>`;
+}
+function huntBody(){
+  const S=ST.kg;if(!S)return`<div class="hs"><span>Random numbers tested <b>0</b></span><span>Stopped by a small prime <b>0</b></span><span>Stopped by Miller–Rabin <b>0</b></span><span>Primes found <b>0 of 2</b></span></div><div class="hl"><i>press Generate</i></div>`;
+  return`<div class="hs"><span>Random numbers tested <b>${S.tested}</b></span><span>Stopped by a small prime <b>${S.small}</b></span><span>Stopped by Miller–Rabin <b>${S.mr}</b></span><span>Primes found <b>${S.found.length} of 2</b></span></div><div class="hl">${S.log.slice(-5).map(l=>`<i class="${l[1]==='prime ✓'?'hit':''}"><code>${l[0]}</code> ${l[1]}</i>`).join('')}</div>${S.done?`<div class="res r-ok"><span class="rl">Done</span><span class="rv">RSA-${S.bits} key made in ${S.ms} ms. It is now the key on every tab.</span></div>`:''}`;
+}
+function huntStep(){
+  const S=ST.kg,t0=performance.now(),pb=S.bits/2,add=(c,w)=>{const s=c.toString();S.log.push([`${s.slice(0,8)}…${s.slice(-8)}`,w]);if(S.log.length>6)S.log.shift()};
+  while(performance.now()-t0<30){
+    const c=randBits(pb)|1n|(1n<<BigInt(pb-2));S.tested++;
+    const f=smallDiv(c);if(f){S.small++;add(c,`divisible by ${f}`);continue}
+    if(!mrPass(c,2n)){S.mr++;add(c,'fails Miller–Rabin');continue}
+    let ok=true;for(let i=0;i<16&&ok;i++)ok=mrPass(c,(randBits(pb-1)|2n));
+    if(!ok){S.mr++;add(c,'fails Miller–Rabin');continue}
+    if(gcd(65537n,c-1n)!==1n){add(c,'prime, but not with e = 65537');continue}
+    S.found.push(c);add(c,'prime ✓');
+    if(S.found.length===2){
+      S.run=false;S.done=true;S.ms=Math.round(performance.now()-S.t0);
+      const n=S.found[0]*S.found[1];
+      $('#pI').value=S.found[0].toString();$('#qI').value=S.found[1].toString();$('#eI').value='65537';
+      if(msgOf()===null||msgOf()>=n){D.mF='num';$$('#mF button').forEach(x=>x.classList.toggle('on',x.dataset.f==='num'));$('#mI').value='123456789'}
+      D.preset='custom';onInput();return;
+    }
+  }
+  const h=$('#hunt');if(h)h.innerHTML=huntBody();
+  setTimeout(huntStep,0);
+}
+QZ.kg={q:'Which of these can Bob safely publish?',o:['n and e','n, e and φ(n)','n, e and p'],a:0,why:'φ(n) or p would give away everything: with either one, an attacker computes d the same way Bob did.'};
+CLICK.push(e=>{const b=e.target.closest('[data-hb]');if(b&&!(ST.kg&&ST.kg.run)){ST.kg=null;HB.v=+b.dataset.hb;$$('[data-hb]').forEach(x=>x.classList.toggle('on',x===b));$('#hunt').innerHTML=huntBody();return true}
+  if(e.target.closest('[data-hunt]')){ST.kg={bits:HB.v,run:true,tested:0,small:0,mr:0,found:[],log:[],t0:performance.now()};e.target.disabled=true;huntStep();return true}});
+const HB={v:1024};
+T.kg={n:()=>7,render(k){
+  stage.innerHTML=kgScene(k)+huntView();
+  if(!ST.kg)$$('[data-hb]').forEach(x=>x.classList.toggle('on',+x.dataset.hb===HB.v));
+  $('#explain').innerHTML=[say('Making a key pair','Bob does this once. Everything follows from two secret primes.','Press <b>Step</b>.'),
+    say('Step 1 · two primes',`Bob picks p and q at random and tells nobody. Below you can watch a browser do it for real numbers.`),
+    say('Step 2 · the modulus',`n = p · q = ${fmtN(D.n)}. It is public, and hiding p and q inside it is what makes RSA work.`),
+    say('Step 3 · φ(n)',`φ(n) = (p − 1)(q − 1) = ${fmtN(D.phi)}. Bob can compute this only because he knows p and q.`),
+    say('Step 4 · the public exponent',`Bob picks e = ${fmtN(D.e)}, which must share no factor with φ(n). Real keys almost always use 65537.`,fm(`gcd(e, φ(n)) = ${gcd(D.e,D.phi)}`)),
+    say('Step 5 · the private exponent',`d is the inverse of e modulo φ(n), found with the extended Euclidean algorithm.`,fm(`e · d mod φ(n) = ${D.e*D.d%D.phi}`)),
+    say('Step 6 · done','The pair (n, e) goes out to the world. Bob keeps d.','<span class="warn">p, q and φ(n) must stay secret too: any one of them gives d.</span>')][k];
+  $('#extra').innerHTML=`<h3>How common are primes?</h3><p>About 1 number in ln(N) near N is prime. For 1024 bits that is 1 in ${Math.round(1024*Math.LN2)}, or 1 in ${Math.round(512*Math.LN2)} odd numbers. So a search takes only hundreds of tries.</p><p><b>Miller–Rabin</b> tests a number for primality without factoring it. A composite passes one round with a chance of at most ¼.</p>`+quiz('kg');
+},
+plan(k){
+  const mv={2:[['p','n'],['q','n']],3:[['p','f'],['q','f']],5:[['f','d'],['e','d']],6:[['n','P'],['e','P'],['d','S']]}[k],open={1:['p','q'],2:['n'],3:['f'],4:['e'],5:['d'],6:['P','S']}[k];
+  return{dur:mv?1500:800,start(){
+    const svg=$('#kgS');if(!svg)return null;const M=svgMap(svg),s=M.s,ms=[],cu=[];
+    open.forEach(id=>{const e=$('#k-'+id);e.classList.add('off');cu.push([mv?.92:.5,()=>{e.classList.remove('off');e.classList.add('pop')}])});
+    (mv||[]).forEach(([a,b],i)=>{const v={p:D.p,q:D.q,n:D.n,f:D.phi,e:D.e,d:D.d}[a],c=['p','q','f','d'].includes(a)?'var(--pri)':'var(--pub)',n=fxNode(tok(fmtN(v,8),96*s,26*s,[c]));
+      const id=Object.keys(KEDGE).find(x=>x===a.replace('f','f')+b)||(a+b),pts=KEDGE[id]||[KPOS[a],KPOS[b]];
+      ms.push({node:n,pts:[M(...KPOS[a]),...pts.map(q=>M(...q)),M(...KPOS[b])],a:.04*i,b:.92,end:.93});
+      const w=$('#kw-'+id);if(w)w.classList.add('on')});
+    return both(mover(ms),cues(cu));
+  }};
+},
+focus(){follow($('#kgS'))}};
+/* ---------- encrypt and decrypt: two jumps on the ring of numbers below n ---------- */
+const EW=900,EH=430,EC=[450,214],ER=158;
+const frac=v=>Number((v*100000n)/D.n)/100000;
+const ePt=(v,r=ER)=>{const a=2*Math.PI*frac(v)-Math.PI/2;return[EC[0]+r*Math.cos(a),EC[1]+r*Math.sin(a)]};
+function edScene(k){
+  const n=Number(D.n),small=D.n<=121n;let h=`<svg class="ch" id="edS" viewBox="0 0 ${EW} ${EH}" role="img" aria-label="The message and the ciphertext as two points on a ring of the numbers below n"><defs><marker id="ea" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs><circle class="ern" cx="${EC[0]}" cy="${EC[1]}" r="${ER}"/>`;
+  if(small){
+    for(let i=0;i<n;i++){const v=BigInt(i),[a,b]=ePt(v),[c,d]=ePt(modpow(v,D.e,D.n));if(v!==modpow(v,D.e,D.n))h+=`<path class="emap" d="M${a.toFixed(1)} ${b.toFixed(1)}L${c.toFixed(1)} ${d.toFixed(1)}"/>`}
+    for(let i=0;i<n;i++){const[a,b]=ePt(BigInt(i)),[t,u]=ePt(BigInt(i),ER+13);h+=`<circle class="etk" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="2.6"/>`;if(n<=40||i%5===0)h+=`<text class="etl" x="${t.toFixed(1)}" y="${u.toFixed(1)}">${i}</text>`}
+  }else h+=`<text class="etl" x="${EC[0]}" y="${EC[1]-ER-9}">0</text><text class="ecn" x="${EC[0]}" y="${EC[1]-6}">the ${dig(D.n)}-digit numbers below n</text><text class="ecn s" x="${EC[0]}" y="${EC[1]+14}">drawn as a circle</text>`;
+  const[mx,my]=ePt(D.m),[cx,cy]=ePt(D.c);
+  if(k>=2)h+=`<path class="eju e" id="eJ1" d="M${mx.toFixed(1)} ${my.toFixed(1)} Q${EC[0]} ${EC[1]} ${cx.toFixed(1)} ${cy.toFixed(1)}" marker-end="url(#ea)"/>`;
+  if(k>=4)h+=`<path class="eju d" id="eJ2" d="M${cx.toFixed(1)} ${cy.toFixed(1)} Q${EC[0]+40} ${EC[1]+40} ${mx.toFixed(1)} ${my.toFixed(1)}" marker-end="url(#ea)"/>`;
+  h+=`<circle class="ept m" id="ePm" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="9"/>`;
+  if(k>=2)h+=`<circle class="ept c" id="ePc" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="9"/>`;
+  const cd=(x,y,t,v,c,on)=>`<g class="ecd ${c}${on?'':' off'}" transform="translate(${x} ${y})"><rect x="-96" y="-34" width="192" height="68" rx="9"/><text class="kt" y="-11">${t}</text><text class="kv" y="15">${v}</text></g>`;
+  h+=cd(120,86,'Message m',fmtN(D.m),'msg',true)+cd(120,342,'Public key: anyone',`(${fmtN(D.n,8)}, ${fmtN(D.e,6)})`,'pub',k>=2)+cd(780,86,'Ciphertext c',fmtN(D.c),'cip',k>=2)+cd(780,342,'Private key: only Bob',`d = ${fmtN(D.d,10)}`,'pri',k>=4);
+  return h+'</svg>';
+}
+const expDigits=(b,e)=>{const l=Math.log10(Number(b<(1n<<1000n)?b:(1n<<1000n)));return Math.floor(Number(e)*l)+1};
+function proofHtml(){
+  const k=(D.e*D.d-1n)/D.phi;
+  return`<div class="res r-ok"><span class="rl">Why it works</span><span class="rv">e · d = ${fmtN(D.e*D.d)} = 1 + ${fmtN(k)} · φ(n)</span></div>`;
+}
+QZ.ed={q:'Alice wants to send a secret to Bob. Which key does she use?',o:['Her own private key','Bob’s public key','Bob’s private key'],a:1,why:'Anyone may use Bob’s public key to encrypt, and only Bob’s private key can undo it. Alice does not even need a key pair of her own.'};
+T.ed={n:()=>6,render(k){
+  const txt=D.mF==='text',b=fromHex((D.m.toString(16).length%2?'0':'')+D.m.toString(16));
+  stage.innerHTML=edScene(k)+pickBox()+`<div class="nvs"><span class="flh">Numbers</span>${nv(D.m,'m')}${k>=2?nv(D.c,'c'):''}${k>=4?nv(modpow(D.c,D.d,D.n),'decrypted'):''}</div>`+
+    (k>=5?proofHtml():'');
+  const big=D.m>1n&&D.e<100000n?expDigits(D.m,D.e):0;
+  $('#explain').innerHTML=[say('RSA in two lines',`Encryption and decryption are the same operation with different exponents. Each one is a jump between two points on this ring.`,D.n<=121n?'The thin lines show where every number goes under the public key: a full shuffle.':'','Press <b>Step</b>.'),
+    say('Step 1 · the message is a number',txt?`RSA only works on numbers, so the text “${toText(b)}” is read as one big number.`:`RSA only works on numbers, and they must be below n.`,fm(`m = ${fmtN(D.m)}`)),
+    say('Step 2 · encrypt',`Anyone can do this with Bob’s public key.`,fm(`c = m<sup>e</sup> mod n =<br>${fmtN(D.c)}`),big?`m<sup>e</sup> would have ${big.toLocaleString('en-US')} digits, but the computer never builds it: see <button class="link" data-goto="sm">square and multiply</button>.`:''),
+    say('Step 3 · send',`c travels across the open network. To Eve it is just a number.`,`The jump looks random: the position of c tells nothing about m.`),
+    say('Step 4 · decrypt',`Only Bob has d, and the same operation brings the number home.`,fm(`m = c<sup>d</sup> mod n =<br>${fmtN(modpow(D.c,D.d,D.n))}`)),
+    say('Step 5 · why it comes back',`e and d were chosen so that e · d = 1 + k · φ(n). Euler’s theorem removes the rest:`,fm('c<sup>d</sup> = m<sup>ed</sup> = m · (m<sup>φ(n)</sup>)<sup>k</sup> ≡ m · 1<sup>k</sup> = m'),'The last step uses gcd(m, n) = 1, but the result holds for every m below n, thanks to the Chinese remainder theorem.')][k];
+  $('#extra').innerHTML=`<h3>RSA in one line</h3>${fm('c = m<sup>e</sup> mod n')}${fm('m = c<sup>d</sup> mod n')}${pc(['Needs no shared secret','The same maths also gives signatures'],['Far slower than AES','This plain form is not safe: <button class="link" data-goto="atk">see the attacks</button>'])}`+quiz('ed');
+},
+plan(k){
+  if(k===1)return{dur:700,start(){const e=$('#ePm');if(!e)return null;return p=>{e.setAttribute('r',9+6*Math.sin(Math.PI*p))}}};
+  if(k===3||k===5)return{dur:700,start(){const e=$(k===3?'#ePc':'#ePm');if(!e)return null;return p=>{e.setAttribute('r',9+6*Math.sin(Math.PI*p))}}};
+  return{dur:1500,start(){
+    const svg=$('#edS');if(!svg)return null;const M=svgMap(svg),s=M.s,enc=k===2,j=$(enc?'#eJ1':'#eJ2'),L=j.getTotalLength(),col=enc?'var(--rp)':'var(--pri)';
+    j.style.strokeDasharray=L;j.style.strokeDashoffset=L;
+    const dot=$(enc?'#ePc':'#ePm');if(enc)dot.style.opacity=0;
+    const pts=[];for(let i=0;i<=24;i++){const q=j.getPointAtLength(L*i/24);pts.push(M(q.x,q.y))}
+    const n=fxNode(tok(fmtN(enc?D.m:D.c,8),92*s,26*s,[col]));
+    return both(mover([{node:n,pts,a:0,b:1,end:1,at:[[.5,retok(fmtN(enc?D.c:D.m,8),92*s,26*s,[col])]]}]),p=>{j.style.strokeDashoffset=L*(1-ease(p));if(p>=1)dot.style.opacity=1});
+  }};
+},
+focus(){follow($('#edS'))}};
+/* ---------- square and multiply: how the computer avoids the giant number ---------- */
+const SMAX=32;
+function smRun(){
+  const E=ST.smE==='e'?D.e:D.d,bits=E.toString(2),n=D.n,b=D.m,show=Math.min(bits.length,SMAX),ops=[],steps=[];
+  let r=1n,k=0n;
+  for(let i=0;i<bits.length;i++){
+    r=r*r%n;k*=2n;const o=[{t:'S',r,k}];
+    if(bits[i]==='1'){r=r*b%n;k+=1n;o.push({t:'M',r,k})}
+    if(i<show){steps.push({bit:bits[i],o});ops.push(...o)}
+  }
+  const S=bits.length,Mc=[...bits].filter(x=>x==='1').length;
+  return{E,bits,show,steps,ops,r,S,Mc,cut:bits.length>show};
+}
+function trace(ops,upto,grow){
+  const W=900,H=96,dx=Math.min(26,(W-20)/Math.max(1,ops.length)),base=H-16;let h='';
+  ops.forEach((o,i)=>{if(i>upto)return;const x=10+i*dx+dx/2,tall=o.t==='M',ht=(tall?64:30)*(i===upto&&grow!=null?grow:1);
+    h+=`<rect class="sp ${o.t}" x="${(x-dx*.32).toFixed(1)}" y="${(base-ht).toFixed(1)}" width="${(dx*.64).toFixed(1)}" height="${ht.toFixed(1)}" rx="1.5"/>`;
+    if(dx>=11&&i<=upto)h+=`<text class="spl" x="${x.toFixed(1)}" y="${H-3}">${o.t}</text>`});
+  return`<svg class="trc" id="trc" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path class="spb" d="M0 ${base}H${W}"/>${h}</svg>`;
+}
+function smBody(k){
+  const R=smRun(),i=k-1,cur=R.steps[i],upto=k?R.steps.slice(0,k).reduce((s,x)=>s+x.o.length,0)-1:-1,last=cur?cur.o.at(-1):{r:1n,k:0n},naive=R.E-1n,fast=R.S+R.Mc;
+  const lg=v=>bitLen(v),mx=Math.max(lg(naive),lg(BigInt(fast)),1);
+  return subs(`<span class="flh">Exponent</span>`,seg('sme',ST.smE,[['e','e: public'],['d','d: private']]),`<span class="flh">computing ${fmtN(D.m,10)}<sup>${ST.smE}</sup> mod ${fmtN(D.n,10)}</span>`)+
+  `<div class="h3">The exponent in binary, read from the left${R.cut?`: first ${SMAX} of its ${R.bits.length} bits`:''}</div><div class="bts" id="bts">${[...R.bits.slice(0,R.show)].map((b,j)=>`<i class="${j<i?'dn ':''}${j===i?'cur ':''}${b==='1'?'b1':''}">${b}</i>`).join('')}${R.cut?'<em>…</em>':''}</div>
+  <div class="reg"><div><span>so far</span><b id="smK">${k?`m${fmtExp(last.k)}`:'1'}</b></div><div><span>value mod n</span><b id="smR">${fmtN(last.r)}</b></div></div>
+  <div class="sec"><div class="pich"><div class="h3">The operations in order</div><span class="leg"><span><i class="ls"></i>S: square</span><span><i class="lm"></i>M: multiply</span></span></div>${trace(R.ops,upto)}</div>
+  <div class="sec"><div class="h3">How much work?</div><div class="cnt"><div><span>Multiply m by itself</span><i style="width:${Math.max(3,100*lg(naive)/mx)}%" class="bad"></i><b>${fmtN(naive)}</b></div><div><span>Square and multiply</span><i style="width:${Math.max(3,100*lg(BigInt(fast))/mx)}%"></i><b>${fast}</b></div></div><div class="pics-s">Bar lengths are on a log scale.</div></div>
+  <div class="sec"><div class="pich"><div><div class="h3">Decryption, four times faster with the CRT</div><div class="pics-s">Bob knows p and q, so he can work mod p and mod q separately, with numbers half as long, and combine the results.</div></div><button data-crt="1">Measure it here</button></div><div id="crtO"></div></div>`;
+}
+const fmtExp=k=>k<100000n?sup_(k):`^(${fmtN(k,8)})`;
+function crtRun(){
+  const{p,q,d,n}=D,c=D.c,dp=d%(p-1n),dq=d%(q-1n),qi=modinv(q,p),N=D.bits>1500?40:D.bits>600?200:2000,time=f=>{const t=performance.now();for(let i=0;i<N;i++)f();return performance.now()-t};
+  const a=time(()=>modpow(c,d,n)),b=time(()=>{const x=modpow(c%p,dp,p),y=modpow(c%q,dq,q);return y+q*(((x-y)*qi%p+p)%p)});
+  const same=(()=>{const x=modpow(c%p,dp,p),y=modpow(c%q,dq,q);return y+q*(((x-y)*qi%p+p)%p)===modpow(c,d,n)})();
+  $('#crtO').innerHTML=`<div class="res ${same?'r-ok':'r-bad'}"><span class="rl">${N} × decrypt</span><span class="rv">plain: ${a.toFixed(1)} ms · with CRT: ${b.toFixed(1)} ms · ${(a/b).toFixed(1)} times faster, same result ${same?'✓':'✗'}</span></div>`;
+}
+CLICK.push(e=>{const s=e.target.closest('[data-sme]');if(s){setPlaying(false);stopAnim(false);ST.smE=s.dataset.sme;ST.step.sm=0;show();return true}
+  if(e.target.closest('[data-crt]')){crtRun();return true}});
+QZ.sm={q:'The exponent is 2048 bits long, about half of them 1. Roughly how many multiplications does square and multiply need?',o:['About 3000','About 2²⁰⁴⁸','About 2048²'],a:0,why:'2048 squarings plus about 1024 multiplications. The work grows with the length of the exponent, not with its value.'};
+T.sm={n:()=>smRun().show+1,render(k){
+  const R=smRun(),i=k-1,cur=R.steps[i],done=k===R.show;
+  stage.innerHTML=smBody(k);
+  $('#explain').innerHTML=k===0?say('Square and multiply','Multiplying m by itself e times would take for ever with real exponents, and the numbers would not fit in any computer.','Instead, read the exponent bit by bit. Each bit means: square. A 1 bit also means: multiply by m.','Press <b>Step</b>.'):
+    say(`Bit ${k} of ${R.bits.length} is ${cur.bit}`,cur.bit==='1'?'Square, then multiply by m. In the exponent, that doubles it and adds one.':'Only square. In the exponent, that doubles it.',fm(cur.o.map(o=>`${o.t==='S'?'r ← r²':'r ← r · m'} = ${fmtN(o.r)}`).join('<br>')),
+      done&&!R.cut?`<span class="okn">Finished: the result is ${fmtN(R.r)}, the same as m<sup>${ST.smE}</sup> mod n.</span>`:done?`The remaining ${R.bits.length-R.show} bits work the same way. The final result is ${fmtN(R.r)}.`:'',
+      ST.smE==='d'?'<span class="warn">Look at the row of spikes: it spells out the secret d.</span>':'');
+  $('#extra').innerHTML=`<h3>Why it matters for security</h3><p>The multiply happens only for 1 bits. If a device is measured while it decrypts, its power use or its timing can show which bits are 1, and that is d.</p><p class="note">The trace here is a drawing of the operations, not a measurement. Real software uses constant-time methods, so that every bit looks the same.</p>`+quiz('sm');
+},
+plan(k){
+  const R=smRun(),cur=R.steps[k-1],st=R.steps.slice(0,k-1).reduce((s,x)=>s+x.o.length,0);
+  return{dur:cur.o.length>1?1300:800,start(){
+    const reg=$('#smR'),K=$('#smK'),tr=$('#trc'),prev=k>1?R.steps[k-2].o.at(-1):{r:1n,k:0n};if(!reg)return null;
+    reg.textContent=fmtN(prev.r);K.textContent=k>1?`m${fmtExp(prev.k)}`:'1';
+    const redraw=(u,g)=>{tr.outerHTML=trace(R.ops,u,g)},cu=[];redraw(st-1);
+    cur.o.forEach((o,j)=>{const a=j/cur.o.length;cu.push([a+.02,()=>{const t=$('#trc');if(t)t.outerHTML=trace(R.ops,st+j)}],[a+.5/cur.o.length,()=>{reg.textContent=fmtN(o.r);K.textContent=`m${fmtExp(o.k)}`}])});
+    return cues(cu);
+  }};
+},
+focus(){follow($('#bts'))}};
+/* ---------- factoring: a race measured on this device, then the world records ---------- */
+const FS=[24,32,40,48,56,64,72,80,88,96],FBUDGET=1600;
+const FM=[['td','Trial division','s1'],['rho','Pollard’s rho','s2']];
+function semiprime(b){
+  const pr=k=>{for(;;){const c=randBits(k)|1n|(1n<<BigInt(k-2));if(isPrime(c))return c}};
+  const p=pr(b/2);for(;;){const q=pr(b-b/2);if(q!==p)return{p,q,n:p*q}}
+}
+// one method on one number, in slices of 25 ms so that the page stays alive; repeats quick cases for a usable timing
+function timeIt(mk,n,done){
+  let spent=0,runs=0,it=mk(n),tot=0;
+  const slice=()=>{
+    const t0=performance.now();let r=it.next();
+    while(!r.done&&performance.now()-t0<25)r=it.next();
+    spent+=performance.now()-t0;
+    if(r.done){runs++;tot=spent;if(spent<4){it=mk(n);setTimeout(slice,0);return}done(tot/runs);return}
+    if(spent>FBUDGET){done(null);return}
+    setTimeout(slice,0);
+  };
+  slice();
+}
+function faRun(){
+  const S=ST.fa={run:true,rows:[],i:0,dead:{}};faDraw();
+  const next=()=>{
+    if(S.i>=FS.length){S.run=false;faDraw();return}
+    const b=FS[S.i++],o=semiprime(b),row={b,...o,td:undefined,rho:undefined};S.rows.push(row);
+    const go=(m,gen,then)=>{if(S.dead[m]){row[m]=null;then();return}timeIt(gen,o.n,ms=>{row[m]=ms;if(ms===null)S.dead[m]=b;faDraw();then()})};
+    go('td',trial,()=>go('rho',rho,()=>{if(S.dead.td&&S.dead.rho){S.i=FS.length}setTimeout(next,0)}));
+  };
+  next();
+}
+const fT=ms=>ms==null?'gave up':ms<1?`${(ms*1000).toFixed(ms<.1?1:0)} µs`:ms<1000?`${ms.toFixed(ms<10?1:0)} ms`:`${(ms/1000).toFixed(1)} s`;
+function faChart(){
+  const S=ST.fa,W=880,H=320,L=62,R=122,Tp=16,B=44,x=b=>L+(b-20)/(100-20)*(W-L-R),lo=-3,hi=4,y=ms=>Tp+(hi-Math.log10(Math.max(ms,10**lo)))/(hi-lo)*(H-Tp-B);
+  let h=`<svg class="fch" id="fch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Measured time to factor n on a log scale, for trial division and Pollard's rho">`;
+  for(let e=lo;e<=hi;e++){const yy=y(10**e);h+=`<path class="fg" d="M${L} ${yy}H${W-R}"/><text class="fax" x="${L-8}" y="${yy+4}" text-anchor="end">${fT(10**e).replace('.0 ',' ')}</text>`}
+  for(let b=24;b<=96;b+=8){const xx=x(b);h+=`<text class="fax" x="${xx}" y="${H-B+18}" text-anchor="middle">${b}</text>`}
+  h+=`<text class="fax t" x="${(L+W-R)/2}" y="${H-6}" text-anchor="middle">size of n in bits</text>`;
+  if(S)for(const[m,name,c]of FM){
+    const P=S.rows.filter(r=>r[m]!=null).map(r=>[x(r.b),y(r[m]),r]);
+    if(P.length>1)h+=`<path class="fln ${c}" d="M${P.map(p=>`${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L')}"/>`;
+    P.forEach(p=>{h+=`<circle class="fd ${c}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4.5"/><circle class="fh" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="13" data-tip="${name}: ${p[2].b} bits, ${fT(p[2][m])}"/>`});
+    if(P.length){const e=P.at(-1);h+=`<text class="fdl" x="${e[0]+10}" y="${e[1]+4}">${name}</text>`}
+  }
+  return h+'</svg><div class="ftip" id="ftip" hidden></div>';
+}
+function faBody(){
+  const S=ST.fa,rows=S?S.rows:[];
+  return`<div class="pich"><div><div class="h3">The race, measured on this device</div><div class="pics-s">For each size, a random n = p · q is factored by two methods. A method drops out once one number takes it more than ${FBUDGET/1000} s.</div></div><button class="pri" data-farun="1"${S&&S.run?' disabled':''}>${S?(S.run?'Running…':'Run again'):'Start the race'}</button></div>
+  <div class="fbox" id="fbox">${faChart()}</div>
+  <div class="leg"><span><i class="l1"></i>Trial division</span><span><i class="l2"></i>Pollard’s rho</span><span>time axis on a log scale: each line is 10 times more</span></div>
+  ${rows.length?`<details class="ftb"><summary>Table of the measurements</summary><table class="eu"><tr><th>bits</th><th>n</th><th>trial division</th><th>Pollard’s rho</th></tr>${rows.map(r=>`<tr><td>${r.b}</td><td>${fmtN(r.n,16)}</td><td>${r.td===undefined?'…':fT(r.td)}</td><td>${r.rho===undefined?'…':fT(r.rho)}</td></tr>`).join('')}</table></details>`:''}`;
+}
+function faDraw(){const b=$('#faB');if(b)b.innerHTML=faBody()}
+const REC=[[1994,'RSA-129',426],[1999,'RSA-155',512],[2009,'RSA-768',768],[2020,'RSA-250',829]];
+function faRest(){
+  const v=ST.fk;
+  return`<div class="sec"><div class="pich"><div><div class="h3">Try the key on this page</div><div class="pics-s">Pollard’s rho on the current n, for at most 3 seconds.</div></div><button data-fk="1">Factor n = ${fmtN(D.n)}</button></div><div id="fkO"></div></div>
+  <div class="sec"><div class="h3">The world records</div><div class="pics-s">The largest RSA numbers ever factored, with the general number field sieve, a much stronger method than the two above.</div>
+  <div class="rec">${REC.map(([y,n,b])=>`<div><span class="ry">${y}</span><span class="rn">${n}</span><span class="rb"><i style="width:${100*b/2048}%"></i></span><span class="rv2">${b} bits</span></div>`).join('')}<div class="tg"><span class="ry">today</span><span class="rn">usual key</span><span class="rb"><i style="width:100%"></i></span><span class="rv2">2048 bits</span></div></div>
+  <p class="pics-s" style="margin-top:8px">RSA-250 took about 2700 core-years of computing. Each extra bit makes the job harder, so 2048 bits is far out of reach of this method.</p></div>
+  <div class="sec"><div class="h3">Which size gives which strength?</div><div class="scroll"><table class="eu kt2"><tr><th>RSA modulus</th><th>1024</th><th>2048</th><th>3072</th><th>7680</th><th>15360</th></tr><tr><td>Strength in bits (NIST SP 800-57)</td><td>80</td><td>112</td><td>128</td><td>192</td><td>256</td></tr></table></div><p class="pics-s" style="margin-top:6px">128-bit strength, the level of AES-128, needs a 3072-bit RSA key. 1024 bits is no longer acceptable.</p></div>`;
+}
+function fkRun(){
+  const out=$('#fkO'),n=D.n,t0=performance.now();out.innerHTML='<div class="res"><span class="rl">Working</span><span class="rv">…</span></div>';
+  let it=rho(n),r=it.next(),last=0;
+  const slice=()=>{const t=performance.now();while(!r.done&&performance.now()-t<25)r=it.next();
+    if(typeof r.value==='number')last=r.value;
+    const ms=performance.now()-t0;
+    if(r.done){const f=r.value&&r.value.f;out.innerHTML=f?`<div class="res r-bad"><span class="rl">Broken</span><span class="rv">n = ${fmtN(f)} × ${fmtN(n/f)} in ${fT(ms)}. With these two primes, d follows at once.</span></div>`:'<div class="res"><span class="rl">Unlucky</span><span class="rv">This run failed. Press the button again.</span></div>';return}
+    if(ms>3000){out.innerHTML=`<div class="res r-ok"><span class="rl">Gave up</span><span class="rv">${last.toLocaleString('en-US')} steps in 3 s and no factor. The smaller prime has about ${Math.min(bitLen(D.p),bitLen(D.q))} bits, so rho would need around 2${sup_(Math.round(Math.min(bitLen(D.p),bitLen(D.q))/2))} steps.</span></div>`;return}
+    setTimeout(slice,0)};
+  setTimeout(slice,30);
+}
+CLICK.push(e=>{if(e.target.closest('[data-farun]')){faRun();return true}if(e.target.closest('[data-fk]')){fkRun();return true}});
+document.addEventListener('pointermove',e=>{const t=$('#ftip');if(!t)return;const h=e.target.closest&&e.target.closest('.fh');if(!h){t.hidden=true;return}
+  const b=$('#fbox').getBoundingClientRect();t.hidden=false;t.textContent=h.dataset.tip;t.style.left=Math.min(e.clientX-b.left+12,b.width-190)+'px';t.style.top=(e.clientY-b.top-34)+'px'});
+QZ.fa={q:'You double the length of n. What happens to the work of Pollard’s rho?',o:['It doubles','It is squared','It grows 4 times'],a:1,why:'Rho needs about √p steps, and p has half the bits of n, so about 2^(b/4) steps for b bits. Doubling b squares that number.'};
+T.fa={n:()=>1,render(){
+  stage.innerHTML=`<div id="faB">${faBody()}</div>`+faRest();
+  $('#explain').innerHTML=say('Why n can be public','Anyone who factors n gets p and q, then φ(n), then d. So RSA is only as strong as factoring is hard.',fm('n → p, q → φ(n) → d'),'<b>Trial division</b> tries every odd number up to √n. <b>Pollard’s rho</b> walks a random path and needs only about the square root of the smaller prime. Press <b>Start the race</b>.');
+  $('#extra').innerHTML=`<h3>What the chart shows</h3><p>By theory, 8 more bits cost trial division 16 times more steps, and rho 4 times more. A straight line on a log scale means exponential growth.</p><p class="note">A large quantum computer running Shor’s algorithm would factor n quickly. None of that size exists yet, and NIST has already standardised post-quantum replacements.</p>`+quiz('fa');
+}};
+/* ---------- attacks on plain RSA, all computed here on a 2048-bit key ---------- */
+const N2=HP*HQ,PH2=(HP-1n)*(HQ-1n),E2=65537n,D2=modinv(E2,PH2),NB=256;
+const encT=(s,e=E2)=>modpow(B2I(txtB(s)),e,N2);
+const decT=c=>{const b=I2B(modpow(c,D2,N2),NB);return toText(b.slice(b.findIndex(x=>x)))};
+const ATK=[['guess','Guess the message'],['mall','Change the message'],['small','Small e'],['gcd','Shared prime']];
+const row=(k,i,l,v)=>`<div class="er${k<i?' off':''}" id="er${i}"><div class="el">${l}</div><div class="ev">${v}</div></div>`;
+const AT={};
+AT.guess={n:4,render(k){
+  const vote=ST.vote||(ST.vote=rndB(1)[0]&1?'YES':'NO'),c=encT(vote),a=encT('YES'),b=encT('NO');
+  return{body:row(k,0,'Alice’s secret vote, encrypted',nv(c,'c'))+row(k,1,'Eve encrypts “YES” with the public key',nv(a,'E(YES)')+(a===c?'<span class="vbad">same as c</span>':'<span class="flh">different</span>'))+row(k,2,'Eve encrypts “NO”',nv(b,'E(NO)')+(b===c?'<span class="vbad">same as c</span>':'<span class="flh">different</span>'))+row(k,3,'The vote',`<b class="gq">${vote}</b><span class="vbad">found without the key</span>`),
+    say:[say('Guess and check','Alice encrypts her vote, YES or NO, with plain RSA. Eve has the public key too, like everyone else.','Press <b>Step</b>.'),say('Step 1 · try YES','Eve computes E(YES) herself. No secret is needed.'),say('Step 2 · try NO','And the same for NO.'),say('Step 3 · compare',`RSA without padding is a fixed function, so the same message always gives the same ciphertext. Eve just compares.`,'<span class="warn">Any message from a short list falls this way: votes, PINs, amounts, passwords.</span>')][k],
+    why:`<h3>The same flaw as ECB</h3><p>Plain RSA has no IV, so it is deterministic. It can never be IND-CPA secure. See <a href="modes.html">Why an IV</a> on the modes page.</p>`}}};
+AT.mall={n:3,render(k){
+  const m=1000n,c=modpow(m,E2,N2),c2=c*modpow(2n,E2,N2)%N2,m2=modpow(c2,D2,N2);
+  return{body:row(k,0,'Alice orders 1000 AZN, encrypted',nv(c,'c'))+row(k,1,'Eve multiplies by 2<sup>e</sup>, using only public values',nv(c2,'c′'))+row(k,2,'Bob decrypts c′',`<b class="gq">${m2}</b><span class="vbad">no error, no warning</span>`),
+    say:[say('Change the message','Eve cannot read c, but she can change what it says.','Press <b>Step</b>.'),say('Step 1 · multiply',`She does not know m. She only multiplies c by 2<sup>e</sup> mod n.`,fm('c′ = c · 2<sup>e</sup> mod n')),say('Step 2 · Bob decrypts',`The result is exactly twice the amount.`,fm('(c · 2<sup>e</sup>)<sup>d</sup> = c<sup>d</sup> · 2<sup>ed</sup> = 2m'),'<span class="warn">The attacker doubled a payment without the key and without knowing the amount.</span>')][k],
+    why:`<h3>Why it works</h3>${fm('E(a) · E(b) = E(a · b)')}<p>Plain RSA keeps the structure of multiplication. Real padding destroys it: a changed message no longer decodes.</p>`}}};
+AT.small={n:4,render(k){
+  const s='ATTACK AT DAWN',m=B2I(txtB(s)),e=3n,c=modpow(m,e,N2),r=iroot(c,3),t=toText(I2B(r,Math.ceil(bitLen(r)/8)));
+  return{body:row(k,0,'A short message with e = 3',`<span class="flh">m has ${bitLen(m)} bits, n has 2048</span>`)+row(k,1,'c = m³ mod n',nv(c,'c')+`<span class="flh">${bitLen(c)} bits: smaller than n</span>`)+row(k,2,'An ordinary cube root',nv(r,'∛c'))+row(k,3,'As text',`<b class="gq">${t}</b><span class="vbad">no key needed</span>`),
+    say:[say('Small e, small message','A small exponent makes encryption fast, and e = 3 was once popular. But look what happens to a short message.','Press <b>Step</b>.'),say('Step 1 · no wrap around',`m³ has only ${bitLen(c)} bits, far below n. The “mod n” never did anything.`,'So c is simply m³, as a normal number.'),say('Step 2 · take the cube root','Cube roots of normal numbers are easy, with no modular arithmetic at all.'),say('Step 3 · read it','<span class="warn">The message is out, on a real 2048-bit key.</span>')][k],
+    why:`<h3>What protects against it</h3><p>Padding fills the message up to the full size of n, so it always wraps around. Most keys today use e = 65537.</p>`}}};
+AT.gcd={n:4,render(k){
+  const n1=HP*HQ,n2=HP*HR,t0=performance.now(),g=gcd(n1,n2),ms=performance.now()-t0,q=n1/g,r=n2/g,d=modinv(E2,(g-1n)*(q-1n));
+  return{body:row(k,0,'Two public keys, from two devices',nv(n1,'n₁')+nv(n2,'n₂'))+row(k,1,'Their greatest common divisor',nv(g,'gcd(n₁, n₂)')+`<span class="vbad">${ms.toFixed(2)} ms</span>`)+row(k,2,'The other primes',nv(q,'n₁ / gcd')+nv(r,'n₂ / gcd'))+row(k,3,'Private key of device 1',nv(d,'d₁')+`<span class="vbad">device 1 is broken</span>`),
+    say:[say('A shared prime','Factoring one 2048-bit n is out of reach. But what if two devices picked the same prime by accident?','Press <b>Step</b>.'),say('Step 1 · gcd','The Euclidean algorithm needs no factoring, and it is fast.',fm('gcd(n₁, n₂) = p')),say('Step 2 · the rest','Dividing gives both other primes.'),say('Step 3 · done','φ(n) and d follow at once.','<span class="warn">Both private keys are gone, from public data only.</span>')][k],
+    why:`<h3>This really happened</h3><p>In 2012, Heninger et al. scanned the internet and computed gcds across all public keys. They got private keys for 0.50% of TLS hosts, mostly <b>embedded devices</b> that made keys right after first boot, with too little randomness.</p><p class="note">The lesson for IoT: a key is only as good as the random numbers behind it.</p>`}}};
+QZ.atk={q:'Plain RSA encrypts the same message twice. What does Eve see?',o:['The same ciphertext both times','Two different ciphertexts','An error'],a:0,why:'With no randomness, m<sup>e</sup> mod n is a fixed function. That is why real RSA always adds random padding.'};
+T.atk={n:()=>AT[ST.atk].n,render(k){
+  const a=AT[ST.atk].render(k);
+  stage.innerHTML=subs(seg('atk',ST.atk,ATK))+`<div class="eqs">${a.body}</div>`+pickBox();
+  $('#explain').innerHTML=a.say;$('#extra').innerHTML=a.why+`<p><button class="link" data-goto="oa">How padding fixes this →</button></p>`+quiz('atk');
+},
+plan(k){return{dur:800,start(){const r=$('#er'+k);if(!r)return null;r.style.opacity=0;return p=>{r.style.opacity=p}}}}};
+CLICK.push(e=>{const a=e.target.closest('[data-atk]');if(a){setPlaying(false);stopAnim(false);ST.atk=a.dataset.atk;ST.step.atk=0;show();return true}});
+/* ---------- OAEP: random padding before RSA, drawn byte by byte ---------- */
+const OM='ATTACK AT DAWN',OSW=900,OSH=478;
+function oaData(){
+  if(ST.oaR&&ST.oaR.roll===ST.seed)return ST.oaR;
+  const seed=rndB(32),o=oaepPad(txtB(OM),NB,seed),c=modpow(B2I(o.em),E2,N2);
+  const r={roll:ST.seed,seed,...o,c,prev:ST.oaR?ST.oaR.c:null};return ST.oaR=r;
+}
+const bar=(b,x,y,w,h,id,cap,cx)=>{const dx=w/b.length;let s=`<g class="bar" id="${id}">`;b.forEach((v,i)=>{s+=`<rect x="${(x+i*dx).toFixed(2)}" y="${y}" width="${(dx+.4).toFixed(2)}" height="${h}" style="fill:${bcol(v)}"/>`});return s+`<rect class="brf" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/><text class="brc" x="${cx||x}" y="${y-6}">${cap}</text></g>`};
+const obox=(x,y,t,id)=>`<g class="obx" id="${id}" transform="translate(${x} ${y})"><rect x="-44" y="-16" width="88" height="32" rx="7"/><text y="5">${t}</text></g>`;
+const oxr=(x,y,id)=>`<g class="oxr" id="${id}" transform="translate(${x} ${y})"><circle r="13"/><path d="M-7 0H7M0 -7V7"/></g>`;
+const OLINE={a:[[136,92],[136,148],[300,148]],b:[[388,148],[584,148]],c:[[584,92],[584,135]],d:[[584,161],[584,214]],e:[[584,246],[584,284],[388,284]],f:[[300,284],[149,284]],g:[[136,92],[136,271]],h:[[136,297],[136,352]],i:[[584,246],[584,408]],j:[[136,384],[136,408]]};
+const oL=(id,cls='')=>`<path class="ow2 ${cls}" id="ol-${id}" d="M${OLINE[id].map(p=>p.join(' ')).join(' L')}" marker-end="url(#oam)"/>`;
+function oaScene(k){
+  const d=oaData(),sw=170,dw=560,dx=304;let h=`<svg class="ch" id="oaS" viewBox="0 0 ${OSW} ${OSH}" role="img" aria-label="OAEP: a random seed masks the data block, the masked block masks the seed, and the result goes into RSA"><defs><marker id="oam" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="kam" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
+  const on=(t,x)=>k>=t?x:'';
+  h+=on(3,oL('a'))+on(3,oL('b'))+on(3,oL('c'))+on(3,oL('d'))+on(4,oL('e'))+on(4,oL('f'))+on(4,oL('g'))+on(4,oL('h'));
+  h+=on(1,bar(d.db,dx,62,dw,30,'oDB','Data block: hash ‖ zeros ‖ 01 ‖ message'))+on(2,bar(d.seed,52,62,sw,30,'oSd','Random seed (32 bytes)'));
+  h+=on(3,obox(344,148,'MGF1','oM1'))+on(3,oxr(584,148,'oX1'))+on(3,bar(d.mdb,dx,216,dw,30,'oMd','Masked data block'));
+  h+=on(4,obox(344,284,'MGF1','oM2'))+on(4,oxr(136,284,'oX2'))+on(4,bar(d.ms,52,354,sw,30,'oMs','Masked seed',148));
+  h+=on(5,bar([0].concat(d.ms,d.mdb),52,428,812,30,'oEM','Encoded message: 00 ‖ masked seed ‖ masked data block'));
+  return h+'</svg>';
+}
+function oaTest(){
+  const d=oaData(),em=I2B(modpow(d.c,D2,N2),NB),u=oaepUnpad(em),c2=d.c^(1n<<40n),em2=I2B(modpow(c2%N2,D2,N2),NB),u2=oaepUnpad(em2);
+  return{ok:u&&toText(u)===OM,rej:u2===null};
+}
+QZ.oa={q:'Bob decrypts a ciphertext and the padding check fails. What should he tell the sender?',o:['Exactly what went wrong','As little as possible, and always in the same way'],a:1,why:'Detailed error messages turn into an oracle, as in the padding oracle on the modes page. Bleichenbacher’s attack of 1998 used exactly this against older RSA padding.'};
+CLICK.push(e=>{if(e.target.closest('[data-oar]')){setPlaying(false);stopAnim(false);ST.seed++;ST.step.oa=7;show();return true}});
+T.oa={n:()=>8,render(k){
+  const d=oaData(),t=oaTest();
+  stage.innerHTML=oaScene(k)+pickBox()+(k>=6?`<div class="res r-pri"><span class="rl">c = EM<sup>e</sup> mod n</span><span class="rv">${nv(d.c,'c')}</span></div>`:'')+(k>=7?`<div class="pich" style="margin-top:12px"><div class="res r-ok" style="margin:0;flex:1"><span class="rl">Decrypt</span><span class="rv">the padding checks out, and the message is “${OM}” ${t.ok?'✓':'✗'}. One changed bit of c: ${t.rej?'rejected ✓':'not rejected ✗'}</span></div><button class="pri" data-oar="1">Encrypt the same message again</button></div>${d.prev&&d.prev!==d.c?`<div class="res r-ok"><span class="rl">Compare</span><span class="rv">same message, new seed: ciphertext was ${fmtN(d.prev)}, now ${fmtN(d.c)}</span></div>`:''}`:'');
+  $('#explain').innerHTML=[say('OAEP','Every attack in the last tab worked on plain RSA. Real RSA first turns the message into a random-looking block as long as n.','Press <b>Step</b>.'),
+    say('Step 1 · the data block','The message is placed at the end of a long block. Most of it is zeros: see how plain the strip looks. The start holds a hash, used later as a check.'),
+    say('Step 2 · a random seed','32 fresh random bytes. This is the IV of RSA: new for every encryption.'),
+    say('Step 3 · mask the block','MGF1 stretches the seed, using SHA-256, to the length of the data block. XOR hides everything: the plain strip now looks random.'),
+    say('Step 4 · mask the seed','The masked block is hashed and XORed onto the seed. Now no part can be undone without all of it: this is a small Feistel network.'),
+    say('Step 5 · the encoded message',`The two parts make one block of ${NB} bytes, the size of n.`),
+    say('Step 6 · plain RSA','Only now does the usual formula run.',fm('c = EM<sup>e</sup> mod n')),
+    say('Step 7 · decrypt and check','Bob undoes each step in reverse order and checks the hash and the 01 byte. Anything changed makes the check fail.','Press <b>Encrypt the same message again</b>: a new seed gives a completely different c.')][k];
+  $('#extra').innerHTML=`<h3>What OAEP stops</h3>${pc(['Guess and check: the seed is new every time','Changing the message: the check fails','Small e: the block is as long as n'],[])}<p class="note">OAEP is RFC 8017. Older PKCS#1 v1.5 padding is still around, but it invites oracle attacks.</p>`+quiz('oa');
+},
+plan(k){
+  const show={1:['oDB'],2:['oSd'],3:['oM1','oX1','oMd'],4:['oM2','oX2','oMs'],5:['oEM']}[k],lines={3:['a','b','c','d'],4:['e','f','g','h']}[k];
+  if(!show)return null;
+  return{dur:lines?1700:900,start(){
+    const svg=$('#oaS');if(!svg)return null;const M=svgMap(svg),s=M.s,els=show.map(i=>$('#'+i)),ms=[],cu=[];hide(els);
+    els.forEach((e,i)=>cu.push([lines?(.5+.45*i/els.length):.3,()=>{e.style.opacity=1}]));
+    (lines||[]).forEach(id=>{const w=$('#ol-'+id);if(w)w.classList.add('on')});
+    if(lines){const p=k===3?OLINE.a.concat(OLINE.b):OLINE.e.concat(OLINE.f),n=fxNode(tok(k===3?'seed':'masked',76*s,24*s,['var(--pri)']));ms.push({node:n,pts:p.map(q=>M(...q)),a:0,b:.92,end:.93})}
+    return both(mover(ms),cues(cu));
+  }};
+},
+focus(){follow($('#oaS'))}};
+/* ---------- step engine: one animation at a time (as in the DES demo) ----------
+   Each tab: n() = number of states, render(k) = static picture after step k,
+   plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
+const ENG={playing:false,anim:null,playT:null};
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const speed=()=>+$('#spd').value;
+function curN(){return T[ST.tab].n()}
+function controls(k){
+  const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
+  $('#ctrl').hidden=!stepped&&!t.rounds;
+  $('#prog').textContent=stepped?`Step ${k} of ${n-1}`:'';
+  $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
+  $('#fWrap').hidden=!t.focus;
+}
+// static picture of the current step; any running animation or pending play step is dropped
+function show(){
+  if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
+  const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
+  fxClear();t.render(k);controls(k);
+}
+function startStage(to){
+  stopAnim(true);
+  const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
+  ST.step[tab]=to;fxClear();t.render(to);            // the target picture; start() hides what is still to come
+  const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
+  if(!tick){fxClear();t.render(to);controls(to);next();return}
+  const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
+  ENG.anim=a;controls(to);tick(0);
+  if(t.focus&&$('#follow').checked)t.focus(to);
+  requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
+}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();T[a.tab].render(a.to);controls(a.to);next()}
+// when playing, the next step starts only after this one has finished, plus a short pause
+function next(){
+  if(!ENG.playing)return;const k=ST.step[ST.tab];
+  if(k<curN()-1)ENG.playT=setTimeout(()=>{ENG.playT=null;startStage(k+1)},(RM.matches?60:380)/speed());else setPlaying(false);
+}
+// complete = jump to the end of the running step, otherwise back to its start
+function stopAnim(complete){
+  if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
+  const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
+  if(a.tab===ST.tab){T[a.tab].render(ST.step[a.tab]);controls(ST.step[a.tab])}
+}
+function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
+// keep the moving part in view (the "follow" box); only the page scrolls, never a wide drawing sideways
+function follow(el){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
+  if(r.top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+}
+function fillRounds(){
+  const t=T[ST.tab];
+  $('#rWrap').hidden=!t.rounds;$('#mode').hidden=true;
+  if(!t.rounds)return;
+  const rs=t.rounds();if(!rs.includes(ST.round[ST.tab]))ST.round[ST.tab]=rs[0];
+  $('#rSel').innerHTML=rs.map(r=>`<option${r===ST.round[ST.tab]?' selected':''}>${r}</option>`).join('');
+}
+function goStep(tab,r,step){setTab(tab,r);ST.step[tab]=step;show();window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'})}
+function setTab(id,round){
+  setPlaying(false);stopAnim(true);ST.tab=id;ST.built='';ST.pick=null;
+  if(round!=null&&ST.round[id]!==undefined){ST.round[id]=+round;ST.step[id]=0}
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  fillRounds();show();
+  try{localStorage.setItem('rsa-tab',id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(true);return}startStage((ST.step[ST.tab]||0)+1)};
+$('#bBack').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(false);return}const k=ST.step[ST.tab]||0;if(k>0){ST.step[ST.tab]=k-1;show()}};
+$('#bReset').onclick=()=>{setPlaying(false);stopAnim(false);ST.step[ST.tab]=0;ST.built='';show()};
+$('#bPlay').onclick=()=>{
+  if(ENG.playing){setPlaying(false);return}
+  const n=curN();if(n<2)return;
+  if((ST.step[ST.tab]||0)>=n-1&&!ENG.anim){ST.step[ST.tab]=0;ST.built='';show()}
+  setPlaying(true);if(!ENG.anim)startStage(ST.step[ST.tab]+1);
+};
+$('#rSel').onchange=e=>{setPlaying(false);stopAnim(false);ST.round[ST.tab]=+e.target.value;ST.step[ST.tab]=0;ST.built='';show()};
+$('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;setPlaying(false);stopAnim(false);ST.mode=b.dataset.m;
+  $$('#mode button').forEach(x=>x.classList.toggle('on',x===b));ST.step.x=0;show()};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');if(g){if(g.dataset.atk){ST.atk=g.dataset.atk;ST.step.atk=0}setTab(g.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  const m=e.target.closest('[data-modv]');if(m){setPlaying(false);stopAnim(false);ST.modV=m.dataset.modv;ST.step.mod=0;show();return}
+  const x=e.target.closest('[data-x]');if(x){setPlaying(false);stopAnim(false);ST.x=BigInt(x.dataset.x);ST.step.mod=0;show();return}
+  const f=e.target.closest('[data-full]');if(f){showFull(f);return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+  for(const h of CLICK)if(h(e))return;
+});
+document.addEventListener('input',e=>{if(e.target.id==='mR'){ST.meshN=+e.target.value;meshDraw()}});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
+});
+$('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="custom" disabled>Your own numbers</option>';
+$('#pre').onchange=e=>loadPreset(e.target.value);
+$('#pI').oninput=$('#qI').oninput=$('#eI').oninput=$('#mI').oninput=onInput;
+$('#mF').onclick=e=>{const b=e.target.closest('button');if(b)setFmt(b.dataset.f)};
+let startTab='ov';try{const t=localStorage.getItem('rsa-tab');if(t&&T[t])startTab=t}catch(e){}
+ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
+fillRounds();loadPreset('small');
+
+</script>
+</body>
+</html>
