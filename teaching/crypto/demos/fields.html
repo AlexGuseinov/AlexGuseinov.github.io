@@ -108,7 +108,9 @@ table.ops{border-collapse:collapse;margin:14px auto 0;font-size:14.5px}
 table.ops th,table.ops td{padding:6px 12px;border-bottom:1px solid var(--line);text-align:center}
 table.ops th{color:var(--muted);font-weight:600;font-size:13px}
 table.ops td:first-child{text-align:left;white-space:nowrap}
-table.ops td small{display:block;color:var(--muted);font:11.5px var(--mono)}
+table.ops td small{display:block;color:var(--muted);font:11.5px var(--mono);white-space:nowrap}
+table.ops th{white-space:nowrap}
+@media (max-width:560px){table.ops th,table.ops td{padding:6px 7px}table.ops td:first-child{white-space:normal}}
 table.ops .sy{font:700 17px var(--math);margin-right:6px}
 .tbs{display:flex;flex-wrap:wrap;gap:18px 28px;justify-content:center;align-items:flex-start}
 .tb{min-width:0;max-width:100%}
@@ -189,6 +191,41 @@ dl.words{margin:0}
 dl.words dt{font-weight:700;margin-top:8px}
 dl.words dt:first-child{margin-top:0}
 dl.words dd{margin:0;color:var(--muted)}
+/* parts of a picture that can be clicked */
+.sets g[data-step],.rings3 g[data-step],.rings3 g[data-goto]{cursor:pointer;outline:none}
+.sets g[data-step]:hover rect,.sets g[data-step]:focus-visible rect{stroke-width:3.2}
+.rings3 g[data-step]:hover ellipse,.rings3 g[data-goto]:hover ellipse,.rings3 g:focus-visible ellipse{stroke-width:3.6}
+table.ct.pkb td{cursor:pointer}
+table.ct.pkb td:hover{outline:2px solid var(--amb);outline-offset:-2px}
+.chk li[data-step]{cursor:pointer}
+.chk li[data-step]:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.bits i[data-bit]{cursor:pointer}
+.bits i[data-bit]:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.pickline{margin:10px auto 0;max-width:600px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -226,6 +263,7 @@ dl.words dd{margin:0;color:var(--muted)}
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: every table and result on this page is computed in your browser.</footer>
 
@@ -246,15 +284,21 @@ const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
 const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a.at(-1):String(a[0]);
 
 /* ---------- what the reader has chosen ---------- */
-const ST={tab:'num',step:{},gm:5,gop:'add',rm:6,fmod:7,p:7,a:3,b:5,ha:0x57,hb:0x83,q:{},playT:null,playing:false};
+const ST={tab:'num',step:{},gm:5,gop:'add',rm:6,fmod:7,p:7,a:3,b:5,ha:0x57,hb:0x83,q:{},pick:{g:null,ring:null},playT:null,playing:false};
 const T={};
 const stage=$('#stage');
 
 // a table of every result a ∘ b. cls(a,b,v): classes of a cell, hd(a): classes of a heading
-function cayley(S,f,sym,cls=()=>'',hd=()=>'',show=v=>v){
-  let h=`<div class="scroll"><table class="ct"><tr><th class="op">${sym}</th>${S.map(b=>`<th class="${hd(b)}">${show(b)}</th>`).join('')}</tr>`;
-  for(const a of S)h+=`<tr><th class="${hd(a)}">${show(a)}</th>${S.map(b=>{const v=f(a,b);return`<td class="${cls(a,b,v)}">${show(v)}</td>`}).join('')}</tr>`;
+function cayley(S,f,sym,cls=()=>'',hd=()=>'',show=v=>v,id=''){
+  let h=`<div class="scroll"><table class="ct${id?' pkb':''}"><tr><th class="op">${sym}</th>${S.map(b=>`<th class="${hd(b)}">${show(b)}</th>`).join('')}</tr>`;
+  for(const a of S)h+=`<tr><th class="${hd(a)}">${show(a)}</th>${S.map(b=>{const v=f(a,b);return`<td class="${cls(a,b,v)}"${id?` data-cell="${id},${a},${b}"`:''}>${show(v)}</td>`}).join('')}</tr>`;
   return h+'</table></div>';
+}
+// how the clicked cell of a table was computed
+function pickLine(pk,op,m){
+  if(!pk||pk[0]>=m||pk[1]>=m)return`<p class="pickline">Click any cell of the table to see how it is computed.</p>`;
+  const[a,b]=pk,v=op==='add'?a+b:a*b,o=op==='add'?'+':'·',q=Math.floor(v/m),r=v%m;
+  return`<p class="pickline"><b>${a} ${o} ${b}</b> = ${v}${q?` = ${q} · ${m} + ${r}`:''}, so ${a} ${o} ${b} ≡ <b>${r}</b> (mod ${m})</p>`;
 }
 
 /* ---------- 1 · the number sets ---------- */
@@ -270,7 +314,7 @@ function setsSVG(k){
   const W=700,H=318;
   let h=`<svg class="sets" viewBox="0 0 ${W} ${H}" role="img" aria-label="The natural numbers inside the integers, inside the rationals, inside the reals, inside the complex numbers">`;
   for(let i=4;i>=0;i--){const d=4-i,x=6+26*d,w=688-52*d,y=6+30*d,bot=312-28*d,s=SETS[i],on=k===0||k>=6||i<k,cur=k>0&&k<6&&i===k-1;
-    h+=`<g class="${on?'':'off'}${cur?' cur':''}" style="--c:var(${s.c})"><rect x="${x}" y="${y}" width="${w}" height="${bot-y}" rx="14"/><text class="sl" x="${x+12}" y="${y+23}">${s.s}</text><text class="sn" x="${x+38}" y="${y+22}">${s.n}</text>`;
+    h+=`<g class="${on?'':'off'}${cur?' cur':''}" style="--c:var(${s.c})" data-step="${i+1}" tabindex="0" role="button" aria-label="${s.n}"><rect x="${x}" y="${y}" width="${w}" height="${bot-y}" rx="14"/><text class="sl" x="${x+12}" y="${y+23}">${s.s}</text><text class="sn" x="${x+38}" y="${y+22}">${s.n}</text>`;
     h+=`<text class="se" x="${W/2}" y="${i?bot-9:y+53}" text-anchor="middle" xml:space="preserve">${s.ex}</text></g>`}
   return h+'</svg>';
 }
@@ -283,7 +327,7 @@ function opsTable(k){
   return h+`</table></div><p class="pics-s" style="margin:8px auto 0;text-align:center">${Y} = the result is always in the same set again. Division means: by anything except 0.</p>`;
 }
 T.num={n:()=>7,
-  view:k=>setsSVG(k)+opsTable(k),
+  view:k=>setsSVG(k)+`<p class="hint">Click a box to read about that set.</p>`+opsTable(k),
   say:k=>[
     say('Start with counting','Cryptography computes with numbers. So the first questions are: which numbers, and what can we do with them without leaving the set?','We start with the numbers everyone knows and watch what each set can and cannot do. Press <b>Step</b>.'),
     say('Step 1 · natural numbers ℕ','0, 1, 2, 3, … the counting numbers. (Some books start at 1.)','Adding or multiplying two of them gives a natural number again. Subtraction can leave the set: 3 − 5 is not a natural number.'),
@@ -306,12 +350,13 @@ T.grp={n:()=>7,
     <label class="fld"><span class="flh"><b>m</b> · everything is computed modulo m</span><select data-set="gm">${range(2,12).map(v=>`<option${v===ST.gm?' selected':''}>${v}</option>`).join('')}</select></label>`,
   view(k){
     const d=grpData(),{S,f,e}=d;
-    const cls=(a,b,v)=>!S.includes(v)?'bad':k===1?'in':k===3&&(a===e||b===e)?'hl':k===4&&v===e?'iv':k===5?(a===b?'dg':a<b?'s1':'s2'):'';
+    const pk=ST.pick.g,base=(a,b,v)=>!S.includes(v)?'bad':k===1?'in':k===3&&(a===e||b===e)?'hl':k===4&&v===e?'iv':k===5?(a===b?'dg':a<b?'s1':'s2'):'';
+    const cls=(a,b,v)=>base(a,b,v)+(pk&&pk[0]===a&&pk[1]===b?' pk':'');
     const hd=a=>k===3&&a===e?'hl':k===4&&d.lack.includes(a)?'bad':'';
     const R=[['Closure',d.closed,d.closed?'every result is in the set':'some results are 0, which is not in the set'],['Associativity',true,'(a ∘ b) ∘ c = a ∘ (b ∘ c)'],['Neutral element',true,`e = ${e}`],
       ['Inverses',!d.lack.length,d.lack.length?`${list(d.lack)} ${d.lack.length>1?'have':'has'} none`:'every element has one'],['Commutative',true,'a ∘ b = b ∘ a']];
-    return`<div class="tbs"><div class="tb"><p class="cap"><b>${d.name}</b> · row a, column b, entry a ${d.sym} b mod ${d.m}</p>${cayley(S,f,d.sym,cls,hd)}</div></div>
-      <ul class="chk">${R.map(([t,ok,why],i)=>`<li class="${k>i?(k===i+1?'now':''):'todo'}"><b>${k>i?(ok?Y:N):'·'}</b><span>${t}${k>i?`: <span style="color:var(--muted)">${why}</span>`:''}</span></li>`).join('')}</ul>
+    return`<div class="tbs"><div class="tb"><p class="cap"><b>${d.name}</b> · row a, column b, entry a ${d.sym} b mod ${d.m}</p>${cayley(S,f,d.sym,cls,hd,v=>v,'g')}</div></div>${pickLine(pk&&S.includes(pk[0])&&S.includes(pk[1])?pk:null,d.add?'add':'mul',d.m)}
+      <ul class="chk">${R.map(([t,ok,why],i)=>`<li data-step="${i+1}" class="${k>i?(k===i+1?'now':''):'todo'}"><b>${k>i?(ok?Y:N):'·'}</b><span>${t}${k>i?`: <span style="color:var(--muted)">${why}</span>`:''}</span></li>`).join('')}</ul>
       ${k>=6?`<p class="verdict nw"><span class="${d.isGroup?'y':'n'}">${d.name} ${d.isGroup?'is an abelian group':'is not a group'}</span></p>`:''}`;
   },
   say(k){
@@ -337,9 +382,10 @@ T.ring={n:()=>6,
   bar:()=>`<label class="fld"><span class="flh"><b>m</b> · the ring ℤₘ, the integers modulo m</span><select data-set="rm">${range(2,12).map(v=>`<option${v===ST.rm?' selected':''}>${v}</option>`).join('')}</select></label>`,
   view(k){
     const d=ringData(),{m,S}=d;
-    const ca=(a,b,v)=>k===1&&v===0?'iv':'',cm=(a,b,v)=>k===2&&(a===1||b===1)?'hl':k>=4&&v===1?'iv':k===4&&v===0&&a&&b?'bad':'';
+    const pk=ST.pick.ring,on=(op,a,b)=>pk&&pk[0]===op&&pk[1]===a&&pk[2]===b?' pk':'';
+    const ca=(a,b,v)=>(k===1&&v===0?'iv':'')+on('add',a,b),cm=(a,b,v)=>(k===2&&(a===1||b===1)?'hl':k>=4&&v===1?'iv':k===4&&v===0&&a&&b?'bad':'')+on('mul',a,b);
     const hm=a=>k===2&&a===1?'hl':k>=4&&a?(d.units.includes(a)?'ok':'bad'):'';
-    return`<div class="tbs"><div class="tb"><p class="cap"><b>Addition</b> modulo ${m}</p>${cayley(S,(a,b)=>(a+b)%m,'+',ca)}</div><div class="tb"><p class="cap"><b>Multiplication</b> modulo ${m}</p>${cayley(S,(a,b)=>a*b%m,'·',cm,hm)}</div></div>
+    return`<div class="tbs"><div class="tb"><p class="cap"><b>Addition</b> modulo ${m}</p>${cayley(S,(a,b)=>(a+b)%m,'+',ca,()=>'',v=>v,'ra')}</div><div class="tb"><p class="cap"><b>Multiplication</b> modulo ${m}</p>${cayley(S,(a,b)=>a*b%m,'·',cm,hm,v=>v,'rm')}</div></div>${pickLine(pk?pk.slice(1):null,pk?pk[0]:'add',m)}
       ${k>=5?`<p class="verdict nw"><span class="${d.nonu.length?'n':'y'}">ℤ${sub(m)} is a ring${d.nonu.length?', but not a field':', and even a field'}</span></p>`:''}`;
   },
   say(k){
@@ -358,12 +404,12 @@ T.ring={n:()=>6,
   extra:()=>`<h3>A ring in one line</h3>${fm('+ is an abelian group · · is closed and associative, with 1 · the distributive law')}<p>Examples: the integers ℤ, the integers modulo m, and polynomials.</p><p>An element with an inverse is called a <b>unit</b>.</p>`};
 
 /* ---------- 4 · field: all four operations ---------- */
-function rings3(k){
+function rings3(k,goto){
   // letter, name, operations, colour, then the ellipse (cx, cy, rx, ry) and where its text starts (x, y)
   const R=[['F','Field','+  −  ×  ( )⁻¹','--n1',210,172,196,160,118,64],['R','Ring','+  −  ×','--n2',210,206,140,112,138,140],['G','Group','+  −','--n0',210,246,84,56,166,244]];
   let h=`<svg class="rings3" viewBox="0 0 420 340" role="img" aria-label="A group inside a ring inside a field">`;
   R.forEach(([l,n,o,c,cx,cy,rx,ry,tx,ty],i)=>{const lvl=3-i,on=k===0||k>=lvl,cur=k===lvl;
-    h+=`<g class="${on?'':'off'}${cur?' cur':''}" style="--c:var(${c})"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/><text class="rl" x="${tx}" y="${ty}">${l}</text><text class="ro" x="${tx+30}" y="${ty-2}" xml:space="preserve">${o}</text><text class="rn" x="${tx+2}" y="${ty+19}">${n}</text></g>`});
+    h+=`<g class="${on?'':'off'}${cur?' cur':''}" style="--c:var(${c})" ${goto?`data-goto="${['field','ring','grp'][i]}"`:`data-step="${lvl}"`} tabindex="0" role="button" aria-label="${n}"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/><text class="rl" x="${tx}" y="${ty}">${l}</text><text class="ro" x="${tx+30}" y="${ty-2}" xml:space="preserve">${o}</text><text class="rn" x="${tx+2}" y="${ty+19}">${n}</text></g>`});
   return h+'</svg>';
 }
 function fieldCheck(){
@@ -399,7 +445,7 @@ T.gfp={n:()=>6,
     const L=[['a + b',`${a} + ${b} = ${a+b} ≡ ${(a+b)%p}`,1],['a · b',`${a} · ${b} = ${a*b} ≡ ${a*b%p}`,1],['a − b',`${a} + (−${b}) = ${a} + ${(p-b)%p} = ${a+(p-b)%p} ≡ ${(a-b+p)%p}`,2],
       ['b⁻¹',bi===null?'0 has no inverse':`${bi}, because ${b} · ${bi} = ${b*bi} ≡ 1`,3],['a ÷ b',bi===null?'division by 0 is not defined':`${a} · ${b}⁻¹ = ${a} · ${bi} = ${a*bi} ≡ ${a*bi%p}`,4]];
     const sizes=range(2,32).map(n=>{const q=ppow(n);return`<i class="${q?'y':''}">${n}<small>${q?(q[1]>1?`${q[0]}<sup>${q[1]}</sup>`:'prime'):'none'}</small></i>`}).join('');
-    return`<div class="tbs"><div class="tb"><p class="cap"><b>Addition</b> in GF(${p})</p>${cayley(S,(x,y)=>(x+y)%p,'+',ca)}</div><div class="tb"><p class="cap"><b>Multiplication</b> in GF(${p})</p>${cayley(S,(x,y)=>x*y%p,'·',cm)}</div></div>
+    return`<div class="tbs"><div class="tb"><p class="cap"><b>Addition</b> in GF(${p})</p>${cayley(S,(x,y)=>(x+y)%p,'+',ca,()=>'',v=>v,'pa')}</div><div class="tb"><p class="cap"><b>Multiplication</b> in GF(${p})</p>${cayley(S,(x,y)=>x*y%p,'·',cm,()=>'',v=>v,'pm')}</div></div><p class="hint">Click a cell: its row becomes a and its column becomes b.</p>
       <div class="calc">${L.filter(l=>k>=l[2]).map(l=>`<div class="${k===l[2]?'now':''}"><b>${l[0]}</b><span>${l[1]} (mod ${p})</span></div>`).join('')}</div>
       ${k>=5?`<div class="sec nw"><div class="h3">Is there a finite field with n elements?</div><p class="pics-s">Only if n is a prime or a power of a prime.</p><div class="sizes">${sizes}</div></div>`:''}`;
   },
@@ -423,15 +469,15 @@ const g8=(a,b)=>pmul(a,b,8,0x11b);
 const g8inv=a=>{for(let x=1;x<256;x++)if(g8(a,x)===1)return x;return null};
 const SUPD='⁰¹²³⁴⁵⁶⁷⁸⁹';
 const polyOf=v=>{const t=[];for(let i=15;i>=0;i--)if((v>>i)&1)t.push(i===0?'1':i===1?'x':`x<sup>${i}</sup>`);return t.length?t.join(' + '):'0'};
-const bits=(v,cls='',n=8)=>`<span class="bits ${cls}">${range(0,n-1).map(j=>{const i=n-1-j;return`<i class="${(v>>i)&1?'on':''}">${(v>>i)&1}<small>${i===0?'1':i===1?'x':'x'+String(i).split('').map(d=>SUPD[+d]).join('')}</small></i>`}).join('')}</span>`;
-const byr=(lab,v,cls='',n=8)=>`<div class="byr"><span class="bl">${lab}</span>${bits(v,cls,n)}<span class="pl">${polyOf(v)}</span></div>`;
+const bits=(v,cls='',n=8,key='')=>`<span class="bits ${cls}">${range(0,n-1).map(j=>{const i=n-1-j;return`<i class="${(v>>i)&1?'on':''}"${key?` data-bit="${key},${i}" role="button" title="flip this bit"`:''}>${(v>>i)&1}<small>${i===0?'1':i===1?'x':'x'+String(i).split('').map(d=>SUPD[+d]).join('')}</small></i>`}).join('')}</span>`;
+const byr=(lab,v,cls='',n=8,key='')=>`<div class="byr"><span class="bl">${lab}</span>${bits(v,cls,n,key)}<span class="pl">${polyOf(v)}</span></div>`;
 function mulRows(a,b){const R=[];let t=a,p=0;for(let i=0;i<8;i++){const bit=(b>>i)&1;if(bit)p^=t;R.push({i,t,bit,p,red:!!(t&0x80)});t=(t<<1)&0xff^(t&0x80?0x1b:0)}return R}
 T.gf2={n:()=>6,
   bar:()=>`<label class="fld"><span class="flh"><b>a</b> · one byte, two hex digits</span><input type="text" data-in="ha" maxlength="2" value="${hx(ST.ha)}" spellcheck="false" autocomplete="off"></label>
     <label class="fld"><span class="flh"><b>b</b> · one byte, two hex digits</span><input type="text" data-in="hb" maxlength="2" value="${hx(ST.hb)}" spellcheck="false" autocomplete="off"></label><div class="err" id="err"></div>`,
   view(k){
     const a=ST.ha,b=ST.hb,R=mulRows(a,b),ai=a?g8inv(a):null,S8=range(0,7);
-    let h=byr(`a = {${hx(a)}}`,a)+(k>=2?byr(`b = {${hx(b)}}`,b):'');
+    let h=byr(`a = {${hx(a)}}`,a,'',8,'ha')+(k>=2?byr(`b = {${hx(b)}}`,b,'',8,'hb'):'')+`<p class="hint" style="text-align:left;margin:0 0 10px">Click a bit of a${k>=2?' or b':''} to flip it.</p>`;
     if(k===2)h+=`<div class="nw">${byr(`a ⊕ b = {${hx(a^b)}}`,a^b,'x')}</div>`;
     if(k>=3)h+=`<div class="${k===3?'nw':''}"><div class="byr"><span class="bl">P(x) = {11B}</span>${bits(0x11b,'p',9)}<span class="pl">${polyOf(0x11b)}</span></div></div>`;
     if(k>=4)h+=`<div class="sec ${k===4?'nw':''}"><div class="h3">a · b, one bit of b at a time</div><div class="scroll"><table class="mul"><tr><th>bit of b</th><th>value</th><th>a · xⁱ, reduced</th><th>added?</th><th>sum so far</th></tr>
@@ -464,9 +510,391 @@ T.map={n:()=>1,
     <tr><td><span class="tag r">ring</span>ℤₙ, n = p · q</td><td class="ex">integers modulo n</td><td><a href="rsa.html">RSA</a>: encryption and decryption are powers in this ring</td></tr>
     <tr><td><span class="tag g">group</span>ℤₚ*</td><td class="ex">1 … p − 1 under · modulo p</td><td><a href="dlog.html">Diffie–Hellman and ElGamal</a>: the discrete logarithm is hard in this group</td></tr>
     <tr><td><span class="tag f">field</span>GF(p)</td><td class="ex">integers modulo a prime</td><td>Elliptic-curve cryptography: the points of a curve over GF(p) form a group</td></tr></table></div>
-    <div class="sec"><div class="h3">The three structures once more</div>${rings3(0)}</div>`,
+    <div class="sec"><div class="h3">The three structures once more</div>${rings3(0,true)}<p class="hint">Click a circle to open its tab.</p></div>`,
   say:()=>say('Where it is used','Every cipher in this course computes in one of these structures. The table says which one, and where.','A good habit: when you meet a new algorithm, ask first in which set it computes and which operations it needs.'),
   extra:()=>`<h3>Sizes to remember</h3><p><b>GF(2)</b>: 2 elements, one bit.</p><p><b>GF(2⁸)</b>: 256 elements, one byte.</p><p><b>GF(2¹²⁸)</b>: one AES block.</p><p><b>GF(p)</b> for Diffie–Hellman: p has 2048 bits or more.</p>`};
+
+/* ---------- the longer read under each picture: one article per step ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const phi=m=>range(1,m-1).filter(a=>gcd(a,m)===1).length||1;
+// a · s + b · t = gcd(a, b), with the divisions that lead there
+function egcd(a,b){const rows=[];let r0=a,r1=b,s0=1,s1=0,t0=0,t1=1;while(r1){const q=Math.floor(r0/r1),r=r0-q*r1;rows.push([r0,q,r1,r]);[r0,r1]=[r1,r];[s0,s1]=[s1,s0-q*s1];[t0,t1]=[t1,t0-q*t1]}return{g:r0,s:s0,t:t0,rows}}
+// the inverse of x modulo m, written out
+function euclidHtml(m,x){const E=egcd(m,x),t=((E.t%m)+m)%m;
+  return M(E.rows.map(r=>`${r[0]} = ${r[1]} · ${r[2]} + ${r[3]}`).join('<br>')+`<br>so 1 = (${E.s}) · ${m} + (${E.t}) · ${x}<br>and ${x}⁻¹ ≡ ${E.t}${E.t!==t?` ≡ ${t}`:''} (mod ${m})`)}
+
+/* numbers */
+T.num.doc=k=>[
+  `<h2>The number sets</h2>
+   <p class="lead">Each box contains every box drawn inside it: ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ. The numbers written in a strip are the ones that are new at that level.</p>
+   <p>Click a box in the picture, or press <b>Step</b>, to read about one set: what it contains, what always works in it, what can fail, and where cryptography meets it.</p>
+   <h3>Why start here?</h3>
+   <p>A cipher is arithmetic on a set of values. Before asking how AES multiplies two bytes, it helps to see what “a set in which an operation always works” means for the numbers you already know.</p>`,
+  `<h2>ℕ · the natural numbers</h2>
+   <p class="lead">0, 1, 2, 3, … The numbers for counting things.</p>
+   <h3>What always works</h3>
+   <p>Addition and multiplication. The sum and the product of two natural numbers are natural numbers again.</p>
+   ${EX(M('3 + 5 = 8 &nbsp;&nbsp;&nbsp; 3 · 5 = 15'))}
+   <h3>What can fail</h3>
+   <p>Subtraction and division can lead out of the set.</p>
+   ${NO(M('3 − 5 = −2 is not in ℕ<br>3 ÷ 2 = 1.5 is not in ℕ'))}
+   <h3>As a structure</h3>
+   <p>With addition, ℕ has a neutral element, 0. But no number except 0 has an opposite inside ℕ, so an addition cannot be undone there. ℕ is not a group.</p>
+   ${USE('Natural numbers count things: the 10 rounds of AES-128, the 64 bits of a DES block, the position of a letter in the alphabet, the counter in CTR mode.')}
+   <p class="fine">Whether 0 is a natural number is a convention. This page includes it; many number theory books start at 1.</p>`,
+  `<h2>ℤ · the integers</h2>
+   <p class="lead">… −3, −2, −1, 0, 1, 2, 3, … The natural numbers and their opposites. The letter comes from the German word <i>Zahlen</i>, numbers.</p>
+   <h3>What is new</h3>
+   <p>Every integer a has an opposite −a with a + (−a) = 0. So subtraction always works: a − b is simply a + (−b).</p>
+   ${EX(M('3 − 5 = 3 + (−5) = −2'))}
+   <h3>What can fail</h3>
+   <p>Division.</p>
+   ${NO(M('7 ÷ 2 = 3.5 is not an integer'))}
+   <h3>What works instead: division with remainder</h3>
+   <p>For every integer a and every m &gt; 0 there is exactly one pair q, r with a = q · m + r and 0 ≤ r &lt; m. The remainder r is written a mod m.</p>
+   ${EX(M('17 = 3 · 5 + 2, so 17 mod 5 = 2<br>−7 = (−2) · 5 + 3, so −7 mod 5 = 3'))}
+   <h3>As a structure</h3>
+   <p>(ℤ, +) is a group, and with multiplication ℤ is a ring.</p>
+   ${USE('Everything “modulo m” starts here. Keeping only the remainders 0 … m − 1 turns the infinite ring ℤ into the finite ring ℤₘ. RSA and Diffie–Hellman compute with integers of thousands of bits, always modulo something.')}`,
+  `<h2>ℚ · the rational numbers</h2>
+   <p class="lead">All fractions a/b with integers a and b, b ≠ 0. The letter stands for quotient.</p>
+   <h3>What is new</h3>
+   <p>Every non-zero number has an inverse: the inverse of a/b is b/a, and their product is 1. So division by anything except 0 always works: to divide, multiply by the inverse.</p>
+   ${EX(M('3 ÷ 2 = 3 · ½ = 3/2<br>(2/3)⁻¹ = 3/2, because 2/3 · 3/2 = 1'))}
+   <h3>What they look like</h3>
+   <p>Written as a decimal, a rational number either ends or repeats: ¼ = 0.25, ⅓ = 0.333…</p>
+   <h3>What is missing</h3>
+   <p>Some lengths are not fractions. No fraction has the square 2, so the diagonal of a square with side 1 is not in ℚ.</p>
+   <h3>As a structure</h3>
+   <p>ℚ is a field: the first set here in which all four operations stay inside.</p>
+   ${USE(`Ciphers do not compute with fractions. But “to divide, multiply by the inverse” is exactly what a finite field copies. In GF(7) the “fraction” 1/3 is the number ${inv(3,7)}, because 3 · ${inv(3,7)} = ${3*inv(3,7)} ≡ 1.`)}`,
+  `<h2>ℝ · the real numbers</h2>
+   <p class="lead">Every point of the number line. Besides the fractions it holds the irrational numbers, such as √2, π and e, whose decimals never end and never repeat.</p>
+   <h3>What is new</h3>
+   <p>No gaps. Lengths, areas and continuous change can all be measured. The four operations work as in ℚ, so ℝ is a field too.</p>
+   <h3>The catch for a computer</h3>
+   <p>A computer has finitely many bits, so it stores a real number only approximately, as a floating-point value. Even simple sums then come out slightly wrong.</p>
+   ${NO(M(`0.1 + 0.2 = ${0.1+0.2}`)+'<br>computed just now, by your browser')}
+   ${USE('A cipher must produce exactly the same bits on every machine, so approximate arithmetic is useless for it. That is the main reason cryptography leaves ℝ and works in finite sets, where every result is exact.')}`,
+  `<h2>ℂ · the complex numbers</h2>
+   <p class="lead">All numbers a + b·i with real a and b, where i² = −1.</p>
+   <h3>What is new</h3>
+   <p>Every polynomial equation has a solution. x² + 1 = 0 has none in ℝ; in ℂ it has two, i and −i.</p>
+   <h3>Computing</h3>
+   <p>Treat i like a letter, and replace i² by −1 whenever it appears.</p>
+   ${EX(M('(2 + 3i) + (1 − i) = 3 + 2i<br>(2 + 3i) · (1 − i) = 2 − 2i + 3i − 3i² = 5 + i'))}
+   <h3>As a structure</h3>
+   <p>ℂ is a field. Unlike ℝ it has no order: “smaller than” means nothing for complex numbers.</p>
+   ${USE('This course never computes in ℂ. But remember how it was made: by adding to ℝ a root of a polynomial that had none, x² + 1. The field GF(2⁸) of AES is made from GF(2) in exactly the same way, with the polynomial x⁸ + x⁴ + x³ + x + 1.')}`,
+  `<h2>From numbers to structures</h2>
+   <p class="lead">Each step outward repaired one thing.</p>
+   <ul class="pts"><li><b>ℕ → ℤ</b>: subtraction always works.</li><li><b>ℤ → ℚ</b>: division always works, except by 0.</li><li><b>ℚ → ℝ</b>: no gaps on the number line.</li><li><b>ℝ → ℂ</b>: every polynomial has a root.</li></ul>
+   <h3>The three names</h3>
+   <ul class="pts"><li>A <b>group</b> is a set where one operation can always be undone, like ℤ with addition.</li><li>A <b>ring</b> lets you add, subtract and multiply, like ℤ.</li><li>A <b>field</b> lets you also divide, like ℚ, ℝ and ℂ.</li></ul>
+   <h3>What cryptography needs</h3>
+   <p>Exact results, and values that fit in a fixed number of bits. So the set must be <b>finite</b>. And for a cipher like AES all four operations are needed, so it must be a <b>field</b>. None of the five sets above is both.</p>
+   <p>The good news: finite fields exist. The simplest one is the set of remainders modulo a prime. The next tabs build it, one rule at a time.</p>`][k];
+
+/* group */
+function grpOrders(d){return d.S.map(a=>{let v=a,n=1;while(v!==d.e&&n<=d.S.length){v=d.f(v,a);n++}return[a,v===d.e?n:null]})}
+T.grp.doc=k=>{
+  const d=grpData(),{m,S,f,e,sym}=d,o=d.add?'+':'·',pairs=S.filter(a=>d.partner(a)!==undefined&&a<=d.partner(a)).map(a=>`${a} ↔ ${d.partner(a)}`);
+  const n=1000,b=n.toString(2),ops=b.length-1+b.split('1').length-2;
+  return[
+  `<h2>Groups</h2>
+   <p class="lead">A group is the smallest structure in which an operation can always be undone.</p>
+   <h3>Definition</h3>
+   <p>A set G with an operation ∘ is a group if four rules hold:</p>
+   <ol class="pts"><li><b>Closure.</b> a ∘ b is in G for all a, b in G.</li><li><b>Associativity.</b> (a ∘ b) ∘ c = a ∘ (b ∘ c).</li><li><b>Neutral element.</b> There is an e in G with a ∘ e = e ∘ a = a.</li><li><b>Inverses.</b> For every a there is an a′ in G with a ∘ a′ = a′ ∘ a = e.</li></ol>
+   <p>If in addition a ∘ b = b ∘ a, the group is called commutative, or abelian.</p>
+   <h3>You already know some groups</h3>
+   <ul class="pts"><li>The hours on a clock: 9 o’clock plus 5 hours is 2 o’clock. That is addition modulo 12.</li><li>The integers with addition.</li><li>The shifts of the alphabet. The Caesar cipher adds the key k modulo 26, and decrypting adds the inverse, 26 − k. That is the group (ℤ₂₆, +).</li></ul>
+   <h3>How to use the picture</h3>
+   <p>Each cell of the table shows “row ∘ column”. Click a cell to see how it is computed. Click a rule in the list to jump to it. Change the operation or m above and watch which rules survive.</p>`,
+  `<h2>Rule 1 · closure</h2>
+   <p class="lead">The operation never leads out of the set.</p>
+   <p>Without closure the other rules cannot even be stated: a ∘ b might be something we cannot operate on again.</p>
+   ${EX(`(ℤ${sub(m)}, +): a sum is reduced modulo ${m}, so it is one of 0 … ${m-1} again.`)}
+   ${NO(`The odd integers with addition: 3 + 5 = 8 is even.<br>ℤ₆ without 0, with multiplication: 2 · 3 = 6 ≡ 0, and 0 was taken out of the set.`)}
+   ${USE('A cipher maps blocks to blocks. The result of every operation must fit in the same number of bits as its inputs, and closure is what guarantees that.')}`,
+  `<h2>Rule 2 · associativity</h2>
+   <p class="lead">(a ∘ b) ∘ c = a ∘ (b ∘ c). The elements keep their order, but the brackets may move.</p>
+   <h3>Why it matters</h3>
+   <p>It makes a ∘ b ∘ c meaningful without brackets. And it makes powers meaningful: g⁵ is g ∘ g ∘ g ∘ g ∘ g, however the factors are grouped.</p>
+   ${USE(`Square and multiply computes g<sup>${n}</sup> with only ${ops} operations instead of ${n-1}. That works only because the brackets may be moved: g⁴ = (g · g) · (g · g).`)}
+   ${NO(M('(5 − 3) − 1 = 1 &nbsp; but &nbsp; 5 − (3 − 1) = 3')+'<br>Subtraction is not associative. That is why it is not treated as an operation of its own, but as “add the opposite”.')}`,
+  `<h2>Rule 3 · the neutral element</h2>
+   <p class="lead">An element e that changes nothing: a ∘ e = e ∘ a = a.</p>
+   ${EX('0 for addition. 1 for multiplication. For the Caesar cipher, the shift by 0: the key that leaves the text as it is.')}
+   <h3>There is only one</h3>
+   <p>If e and e′ were both neutral, then e = e ∘ e′ = e′. So a group cannot have two.</p>
+   <h3>In the table</h3>
+   <p>The row and the column of e repeat the headings. Here e = ${e}.</p>`,
+  `<h2>Rule 4 · inverses</h2>
+   <p class="lead">For every a there is exactly one a′ with a ∘ a′ = e. The inverse is the undo of a.</p>
+   <h3>How it is written</h3>
+   <p>For addition: −a, the opposite. For multiplication: a⁻¹.</p>
+   ${d.lack.length?NO(`In ${d.name}, ${list(d.lack)} ${d.lack.length>1?'have':'has'} no inverse.`):EX(`In ${d.name} the partners are ${M(pairs.join(' &nbsp; '))}${d.add?`<br>In general −a = ${m} − a.`:''}`)}
+   <h3>Why it matters</h3>
+   <p>With inverses every equation a ∘ x = b has exactly one solution, x = a′ ∘ b. Decryption is the inverse of encryption: the Caesar cipher adds k, and subtracting k brings the letter back.</p>
+   ${NO(M('3 + x = 0')+' has no solution in ℕ. '+M('2 · x = 1')+' has no solution in ℤ. So (ℕ, +) and (ℤ, ·) are not groups.')}`,
+  `<h2>Commutative groups</h2>
+   <p class="lead">If a ∘ b = b ∘ a for all a and b, the group is called commutative, or abelian, after the mathematician Niels Henrik Abel.</p>
+   <h3>In the table</h3>
+   <p>The table is its own mirror image across the diagonal: the entry in row a, column b equals the one in row b, column a.</p>
+   <h3>Not every group is commutative</h3>
+   <p>Putting on a sock and then a shoe is not the same as the shoe and then the sock. The ways to rearrange three or more objects form a group in which the order matters.</p>
+   <p>All groups in this course are commutative: ℤₘ with addition, and the non-zero numbers modulo a prime with multiplication.</p>`,
+  `<h2>More words about groups</h2>
+   <p class="lead">${d.isGroup?`${d.name} is a group with ${S.length} element${S.length>1?'s':''}.`:`${d.name} is not a group, so the words below do not apply to it. Choose + above, or a prime m.`}</p>
+   <h3>Order of the group</h3>
+   <p>The number of its elements. (ℤₘ, +) has order m. The non-zero numbers modulo a prime p, with multiplication, have order p − 1.</p>
+   <h3>Order of an element</h3>
+   <p>How many times a must be combined with itself to reach e.</p>
+   ${d.isGroup?EX(`In ${d.name}: ${M(grpOrders(d).map(([a,n])=>`${a} has order ${n}`).join(', '))}.`):''}
+   <h3>Generator</h3>
+   <p>An element whose repeated use reaches every element of the group. A group that has one is called cyclic.</p>
+   ${d.isGroup?EX(`In ${d.name} the generators are ${M(list(grpOrders(d).filter(x=>x[1]===S.length).map(x=>x[0])))}.`):''}
+   <h3>Lagrange’s theorem</h3>
+   <p>The order of an element always divides the order of the group. Check it in the list above.</p>
+   ${USE('Diffie–Hellman publishes a generator g and hides the exponent. See the <a href="dlog.html">Discrete log page</a>, tab “Groups”, for the same ideas drawn on a ring.')}`][k]};
+
+/* ring */
+T.ring.doc=k=>{
+  const d=ringData(),{m}=d,[a,b,c]=d.ex,nu=d.nonu[0];
+  const zds=[];for(const x of d.nonu)for(const y of d.nonu)if(x<=y&&x*y%m===0&&zds.length<6)zds.push(`${x} · ${y} ≡ 0`);
+  let canc=null;if(nu)for(let x=1;x<m&&!canc;x++)for(let y=x+1;y<m&&!canc;y++)if(nu*x%m===nu*y%m)canc=[x,y];
+  const sols=v=>range(0,m-1).filter(x=>nu*x%m===v);
+  const pw=[];let v=1;for(let i=0;i<Math.min(m,8);i++){v=v*2%m;pw.push(v)}
+  return[
+  `<h2>Rings</h2>
+   <p class="lead">A ring is a set in which you can add, subtract and multiply, with the usual rules for brackets.</p>
+   <h3>Definition</h3>
+   <p>A set R with two operations + and · is a ring if:</p>
+   <ol class="pts"><li>(R, +) is an abelian group. Its neutral element is written 0.</li><li>Multiplication is closed and associative, and has a neutral element, written 1.</li><li>The distributive laws hold: a · (b + c) = a · b + a · c and (a + b) · c = a · c + b · c.</li></ol>
+   <p>If also a · b = b · a, the ring is commutative. All rings on this page are.</p>
+   <h3>Examples</h3>
+   <ul class="pts"><li>The integers ℤ.</li><li>The integers modulo m, written ℤₘ. This is the ring in the tables above.</li><li>Polynomials: (x + 1)(x − 1) = x² − 1.</li><li>Square matrices. They form a ring that is not commutative. The Hill cipher multiplies blocks of letters by a matrix over ℤ₂₆.</li></ul>
+   <h3>What is not required</h3>
+   <p>Inverses for multiplication. A ring does not promise that you can divide.</p>`,
+  `<h2>Rule 1 · addition forms an abelian group</h2>
+   <p class="lead">Everything from the Group tab holds for +: a neutral element 0, and an opposite −a for every a.</p>
+   <p>So subtraction always works: a − b means a + (−b).</p>
+   ${EX(`In ℤ${sub(m)}: ${M(range(1,m-1).map(x=>`−${x} = ${m-x}`).join(', '))}`)}
+   <h3>A consequence: a · 0 = 0</h3>
+   <p>From the distributive law, a · 0 = a · (0 + 0) = a · 0 + a · 0, and subtracting a · 0 on both sides leaves a · 0 = 0.</p>
+   <p>That is why the row of 0 in the multiplication table is all zeros, and why 0 can never have an inverse: nothing times 0 gives 1.</p>`,
+  `<h2>Rule 2 · multiplication</h2>
+   <p class="lead">Closed, associative, with a neutral element 1. Nothing more.</p>
+   <p>That is less than a group: nobody promises that a multiplication can be undone.</p>
+   ${EX(`In ℤ${sub(m)}, multiply as integers and keep the remainder: ${M(`${m-1} · ${m-1} = ${(m-1)*(m-1)} = ${Math.floor((m-1)*(m-1)/m)} · ${m} + ${(m-1)*(m-1)%m}, so ${m-1} · ${m-1} ≡ ${(m-1)*(m-1)%m}`)}`)}
+   <h3>Powers</h3>
+   <p>Because multiplication is associative, powers make sense: a² = a · a, a³ = a · a · a, and so on.</p>
+   ${EX(`The powers of 2 in ℤ${sub(m)}: ${M(pw.join(', ')+', …')}`)}`,
+  `<h2>Rule 3 · the distributive law</h2>
+   <p class="lead">a · (b + c) = a · b + a · c. It is the only rule that connects + and ·.</p>
+   ${EX(`In ℤ${sub(m)}: ${M(`${a} · (${b} + ${c}) = ${a*((b+c)%m)%m} &nbsp; and &nbsp; ${a} · ${b} + ${a} · ${c} = ${(a*b+a*c)%m}`)}`)}
+   <h3>What it gives you</h3>
+   <ul class="pts"><li>Brackets can be expanded: (a + b)² = a² + 2ab + b².</li><li>A multiplication can be split into easy pieces: 13 · b = 8 · b + 4 · b + b.</li></ul>
+   ${USE('Computers multiply exactly like that: one shifted copy for every 1 bit, then add them up. The multiplication in the GF(2ᵐ) tab is the distributive law at work.')}`,
+  `<h2>What goes wrong without inverses</h2>
+   <p class="lead">${nu?`In ℤ${sub(m)} three familiar habits stop working.`:`${m} is prime, so none of these problems appear in ℤ${sub(m)}. Choose 6, 8, 9, 10 or 12 above to see them.`}</p>
+   ${nu?`<h3>Zero divisors</h3>
+   <p>Two non-zero elements whose product is 0.</p>
+   ${NO(M(zds.join(' &nbsp;&nbsp; ')))}
+   <h3>Cancelling fails</h3>
+   <p>From a · x = a · y you may not conclude x = y.</p>
+   ${NO(M(`${nu} · ${canc[0]} ≡ ${nu*canc[0]%m} &nbsp; and &nbsp; ${nu} · ${canc[1]} ≡ ${nu*canc[1]%m}`)+`, although ${canc[0]} ≠ ${canc[1]}.`)}
+   <h3>Equations misbehave</h3>
+   <p>An equation a · x = b can have no solution, or several.</p>
+   ${NO(M(`${nu} · x ≡ 1`)+` has no solution. `+M(`${nu} · x ≡ ${nu*canc[0]%m}`)+` has ${sols(nu*canc[0]%m).length}: x = ${list(sols(nu*canc[0]%m))}.`)}`:''}
+   ${USE(`A cipher step that sends two inputs to the same output cannot be undone. The affine cipher c = a · p + b mod 26 with a = 2 encrypts A (0) and N (13) to the same letter, because 2 · 13 = 26 ≡ 0.`)}`,
+  `<h2>Units: the elements you can divide by</h2>
+   <p class="lead">An element that has a multiplicative inverse is called a unit. In ℤₘ, a is a unit exactly when gcd(a, m) = 1.</p>
+   <h3>Why</h3>
+   <p>If gcd(a, m) = 1, the extended Euclidean algorithm finds whole numbers s and t with a · s + m · t = 1. Modulo m that says a · s ≡ 1, so s is the inverse.</p>
+   <p>If gcd(a, m) = d &gt; 1, then a · (m/d) is a multiple of m, so a is a zero divisor and cannot have an inverse.</p>
+   <h3>How many</h3>
+   <p>The number of units of ℤₘ is Euler’s function φ(m).</p>
+   ${EX(`φ(${m}) = ${phi(m)}. The units of ℤ${sub(m)} with their inverses: ${M(d.units.map(u=>`${u}⁻¹ = ${inv(u,m)}`).join(', '))}`)}
+   <p>The units form a group under multiplication, written ℤₘ*.</p>
+   ${USE(`<b>Affine cipher:</b> the key a must be a unit of ℤ₂₆. There are φ(26) = ${phi(26)} of them, so the cipher has ${phi(26)} · 26 = ${phi(26)*26} keys.<br><b>RSA:</b> the public exponent e must be a unit modulo φ(n), and the private exponent d is its inverse.`)}`][k]};
+
+/* field */
+T.field.doc=k=>{
+  const c=fieldCheck(),m=c.m,u=c.R.find(r=>r.i!==null&&r.a>1)||c.R[0],fac=range(2,m-1).find(x=>m%x===0);
+  return[
+  `<h2>Group, ring, field</h2>
+   <p class="lead">The picture reads from the inside out: every ring is a group under +, and every field is a ring. Click a circle.</p>
+   <div class="scroll"><table class="cmp3"><tr><th></th><th>Group</th><th>Ring</th><th>Field</th></tr>
+     <tr><td>Operations</td><td>one, ∘</td><td>+ and ·</td><td>+ and ·</td></tr>
+     <tr><td>You can</td><td>combine and undo</td><td>add, subtract, multiply</td><td>add, subtract, multiply, divide</td></tr>
+     <tr><td>Examples</td><td>(ℤ, +), a clock</td><td>ℤ, ℤ₆, polynomials</td><td>ℚ, ℝ, ℂ, ℤ₇</td></tr>
+     <tr><td>In this course</td><td>Diffie–Hellman</td><td>RSA, affine cipher</td><td>AES, GCM</td></tr></table></div>`,
+  `<h2>Group</h2>
+   <p class="lead">One operation that can always be undone.</p>
+   <p>Written with +, the undo is −. Written with ·, the undo is division. The four rules are closure, associativity, a neutral element and inverses: see tab 2.</p>
+   <p>A field contains two groups at once: all its elements under addition, and its non-zero elements under multiplication.</p>`,
+  `<h2>Ring</h2>
+   <p class="lead">Two operations. Addition can always be undone, multiplication not always.</p>
+   <p>The rules: addition is an abelian group, multiplication is closed and associative with a 1, and the distributive law connects the two: see tab 3.</p>
+   <p>A ring that is not a field always contains a non-zero element without an inverse, such as 2 in ℤ, or 2 and 3 in ℤ₆.</p>`,
+  `<h2>Field</h2>
+   <p class="lead">A set with all four operations of arithmetic.</p>
+   <h3>Definition</h3>
+   <ol class="pts"><li>All elements form an abelian group under +, with neutral element 0.</li><li>The non-zero elements form an abelian group under ·, with neutral element 1.</li><li>The distributive law holds.</li></ol>
+   <h3>What you get for free</h3>
+   <ul class="pts"><li><b>Division.</b> a ÷ b = a · b⁻¹ for every b ≠ 0.</li><li><b>No zero divisors.</b> a · b = 0 only if a = 0 or b = 0.</li><li><b>Equations behave.</b> a · x + b = c with a ≠ 0 has exactly one solution.</li><li><b>Linear algebra works.</b> Systems of equations, matrices and determinants, exactly as over ℝ.</li><li><b>Polynomials behave.</b> A polynomial of degree n has at most n roots.</li></ul>
+   ${USE('MixColumns of AES is a matrix over GF(2⁸); decryption needs its inverse matrix, which exists only because GF(2⁸) is a field. The security of the GCM tag rests on the fact about roots of polynomials.')}
+   ${NO('ℤ is not a field: 2 has no inverse. ℤ₆ is not a field: 2 · 3 ≡ 0.')}`,
+  `<h2>Finding an inverse</h2>
+   <p class="lead">To decide whether ℤₘ is a field, look for the inverse of every non-zero element.</p>
+   <h3>Way 1 · search</h3>
+   <p>Try x = 1, 2, 3, … until a · x ≡ 1. Fine for small m, hopeless for the numbers of RSA.</p>
+   <h3>Way 2 · the extended Euclidean algorithm</h3>
+   <p>Divide with remainder until the remainder is 0. The last non-zero remainder is gcd(m, a), and working backwards writes it as a combination of m and a.</p>
+   ${EX(`The inverse of ${u.a} modulo ${m}:<br>`+euclidHtml(m,u.a))}
+   <p>The number of steps grows with the number of digits of m, not with m itself. That is what makes inverses of 2048-bit numbers easy.</p>`,
+  `<h2>Why exactly the primes</h2>
+   <p class="lead">ℤₘ is a field if and only if m is prime.</p>
+   <h3>If m is not prime</h3>
+   <p>Write m = a · b with both factors between 1 and m. Then a · b ≡ 0. If a had an inverse, b = a⁻¹ · a · b ≡ a⁻¹ · 0 = 0, which is false. So a has no inverse.</p>
+   ${fac?NO(M(`${m} = ${fac} · ${m/fac}, so ${fac} · ${m/fac} ≡ 0 in ℤ${sub(m)}`)+`, and ${fac} has no inverse.`):EX(`${m} is prime: the checker above finds an inverse for every element from 1 to ${m-1}.`)}
+   <h3>If m is a prime p</h3>
+   <p>Then gcd(a, p) = 1 for every a from 1 to p − 1, and the extended Euclidean algorithm gives an inverse.</p>
+   <h3>The name</h3>
+   <p>Évariste Galois (1811–1832), a French mathematician who died at twenty, described all finite fields. In his honour the finite field with q elements is written GF(q), for Galois field. Another common name is 𝔽<sub>q</sub>.</p>
+   <h3>And 4, 8, 9 or 256 elements?</h3>
+   <p>Fields of these sizes exist too, but they are not ℤ₄, ℤ₈, ℤ₉ or ℤ₂₅₆. Tabs 5 and 6 show how they are made.</p>`][k]};
+
+/* GF(p) */
+T.gfp.doc=k=>{
+  const{p,a,b}=ST,bi=b?inv(b,p):null,pwb=b?range(1,p-1).map(i=>modpow(b,i,p)):[];
+  let g=1;for(let x=2;x<p;x++){let v=x,n=1;while(v!==1){v=v*x%p;n++}if(n===p-1){g=x;break}}
+  const gp=range(1,p-1).map(i=>modpow(g,i,p));
+  return[
+  `<h2>The prime field GF(p)</h2>
+   <p class="lead">The integers modulo a prime p, with all four operations.</p>
+   <h3>Names</h3>
+   <p>GF(p), 𝔽<sub>p</sub>, ℤ<sub>p</sub> and ℤ/pℤ all mean the same thing.</p>
+   <h3>Elements</h3>
+   <p>The p remainders 0, 1, …, p − 1. Nothing else: no negative numbers, no fractions.</p>
+   <h3>The smallest field</h3>
+   <p>GF(2) has only 0 and 1. Its addition is XOR and its multiplication is AND, so every logic circuit is arithmetic in GF(2).</p>
+   <h3>Characteristic</h3>
+   <p>Adding 1 to itself p times gives 0. In GF(2), 1 + 1 = 0.</p>
+   <h3>How to use the picture</h3>
+   <p>Choose p, a and b above, or click a cell in a table: its row becomes a and its column becomes b.</p>`,
+  `<h2>Adding and multiplying</h2>
+   <p class="lead">Compute as with ordinary integers, then keep the remainder modulo p.</p>
+   ${EX(M(`${a} + ${b} = ${a+b}${a+b>=p?` = ${p} + ${(a+b)%p}`:''} ≡ ${(a+b)%p}<br>${a} · ${b} = ${a*b}${a*b>=p?` = ${Math.floor(a*b/p)} · ${p} + ${a*b%p}`:''} ≡ ${a*b%p}`))}
+   <h3>Look at the addition table</h3>
+   <p>Every row is the row above it, moved one place to the left. Each number appears exactly once in every row and in every column.</p>
+   <h3>Look at the multiplication table</h3>
+   <p>Leave out the row and the column of 0. Then again each of the numbers 1 … p − 1 appears exactly once in every row.</p>
+   <p>That is the reason inverses exist: the 1 has to appear somewhere in every row.</p>
+   <p class="fine">Why once? If a · x ≡ a · y, then a · (x − y) is a multiple of p. Because p is prime and does not divide a, it must divide x − y, so x = y.</p>`,
+  `<h2>Subtracting</h2>
+   <p class="lead">The opposite of b is −b = p − b, and a − b means a + (−b).</p>
+   ${EX(M(`−${b} = ${(p-b)%p}, because ${b} + ${(p-b)%p} = ${b+(p-b)%p} ≡ 0<br>${a} − ${b} = ${a} + ${(p-b)%p} = ${a+(p-b)%p} ≡ ${(a-b+p)%p}`))}
+   <p>A negative result never appears: −2 is only another name for p − 2.</p>
+   ${NO(`In most programming languages the remainder of a negative number is negative. Your browser gives ${M(`(2 − 5) % 7 = ${(2-5)%7}`)}, not 4. So code writes ${M('(a − b + p) % p')}.`)}`,
+  `<h2>Inverting</h2>
+   <p class="lead">${bi===null?'0 has no inverse. Choose another b above.':`The inverse of ${b} in GF(${p}) is ${bi}. There are three ways to find it.`}</p>
+   ${bi===null?'':`<h3>Way 1 · search</h3>
+   <p>Look along the row of b in the multiplication table for the 1.</p>
+   <h3>Way 2 · the extended Euclidean algorithm</h3>
+   ${EX(euclidHtml(p,b))}
+   <h3>Way 3 · Fermat’s little theorem</h3>
+   <p>For every b that is not a multiple of p, b<sup>p−1</sup> ≡ 1. So b · b<sup>p−2</sup> ≡ 1, and b<sup>p−2</sup> is the inverse.</p>
+   ${EX(`The powers of ${b}: ${M(pwb.map((v,i)=>`${b}${i?`<sup>${i+1}</sup>`:''} = ${v}`).join(', '))}<br>so ${M(`${b}<sup>${p-2}</sup> = ${modpow(b,p-2,p)}`)} is the inverse.`)}
+   <h3>Which one is used?</h3>
+   <p>Euclid is faster. The power does the same steps whatever b is, which helps against timing attacks, so many implementations of elliptic curves prefer it.</p>`}`,
+  `<h2>Dividing and solving equations</h2>
+   <p class="lead">To divide by b, multiply by b⁻¹.</p>
+   ${bi===null?NO('Division by 0 is not defined, in any field. Choose another b above.'):EX(M(`${a} ÷ ${b} = ${a} · ${bi} = ${a*bi} ≡ ${a*bi%p}`)+`<br>Check: ${M(`${a*bi%p} · ${b} = ${(a*bi%p)*b} ≡ ${(a*bi%p)*b%p}`)}`)}
+   <h3>Solving b · x = a</h3>
+   <p>Multiply both sides by b⁻¹: x = a · b⁻¹. There is exactly one solution, as in ℚ or ℝ.</p>
+   ${bi===null?'':EX(M(`${b} · x ≡ ${a} &nbsp; gives &nbsp; x ≡ ${a} · ${bi} ≡ ${a*bi%p}`))}
+   ${USE('An affine map y = a · x + b over a field can always be undone when a ≠ 0: x = (y − b) · a⁻¹. Over ℤ₂₆, which is only a ring, the affine cipher has to forbid some values of a.')}`,
+  `<h2>All finite fields</h2>
+   <p class="lead">Two facts describe every finite field there is.</p>
+   <ol class="pts"><li>The number of elements of a finite field is always a prime power pᵐ.</li><li>For every prime power there is exactly one field of that size, apart from the names of its elements. So one may speak of <i>the</i> field GF(q).</li></ol>
+   <p>For m = 1 these are the prime fields GF(p) of this tab. For m &gt; 1 they are called extension fields: the next tab.</p>
+   ${NO('GF(4) is not ℤ₄. In ℤ₄, 2 · 2 ≡ 0, so ℤ₄ is not a field at all.')}
+   <h3>The non-zero elements form a cyclic group</h3>
+   <p>In every finite field there is an element g whose powers run through all the non-zero elements.</p>
+   ${EX(`In GF(${p}), g = ${g}: ${M(gp.map((v,i)=>`${g}${i?`<sup>${i+1}</sup>`:''} = ${v}`).join(', '))}`)}
+   ${USE('Diffie–Hellman uses GF(p) with a p of 2048 bits or more. Elliptic curves use primes of about 256 bits, chosen so that reducing modulo p is fast: 2²⁵⁶ − 2²²⁴ + 2¹⁹² + 2⁹⁶ − 1 for the curve P-256, and 2²⁵⁵ − 19 for Curve25519, which gave the curve its name.')}`][k]};
+
+/* GF(2^m) */
+const pdeg=v=>31-Math.clz32(v);
+const pmod=(a,b)=>{const db=pdeg(b);while(a&&pdeg(a)>=db)a^=b<<(pdeg(a)-db);return a};
+let IRR8=null;
+const irr8=()=>{if(IRR8===null){IRR8=0;for(let f=0x100;f<0x200;f++){let ok=true;for(let g=2;g<32&&ok;g++)if(pmod(f,g)===0)ok=false;if(ok)IRR8++}}return IRR8};
+const g8pow=(a,e)=>{let r=1;while(e>0){if(e&1)r=g8(r,a);a=g8(a,a);e>>=1}return r};
+const g8ord=a=>{let v=a,n=1;while(v!==1){v=g8(v,a);n++}return n};
+const sbox=a=>{const x=a?g8inv(a):0;let r=0;for(let i=0;i<8;i++)r|=(((x>>i)^(x>>((i+4)&7))^(x>>((i+5)&7))^(x>>((i+6)&7))^(x>>((i+7)&7))^(0x63>>i))&1)<<i;return r};
+T.gf2.doc=k=>{
+  const a=ST.ha,b=ST.hb,ai=a?g8inv(a):null,x2=g8(a,2),x3=g8(a,3);
+  return[
+  `<h2>Extension fields GF(2ᵐ)</h2>
+   <p class="lead">A field with 2ᵐ elements, each one stored in m bits.</p>
+   <h3>Why the integers modulo 256 will not do</h3>
+   <p>ℤ₂₅₆ is a ring, not a field. Every even number shares the factor 2 with 256, so only ${phi(256)} of its 256 elements have an inverse.</p>
+   ${NO(`As integers modulo 256: ${M(`2 · 128 = 256 ≡ 0`)}<br>In GF(2⁸): ${M(`{02} · {80} = {${hx(g8(2,0x80))}}`)}, which is not zero.`)}
+   <h3>The recipe</h3>
+   <ol class="pts"><li>Start with GF(2), the field of one bit.</li><li>Take all polynomials of degree below m whose coefficients are bits. There are 2ᵐ of them.</li><li>Choose one irreducible polynomial P(x) of degree m.</li><li>Add and multiply polynomials as usual, and keep the remainder modulo P(x).</li></ol>
+   <p>It is the same recipe that makes ℂ out of ℝ, with x² + 1 in the part of P(x).</p>
+   ${USE('GF(2) for stream cipher feedback. GF(2⁸) for AES. GF(2¹²⁸) for the tag of GCM.')}`,
+  `<h2>Bytes as polynomials</h2>
+   <p class="lead">The same element can be written in three ways.</p>
+   ${EX(`Hexadecimal: ${M(`{${hx(a)}}`)}<br>Binary: ${M(a.toString(2).padStart(8,'0'))}<br>Polynomial: <span class="pl">${polyOf(a)}</span>`)}
+   <p>Bit number i, counted from the right starting at 0, is the coefficient of xⁱ. The <b>degree</b> is the highest power that appears${a?`: here ${pdeg(a)}`:''}.</p>
+   <h3>The braces</h3>
+   <p>{57} is the notation of the AES standard, FIPS 197. The braces say: this is an element of the field, not the integer 87.</p>
+   <h3>What is x?</h3>
+   <p>Only a placeholder. No number is ever put in its place; it just keeps the eight bits apart, as the powers of ten keep the digits of a number apart.</p>
+   <p>Click a bit in the picture to flip it.</p>`,
+  `<h2>Adding</h2>
+   <p class="lead">Add the coefficients of equal powers modulo 2. That is XOR.</p>
+   ${EX(`As field elements: ${M(`{${hx(a)}} ⊕ {${hx(b)}} = {${hx(a^b)}}`)}<br>As integers the same bytes give ${M(`${a} + ${b} = ${a+b}`)}${a+b>255?', which does not even fit in a byte':` = ${M('0x'+hx(a+b))}`}.`)}
+   <h3>No carries</h3>
+   <p>In integer addition a carry moves from one bit position to the next. Here the positions do not affect each other at all. One XOR gate per bit is enough, and the result always fits.</p>
+   <h3>Subtracting is adding</h3>
+   <p>a + a = 0 for every a, so every element is its own opposite, and a − b is the same as a + b.</p>
+   ${USE('AddRoundKey in AES is one XOR with the round key. Doing it twice gives the state back, so the step is its own inverse.')}`,
+  `<h2>The modulus P(x)</h2>
+   <p class="lead">A product of two bytes can have degree up to 14. P(x) brings it back below degree 8.</p>
+   <h3>Irreducible</h3>
+   <p>A polynomial is irreducible if it is not the product of two polynomials of lower degree. It plays the part that a prime plays for the integers.</p>
+   ${EX('Over GF(2): x² + x + 1 is irreducible.<br>x² + 1 is not: (x + 1)² = x² + 2x + 1 = x² + 1, because 2 = 0.')}
+   <h3>Why it must be irreducible</h3>
+   <p>If P(x) were a product A(x) · B(x), then A · B ≡ 0 modulo P: two non-zero elements with product zero. That is the same failure as ℤₘ with a composite m.</p>
+   <h3>Which one?</h3>
+   <p>There are ${irr8()} irreducible polynomials of degree 8 over GF(2). Each gives the same field, with other names for the elements. AES fixed one: x⁸ + x⁴ + x³ + x + 1, written {11B}. GCM uses x¹²⁸ + x⁷ + x² + x + 1.</p>
+   <p class="fine">The number ${irr8()} was counted by your browser: it tried to divide each polynomial of degree 8 by every polynomial of degree 1 to 4.</p>`,
+  `<h2>Multiplying</h2>
+   <p class="lead">The distributive law turns one multiplication into shifts and XORs.</p>
+   <p>b is a sum of powers of x, one for each of its 1 bits. So a · b is the sum of a · xⁱ over those bits.</p>
+   <h3>Multiplying by x</h3>
+   <p>Shift the byte one place to the left. If a 1 falls out at the top, that is an x⁸, and x⁸ ≡ x⁴ + x³ + x + 1 modulo P(x): XOR the result with {1B}. AES calls this step xtime.</p>
+   ${EX(M(`{02} · {${hx(a)}} = {${hx(x2)}}<br>{03} · {${hx(a)}} = {02} · {${hx(a)}} ⊕ {${hx(a)}} = {${hx(x3)}}`))}
+   ${USE('MixColumns multiplies the bytes of a column by {01}, {02} and {03} only, so it needs nothing but xtime and XOR. For GCM, modern processors have an instruction that multiplies polynomials without carries.')}`,
+  `<h2>Inverses and the S-box</h2>
+   <p class="lead">${ai===null?'{00} has no inverse. Type another a above.':`In GF(2⁸), {${hx(a)}}⁻¹ = {${hx(ai)}}.`}</p>
+   <h3>How to find an inverse</h3>
+   <ul class="pts"><li>The extended Euclidean algorithm, with polynomials in place of integers.</li><li>A power. The 255 non-zero elements form a group, so a²⁵⁵ = {01} for each of them, and a²⁵⁴ is the inverse.</li></ul>
+   ${ai===null?'':EX(M(`{${hx(a)}}²⁵⁴ = {${hx(g8pow(a,254))}} &nbsp;&nbsp; {${hx(a)}}²⁵⁵ = {${hx(g8pow(a,255))}}`))}
+   <h3>A generator</h3>
+   <p>The element {03} has order ${g8ord(3)}: its powers run through every non-zero byte. Implementations use this for tables of logarithms.</p>
+   <h3>The AES S-box</h3>
+   <p>SubBytes replaces every byte a by its inverse, with {00} left as {00}, and then mixes the bits of the result by a fixed rule and adds the constant {63}.</p>
+   ${EX(M(`S-box({${hx(a)}}) = {${hx(sbox(a))}}`)+(ai===null?'<br>{00} has no inverse, so it is left as {00} before the bits are mixed':`<br>computed from {${hx(a)}}⁻¹ = {${hx(ai)}}`))}
+   <p>The inversion is the only step of AES that is not linear. Without it the whole cipher could be written as a system of linear equations.</p>
+   ${USE('<a href="aes.html">AES, step by step</a> shows SubBytes and MixColumns on a full block. GCM does the same arithmetic with 128 bits.')}`][k]};
 
 /* ---------- one question per tab: answer first, then read why ---------- */
 const QZ={
@@ -497,6 +925,7 @@ function holdRoom(t,n,k){
 function show(){
   const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
   stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  const dc=$('#doc');dc.hidden=!t.doc;dc.innerHTML=t.doc?t.doc(k):'';
   holdRoom(t,n,k);
   $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
@@ -517,6 +946,12 @@ $('#bReset').onclick=()=>{setPlaying(false);ST.step[ST.tab]=0;show()};
 $('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const n=T[ST.tab].n();if(n<2)return;if((ST.step[ST.tab]||0)>=n-1){ST.step[ST.tab]=0;show()}setPlaying(true)};
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-gop]');if(g){ST.gop=g.dataset.gop;$$('#gop button').forEach(x=>x.classList.toggle('on',x===g));show();return}
+  const st=e.target.closest('[data-step]');if(st){setPlaying(false);ST.step[ST.tab]=+st.dataset.step;show();return}
+  const go=e.target.closest('[data-goto]');if(go){setTab(go.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:RM.matches?'auto':'smooth'});return}
+  const cl=e.target.closest('[data-cell]');if(cl){const[id,a,b]=cl.dataset.cell.split(',');
+    if(id==='g')ST.pick.g=[+a,+b];else if(id==='ra'||id==='rm')ST.pick.ring=[id==='ra'?'add':'mul',+a,+b];else{ST.a=+a;ST.b=+b;setBar()}
+    show();return}
+  const bt=e.target.closest('[data-bit]');if(bt){const[key,i]=bt.dataset.bit.split(',');ST[key]^=1<<+i;setBar();show();return}
   const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
 });
 document.addEventListener('change',e=>{
@@ -533,6 +968,8 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  const act=e.target.closest&&e.target.closest('svg [data-step],svg [data-goto]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
   if(e.key==='ArrowRight'){if(!$('#bStep').disabled)$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&T[ST.tab].n()>1){$('#bPlay').click();e.preventDefault()}
