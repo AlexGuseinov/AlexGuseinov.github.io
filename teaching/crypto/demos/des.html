@@ -12,12 +12,14 @@
   --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;--g4:#c7a020;--g5:#19a2b5;--g6:#e374a8;--g7:#8a6a4d;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;--trk:#e8e5dc;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
   --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--band:#1a2330;
   --cL:#4a87e6;--cR:#ee9a40;--cK1:#9068dc;--cK2:#b49aec;--xor:#f07a70;--okBg:#173323;--par:#4a4a51;
   --g0:#5a8fe8;--g1:#f09a45;--g2:#45b882;--g3:#e46464;--g4:#d9b43a;--g5:#35b9cb;--g6:#ee8cba;--g7:#a5876a;
+  --trk:#2b2b31;
 }}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -236,6 +238,54 @@ svg text{font-family:var(--sans)}
 .kc{fill:var(--cK1)}
 .kct{font-size:15px;font-weight:700;fill:#fff}
 .hint{font-size:12.5px;fill:var(--muted)}
+/* feistel: the two halves as ribbons */
+#svg-feistel .trk{fill:none;stroke:var(--trk)}
+#svg-feistel .trkc,.rcase{fill:none;stroke:var(--panel)}
+#svg-feistel .chv{fill:none;stroke:var(--line2);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#fe-ink path,#fe-live path{fill:none}
+#fe-live g{stroke-dasharray:1 1}
+#svg-feistel .rn{font:700 46px var(--math);fill:var(--line2)}
+#svg-feistel .rn.cur{fill:var(--accent)}
+#svg-feistel .rc{font-size:12.5px;fill:var(--faint)}
+#svg-feistel .bx.full{fill:var(--panel);stroke:var(--ink);stroke-opacity:.5}
+#svg-feistel .bx.empty{fill:var(--panel);stroke:var(--line2);stroke-dasharray:4 4}
+#svg-feistel .bt{font:italic 19px var(--math);fill:var(--ink)}
+#svg-feistel .bt.dim{fill:var(--faint)}
+#svg-feistel .bt .mb{font-weight:700}
+#svg-feistel .bt .bts{font:14px var(--sans);font-style:normal;fill:var(--muted)}
+#svg-feistel .msub{font-size:.66em;font-style:normal}
+#svg-feistel .segt{font-size:10.5px}
+#svg-feistel .fb{fill:var(--panel);stroke:var(--ink);stroke-width:2.2}
+#svg-feistel .fb.on{stroke:var(--accent);fill:var(--accentBg);stroke-width:3}
+#svg-feistel .ft{font:italic 700 34px var(--math);fill:var(--ink)}
+#svg-feistel .xo{fill:var(--panel);stroke:var(--xor);stroke-width:2.6}
+#svg-feistel .xo.on{fill:color-mix(in srgb,var(--xor) 24%,var(--panel));stroke-width:3.6}
+#svg-feistel .xp{fill:none;stroke:var(--xor);stroke-width:2.6;stroke-linecap:round;pointer-events:none}
+#svg-feistel .kct{font:italic 700 17px var(--math);fill:#fff}
+@media (max-width:640px){#svg-feistel .bt{font-size:23px}#svg-feistel .bt .bts{font-size:17px}#svg-feistel .rc{font-size:15px}}
+/* documentation under a scene */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;color:var(--ink);font-weight:700;margin:26px 0 8px}
+.doc p,.doc ul.pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc ul.pts{padding-left:20px}.doc ul.pts li{margin:0 0 6px}
+.doc .fml{font:italic 19px var(--math);padding:10px 16px;border-left:3px solid var(--accent);background:var(--accentBg);border-radius:0 8px 8px 0;max-width:max-content}
+.doc .fml sub{font-style:normal;font-size:.68em}.doc .fml .gap{display:inline-block;width:2.2em}
+.tlk{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--muted);margin:0 0 6px}
+.tlk span{display:inline-flex;align-items:center;gap:6px}
+.tlk i,.tl li::before{width:11px;height:11px;border-radius:50%;border:2px solid var(--line2);background:var(--panel);box-sizing:border-box}
+.tlk i{display:inline-block}
+.tl{list-style:none;margin:0;padding:0;max-width:80ch;border-left:2px solid var(--line)}
+.tl li{display:grid;grid-template-columns:92px minmax(0,1fr);gap:0 14px;padding:7px 0 7px 18px;position:relative;font-size:15px}
+.tl li::before{content:'';position:absolute;left:-6.5px;top:13px}
+.tl time{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tl .std::before,.tlk i.std{border-color:var(--accent);background:var(--accent)}
+.tl .atk::before,.tlk i.atk{border-color:var(--xor);background:var(--xor)}
+.src{font-size:13.5px;color:var(--muted);padding-left:20px;max-width:86ch;margin:0}
+.src li{margin:3px 0}.src a{color:var(--accent)}
+@media (max-width:1000px){.doc{order:6}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}.tl li{grid-template-columns:70px minmax(0,1fr);gap:0 10px}}
 /* inside f */
 .sbx{fill:var(--panel);stroke:var(--line2);stroke-width:1.6}
 .sbx.act{stroke:var(--ink);stroke-opacity:.6}
@@ -573,6 +623,65 @@ button.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoratio
     <div class="card c-leg" id="legend"></div>
     <div class="card c-extra" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc-feistel" hidden>
+    <h2>Where the Feistel network comes from</h2>
+    <p class="lead">The structure above is named after <b>Horst Feistel</b>, who designed ciphers at IBM around 1970. DES made it famous, and new ciphers still use it.</p>
+
+    <h3>The idea in two lines</h3>
+    <p class="fml">L<sub>i</sub> = R<sub>i−1</sub><span class="gap"></span>R<sub>i</sub> = L<sub>i−1</sub> ⊕ f(R<sub>i−1</sub>, k<sub>i</sub>)</p>
+    <p>In one round only one half changes, and it changes by an XOR. An XOR is undone by doing it again, so a round can always be undone, whatever f is. The function f itself is never run backwards.</p>
+
+    <h3>Timeline</h3>
+    <p class="tlk"><span><i class="std"></i>DES as a standard</span><span><i class="atk"></i>attacks</span><span><i></i>people and theory</span></p>
+    <ol class="tl">
+      <li><time>1915</time><div>Horst Feistel is born in Berlin on 30 January. He moves to the United States in 1934.</div></li>
+      <li><time>1968</time><div>Feistel joins the IBM T. J. Watson Research Center.</div></li>
+      <li><time>1971</time><div>IBM's cipher <b>Lucifer</b> is first published. A later version, with 128-bit blocks and a 128-bit key, is a 16-round Feistel network.</div></li>
+      <li><time>1973</time><div>Feistel's article “Cryptography and Computer Privacy” appears in <i>Scientific American</i> in May.</div></li>
+      <li class="std"><time>1973</time><div>On 15 May the US National Bureau of Standards (NBS) asks for proposals for a standard cipher. It asks again on 27 August 1974, and IBM sends in a cipher based on Lucifer.</div></li>
+      <li class="std"><time>1975</time><div>The proposed standard is printed in the Federal Register on 17 March, for public comment.</div></li>
+      <li class="std"><time>1976</time><div>Two public workshops, in August and September. DES is approved as a federal standard in November.</div></li>
+      <li class="std"><time>1977</time><div>DES is published on 15 January as <b>FIPS PUB 46</b>.</div></li>
+      <li><time>1988</time><div>Luby and Rackoff prove that three Feistel rounds with pseudorandom round functions give a pseudorandom permutation, and four rounds a strong one.</div></li>
+      <li class="atk"><time>1990–92</time><div>Biham and Shamir publish <b>differential cryptanalysis</b>. Against all 16 rounds it needs about 2<sup>47</sup> chosen plaintexts.</div></li>
+      <li class="atk"><time>1993–94</time><div>Matsui publishes <b>linear cryptanalysis</b>. In 1994 he runs the first experimental attack on full DES, with about 2<sup>43</sup> known plaintexts.</div></li>
+      <li><time>1994</time><div>Don Coppersmith, one of the IBM designers, publishes the design rules of the S-boxes (see below).</div></li>
+      <li class="atk"><time>1997</time><div>The DESCHALL project finds a DES key by brute force in 96 days.</div></li>
+      <li class="atk"><time>1998</time><div>distributed.net needs 39 days. In July the EFF machine <b>Deep Crack</b>, built for less than 250 000 dollars, needs 56 hours.</div></li>
+      <li class="atk"><time>1999</time><div>Deep Crack and distributed.net together find a key in 22 hours 15 minutes, on 19 January.</div></li>
+      <li class="std"><time>1999</time><div>FIPS 46-3, on 25 October, makes Triple DES the preferred algorithm. Single DES is allowed only in old systems.</div></li>
+      <li class="std"><time>2001</time><div>The successor, AES, is published as FIPS 197 on 26 November.</div></li>
+      <li class="std"><time>2005</time><div>NIST withdraws FIPS 46-3 on 19 May.</div></li>
+      <li class="std"><time>2019–23</time><div>NIST deprecates Triple DES in 2019 and disallows it for new encryption after 2023.</div></li>
+    </ol>
+
+    <h3>The argument about the key and the S-boxes</h3>
+    <p>NBS consulted the National Security Agency (NSA) before it chose IBM's design. The final cipher had a 56-bit key, while the later Lucifer had used 128 bits, and the reasons behind the S-boxes were kept secret. Critics, among them Whitfield Diffie and Martin Hellman, said the key was too short and asked whether the S-boxes hid a weakness.</p>
+    <p>A US Senate committee reported in 1978 that the NSA had not tampered with the design. In 1994 Coppersmith explained the secret: IBM had known differential cryptanalysis since 1974, and resisting it was a design goal. The S-boxes are in fact much stronger against that attack than random ones would be. The short key was the real weakness, and brute force is what finally broke DES.</p>
+
+    <h3>Why designers still use it</h3>
+    <ul class="pts">
+      <li><b>Decryption comes free.</b> The same circuit decrypts when the round keys are used in reverse order. Press Decrypt above to watch it.</li>
+      <li><b>f can be anything.</b> It needs no inverse. A DES S-box turns 6 bits into 4, so it could never be undone, and it never has to be.</li>
+      <li><b>There is a proof.</b> If the round functions are pseudorandom, three rounds are already a pseudorandom permutation (Luby and Rackoff).</li>
+    </ul>
+    <p>The price: one round changes only half of the block, so a Feistel cipher needs more rounds than a cipher that changes the whole block every round. DES has 16 rounds, AES-128 has 10.</p>
+
+    <h3>Feistel ciphers after DES</h3>
+    <p>Triple DES, Blowfish (1993), TEA (1994), Twofish (1998), Camellia (2000), the Russian standard GOST 28147-89, KASUMI in 3G mobile phones and the lightweight cipher Simon (2013) are Feistel networks or close variants of one. AES is not: it is a substitution–permutation network, and its decryption needs the inverse of every step.</p>
+
+    <h3>Sources</h3>
+    <ul class="src">
+      <li>H. Feistel, “Cryptography and Computer Privacy”, <i>Scientific American</i> 228(5), 1973, pp. 15–23.</li>
+      <li>NIST, <a href="https://csrc.nist.gov/pubs/fips/46-3/final" target="_blank" rel="noopener">FIPS PUB 46-3, Data Encryption Standard</a>, 1999 (withdrawn 2005).</li>
+      <li>D. Coppersmith, <a href="https://doi.org/10.1147/rd.383.0243" target="_blank" rel="noopener">“The Data Encryption Standard (DES) and its strength against attacks”</a>, <i>IBM Journal of Research and Development</i> 38(3), 1994, pp. 243–250.</li>
+      <li>M. Luby, C. Rackoff, <a href="https://doi.org/10.1137/0217022" target="_blank" rel="noopener">“How to Construct Pseudorandom Permutations from Pseudorandom Functions”</a>, <i>SIAM Journal on Computing</i> 17(2), 1988, pp. 373–386.</li>
+      <li>E. Biham, A. Shamir, <a href="https://doi.org/10.1007/BF00630563" target="_blank" rel="noopener">“Differential cryptanalysis of DES-like cryptosystems”</a>, <i>Journal of Cryptology</i> 4(1), 1991, pp. 3–72.</li>
+      <li>M. Matsui, <a href="https://doi.org/10.1007/3-540-48285-7_33" target="_blank" rel="noopener">“Linear Cryptanalysis Method for DES Cipher”</a>, EUROCRYPT ’93, and <a href="https://doi.org/10.1007/3-540-48658-5_1" target="_blank" rel="noopener">“The First Experimental Cryptanalysis of the Data Encryption Standard”</a>, CRYPTO ’94.</li>
+      <li>Electronic Frontier Foundation, <i>Cracking DES: Secrets of Encryption Research, Wiretap Politics &amp; Chip Design</i>, O'Reilly, 1998.</li>
+      <li>NIST, <a href="https://csrc.nist.gov/pubs/sp/800/131/a/r2/final" target="_blank" rel="noopener">SP 800-131A Rev. 2, Transitioning the Use of Cryptographic Algorithms and Key Lengths</a>, 2019.</li>
+    </ul>
+  </section>
 </main>
 <section class="wrap" id="t4" hidden>
   <div class="card">
@@ -699,6 +808,7 @@ function mover(moves){
   return p=>{for(const m of moves){
     const A=m.a||0,B=m.b===undefined?1:m.b,lp=clamp((p-A)/(B-A),0,1),hold=m.hold||0;
     const mv=hold?clamp((lp-hold)/(1-hold),0,1):lp;const pt=along(m.pts,ease(mv));
+    if(m.inkEls){const u=ease(mv);for(const q of m.inkEls)q.g.style.strokeDashoffset=(1-clamp((u-q.f0)/((q.f1-q.f0)||1),0,1)).toFixed(4);}
     m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
     let op=p<A?0:1;if(m.fadeIn&&p>=A)op=clamp(lp*4,0,1);if(m.fadeEnd&&lp>0.88)op=clamp((1-lp)*8,0,1);
     if(m.fi&&p>=A)op=Math.min(op,(p-A)/m.fi);if(m.fo)op=Math.min(op,clamp((B-p)/m.fo,0,1));
@@ -766,17 +876,21 @@ function switchTab(t){
   if(ENG.anim)stopAnim(true);setPlaying(false);
   ENG.tab=t;
   for(const id of ['feistel','f','e','s','ks','ip','fc'])$('vp-'+id).hidden=id!==t;
+  $('doc-feistel').hidden=t!=='feistel';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   const des=t==='des';document.querySelector('main.layout').hidden=des;document.querySelector('main.layout').classList.toggle('wide',['f','e','s','ip','fc'].includes(t));$('t4').hidden=!des;
   if(des){if(window.T4)T4.show();return;}
   cur().render();panel();
 }
 
-/* ================= scene 1: Feistel ================= */
-const FE={id:'feistel',k:0,mode:'enc',N:4,modes:true,prev:new Set()};
-const fW=820,xL=205,xR=615,BW=250,BH=54,xF=410,FW=112,FH=46,fTOP=24,RH=300,KCY=78;
+/* ================= scene 1: Feistel =================
+   The two halves are two ribbons that run down the page. In every round the right ribbon sends a branch into f,
+   the output of f meets the left ribbon at the XOR, and then the two ribbons cross. A ribbon is drawn with one
+   strand for each input its value depends on, so the colours spread from round to round. */
+const FE={id:'feistel',k:0,mode:'enc',N:4,modes:true,prev:new Set(),cache:{}};
+const fW=760,xL=220,xR=540,xF=380,BW=220,BH=52,FW=112,FH=58,fTOP=20,RH=330,KCY=76,LW=22,TW=13,KW=5,XR=16,JN=9;
 const fby=r=>fTOP+r*RH;
-function fG(i){const y0=fby(i-1)+BH,yt=y0+122;return{y0,yt,ycs:yt+52,yce:fby(i)-14,top:fby(i-1),bot:fby(i)};}
+function fG(i){const y0=fby(i-1)+BH,yt=y0+98;return{y0,yt,ycs:yt+40,yce:fby(i)-14,top:fby(i-1),bot:fby(i)};}
 const rankI=id=>id==='L0'?0:id==='R0'?1:1+(+id.slice(1));
 const uni=(...a)=>[...new Set(a.flat())].sort((x,y)=>rankI(x)-rankI(y));
 function feModel(N){
@@ -785,11 +899,40 @@ function feModel(N){
   let both=0;const h=s=>s.includes('L0')&&s.includes('R0');for(let i=1;i<=N;i++)if(h(L[i])&&h(R[i])){both=i;break;}
   return{L,R,F,both};
 }
-const feColor=id=>id==='L0'?css('--cL'):id==='R0'?css('--cR'):((+id.slice(1))%2?css('--cK1'):css('--cK2'));
+const feVar=id=>id==='L0'?'--cL':id==='R0'?'--cR':(+id.slice(1))%2?'--cK1':'--cK2';
+const feColor=id=>css(feVar(id));
 const feName=id=>id==='L0'?'L₀':id==='R0'?'R₀':'k'+sb(id.slice(1));
 const xoT=t=>t.replace(/⊕/g,'<tspan font-size="13">⊕</tspan>');
 const tokW=label=>Math.max(50,28+[...label].reduce((a,c)=>a+(c==='⊕'?19:10.2),0));
 function feTok(set,label){const w=tokW(label),h=30;return `${stripes(-w/2,-h/2,w,h,set.map(feColor),15)}<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="15"/><text x="0" y="5.5" text-anchor="middle">${xoT(label)}</text>`;}
+// a symbol with a real subscript, for labels set in the maths face
+const mth=(s,n)=>`${s}<tspan class="msub" dy="4.5">${n}</tspan><tspan dy="-4.5"> </tspan>`;
+// the swap: a curve from a to b that leaves and arrives vertically. Returns the SVG command and points along it
+function sCurve(a,b,n=28){
+  const c=.38*(b[1]-a[1]),p1=[a[0],a[1]+c],p2=[b[0],b[1]-c],pts=[];
+  for(let j=0;j<=n;j++){const t=j/n,u=1-t;pts.push([u*u*u*a[0]+3*u*u*t*p1[0]+3*u*t*t*p2[0]+t*t*t*b[0],u*u*u*a[1]+3*u*u*t*p1[1]+3*u*t*t*p2[1]+t*t*t*b[1]]);}
+  return{pts,cmd:`C${p1[0]} ${p1[1]} ${p2[0]} ${p2[1]} ${b[0]} ${b[1]}`};
+}
+// a path of straight parts and swap curves: each step is a point, or {curve:[x,y]} for a curve to that point
+function route(start,...steps){
+  let pts=[start],d=`M${start[0]} ${start[1]}`,at=start;
+  for(const s of steps){if(s.curve){const c=sCurve(at,s.curve);pts=pts.concat(c.pts.slice(1));d+=c.cmd;at=s.curve;}else{pts.push(s);d+=`L${s[0]} ${s[1]}`;at=s;}}
+  return{pts,d};
+}
+const plen=pts=>{let l=0;for(let j=1;j<pts.length;j++)l+=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);return l;};
+// a block that travels along several pieces; a piece may leave ink: a ribbon that fills as the block passes
+function travel(pieces){
+  let pts=[],tot=0,acc=0;const L=pieces.map(p=>{const l=plen(p.r.pts);tot+=l;return l;}),inks=[];
+  pieces.forEach((p,j)=>{pts=pts.concat(j?p.r.pts.slice(1):p.r.pts);if(p.ink)inks.push({d:p.ink.r.d,set:p.ink.set,w:p.ink.w,f0:acc/tot,f1:(acc+L[j])/tot});acc+=L[j];});
+  return{pts,inks};
+}
+// a ribbon: the first input is the outer strand, the last one the core. With many round keys only the last six are drawn
+function strands(d,set,w){
+  const s=set.length>8?set.slice(0,2).concat(set.slice(-6)):set,n=s.length;
+  let h=`<path class="rcase" pathLength="1" d="${d}" stroke-width="${w+4}"/>`;
+  s.forEach((id,j)=>{h+=`<path pathLength="1" d="${d}" style="stroke:var(${feVar(id)})" stroke-width="${(w*(n-j)/n).toFixed(2)}"/>`;});
+  return h;
+}
 FE.total=()=>4*FE.N;
 FE.stageOf=k=>{const j=Math.floor((k-1)/4),s=(k-1)%4;return{i:FE.mode==='enc'?j+1:FE.N-j,s};};
 FE.filled=(r,side)=>{
@@ -798,98 +941,107 @@ FE.filled=(r,side)=>{
   const base=4*(FE.N-(r+1));return side==='R'?FE.k>=base+2:FE.k>=base+4;
 };
 FE.init=()=>{
-  FE.M=feModel(FE.N);FE.prev=new Set();
+  FE.M=feModel(FE.N);FE.prev=new Set();FE.cache={};
   const N=FE.N,H=fby(N)+BH+16,dec=FE.mode==='dec',svg=$('svg-feistel');
   svg.setAttribute('viewBox',`0 0 ${fW} ${H}`);
-  let h='<g id="fe-bands"></g><g id="fe-wires">';
+  const trk=(d,w)=>`<path class="trk" d="${d}" stroke-width="${w}"/>`;
+  const chev=(x,y,dir)=>{const a=5,b=3.2;return `<path class="chv" d="${dir==='l'?`M${x+b} ${y-a}L${x-b} ${y}L${x+b} ${y+a}`:dir==='u'?`M${x-a} ${y+b}L${x} ${y-b}L${x+a} ${y+b}`:`M${x-a} ${y-b}L${x} ${y+b}L${x+a} ${y-b}`}"/>`;};
+  let w='',n='';
   for(let i=1;i<=N;i++){
-    const g=fG(i),id=n=>`fe-${n}-${i}`;
-    h+=`<text class="rl" x="12" y="${g.yt+4}">round ${i}</text>`;
-    h+=dec?lineSVG(id('lw1'),xL,g.yt-15,xL,g.y0+2,true):lineSVG(id('lw1'),xL,g.y0,xL,g.yt-15,true);
-    h+=dec?lineSVG(id('lw2'),xL,g.ycs,xL,g.yt+15,true):lineSVG(id('lw2'),xL,g.yt+15,xL,g.ycs,false);
-    h+=dec?lineSVG(id('rw1'),xR,g.yt,xR,g.y0+2,true):lineSVG(id('rw1'),xR,g.y0,xR,g.yt,false);
-    h+=dec?lineSVG(id('rw2'),xR,g.ycs,xR,g.yt,false):lineSVG(id('rw2'),xR,g.yt,xR,g.ycs,false);
-    h+=lineSVG(id('tap'),xR,g.yt,xF+FW/2,g.yt,true);
-    h+=lineSVG(id('key'),xF,g.yt-KCY+14,xF,g.yt-FH/2-1,true,'k');
-    h+=lineSVG(id('fout'),xF-FW/2,g.yt,xL+15,g.yt,true);
-    h+=dec?lineSVG(id('ca'),xR,g.yce,xL,g.ycs,false):lineSVG(id('ca'),xL,g.ycs,xR,g.yce,true);
-    h+=dec?lineSVG(id('cb'),xL,g.yce,xR,g.ycs,false):lineSVG(id('cb'),xR,g.ycs,xL,g.yce,true);
-    h+=`<circle cx="${xR}" cy="${g.yt}" r="4" class="mk" id="${id('dot')}"/>`;
-    h+=`<circle id="${id('xo')}" class="xo" cx="${xL}" cy="${g.yt}" r="15"/><line class="w" x1="${xL-9}" y1="${g.yt}" x2="${xL+9}" y2="${g.yt}"/><line class="w" x1="${xL}" y1="${g.yt-9}" x2="${xL}" y2="${g.yt+9}"/>`;
-    h+=`<g class="clickable" data-goto="f"><title>Open "Inside f"</title><rect id="${id('f')}" class="fb" x="${xF-FW/2}" y="${g.yt-FH/2}" width="${FW}" height="${FH}" rx="8"/><text class="ft" x="${xF}" y="${g.yt+6}" text-anchor="middle">f</text></g>`;
-    h+=`<g class="clickable" data-goto="ks" data-round="${i}"><title>Where does k${sb(i)} come from?</title><rect class="kc" x="${xF-28}" y="${g.yt-KCY-14}" width="56" height="28" rx="14"/><text class="kct" x="${xF}" y="${g.yt-KCY+5.5}" text-anchor="middle">k${sb(i)}</text></g>`;
+    const g=fG(i),id=s=>`fe-${s}-${i}`,v=dec?'u':'d';
+    // the old right half goes under, the mixed half goes over: its track has a gap-making case at the crossing
+    w+=trk(route([xR,g.y0],[xR,g.ycs],{curve:[xL,g.yce]},[xL,g.bot]).d,LW);
+    w+=`<path class="trkc" d="${route([xL,g.ycs],{curve:[xR,g.yce]}).d}" stroke-width="${LW+6}"/>`;
+    w+=trk(route([xL,g.y0],[xL,g.ycs],{curve:[xR,g.yce]},[xR,g.bot]).d,LW);
+    w+=trk(`M${xR-LW/2} ${g.yt}H${xF+FW/2}`,TW)+trk(`M${xF-FW/2} ${g.yt}H${xL+XR}`,TW)+trk(`M${xF} ${g.yt-KCY+14}V${g.yt-FH/2}`,KW);
+    w+=chev(xL,(g.y0+g.yt-XR)/2,v)+chev(xR,(g.y0+g.yt)/2,v)+chev((xR+xF+FW/2)/2,g.yt,'l')+chev((xF-FW/2+xL+XR)/2,g.yt,'l');
+    w+=`<text class="rc" x="46" y="${g.yt-26}" text-anchor="middle">round</text><text class="rn" id="${id('rn')}" x="46" y="${g.yt+18}" text-anchor="middle">${i}</text>`;
+    n+=`<circle id="${id('xo')}" class="xo" cx="${xL}" cy="${g.yt}" r="${XR}"/><path class="xp" d="M${xL-8.5} ${g.yt}H${xL+8.5}M${xL} ${g.yt-8.5}V${g.yt+8.5}"/>`;
+    n+=`<g class="clickable" data-goto="f"><title>Open "Inside f"</title><rect id="${id('f')}" class="fb" x="${xF-FW/2}" y="${g.yt-FH/2}" width="${FW}" height="${FH}" rx="16"/><text class="ft" x="${xF}" y="${g.yt+11}" text-anchor="middle">f</text></g>`;
+    n+=`<g class="clickable" data-goto="ks" data-round="${i}"><title>Where does k${sb(i)} come from?</title><rect class="kc" style="fill:var(${feVar('k'+i)})" x="${xF-30}" y="${g.yt-KCY-14}" width="60" height="28" rx="14"/><text class="kct" x="${xF}" y="${g.yt-KCY+5.5}" text-anchor="middle">${mth('k',i)}</text></g>`;
   }
-  h+=`<text class="hint" x="${xF+FW/2+8}" y="${fG(1).yt+FH/2+14}">click f or k</text>`;
-  h+='</g><g id="fe-boxes"></g><g id="fe-anim"></g>';
-  svg.innerHTML=h;
+  n+=`<text class="hint" x="${xF+FW/2+10}" y="${fG(1).yt+FH/2+14}">click f or k</text>`;
+  svg.innerHTML=`<g id="fe-bands"></g><g id="fe-wires">${w}</g><g id="fe-ink"></g><g id="fe-live"></g><g id="fe-nodes">${n}</g><g id="fe-boxes"></g><g id="fe-anim"></g>`;
 };
 FE.boxLabel=(r,side)=>{
-  if(r===0)return side==='L'?'<tspan font-weight="700">L₀</tspan> · left half of x':'<tspan font-weight="700">R₀</tspan> · right half of x';
-  return side==='L'?`<tspan font-weight="700">L${sb(r)}</tspan> = R${sb(r-1)}`:`<tspan font-weight="700">R${sb(r)}</tspan> = L${sb(r-1)} <tspan font-size="12">⊕</tspan> f${sb(r)}`;
+  if(r===0)return `<tspan class="mb">${mth(side,0)}</tspan><tspan class="bts" dx="5">${side==='L'?'left':'right'} half of x</tspan>`;
+  return side==='L'?`<tspan class="mb">${mth('L',r)}</tspan> = ${mth('R',r-1)}`:`<tspan class="mb">${mth('R',r)}</tspan> = ${mth('L',r-1)}<tspan dx="5">⊕</tspan><tspan dx="7">${mth('f',r)}</tspan>`;
 };
 FE.render=()=>{
-  document.querySelectorAll('#fe-wires .on').forEach(e=>e.classList.remove('on'));
-  document.querySelectorAll('#fe-wires .pulse').forEach(e=>e.classList.remove('pulse'));
-  $('fe-anim').innerHTML='';
+  document.querySelectorAll('#svg-feistel .on,#svg-feistel .pulse,#svg-feistel .cur').forEach(e=>e.classList.remove('on','pulse','cur'));
+  $('fe-anim').innerHTML='';$('fe-live').innerHTML='';
   let h='';const now=new Set();
   for(let r=0;r<=FE.N;r++)for(const side of ['L','R']){
     const cx=side==='L'?xL:xR,x=cx-BW/2,y=fby(r),f=FE.filled(r,side),set=(side==='L'?FE.M.L:FE.M.R)[r],key=r+side;
-    h+=`<rect class="bx ${f?'full':'empty'}" x="${x}" y="${y}" width="${BW}" height="${BH}" rx="8"/>`;
-    h+=`<text class="bt${f?'':' dim'}" x="${x+12}" y="${y+21}">${FE.boxLabel(r,side)}</text>`;
+    h+=`<rect class="bx ${f?'full':'empty'}" x="${x}" y="${y}" width="${BW}" height="${BH}" rx="13"/>`;
+    h+=`<text class="bt${f?'':' dim'}" x="${x+14}" y="${y+(f?22:32)}">${FE.boxLabel(r,side)}</text>`;
     if(f){now.add(key);
-      const sw=(BW-24)/set.length;let st=stripes(x+12,y+29,BW-24,18,set.map(feColor),4);
-      set.forEach((ing,j)=>{if(sw>=24)st+=`<text class="segt" x="${x+12+j*sw+sw/2}" y="${y+42.5}" text-anchor="middle">${feName(ing)}</text>`;});
+      const sw=(BW-28)/set.length;let st=stripes(x+14,y+30,BW-28,15,set.map(feColor),7.5);
+      set.forEach((ing,j)=>{if(sw>=24)st+=`<text class="segt" x="${x+14+j*sw+sw/2}" y="${y+41.4}" text-anchor="middle">${feName(ing)}</text>`;});
       h+=`<g${FE.prev.size&&!FE.prev.has(key)?' class="grow"':''}>${st}</g>`;
-    }else h+=`<text class="q" x="${cx}" y="${y+44}" text-anchor="middle">?</text>`;
+    }
   }
   FE.prev=now;
   $('fe-boxes').innerHTML=h;
-  const k=FE.k;
-  if(k>0){const g=fG(FE.stageOf(k).i);$('fe-bands').innerHTML=`<rect class="band" x="4" y="${g.top+BH+4}" width="${fW-8}" height="${g.bot-g.top-BH-8}" rx="10"/>`;}
-  else $('fe-bands').innerHTML='';
-  if(k>0){const pl=FE.raw(k);for(const m of pl.moves){if(m.fadeEnd)continue;const set=m.morph?m.morph.set:m.set,lab=m.morph?m.morph.label:m.label;const n=node($('fe-anim'),feTok(set,lab),'tok');n.style.opacity=1;const pt=m.pts[m.pts.length-1];n.setAttribute('transform',`translate(${pt[0]},${pt[1]})`);}}
+  // every ribbon that a finished step has filled
+  const k=FE.k;let ink='';
+  for(let j=1;j<=k;j++)for(const m of FE.raw(j).moves)for(const q of m.inks||[])ink+=`<g>${strands(q.d,q.set,q.w)}</g>`;
+  $('fe-ink').innerHTML=ink;
+  if(k>0){
+    const pl=FE.raw(k),g=fG(pl.i);$(`fe-rn-${pl.i}`).classList.add('cur');
+    $('fe-bands').innerHTML=`<rect class="band" x="12" y="${g.yt-46}" width="68" height="78" rx="16"/>`;
+    for(const m of pl.moves){if(m.fadeEnd)continue;const set=m.morph?m.morph.set:m.set,lab=m.morph?m.morph.label:m.label;const n=node($('fe-anim'),feTok(set,lab),'tok');n.style.opacity=1;const pt=m.pts[m.pts.length-1];n.setAttribute('transform',`translate(${pt[0]},${pt[1]})`);}
+  }else $('fe-bands').innerHTML='';
 };
-FE.raw=k=>{
-  const {i,s}=FE.stageOf(k),g=fG(i),M=FE.M,p=i-1,id=n=>`fe-${n}-${i}`;
+FE.raw=k=>FE.cache[k]||(FE.cache[k]=FE.build(k));
+FE.build=k=>{
+  const {i,s}=FE.stageOf(k),g=fG(i),M=FE.M,p=i-1,yS=fby(i),yP=fby(p);
   const lab={L:'L'+sb(p),R:'R'+sb(p),f:'f'+sb(i),k:'k'+sb(i),Ln:'L'+sb(i),Rn:'R'+sb(i)};
-  const nearX=w=>xL+15+w/2+4;
+  const fw=tokW(lab.f),nearX=xL+XR+fw/2+4,fOut=xF-FW/2-fw/2-10,inF=xF+FW/2+tokW(lab.R)/2-6;
+  const ink=(r,set,w)=>({r,set,w}),go=(a,b)=>route(a,b);
+  const keyIn={set:['k'+i],label:lab.k,a:.35,fadeEnd:true,fadeIn:true,...travel([{r:go([xF,g.yt-KCY],[xF,g.yt-FH/2-8]),ink:ink(go([xF,g.yt-KCY+14],[xF,g.yt-FH/2]),['k'+i],KW)}])};
+  const tap=ink(go([xR-LW/2,g.yt],[xF+FW/2,g.yt]),M.R[p],TW),fout=ink(go([xF-FW/2,g.yt],[xL+XR,g.yt]),M.F[i],TW);
   if(FE.mode==='enc'){
-    if(s===0)return{i,s,dur:1500,f:'on',wires:[id('rw1'),id('tap'),id('key'),id('dot')],moves:[
-      {set:M.R[p],label:lab.R,pts:[[xR,g.y0-6],[xR,g.yt],[xF+FW/2+tokW(lab.R)/2-6,g.yt]],fadeEnd:true,fi:.08},
-      {set:['k'+i],label:lab.k,pts:[[xF,g.yt-KCY],[xF,g.yt-FH/2-8]],a:.35,fadeEnd:true,fadeIn:true}]};
-    if(s===1)return{i,s,dur:1400,f:'pulse',wires:[],moves:[
-      {set:M.F[i],label:lab.f,pts:[[xF,g.yt],[xF-FW/2-tokW(lab.f)/2-10,g.yt]],a:.45,fadeIn:true}]};
-    if(s===2){const fw=tokW(lab.f);return{i,s,dur:1500,wires:[id('fout'),id('lw1'),id('xo')],moves:[
-      {set:M.F[i],label:lab.f,pts:[[xF-FW/2-fw/2-10,g.yt],[nearX(fw),g.yt]]},
-      {set:M.L[p],label:lab.L,pts:[[xL,g.y0-6],[xL,g.yt-15-17]],fi:.08}]};}
-    return{i,s,dur:2200,wires:[id('lw2'),id('ca'),id('cb'),id('rw2'),id('xo')],moves:[
-      {set:M.F[i],label:lab.f,pts:[[nearX(tokW(lab.f)),g.yt],[xL,g.yt]],b:.16,fo:.08,fadeEnd:true},
-      {set:M.L[p],label:lab.L,pts:[[xL,g.yt-15-17],[xL,g.yt]],b:.16,fo:.08,fadeEnd:true},
-      {set:M.R[i],label:`L${sb(p)}⊕f${sb(i)}`,pts:[[xL,g.yt],[xL,g.ycs],[xR,g.yce],[xR,fby(i)+BH/2]],hold:.2,fi:.12,fadeEnd:true},
-      {set:M.R[p],label:lab.R,pts:[[xR,g.y0-6],[xR,g.ycs],[xL,g.yce],[xL,fby(i)+BH/2]],a:.2,fi:.08,fadeEnd:true}]};
+    if(s===0)return{i,s,dur:1600,f:'on',moves:[
+      {set:M.R[p],label:lab.R,fadeEnd:true,fi:.08,...travel([{r:go([xR,g.y0-4],[xR,g.yt]),ink:ink(go([xR,g.y0],[xR,g.yt+JN]),M.R[p],LW)},{r:go([xR,g.yt],[inF,g.yt]),ink:tap}])},
+      keyIn]};
+    if(s===1)return{i,s,dur:1400,f:'pulse',moves:[
+      {set:M.F[i],label:lab.f,pts:[[xF,g.yt],[fOut,g.yt]],a:.45,fadeIn:true}]};
+    if(s===2)return{i,s,dur:1600,xo:true,moves:[
+      {set:M.F[i],label:lab.f,...travel([{r:go([fOut,g.yt],[nearX,g.yt]),ink:fout}])},
+      {set:M.L[p],label:lab.L,fi:.08,...travel([{r:go([xL,g.y0-4],[xL,g.yt-XR-17]),ink:ink(go([xL,g.y0],[xL,g.yt-XR]),M.L[p],LW)}])}]};
+    const A=route([xL,g.yt+XR],[xL,g.ycs],{curve:[xR,g.yce]},[xR,yS]),B=route([xR,g.yt+JN],[xR,g.ycs],{curve:[xL,g.yce]},[xL,yS]);
+    return{i,s,dur:2300,xo:true,moves:[
+      {set:M.F[i],label:lab.f,pts:[[nearX,g.yt],[xL,g.yt]],b:.16,fo:.08,fadeEnd:true},
+      {set:M.L[p],label:lab.L,pts:[[xL,g.yt-XR-17],[xL,g.yt]],b:.16,fo:.08,fadeEnd:true},
+      {set:M.R[p],label:lab.R,a:.08,b:.9,fi:.08,fadeEnd:true,...travel([{r:go([xR,g.yt],[xR,g.yt+JN])},{r:B,ink:ink(B,M.L[i],LW)},{r:go([xL,yS],[xL,yS+BH/2])}])},
+      {set:M.R[i],label:`L${sb(p)}⊕f${sb(i)}`,hold:.26,fi:.12,fadeEnd:true,...travel([{r:go([xL,g.yt],[xL,g.yt+XR])},{r:A,ink:ink(A,M.R[i],LW)},{r:go([xR,yS],[xR,yS+BH/2])}])}]};
   }
-  if(s===0)return{i,s,dur:1700,wires:[id('cb'),id('rw2')],moves:[
-    {set:M.L[i],label:lab.Ln,pts:[[xL,fby(i)+6],[xL,g.yce],[xR,g.ycs],[xR,g.yt]],fi:.08}]};
-  if(s===1){const w=tokW(lab.R);return{i,s,dur:1600,f:'on',wires:[id('rw1'),id('tap'),id('key'),id('dot')],moves:[
-    {set:M.R[p],label:lab.R,pts:[[xR,g.yt],[xR,fby(p)+BH/2]],fadeEnd:true},
-    {set:M.R[p],label:lab.R,pts:[[xR,g.yt],[xF+FW/2+w/2-6,g.yt]],fadeEnd:true},
-    {set:['k'+i],label:lab.k,pts:[[xF,g.yt-KCY],[xF,g.yt-FH/2-8]],a:.35,fadeEnd:true,fadeIn:true}]};}
-  if(s===2){const fw=tokW(lab.f);return{i,s,dur:1900,f:'pulse',wires:[id('fout'),id('ca'),id('lw2'),id('xo')],moves:[
-    {set:M.F[i],label:lab.f,pts:[[xF,g.yt],[nearX(fw),g.yt]],a:.3,fadeIn:true},
-    {set:M.R[i],label:lab.Rn,pts:[[xR,fby(i)+6],[xR,g.yce],[xL,g.ycs],[xL,g.yt+15+17]],fi:.08}]};}
-  return{i,s,dur:2400,wires:[id('lw1'),id('xo')],moves:[
-    {set:M.F[i],label:lab.f,pts:[[nearX(tokW(lab.f)),g.yt],[xL,g.yt]],b:.14,fo:.07,fadeEnd:true},
-    {set:M.R[i],label:lab.Rn,pts:[[xL,g.yt+15+17],[xL,g.yt]],b:.14,fo:.07,fadeEnd:true},
-    {set:M.R[i],label:`L${sb(p)}⊕f${sb(i)}⊕f${sb(i)}`,morph:{set:M.L[p],label:lab.L},pts:[[xL,g.yt],[xL,g.y0-6],[xL,fby(p)+BH/2]],hold:.45,fi:.1,fadeEnd:true}]};
+  // decryption walks the same ribbons from the bottom up
+  if(s===0){const B=route([xL,yS],[xL,g.yce],{curve:[xR,g.ycs]},[xR,g.yt+JN]);return{i,s,dur:1800,moves:[
+    {set:M.L[i],label:lab.Ln,fi:.08,...travel([{r:go([xL,yS+6],[xL,yS])},{r:B,ink:ink(B,M.L[i],LW)},{r:go([xR,g.yt+JN],[xR,g.yt])}])}]};}
+  if(s===1)return{i,s,dur:1700,f:'on',moves:[
+    {set:M.R[p],label:lab.R,fadeEnd:true,...travel([{r:go([xR,g.yt],[xR,g.y0]),ink:ink(go([xR,g.yt+JN],[xR,g.y0]),M.R[p],LW)},{r:go([xR,g.y0],[xR,yP+BH/2])}])},
+    {set:M.R[p],label:lab.R,fadeEnd:true,...travel([{r:go([xR,g.yt],[inF,g.yt]),ink:tap}])},
+    keyIn]};
+  if(s===2){const A=route([xR,yS],[xR,g.yce],{curve:[xL,g.ycs]},[xL,g.yt+XR]),At=route([xR,yS],[xR,g.yce],{curve:[xL,g.ycs]},[xL,g.yt+XR+17]);return{i,s,dur:2000,f:'pulse',xo:true,moves:[
+    {set:M.F[i],label:lab.f,a:.3,fadeIn:true,...travel([{r:go([xF,g.yt],[xF-FW/2,g.yt])},{r:go([xF-FW/2,g.yt],[nearX,g.yt]),ink:fout}])},
+    {set:M.R[i],label:lab.Rn,fi:.08,...travel([{r:go([xR,yS+6],[xR,yS])},{r:At,ink:ink(A,M.R[i],LW)}])}]};}
+  return{i,s,dur:2400,xo:true,moves:[
+    {set:M.F[i],label:lab.f,pts:[[nearX,g.yt],[xL,g.yt]],b:.14,fo:.07,fadeEnd:true},
+    {set:M.R[i],label:lab.Rn,pts:[[xL,g.yt+XR+17],[xL,g.yt]],b:.14,fo:.07,fadeEnd:true},
+    {set:M.R[i],label:`L${sb(p)}⊕f${sb(i)}⊕f${sb(i)}`,morph:{set:M.L[p],label:lab.L},hold:.45,fi:.1,fadeEnd:true,...travel([{r:go([xL,g.yt],[xL,g.yt-XR])},{r:go([xL,g.yt-XR],[xL,g.y0]),ink:ink(go([xL,g.yt-XR],[xL,g.y0]),M.L[p],LW)},{r:go([xL,g.y0],[xL,yP+BH/2])}])}]};
 };
 FE.plan=k=>{
   const pl=FE.raw(k);
   return{dur:pl.dur,focus:pl.i,start:()=>{
-    $('fe-anim').innerHTML='';
-    setOn(pl.wires,true);
+    $('fe-anim').innerHTML='';const live=$('fe-live');live.innerHTML='';
+    if(pl.xo)$(`fe-xo-${pl.i}`).classList.add('on');
     const f=$(`fe-f-${pl.i}`);if(pl.f==='on')f.classList.add('on');if(pl.f==='pulse')f.classList.add('on','pulse');
     const moves=pl.moves.map(m=>{const mm=Object.assign({},m);mm.node=node($('fe-anim'),feTok(m.set,m.label),'tok');
-      if(m.morph)mm.morph=n=>{n.innerHTML=feTok(m.morph.set,m.morph.label);};return mm;});
+      if(m.morph)mm.morph=n=>{n.innerHTML=feTok(m.morph.set,m.morph.label);};
+      mm.inkEls=(m.inks||[]).map(q=>{const g=document.createElementNS(NS,'g');g.innerHTML=strands(q.d,q.set,q.w);g.style.strokeDashoffset=1;live.appendChild(g);return{g,f0:q.f0,f1:q.f1};});
+      return mm;});
     return mover(moves);
   }};
 };
@@ -903,7 +1055,7 @@ FE.focus=i=>{
 FE.progress=k=>k===0?'Ready':(()=>{const {i,s}=FE.stageOf(k);return `Round ${i}${FE.mode==='enc'?'':' (backwards)'} · step ${s+1} of 4`;})();
 FE.explain=k=>{
   const N=FE.N,enc=FE.mode==='enc';
-  if(k===0)return enc?`<p class="step">Start</p><p>The block is cut into two halves: <b style="color:var(--cL)">L₀</b> (blue) and <b style="color:var(--cR)">R₀</b> (orange).</p><p>Watch the colours: they show which inputs each half depends on. At the start, each half knows only itself.</p><p>Tip: click an <b>f</b> box to look inside it, or a <b>k</b> chip to see where that round key comes from.</p>`
+  if(k===0)return enc?`<p class="step">Start</p><p>The block is cut into two halves: <b style="color:var(--cL)">L₀</b> (blue) and <b style="color:var(--cR)">R₀</b> (orange).</p><p>Each half is a ribbon, and every coloured strand in it is one input that the value depends on. At the start, each half knows only itself.</p><p>Tip: click an <b>f</b> box to look inside it, or a <b>k</b> chip to see where that round key comes from.</p>`
     :`<p class="step">Start (decryption)</p><p>We start at the bottom with L${sb(N)} and R${sb(N)} and walk back up the ladder.</p><p>We use the <b>same f</b> and the same round keys, in reverse order: k${sb(N)} first. Nothing is computed backwards.</p>`;
   const {i,s}=FE.stageOf(k),p=i-1;
   const names=set=>set.length<=6?set.map(feName).join(', '):`${set.length} inputs: both halves of the plaintext and ${set.length-2} round keys`;
@@ -924,11 +1076,11 @@ FE.explain=k=>{
                          :`<p class="note">Back at L₀ and R₀: the plaintext. Encryption mixed the colours; decryption removed them again, round by round.</p>`;
   return h;
 };
-FE.legend=()=>`<h3>Colours</h3>
+FE.legend=()=>`<h3>Strands</h3>
   <div class="lg"><span class="sw" style="background:var(--cL)"></span>L₀, the left half of the plaintext</div>
   <div class="lg"><span class="sw" style="background:var(--cR)"></span>R₀, the right half of the plaintext</div>
   <div class="lg"><span class="sw" style="background:linear-gradient(90deg,var(--cK1) 50%,var(--cK2) 50%)"></span>round keys k₁, k₂, …</div>
-  <p class="small">fᵢ = f(Rᵢ₋₁, kᵢ). A coloured stripe means “this half depends on that input”.</p>`;
+  <p class="small">fᵢ = f(Rᵢ₋₁, kᵢ). A ribbon has one strand for every input its value depends on. When there are many round keys, only the last six are drawn.</p>`;
 FE.extra=k=>{
   const N=FE.N,cr=k>0?(FE.mode==='enc'?FE.stageOf(k).i:FE.stageOf(k).i-1):-1;
   let t='<h3>What each half depends on</h3><table class="mix"><tr><th></th><th>L</th><th>R</th></tr>';
