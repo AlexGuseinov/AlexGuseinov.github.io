@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Numbers, groups, rings and fields</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
+  --n0:#2f6fd0;--n1:#2f9e6a;--n2:#b8690f;--n3:#7d55c7;--n4:#c8372d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --cs:32px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
+  --n0:#5a8fe8;--n1:#45b882;--n2:#f0a35e;--n3:#b49aec;--n4:#f07a70;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:25px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text],input[type=number]{font:14px var(--mono);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:70px;text-transform:uppercase}input[type=number]{width:74px}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.note{display:block;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.warn{display:block;padding:8px 10px;border-radius:7px;background:var(--xorBg);font-size:14px;border-left:3px solid var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.inbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.err{color:var(--xor);font-size:13px;flex-basis:100%}
+.err:empty{display:none}
+.sec{margin-top:22px}
+.pics-s{font-size:13px;color:var(--muted);max-width:68ch;margin:0 0 10px}
+.scroll{overflow-x:auto;max-width:100%}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+@keyframes come{from{opacity:0;transform:translateY(4px)}}
+.nw{animation:come .35s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* the number sets, one inside the other */
+.sets{width:100%;max-width:700px;height:auto;display:block;margin:0 auto}
+.sets rect{fill:color-mix(in srgb,var(--c) 7%,var(--panel));stroke:var(--c);stroke-width:1.6;transition:opacity .3s}
+.sets .cur rect{stroke-width:3;fill:color-mix(in srgb,var(--c) 16%,var(--panel))}
+.sets g.off{opacity:.16}
+.sets g{transition:opacity .3s}
+.sets .sl{font:700 20px var(--math);fill:var(--c)}
+.sets .sn{font:13px var(--sans);fill:var(--muted)}
+.sets .se{font:16px var(--math);fill:var(--ink)}
+/* tables of results */
+table.ops{border-collapse:collapse;margin:14px auto 0;font-size:14.5px}
+table.ops th,table.ops td{padding:6px 12px;border-bottom:1px solid var(--line);text-align:center}
+table.ops th{color:var(--muted);font-weight:600;font-size:13px}
+table.ops td:first-child{text-align:left;white-space:nowrap}
+table.ops td small{display:block;color:var(--muted);font:11.5px var(--mono)}
+table.ops .sy{font:700 17px var(--math);margin-right:6px}
+.tbs{display:flex;flex-wrap:wrap;gap:18px 28px;justify-content:center;align-items:flex-start}
+.tb{min-width:0;max-width:100%}
+.tb .cap{font-size:13.5px;color:var(--muted);margin:0 0 6px;text-align:center}
+.tb .cap b{color:var(--ink)}
+table.ct{border-collapse:separate;border-spacing:2px;margin:0 auto;font:600 13px var(--mono)}
+table.ct th,table.ct td{width:var(--cs);height:var(--cs);text-align:center;border-radius:5px;padding:0}
+table.ct th{color:var(--muted);font-weight:700}
+table.ct th.op{font:700 16px var(--math);color:var(--ink)}
+table.ct td{background:color-mix(in srgb,var(--ink) 5%,transparent);transition:background .25s,color .25s}
+table.ct td.in{background:var(--accentBg)}
+table.ct td.hl,table.ct th.hl{background:var(--ambBg);color:var(--amb)}
+table.ct td.iv{background:var(--okBg);color:var(--ok);outline:2px solid var(--ok);outline-offset:-2px}
+table.ct td.bad,table.ct th.bad{background:var(--xorBg);color:var(--xor)}
+table.ct th.ok{background:var(--okBg);color:var(--ok)}
+table.ct td.s1{background:var(--accentBg)}
+table.ct td.s2{background:var(--keyBg)}
+table.ct td.dg{background:color-mix(in srgb,var(--ink) 14%,transparent)}
+table.ct td.pk{outline:3px solid var(--amb);outline-offset:-3px;background:var(--ambBg);color:var(--amb)}
+.chk{list-style:none;margin:14px auto 0;padding:0;max-width:440px;font-size:14.5px}
+.chk li{display:flex;gap:10px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line)}
+.chk li.todo{color:var(--faint)}
+.chk li b{flex:none;width:18px;text-align:center}
+.chk li.now{background:var(--ambBg)}
+.verdict{margin:14px auto 0;max-width:560px;text-align:center}
+.verdict span{display:inline-block;padding:7px 14px;border-radius:999px;font-weight:600;font-size:14.5px}
+.verdict .y{background:var(--okBg);color:var(--ok)}.verdict .n{background:var(--xorBg);color:var(--xor)}
+/* the three structures */
+.rings3{width:100%;max-width:420px;height:auto;display:block;margin:0 auto}
+.rings3 ellipse{fill:color-mix(in srgb,var(--c) 8%,var(--panel));stroke:var(--c);stroke-width:2;transition:opacity .3s}
+.rings3 g{transition:opacity .3s}
+.rings3 g.off{opacity:.18}
+.rings3 g.cur ellipse{stroke-width:3.4;fill:color-mix(in srgb,var(--c) 18%,var(--panel))}
+.rings3 .rl{font:italic 700 26px var(--math);fill:var(--c)}
+.rings3 .ro{font:600 17px var(--mono);fill:var(--ink)}
+.rings3 .rn{font:13px var(--sans);fill:var(--muted)}
+.two{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:18px 28px;align-items:start}
+@media (max-width:1240px){.two{grid-template-columns:minmax(0,1fr)}}
+.invl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;font:13.5px var(--mono)}
+.invl li{padding:6px 10px;border-radius:7px;background:var(--okBg);color:var(--ink)}
+.invl li.n{background:var(--xorBg)}
+.invl li small{display:block;color:var(--muted);font-size:11.5px}
+/* GF(p) calculator and the list of sizes */
+.calc{margin:14px auto 0;max-width:560px;display:grid;gap:6px}
+.calc div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);font:13.5px var(--mono)}
+.calc div b{font:600 13px var(--sans);color:var(--muted)}
+.calc div.now{background:var(--ambBg)}
+.sizes{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sizes i{font:600 13px var(--mono);font-style:normal;min-width:40px;padding:5px 6px;text-align:center;border-radius:7px;background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--faint)}
+.sizes i.y{background:var(--okBg);color:var(--ok)}
+.sizes i small{display:block;font-size:10.5px;font-weight:400}
+/* bytes as polynomials */
+.byr{display:grid;grid-template-columns:86px auto minmax(0,1fr);gap:6px 12px;align-items:center;margin:0 0 8px}
+.byr .bl{font:600 13px var(--sans);color:var(--muted)}
+.bits{display:flex;gap:3px}
+.bits i{font-style:normal;width:var(--cs);text-align:center;border-radius:6px;background:color-mix(in srgb,var(--ink) 5%,transparent);font:700 14px/1.2 var(--mono);padding:3px 0 4px;color:var(--faint)}
+.bits i small{display:block;font:10.5px var(--math);color:var(--faint)}
+.bits i.on{background:var(--accentBg);color:var(--accent)}
+.bits.x i.on{background:var(--okBg);color:var(--ok)}
+.bits.p i.on{background:var(--keyBg);color:var(--key)}
+.byr .pl{font:italic 16px var(--math);min-width:0;overflow-wrap:anywhere}
+.byr .pl sup{font-style:normal;font-size:.68em}
+@media (max-width:700px){.byr{grid-template-columns:70px minmax(0,1fr)}.byr .pl{grid-column:1/-1}}
+table.mul{border-collapse:collapse;margin:6px 0 0;font:13px var(--mono)}
+table.mul th,table.mul td{padding:4px 12px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+table.mul th{font:600 12.5px var(--sans);color:var(--muted)}
+table.mul tr.use td{background:var(--okBg)}
+table.mul tr.skip td{color:var(--faint)}
+/* where it is used */
+table.map{border-collapse:collapse;width:100%;font-size:14.5px}
+table.map th,table.map td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.map th{font-size:13px;color:var(--muted);font-weight:600}
+table.map td:first-child{white-space:nowrap;font-weight:600}
+table.map .ex{font:14px var(--mono)}
+.tag{display:inline-block;font:600 11.5px var(--sans);padding:2px 8px;border-radius:10px;margin-right:6px}
+.tag.g{background:var(--accentBg);color:var(--accent)}.tag.r{background:var(--ambBg);color:var(--amb)}.tag.f{background:var(--okBg);color:var(--ok)}
+dl.words{margin:0}
+dl.words dt{font-weight:700;margin-top:8px}
+dl.words dt:first-child{margin-top:0}
+dl.words dd{margin:0;color:var(--muted)}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Numbers, groups, rings and fields</h1>
+  <p class="sub">The maths under AES, GCM, RSA and Diffie–Hellman: from the counting numbers to finite (Galois) fields, one idea at a time</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="num" class="on">1 · Numbers</button>
+    <button data-tab="grp">2 · Group</button>
+    <button data-tab="ring">3 · Ring</button>
+    <button data-tab="field">4 · Field</button>
+    <button data-tab="gfp">5 · GF(p)</button>
+    <button data-tab="gf2">6 · GF(2ᵐ)</button>
+    <button data-tab="map">7 · Where it is used</button>
+  </nav>
+</header>
+
+<section class="wrap"><div class="card inbar" id="bar" hidden></div></section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stage"></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: every table and result on this page is computed in your browser.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const SUBD='₀₁₂₃₄₅₆₇₈₉',sub=n=>String(n).split('').map(d=>SUBD[+d]).join('');
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const modpow=(b,e,m)=>{let r=1%m;b%=m;while(e>0){if(e&1)r=r*b%m;b=b*b%m;e>>=1}return r};
+const inv=(a,m)=>{for(let x=1;x<m;x++)if(a*x%m===1)return x;return null};
+const isPrime=n=>{if(n<2)return false;for(let d=2;d*d<=n;d++)if(n%d===0)return false;return true};
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const hx=v=>v.toString(16).toUpperCase().padStart(2,'0');
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
+const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a.at(-1):String(a[0]);
+
+/* ---------- what the reader has chosen ---------- */
+const ST={tab:'num',step:{},gm:5,gop:'add',rm:6,fmod:7,p:7,a:3,b:5,ha:0x57,hb:0x83,q:{},playT:null,playing:false};
+const T={};
+const stage=$('#stage');
+
+// a table of every result a ∘ b. cls(a,b,v): classes of a cell, hd(a): classes of a heading
+function cayley(S,f,sym,cls=()=>'',hd=()=>'',show=v=>v){
+  let h=`<div class="scroll"><table class="ct"><tr><th class="op">${sym}</th>${S.map(b=>`<th class="${hd(b)}">${show(b)}</th>`).join('')}</tr>`;
+  for(const a of S)h+=`<tr><th class="${hd(a)}">${show(a)}</th>${S.map(b=>{const v=f(a,b);return`<td class="${cls(a,b,v)}">${show(v)}</td>`}).join('')}</tr>`;
+  return h+'</table></div>';
+}
+
+/* ---------- 1 · the number sets ---------- */
+const SETS=[
+  {s:'ℕ',n:'natural numbers',c:'--n0',ex:'0   1   2   3   …',ops:[1,0,1,0],bad:['','3 − 5','','3 ÷ 2'],st:'none of the three'},
+  {s:'ℤ',n:'integers',c:'--n1',ex:'−1   −2   −3',ops:[1,1,1,0],bad:['','','','3 ÷ 2'],st:'ring'},
+  {s:'ℚ',n:'rational numbers',c:'--n2',ex:'½    −¾    0.25',ops:[1,1,1,1],bad:[],st:'field'},
+  {s:'ℝ',n:'real numbers',c:'--n3',ex:'√2    π    e',ops:[1,1,1,1],bad:[],st:'field'},
+  {s:'ℂ',n:'complex numbers',c:'--n4',ex:'i    2 + 3i',ops:[1,1,1,1],bad:[],st:'field'}];
+function setsSVG(k){
+  // boxes from the outside in, so that the inner ones are drawn on top. Each box has its name at the top and,
+  // in the strip under the box inside it, the numbers that are new in this set
+  const W=700,H=318;
+  let h=`<svg class="sets" viewBox="0 0 ${W} ${H}" role="img" aria-label="The natural numbers inside the integers, inside the rationals, inside the reals, inside the complex numbers">`;
+  for(let i=4;i>=0;i--){const d=4-i,x=6+26*d,w=688-52*d,y=6+30*d,bot=312-28*d,s=SETS[i],on=k===0||k>=6||i<k,cur=k>0&&k<6&&i===k-1;
+    h+=`<g class="${on?'':'off'}${cur?' cur':''}" style="--c:var(${s.c})"><rect x="${x}" y="${y}" width="${w}" height="${bot-y}" rx="14"/><text class="sl" x="${x+12}" y="${y+23}">${s.s}</text><text class="sn" x="${x+38}" y="${y+22}">${s.n}</text>`;
+    h+=`<text class="se" x="${W/2}" y="${i?bot-9:y+53}" text-anchor="middle" xml:space="preserve">${s.ex}</text></g>`}
+  return h+'</svg>';
+}
+function opsTable(k){
+  const n=k===0?0:Math.min(k,5),end=k>=6;
+  if(!n)return'';
+  let h=`<div class="scroll"><table class="ops"><tr><th>Set</th><th>a + b</th><th>a − b</th><th>a · b</th><th>a ÷ b</th>${end?'<th>It is a</th>':''}</tr>`;
+  for(let i=0;i<n;i++){const s=SETS[i];
+    h+=`<tr class="${i===n-1&&!end?'nw':''}"><td><span class="sy" style="color:var(${s.c})">${s.s}</span>${s.n}</td>${s.ops.map((o,j)=>`<td>${o?Y:N}${o?'':`<small>${s.bad[j]}</small>`}</td>`).join('')}${end?`<td>${s.st}</td>`:''}</tr>`}
+  return h+`</table></div><p class="pics-s" style="margin:8px auto 0;text-align:center">${Y} = the result is always in the same set again. Division means: by anything except 0.</p>`;
+}
+T.num={n:()=>7,
+  view:k=>setsSVG(k)+opsTable(k),
+  say:k=>[
+    say('Start with counting','Cryptography computes with numbers. So the first questions are: which numbers, and what can we do with them without leaving the set?','We start with the numbers everyone knows and watch what each set can and cannot do. Press <b>Step</b>.'),
+    say('Step 1 · natural numbers ℕ','0, 1, 2, 3, … the counting numbers. (Some books start at 1.)','Adding or multiplying two of them gives a natural number again. Subtraction can leave the set: 3 − 5 is not a natural number.'),
+    say('Step 2 · integers ℤ','Add the negative numbers. Now subtraction always works, because every number has an opposite: a + (−a) = 0.','Division can still leave the set: 3 ÷ 2 is not an integer.'),
+    say('Step 3 · rational numbers ℚ','Add the fractions a/b. Now division works too, by anything except 0, because every non-zero number has an inverse: a · (1/a) = 1.','ℚ is the first set in which all four operations stay inside.'),
+    say('Step 4 · real numbers ℝ','No fraction has the square 2. The real numbers fill such gaps on the number line: √2, π, e.','The four operations work exactly as in ℚ.'),
+    say('Step 5 · complex numbers ℂ','Add a number i with i² = −1. Then every polynomial equation has a solution.','The four operations still work.'),
+    say('The pattern','Each new set was made so that one more operation always works. These levels have names: <b>group</b>, <b>ring</b> and <b>field</b>. The next tabs take them one by one.','<span class="warn">ℚ, ℝ and ℂ are fields, but with infinitely many elements, and a computer cannot even store √2 exactly. Cryptography needs a field with a fixed, finite number of elements: a <b>finite field</b>.</span>')][k],
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>Closed</dt><dd>An operation is closed on a set if its result never leaves the set.</dd><dt>Opposite, −a</dt><dd>The number that brings a back to 0 under addition.</dd><dt>Inverse, a⁻¹</dt><dd>The number that brings a back to 1 under multiplication.</dd></dl>`};
+
+/* ---------- 2 · group: one operation, four rules ---------- */
+function grpData(){
+  const m=ST.gm,add=ST.gop==='add',S=add?range(0,m-1):range(1,m-1),f=add?(a,b)=>(a+b)%m:(a,b)=>a*b%m,e=add?0:1;
+  const closed=S.every(a=>S.every(b=>S.includes(f(a,b)))),partner=a=>S.find(b=>f(a,b)===e),lack=S.filter(a=>partner(a)===undefined);
+  const pick=i=>S[Math.min(i,S.length-1)],ex=[pick(1),pick(2),pick(3)];
+  return{m,add,S,f,e,closed,partner,lack,ex,sym:add?'+':'·',name:add?`(ℤ${sub(m)}, +)`:`(ℤ${sub(m)} without 0, ·)`,isGroup:closed&&!lack.length};
+}
+T.grp={n:()=>7,
+  bar:()=>`<div class="fld"><span class="flh"><b>Set and operation</b></span><span class="seg" id="gop"><button data-gop="add" class="${ST.gop==='add'?'on':''}">ℤₘ with +</button><button data-gop="mul" class="${ST.gop==='mul'?'on':''}">ℤₘ without 0, with ·</button></span></div>
+    <label class="fld"><span class="flh"><b>m</b> · everything is computed modulo m</span><select data-set="gm">${range(2,12).map(v=>`<option${v===ST.gm?' selected':''}>${v}</option>`).join('')}</select></label>`,
+  view(k){
+    const d=grpData(),{S,f,e}=d;
+    const cls=(a,b,v)=>!S.includes(v)?'bad':k===1?'in':k===3&&(a===e||b===e)?'hl':k===4&&v===e?'iv':k===5?(a===b?'dg':a<b?'s1':'s2'):'';
+    const hd=a=>k===3&&a===e?'hl':k===4&&d.lack.includes(a)?'bad':'';
+    const R=[['Closure',d.closed,d.closed?'every result is in the set':'some results are 0, which is not in the set'],['Associativity',true,'(a ∘ b) ∘ c = a ∘ (b ∘ c)'],['Neutral element',true,`e = ${e}`],
+      ['Inverses',!d.lack.length,d.lack.length?`${list(d.lack)} ${d.lack.length>1?'have':'has'} none`:'every element has one'],['Commutative',true,'a ∘ b = b ∘ a']];
+    return`<div class="tbs"><div class="tb"><p class="cap"><b>${d.name}</b> · row a, column b, entry a ${d.sym} b mod ${d.m}</p>${cayley(S,f,d.sym,cls,hd)}</div></div>
+      <ul class="chk">${R.map(([t,ok,why],i)=>`<li class="${k>i?(k===i+1?'now':''):'todo'}"><b>${k>i?(ok?Y:N):'·'}</b><span>${t}${k>i?`: <span style="color:var(--muted)">${why}</span>`:''}</span></li>`).join('')}</ul>
+      ${k>=6?`<p class="verdict nw"><span class="${d.isGroup?'y':'n'}">${d.name} ${d.isGroup?'is an abelian group':'is not a group'}</span></p>`:''}`;
+  },
+  say(k){
+    const d=grpData(),{f,e,m,sym}=d,[a,b,c]=d.ex,o=d.add?'+':'·';
+    return[
+      say('A group','A group is a set with <b>one</b> operation, written ∘ here, that obeys four rules. If the order of the two inputs does not matter either, the group is called commutative, or <b>abelian</b>.',`The table shows every result of ${d.name}. Press <b>Step</b> to check the rules one by one.`),
+      say('Rule 1 · closure','The result a ∘ b is always in the set again.',d.closed?`Here every entry of the table is one of the ${d.S.length} elements.`:`<span class="warn">Not here. Some products are 0 modulo ${m}, and 0 is not in the set. The red cells show them.</span>`),
+      say('Rule 2 · associativity','Brackets do not matter.',fm(`(${a} ${o} ${b}) ${o} ${c} = ${f(f(a,b),c)}<br>${a} ${o} (${b} ${o} ${c}) = ${f(a,f(b,c))}`),'Adding and multiplying integers is associative, and taking the remainder modulo m keeps that.'),
+      say('Rule 3 · neutral element',`There is an element e that changes nothing: a ∘ e = a. For addition it is 0, for multiplication it is 1.`,`Here e = ${e}. Its row and its column simply repeat the headings.`),
+      say('Rule 4 · inverses',`Every element a has a partner a′ with a ∘ a′ = e. The green cells are the places where the table shows ${e}.`,d.lack.length?`<span class="warn">${list(d.lack)} ${d.lack.length>1?'have':'has'} no partner: ${d.lack.length>1?'their rows contain':'its row contains'} no ${e}.</span>`:`Every row has exactly one green cell, so every element has an inverse.`),
+      say('Commutative','a ∘ b = b ∘ a: the table is a mirror image of itself across the diagonal. A group with this property is called abelian.','All groups in this course are abelian.'),
+      say('Verdict',d.isGroup?`${d.name} is an abelian group with ${d.S.length} element${d.S.length>1?'s':''}.`:`${d.name} is not a group.`,
+        'Other examples: (ℤ, +) is a group. (ℕ, +) is not, because 3 has no natural number that brings it back to 0. (ℤ, ·) is not, because 2 has no integer inverse.',
+        `<span class="note">Try the other operation and other values of m above. With multiplication it is a group exactly when m is prime.</span>`)][k];
+  },
+  extra:()=>`<h3>A group in one line</h3>${fm('closed · associative · neutral element · inverses')}<p>A group gives you an operation and its undo. For addition that is + and −.</p><p>Diffie–Hellman works in the group of the numbers 1 … p − 1 under multiplication modulo a prime p.</p>`};
+
+/* ---------- 3 · ring: two operations, division not promised ---------- */
+function ringData(){const m=ST.rm,S=range(0,m-1),units=S.filter(a=>a&&gcd(a,m)===1),nonu=S.filter(a=>a&&gcd(a,m)>1);
+  let zd=null;for(const a of nonu){const b=nonu.find(x=>a*x%m===0);if(b){zd=[a,b];break}}
+  const pick=v=>Math.min(v,m-1);return{m,S,units,nonu,zd,ex:[pick(2),pick(3),pick(4)]}}
+T.ring={n:()=>6,
+  bar:()=>`<label class="fld"><span class="flh"><b>m</b> · the ring ℤₘ, the integers modulo m</span><select data-set="rm">${range(2,12).map(v=>`<option${v===ST.rm?' selected':''}>${v}</option>`).join('')}</select></label>`,
+  view(k){
+    const d=ringData(),{m,S}=d;
+    const ca=(a,b,v)=>k===1&&v===0?'iv':'',cm=(a,b,v)=>k===2&&(a===1||b===1)?'hl':k>=4&&v===1?'iv':k===4&&v===0&&a&&b?'bad':'';
+    const hm=a=>k===2&&a===1?'hl':k>=4&&a?(d.units.includes(a)?'ok':'bad'):'';
+    return`<div class="tbs"><div class="tb"><p class="cap"><b>Addition</b> modulo ${m}</p>${cayley(S,(a,b)=>(a+b)%m,'+',ca)}</div><div class="tb"><p class="cap"><b>Multiplication</b> modulo ${m}</p>${cayley(S,(a,b)=>a*b%m,'·',cm,hm)}</div></div>
+      ${k>=5?`<p class="verdict nw"><span class="${d.nonu.length?'n':'y'}">ℤ${sub(m)} is a ring${d.nonu.length?', but not a field':', and even a field'}</span></p>`:''}`;
+  },
+  say(k){
+    const d=ringData(),{m}=d,[a,b,c]=d.ex;
+    return[
+      say('A ring','A ring has <b>two</b> operations on the same set, + and ·. Think of the integers: you can add, subtract and multiply, but you cannot always divide.',`Here: ℤ${sub(m)}, the integers modulo ${m}. Press <b>Step</b>.`),
+      say('Rule 1 · addition is an abelian group','With + alone the set is a commutative group. The neutral element is 0, and every a has an opposite −a. So subtraction always works.',fm(`−a = ${m} − a${m>2?`, for example −2 = ${m-2}, because 2 + ${m-2} = ${m} ≡ 0`:''}`)),
+      say('Rule 2 · multiplication','Multiplication stays in the set, brackets do not matter, and there is a neutral element 1.','Nothing is said about inverses.'),
+      say('Rule 3 · the distributive law','It ties the two operations together: a · (b + c) = a · b + a · c.',fm(`${a} · (${b} + ${c}) = ${a} · ${(b+c)%m} = ${a*((b+c)%m)%m}<br>${a} · ${b} + ${a} · ${c} = ${a*b%m} + ${a*c%m} = ${(a*b+a*c)%m}`)),
+      say('What a ring does not promise','Division. Look for a 1 in each row of the multiplication table: a row without a 1 belongs to an element with no inverse.',
+        d.nonu.length?`<span class="warn">In ℤ${sub(m)}, ${list(d.nonu)} ${d.nonu.length>1?'have':'has'} no inverse.${d.zd?` Worse, ${d.zd[0]} · ${d.zd[1]} ≡ 0 although neither factor is 0.`:''}</span>`:`<span class="note">In ℤ${sub(m)} every row except the row of 0 contains a 1. That is special: see the last step.</span>`),
+      say('Who has an inverse?',`Exactly the elements that share no factor with m: gcd(a, m) = 1. In ℤ${sub(m)} ${d.units.length>1?'these are':'this is'} ${list(d.units)}.`,
+        'RSA computes in such a ring, ℤₙ with n = p · q, and the affine cipher in ℤ₂₆: its key a must have an inverse, so gcd(a, 26) = 1.',
+        d.nonu.length?'If m is prime, no element shares a factor with it, and every non-zero element has an inverse. That is a field: the next tab.':`<span class="note">${m} is prime, so every non-zero element has an inverse. This ring is a field: the next tab.</span>`)][k];
+  },
+  extra:()=>`<h3>A ring in one line</h3>${fm('+ is an abelian group · · is closed and associative, with 1 · the distributive law')}<p>Examples: the integers ℤ, the integers modulo m, and polynomials.</p><p>An element with an inverse is called a <b>unit</b>.</p>`};
+
+/* ---------- 4 · field: all four operations ---------- */
+function rings3(k){
+  // letter, name, operations, colour, then the ellipse (cx, cy, rx, ry) and where its text starts (x, y)
+  const R=[['F','Field','+  −  ×  ( )⁻¹','--n1',210,172,196,160,118,64],['R','Ring','+  −  ×','--n2',210,206,140,112,138,140],['G','Group','+  −','--n0',210,246,84,56,166,244]];
+  let h=`<svg class="rings3" viewBox="0 0 420 340" role="img" aria-label="A group inside a ring inside a field">`;
+  R.forEach(([l,n,o,c,cx,cy,rx,ry,tx,ty],i)=>{const lvl=3-i,on=k===0||k>=lvl,cur=k===lvl;
+    h+=`<g class="${on?'':'off'}${cur?' cur':''}" style="--c:var(${c})"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/><text class="rl" x="${tx}" y="${ty}">${l}</text><text class="ro" x="${tx+30}" y="${ty-2}" xml:space="preserve">${o}</text><text class="rn" x="${tx+2}" y="${ty+19}">${n}</text></g>`});
+  return h+'</svg>';
+}
+function fieldCheck(){
+  const m=ST.fmod,R=range(1,m-1).map(a=>({a,i:inv(a,m),g:gcd(a,m)})),ok=R.every(r=>r.i!==null);
+  return{m,R,ok,html:`<p class="cap" style="text-align:left;font-size:13.5px;color:var(--muted);margin:0 0 8px"><b style="color:var(--ink)">Is ℤ${sub(m)} a field?</b> The inverse of every non-zero element:</p>
+    <ul class="invl">${R.map(r=>r.i!==null?`<li>${r.a}⁻¹ = ${r.i}<small>${r.a} · ${r.i} = ${r.a*r.i} ≡ 1</small></li>`:`<li class="n">${r.a}⁻¹: none<small>gcd(${r.a}, ${m}) = ${r.g}</small></li>`).join('')}</ul>
+    <p class="verdict"><span class="${ok?'y':'n'}">ℤ${sub(m)} ${ok?'is a field':'is not a field'}</span></p>`};
+}
+T.field={n:()=>6,
+  bar:()=>`<label class="fld"><span class="flh"><b>m</b> · for the checker in steps 4 and 5</span><select data-set="fmod">${range(2,13).map(v=>`<option${v===ST.fmod?' selected':''}>${v}</option>`).join('')}</select></label>`,
+  view:k=>`<div class="two"><div>${rings3(k>=4?0:k)}</div><div>${k>=4?`<div class="nw">${fieldCheck().html}</div>`:`<p class="pics-s">Three structures, from few operations to all four. Each one keeps the rules of the one inside it and adds something.</p>`}</div></div>`,
+  say(k){
+    const c=fieldCheck(),bad=c.R.filter(r=>r.i===null).map(r=>r.a);
+    return[
+      say('Three structures','Cryptography uses three basic algebraic structures. A field is the richest: it is a ring whose non-zero elements also form a group under multiplication.','Press <b>Step</b>.'),
+      say('Group','One operation and its undo. Written with +, that means: add and subtract.','Examples: (ℤ, +), or the hours on a clock.'),
+      say('Ring','Add, subtract and multiply. Division is not always possible.','Examples: ℤ, the integers modulo m, polynomials.'),
+      say('Field','Add, subtract, multiply and divide, by anything except 0. Every non-zero a has an inverse a⁻¹ with a · a⁻¹ = 1.','Examples: ℚ, ℝ and ℂ. The integers ℤ are not a field: 2 has no integer inverse.'),
+      say(`Is ℤ${sub(c.m)} a field?`,'It is a ring already. So the only open question is whether every non-zero element has an inverse.',c.ok?`<span class="note">Yes: all ${c.R.length} of them do. Change m above and watch what happens for 6, 8, 9 or 12.</span>`:`<span class="warn">No: ${list(bad)} ${bad.length>1?'have':'has'} no inverse, because ${bad.length>1?'they share':'it shares'} a factor with ${c.m}.</span>`),
+      say('Only for primes','ℤₘ is a field exactly when m is a prime p. Then no number from 1 to p − 1 shares a factor with p, so each one has an inverse.','A field with finitely many elements is called a <b>finite field</b>, or <b>Galois field</b>, after Évariste Galois (1811–1832). The two words mean the same thing.')][k];
+  },
+  extra:()=>`<h3>A field in one line</h3>${fm('+ is an abelian group · the non-zero elements are an abelian group under · · the distributive law')}<p>In a field you can solve a · x = b for every a ≠ 0. That is what AES needs for its S-box and for MixColumns.</p>`};
+
+/* ---------- 5 · GF(p): numbers modulo a prime ---------- */
+function ppow(n){for(let p=2;p<=n;p++)if(isPrime(p)){let v=p,k=1;while(v<n){v*=p;k++}if(v===n)return[p,k]}return null}
+T.gfp={n:()=>6,
+  bar:()=>`<label class="fld"><span class="flh"><b>p</b> · a prime</span><select data-set="p">${[2,3,5,7,11,13].map(v=>`<option${v===ST.p?' selected':''}>${v}</option>`).join('')}</select></label>
+    <label class="fld"><span class="flh"><b>a</b> · 0 … p − 1</span><input type="number" data-in="a" min="0" max="${ST.p-1}" value="${ST.a}"></label>
+    <label class="fld"><span class="flh"><b>b</b> · 0 … p − 1</span><input type="number" data-in="b" min="0" max="${ST.p-1}" value="${ST.b}"></label><div class="err" id="err"></div>`,
+  view(k){
+    const{p,a,b}=ST,S=range(0,p-1),bi=b?inv(b,p):null;
+    const ca=(x,y)=>k===1&&x===a&&y===b?'pk':k===2&&x===a&&y===(p-b)%p?'pk':'',cm=(x,y)=>k===1&&x===a&&y===b?'pk':k===3&&bi!==null&&x===b&&y===bi?'pk':k===4&&bi!==null&&x===a&&y===bi?'pk':'';
+    const L=[['a + b',`${a} + ${b} = ${a+b} ≡ ${(a+b)%p}`,1],['a · b',`${a} · ${b} = ${a*b} ≡ ${a*b%p}`,1],['a − b',`${a} + (−${b}) = ${a} + ${(p-b)%p} = ${a+(p-b)%p} ≡ ${(a-b+p)%p}`,2],
+      ['b⁻¹',bi===null?'0 has no inverse':`${bi}, because ${b} · ${bi} = ${b*bi} ≡ 1`,3],['a ÷ b',bi===null?'division by 0 is not defined':`${a} · ${b}⁻¹ = ${a} · ${bi} = ${a*bi} ≡ ${a*bi%p}`,4]];
+    const sizes=range(2,32).map(n=>{const q=ppow(n);return`<i class="${q?'y':''}">${n}<small>${q?(q[1]>1?`${q[0]}<sup>${q[1]}</sup>`:'prime'):'none'}</small></i>`}).join('');
+    return`<div class="tbs"><div class="tb"><p class="cap"><b>Addition</b> in GF(${p})</p>${cayley(S,(x,y)=>(x+y)%p,'+',ca)}</div><div class="tb"><p class="cap"><b>Multiplication</b> in GF(${p})</p>${cayley(S,(x,y)=>x*y%p,'·',cm)}</div></div>
+      <div class="calc">${L.filter(l=>k>=l[2]).map(l=>`<div class="${k===l[2]?'now':''}"><b>${l[0]}</b><span>${l[1]} (mod ${p})</span></div>`).join('')}</div>
+      ${k>=5?`<div class="sec nw"><div class="h3">Is there a finite field with n elements?</div><p class="pics-s">Only if n is a prime or a power of a prime.</p><div class="sizes">${sizes}</div></div>`:''}`;
+  },
+  say(k){
+    const{p,a,b}=ST,bi=b?inv(b,p):null;
+    return[
+      say('Prime fields','GF(p): the numbers 0 … p − 1, with addition and multiplication modulo a prime p. GF stands for Galois field.',`Here p = ${p}, a = ${a} and b = ${b}. Change them above. Press <b>Step</b>.`),
+      say('Step 1 · add and multiply','Compute as with ordinary integers, then keep the remainder modulo p.',fm(`a + b = ${a} + ${b} ≡ ${(a+b)%p}<br>a · b = ${a} · ${b} ≡ ${a*b%p}`)),
+      say('Step 2 · subtract','Subtracting b means adding its opposite, −b = p − b.',fm(`−${b} = ${(p-b)%p}<br>a − b = ${a} + ${(p-b)%p} ≡ ${(a-b+p)%p}`)),
+      say('Step 3 · invert',bi===null?'b = 0 has no inverse: nothing times 0 gives 1. Choose another b.':'The inverse of b is the number b⁻¹ with b · b⁻¹ ≡ 1. There are two ways to find it: the extended Euclidean algorithm, or Fermat’s little theorem, b⁻¹ = b<sup>p−2</sup> mod p.',
+        bi===null?'':fm(`b⁻¹ = ${b}<sup>${p-2}</sup> mod ${p} = ${modpow(b,p-2,p)}<br>check: ${b} · ${bi} = ${b*bi} = ${Math.floor(b*bi/p)} · ${p} + 1`)),
+      say('Step 4 · divide','Dividing by b means multiplying by b⁻¹.',bi===null?'Division by 0 is not defined, in any field.':fm(`a ÷ b = ${a} · ${bi} ≡ ${a*bi%p}<br>check: ${a*bi%p} · ${b} = ${(a*bi%p)*b} ≡ ${(a*bi%p)*b%p} = a`)),
+      say('Which sizes exist?','A finite field exists only when the number of elements is a prime power pᵐ, and for each such size there is exactly one field, apart from the names of its elements.','So there are fields with 2, 3, 4, 5, 7, 8 and 9 elements, but none with 6 or 10.','For m = 1 these are the prime fields of this tab. For m &gt; 1 the elements can no longer be the integers modulo pᵐ: see the next tab.')][k];
+  },
+  extra:()=>`<h3>GF(p) in one line</h3>${fm('{0, 1, …, p − 1} with + and · modulo p')}<p>Also written 𝔽ₚ or ℤₚ.</p><p>Used in Diffie–Hellman, ElGamal and elliptic-curve cryptography, with primes of 256 to several thousand bits.</p>`};
+
+/* ---------- 6 · GF(2^m): bytes as polynomials ---------- */
+// multiply in GF(2^m) modulo poly (given with its top bit), by shift and XOR
+function pmul(a,b,m,poly){let p=0;for(let i=0;i<m;i++){if((b>>i)&1)p^=a;a<<=1;if(a>>m&1)a^=poly}return p}
+const g8=(a,b)=>pmul(a,b,8,0x11b);
+const g8inv=a=>{for(let x=1;x<256;x++)if(g8(a,x)===1)return x;return null};
+const SUPD='⁰¹²³⁴⁵⁶⁷⁸⁹';
+const polyOf=v=>{const t=[];for(let i=15;i>=0;i--)if((v>>i)&1)t.push(i===0?'1':i===1?'x':`x<sup>${i}</sup>`);return t.length?t.join(' + '):'0'};
+const bits=(v,cls='',n=8)=>`<span class="bits ${cls}">${range(0,n-1).map(j=>{const i=n-1-j;return`<i class="${(v>>i)&1?'on':''}">${(v>>i)&1}<small>${i===0?'1':i===1?'x':'x'+String(i).split('').map(d=>SUPD[+d]).join('')}</small></i>`}).join('')}</span>`;
+const byr=(lab,v,cls='',n=8)=>`<div class="byr"><span class="bl">${lab}</span>${bits(v,cls,n)}<span class="pl">${polyOf(v)}</span></div>`;
+function mulRows(a,b){const R=[];let t=a,p=0;for(let i=0;i<8;i++){const bit=(b>>i)&1;if(bit)p^=t;R.push({i,t,bit,p,red:!!(t&0x80)});t=(t<<1)&0xff^(t&0x80?0x1b:0)}return R}
+T.gf2={n:()=>6,
+  bar:()=>`<label class="fld"><span class="flh"><b>a</b> · one byte, two hex digits</span><input type="text" data-in="ha" maxlength="2" value="${hx(ST.ha)}" spellcheck="false" autocomplete="off"></label>
+    <label class="fld"><span class="flh"><b>b</b> · one byte, two hex digits</span><input type="text" data-in="hb" maxlength="2" value="${hx(ST.hb)}" spellcheck="false" autocomplete="off"></label><div class="err" id="err"></div>`,
+  view(k){
+    const a=ST.ha,b=ST.hb,R=mulRows(a,b),ai=a?g8inv(a):null,S8=range(0,7);
+    let h=byr(`a = {${hx(a)}}`,a)+(k>=2?byr(`b = {${hx(b)}}`,b):'');
+    if(k===2)h+=`<div class="nw">${byr(`a ⊕ b = {${hx(a^b)}}`,a^b,'x')}</div>`;
+    if(k>=3)h+=`<div class="${k===3?'nw':''}"><div class="byr"><span class="bl">P(x) = {11B}</span>${bits(0x11b,'p',9)}<span class="pl">${polyOf(0x11b)}</span></div></div>`;
+    if(k>=4)h+=`<div class="sec ${k===4?'nw':''}"><div class="h3">a · b, one bit of b at a time</div><div class="scroll"><table class="mul"><tr><th>bit of b</th><th>value</th><th>a · xⁱ, reduced</th><th>added?</th><th>sum so far</th></tr>
+      ${R.map(r=>`<tr class="${r.bit?'use':'skip'}"><td>${r.i===0?'1':r.i===1?'x':`x<sup>${r.i}</sup>`}</td><td>${r.bit}</td><td>{${hx(r.t)}}${r.red&&r.i<7?' <small style="color:var(--muted)">next: shift, then ⊕ 1B</small>':''}</td><td>${r.bit?'yes':'no'}</td><td>{${hx(r.p)}}</td></tr>`).join('')}</table></div>
+      ${byr(`a · b = {${hx(g8(a,b))}}`,g8(a,b),'x')}</div>`;
+    if(k>=5)h+=`<div class="sec nw">${ai===null?`<p class="pics-s">{00} has no inverse.</p>`:byr(`a⁻¹ = {${hx(ai)}}`,ai,'x')+`<p class="pics-s">Check: {${hx(a)}} · {${hx(ai)}} = {${hx(g8(a,ai))}}, the polynomial 1.</p>`}</div>`;
+    if(k>=3)h+=`<div class="sec"><div class="h3">A whole field on one screen: GF(2³)</div><p class="pics-s">Eight elements, written as 3 bits, with P(x) = x³ + x + 1. Every row except the row of 000 contains 001 exactly once, so every non-zero element has an inverse.</p>
+      ${cayley(S8,(x,y)=>pmul(x,y,3,0b1011),'·',(x,y,v)=>v===1?'iv':'',()=>'',v=>v.toString(2).padStart(3,'0'))}</div>`;
+    return h;
+  },
+  say(k){
+    const a=ST.ha,b=ST.hb,ai=a?g8inv(a):null;
+    return[
+      say('Why not just modulo 256?','AES works on bytes, so it needs a field with 256 elements. But 256 is not prime, and the integers modulo 256 are only a ring: 2 · 128 = 256 ≡ 0, so 2 has no inverse.','256 = 2⁸ is a prime power, so a field with 256 elements does exist: <b>GF(2⁸)</b>. Its elements are not numbers. They are polynomials. Press <b>Step</b>.'),
+      say('Step 1 · a byte is a polynomial',`Each bit is the coefficient, 0 or 1, of one power of x. The byte {${hx(a)}} is`,fm(polyOf(a)),'The coefficients live in GF(2), the smallest field: just 0 and 1.'),
+      say('Step 2 · addition is XOR','Add the coefficients of equal powers modulo 2, where 1 + 1 = 0. That is XOR, bit by bit.',fm(`{${hx(a)}} ⊕ {${hx(b)}} = {${hx(a^b)}}`),'Subtraction is the same operation, because −1 = 1 modulo 2. So every element is its own opposite.'),
+      say('Step 3 · multiplication needs a modulus','Multiply the two polynomials as usual, with coefficients modulo 2. The result can reach degree 14, too big for a byte. So it is reduced modulo a fixed polynomial P(x) of degree 8, which plays the part of the prime p.',fm('AES: P(x) = x<sup>8</sup> + x<sup>4</sup> + x<sup>3</sup> + x + 1'),'P(x) is <b>irreducible</b>: it cannot be written as a product of smaller polynomials, just as a prime cannot be factored.'),
+      say('Step 4 · the product, bit by bit','For every 1 bit of b, add a shifted copy of a. A shift is a multiplication by x. Whenever x⁸ would appear, it is replaced by x⁴ + x³ + x + 1: XOR with {1B}.',fm(`{${hx(a)}} · {${hx(b)}} = {${hx(g8(a,b))}}`)),
+      say('Step 5 · every element has an inverse','Because P(x) is irreducible, every non-zero byte has an inverse, and GF(2⁸) really is a field.',ai===null?'Only {00} has none. Choose another a.':fm(`{${hx(a)}}⁻¹ = {${hx(ai)}}`),'The AES S-box starts with exactly this inverse: see <a href="aes.html">AES, step by step</a>. GCM does the same with 128 bits, in GF(2¹²⁸).')][k];
+  },
+  extra:()=>`<h3>GF(2ᵐ) in one line</h3>${fm('polynomials of degree &lt; m with bits as coefficients · + is XOR · · is modulo P(x)')}<p>This kind of field is called an <b>extension field</b> of GF(2). It has 2ᵐ elements, and each one fits in m bits.</p>`};
+
+/* ---------- 7 · where the course uses each structure ---------- */
+T.map={n:()=>1,
+  view:()=>`<div class="scroll"><table class="map"><tr><th>Structure</th><th>Example</th><th>Where you meet it</th></tr>
+    <tr><td><span class="tag f">field</span>GF(2)</td><td class="ex">bits with XOR and AND</td><td><a href="lfsr.html">LFSR</a> and <a href="a51.html">A5/1</a>: every stream cipher feedback is arithmetic in GF(2)</td></tr>
+    <tr><td><span class="tag r">ring</span>ℤ₂₆</td><td class="ex">the alphabet, modulo 26</td><td><a href="classic.html#affine">Affine cipher</a>: the key a must have an inverse, so gcd(a, 26) = 1</td></tr>
+    <tr><td><span class="tag f">field</span>GF(2⁸)</td><td class="ex">bytes as polynomials</td><td><a href="aes.html">AES</a>: the S-box takes an inverse, MixColumns multiplies by {02} and {03}</td></tr>
+    <tr><td><span class="tag f">field</span>GF(2¹²⁸)</td><td class="ex">128-bit blocks as polynomials</td><td><a href="modes.html">GCM</a>: the tag is a polynomial in the hash key H</td></tr>
+    <tr><td><span class="tag r">ring</span>ℤₙ, n = p · q</td><td class="ex">integers modulo n</td><td><a href="rsa.html">RSA</a>: encryption and decryption are powers in this ring</td></tr>
+    <tr><td><span class="tag g">group</span>ℤₚ*</td><td class="ex">1 … p − 1 under · modulo p</td><td><a href="dlog.html">Diffie–Hellman and ElGamal</a>: the discrete logarithm is hard in this group</td></tr>
+    <tr><td><span class="tag f">field</span>GF(p)</td><td class="ex">integers modulo a prime</td><td>Elliptic-curve cryptography: the points of a curve over GF(p) form a group</td></tr></table></div>
+    <div class="sec"><div class="h3">The three structures once more</div>${rings3(0)}</div>`,
+  say:()=>say('Where it is used','Every cipher in this course computes in one of these structures. The table says which one, and where.','A good habit: when you meet a new algorithm, ask first in which set it computes and which operations it needs.'),
+  extra:()=>`<h3>Sizes to remember</h3><p><b>GF(2)</b>: 2 elements, one bit.</p><p><b>GF(2⁸)</b>: 256 elements, one byte.</p><p><b>GF(2¹²⁸)</b>: one AES block.</p><p><b>GF(p)</b> for Diffie–Hellman: p has 2048 bits or more.</p>`};
+
+/* ---------- one question per tab: answer first, then read why ---------- */
+const QZ={
+  num:{q:'Which operation can take you out of the integers ℤ?',o:['Addition','Subtraction','Division'],a:2,why:'3 ÷ 2 is not an integer. Sums, differences and products of integers are integers.'},
+  grp:{q:'Is (ℕ, +), the natural numbers with addition, a group?',o:['Yes','No'],a:1,why:'It is closed and associative, and 0 is the neutral element. But 3 has no natural number that brings it back to 0, so inverses are missing.'},
+  ring:{q:'In the ring ℤ₁₂, which of these has no inverse?',o:['5','7','8'],a:2,why:'gcd(8, 12) = 4, so 8 shares a factor with 12. 5 and 7 share none: 5 · 5 = 25 ≡ 1 and 7 · 7 = 49 ≡ 1.'},
+  field:{q:'Which of these is a field?',o:['ℤ₉','ℤ₁₁','ℤ, the integers'],a:1,why:'11 is prime. In ℤ₉, 3 · 3 ≡ 0, so 3 has no inverse. In ℤ, 2 has no inverse.'},
+  gfp:{q:'In GF(7), what is 5⁻¹?',o:['2','3','6'],a:1,why:'5 · 3 = 15 = 2 · 7 + 1, so 5 · 3 ≡ 1.'},
+  gf2:{q:'In GF(2⁸), what is {57} + {57}?',o:['{00}','{AE}','{57}'],a:0,why:'Addition is XOR, and any value XORed with itself is 0. Every element is its own opposite.'},
+};
+function quiz(id){
+  const z=QZ[id];if(!z)return'';const p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
+}
+
+/* ---------- the walkthrough: one step at a time ---------- */
+const NARROW=matchMedia('(max-width:1000px)'),RM=matchMedia('(prefers-reduced-motion: reduce)'),ROOM={k:'',h:0};
+const speed=()=>+$('#spd').value;
+// The text changes length from step to step. Room is kept for the longest text of the open walkthrough,
+// so the picture and the card under the text stay where they are
+function holdRoom(t,n,k){
+  const ex=$('#explain');ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2)return;
+  const ck=[ST.tab,ex.clientWidth,ST.gm,ST.gop,ST.rm,ST.fmod,ST.p,ST.a,ST.b,ST.ha,ST.hb].join('|');
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){ex.innerHTML=t.say(j);h=Math.max(h,ex.offsetHeight)}ex.innerHTML=t.say(k);ROOM.k=ck;ROOM.h=h}
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function show(){
+  const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
+  stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  holdRoom(t,n,k);
+  $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
+}
+function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
+function tickPlay(){ST.playT=setTimeout(()=>{ST.playT=null;const n=T[ST.tab].n(),k=ST.step[ST.tab]||0;if(k>=n-1){setPlaying(false);return}ST.step[ST.tab]=k+1;show();if(k+1>=n-1)setPlaying(false);else tickPlay()},(RM.matches?900:1900)/speed())}
+function setBar(){const t=T[ST.tab],b=$('#bar');b.hidden=!t.bar;b.innerHTML=t.bar?t.bar():''}
+function setTab(id){
+  setPlaying(false);ST.tab=id;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));setBar();show();
+  try{localStorage.setItem('fields-tab',id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)+1;show()};
+$('#bBack').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)-1;show()};
+$('#bReset').onclick=()=>{setPlaying(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const n=T[ST.tab].n();if(n<2)return;if((ST.step[ST.tab]||0)>=n-1){ST.step[ST.tab]=0;show()}setPlaying(true)};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-gop]');if(g){ST.gop=g.dataset.gop;$$('#gop button').forEach(x=>x.classList.toggle('on',x===g));show();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+});
+document.addEventListener('change',e=>{
+  const s=e.target.closest('[data-set]');if(!s)return;
+  ST[s.dataset.set]=+s.value;
+  if(s.dataset.set==='p'){ST.a%=ST.p;ST.b%=ST.p;setBar()}
+  show();
+});
+document.addEventListener('input',e=>{
+  const i=e.target.closest('[data-in]');if(!i)return;const key=i.dataset.in,err=$('#err');
+  if(key==='a'||key==='b'){const v=i.value.trim();if(!/^\d+$/.test(v)||+v>=ST.p){err.textContent=`${key}: a whole number from 0 to ${ST.p-1}.`;return}err.textContent='';ST[key]=+v}
+  else{const v=i.value.trim();if(!/^[0-9a-fA-F]{2}$/.test(v)){err.textContent=`${key==='ha'?'a':'b'}: two hex digits, for example 57.`;return}err.textContent='';ST[key]=parseInt(v,16)}
+  show();
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='ArrowRight'){if(!$('#bStep').disabled)$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&T[ST.tab].n()>1){$('#bPlay').click();e.preventDefault()}
+});
+let startTab='num';try{const t=localStorage.getItem('fields-tab');if(t&&T[t])startTab=t}catch(e){}
+setTab(startTab);
+</script>
+</body>
+</html>
