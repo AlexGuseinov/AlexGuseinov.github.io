@@ -436,12 +436,12 @@ input:disabled{opacity:.55;background:transparent}
 .nd:not(.open) .ncap{opacity:.55}
 .pe{fill:none;stroke:var(--line2);stroke-width:.8;stroke-dasharray:2 2}
 .ptx{font-family:var(--mono);font-weight:700;fill:#fff;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:rgba(0,0,0,.35);stroke-width:1.6px}
-.nd.pop .val{animation:npop .34s cubic-bezier(.2,1.5,.4,1);transform-box:fill-box;transform-origin:center}
-@keyframes npop{from{transform:scale(.72);opacity:.2}to{transform:scale(1);opacity:1}}
-.xr circle{fill:var(--panel);stroke:var(--xor);stroke-width:2.2}
+.nd .ncap.side{text-anchor:start;dominant-baseline:central}
+.ch .tl{pointer-events:none}
+.xr circle{fill:var(--panel);stroke:var(--xor);stroke-width:2.2;transition:fill .18s,stroke-width .18s}
 .xr path{stroke:var(--xor);stroke-width:2.2;fill:none}
 .xr.on circle{fill:var(--xorBg);stroke-width:3.4;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--xor) 70%,transparent))}
-.ab .bx{fill:var(--panel);stroke:var(--line2);stroke-width:1.8}
+.ab .bx{fill:var(--panel);stroke:var(--line2);stroke-width:1.8;transition:fill .18s,stroke .18s,stroke-width .18s}
 .ab.done .bx{stroke:var(--accent)}
 .ab.on .bx{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.6;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--accent) 55%,transparent))}
 .ab .abl{font:700 14.5px var(--sans);fill:var(--ink)}
@@ -468,6 +468,9 @@ input:disabled{opacity:.55;background:transparent}
 .fv{font-weight:700}
 .warn{display:block;padding:7px 10px;border-radius:7px;background:var(--xorBg);color:var(--ink);font-size:14px;border-left:3px solid var(--xor)}
 .okn{display:block;padding:7px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.bb{display:block;font-size:14px;color:var(--muted)}
+.bb code{font:12.5px var(--mono);color:var(--ink);white-space:nowrap}
+#stage [data-t]{transition:opacity .25s}
 .pros{list-style:none;margin:8px 0;padding:0;font-size:14px}
 .pros li{padding:2px 0 2px 22px;position:relative}
 .pros li::before{position:absolute;left:3px;font-weight:700}
@@ -941,26 +944,27 @@ const fxClear=()=>{FX.innerHTML=''};
 // centre and size of any element (HTML or SVG), in overlay pixels
 function rectOf(el){const f=FX.getBoundingClientRect(),b=el.getBoundingClientRect();return{x:b.left-f.left+b.width/2,y:b.top-f.top+b.height/2,w:b.width,h:b.height}}
 const xy=r=>[r.x,r.y];
-// maps user coordinates of an SVG drawing to overlay pixels; .s = scale
-function svgMap(svg){const m=svg.getScreenCTM(),f=FX.getBoundingClientRect(),pt=svg.createSVGPoint();
-  const g=(x,y)=>{pt.x=x;pt.y=y;const q=pt.matrixTransform(m);return[q.x-f.left,q.y-f.top]};g.s=m.a;return g}
-function fxNode(inner,cls){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;FX.appendChild(g);return g}
-/* a move: {node, pts (with a, b) or legs:[[a,b,pts],…], fadeIn, fadeOut, end, at:[[p,fn(node)],…]} → tick(p), p in [0,1].
-   Between legs the token waits at the end of the last leg. end: hidden from then on. at: run once (morph, resize). */
+// a moving token: on the overlay by default, or inside a drawing (parent) so that it scrolls with it
+function fxNode(inner,cls,parent){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;(parent||FX).appendChild(g);return g}
+/* a move: {node, pts (with a, b) or legs:[[a,b,pts],…], fi, fo, end, at:[[p,fn(node)],…]} → tick(p).
+   Between legs the token waits at the end of the last leg. It fades in over fi from the start of its first leg,
+   and fades out over fo once it has arrived (or just before end, if end is given). at: run once (morph, resize). */
 function mover(moves){
-  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0});
+  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0;
+    const L=m.legs;if(m.fi==null)m.fi=.05;if(m.fo==null)m.fo=.06;m.A=L[0][0];m.B=m.end!=null?m.end:L[L.length-1][1]+m.fo});
   return p=>{for(const m of moves){
-    const L=m.legs,A=L[0][0],B=L[L.length-1][1];let g=L[0];for(const l of L)if(p>=l[0])g=l;
+    let g=m.legs[0];for(const l of m.legs)if(p>=l[0])g=l;
     const pt=along(g[2],ease(clamp((p-g[0])/((g[1]-g[0])||1),0,1)));
-    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
-    const fw=Math.max(.04,(B-A)*.15);let op=p<A?0:1;
-    if(m.fadeIn&&p>=A)op=clamp((p-A)/fw,0,1);
-    if(m.fadeOut)op=Math.min(op,clamp((B-p)/fw,0,1));
-    if(m.end!=null&&p>=m.end)op=0;
-    m.node.style.opacity=op;
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(2)},${pt[1].toFixed(2)})`);
+    let op=p<m.A||p>=m.B?0:1;
+    if(op&&m.fi)op=Math.min(op,(p-m.A)/m.fi);
+    if(op&&m.fo)op=Math.min(op,(m.B-p)/m.fo);
+    m.node.style.opacity=clamp(op,0,1).toFixed(3);
     if(m.at)while(m.fired<m.at.length&&p>=m.at[m.fired][0]){m.at[m.fired][1](m.node);m.fired++}
   }};
 }
+// a small overshoot at the end, for a block that settles into its place
+const back=t=>1+2.70158*Math.pow(t-1,3)+1.70158*Math.pow(t-1,2);
 // run each fn once when p passes its time
 function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.length&&p>=list[i][0]){list[i][1]();i++}}}
 const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
@@ -1009,42 +1013,67 @@ function drawNode(n,k){
     return`<g class="ab${n.t<=k?' done':''}" id="n-${n.id}" ${at}><rect class="bx" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="9"/><text class="abl" x="${n.small?-w/2+8:-68}" y="${n.small?-7:-6}">${n.lab}</text><text class="akk" x="${n.small?-w/2+8:-68}" y="${n.small?10:13}">K</text>${t}</g>`;
   }
   const open=n.t<=k,c=n.c,f=pw(c)/2+4,ph=n.q===0?'':`<text class="nq">?</text>`;
-  return`<g class="nd r-${n.role}${open?' open':''}${n.t===k&&k>0?' cur':''}" id="n-${n.id}" data-nd="${n.id}" ${at}><rect class="fr" x="${-f}" y="${-f}" width="${2*f}" height="${2*f}" rx="7"/>${ph}<g class="val">${patch(n.v,c,c>=14)}</g>${n.cap?`<text class="ncap" y="${n.capB?f+16:-f-7}">${n.cap}</text>`:''}</g>`;
+  return`<g class="nd r-${n.role}${open?' open':''}${n.t===k&&k>0?' cur':''}" id="n-${n.id}" data-nd="${n.id}" ${at}><rect class="fr" x="${-f}" y="${-f}" width="${2*f}" height="${2*f}" rx="7"/>${ph}<g class="val">${patch(n.v,c,c>=14)}</g>${n.cap?(n.capS?`<text class="ncap side" x="${f+8}" y="0">${n.cap}</text>`:`<text class="ncap" y="${n.capB?f+16:-f-7}">${n.cap}</text>`):''}</g>`;
 }
 const ROLE={p:'Plaintext',c:'Ciphertext',iv:'Input block',s:'Keystream',x:'Value',g:'Hash value',t:'Tag',a:'Additional data',h:'Hash key H',bad:'Changed block'};
 let LASTG=null;
 function pickLine(G,k){const n=ST.pick&&G.by[ST.pick];
-  return`<div class="pick" id="pick">${n&&n.t<=k?`<b>${n.cap||ROLE[n.role]}</b> <code>${hexs(n.v)}</code>`:'Click a block to read its bytes'}</div>`}
+  return`<div class="pick" id="pick">${n&&n.t<=k?`<b>${n.cap||ROLE[n.role]}</b> <code>${hexs(n.v)}</code>`:'Each small square is one byte, and its colour shows its value. Click a block to read its bytes.'}</div>`}
 function drawGraph(G,k){
   LASTG=G;let h=`<div class="scroll" id="chS"><svg class="ch" id="ch" viewBox="0 0 ${G.W} ${G.H}" style="min-width:${Math.min(G.W,G.minW)}px;max-width:${Math.round(G.W*1.15)}px" role="img" aria-label="${G.label}"><defs>
     <marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="amk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
   for(const w of G.wires)h+=`<path class="mw ${w.cls}" id="w-${w.id}" d="${wpath(w.pts)}" marker-end="url(#am)"/>`;
   h+=G.decor+G.nodes.map(n=>drawNode(n,k)).join('');
-  if(G.after)h+=G.after(k);
+  if(G.after)h+=`<g id="aft">${G.after(k)}</g>`;
   return h+'</svg></div>'+pickLine(G,k);
 }
 // a wide chart on a narrow screen: keep the column of this step in view
-function panTo(G,k){
+function panTo(G,k,smooth){
   const s=$('#chS');if(!s||s.scrollWidth<=s.clientWidth+1)return;
   const S=G.st[Math.max(0,k-1)],x=S?S.x:null;if(x==null)return;
-  s.scrollLeft=x*$('#ch').getScreenCTM().a-s.clientWidth/2;
+  const left=Math.max(0,x*$('#ch').getScreenCTM().a-s.clientWidth/2);
+  if(smooth&&!RM.matches&&s.scrollTo)s.scrollTo({left,behavior:'smooth'});else s.scrollLeft=left;
 }
+// draw a chart into the stage. A redraw of the same chart keeps its sideways scroll and glides to the new column
+function putGraph(G,k,pre='',post=''){
+  const o=$('#chS'),keep=o&&LASTG===G?o.scrollLeft:null;
+  stage.innerHTML=pre+drawGraph(G,k)+post;
+  if(keep!=null)$('#chS').scrollLeft=keep;
+  panTo(G,k,keep!=null);
+}
+/* one step of a chart. The moving blocks live inside the drawing itself, so they stay in place when it scrolls.
+   The motion takes the first part of the step (MOVE); in the rest the new block settles into its frame,
+   and the last frame is exactly the still picture that follows. */
+const MOVE=.86;
 function planGraph(G,k){
   const S=G.st[k-1];
-  return{dur:S.dur||2600,start(){
+  return{dur:(S.dur||2600)/MOVE,start(){
     const svg=$('#ch');if(!svg)return null;
-    const M=svgMap(svg),s=M.s,mv=[],cu=[],m=p=>p.map(q=>M(q[0],q[1]));
-    (S.open||[]).forEach(([id,p])=>{const e=$('#n-'+id);e.classList.remove('open','cur');cu.push([p,()=>e.classList.add('open','cur','pop')])});
-    (S.boxes||[]).forEach(id=>{$('#n-'+id).classList.remove('done');$$(`#n-${id} .tk`).forEach(t=>t.classList.remove('f'))});
+    const layer=document.createElementNS(NS,'g');layer.setAttribute('class','tl');svg.appendChild(layer);
+    const mv=[],cu=[],pops=[],boxes=new Set(S.boxes||[]);
+    (S.open||[]).forEach(([id,p])=>{const e=$('#n-'+id);e.classList.remove('open','cur');pops.push({e,v:e.querySelector('.val'),t:p*MOVE,on:false})});
+    boxes.forEach(id=>{$('#n-'+id).classList.remove('done');$$(`#n-${id} .tk`).forEach(t=>t.classList.remove('f'))});
     (S.hot||[]).forEach(id=>{const e=$('#w-'+id);if(e)e.classList.add('on')});
-    (S.pulse||[]).forEach(([id,a,b])=>{const e=$('#n-'+id);cu.push([a,()=>e.classList.add('on')],[b,()=>e.classList.remove('on')])});
+    (S.pulse||[]).forEach(([id,a,b])=>{const e=$('#n-'+id);cu.push([a,()=>e.classList.add('on')],[b,()=>{e.classList.remove('on');if(boxes.has(id))e.classList.add('done')}])});
     (S.ticks||[]).forEach(([id,a,b])=>{$$(`#n-${id} .tk`).forEach((t,i)=>cu.push([a+(b-a)*(i+1)/10,()=>t.classList.add('f')]))});
-    (S.toks||[]).forEach(t=>{const n=fxNode(tokP(t.v,TC*s),'tok pat');
-      mv.push({node:n,legs:t.legs.map(l=>[l[0],l[1],m(l[2])]),at:(t.at||[]).map(([p,v])=>[p,nd=>{nd.innerHTML=tokP(v,TC*s)}]),end:t.end,fadeIn:t.fadeIn})});
-    return both(mover(mv),cues(cu),S.tick);
+    (S.toks||[]).forEach(t=>{const n=fxNode(tokP(t.v,TC),'tok pat',layer);
+      mv.push({node:n,legs:t.legs,at:(t.at||[]).map(([p,v])=>[p,nd=>{nd.innerHTML=tokP(v,TC)}]),end:t.end,fi:t.fi,fo:t.fo})});
+    // what this step brings (its part of the result strip, a note on the chart) shows when the block lands, not before
+    const late=Math.max(0,...(S.open||[]).map(o=>o[1])),fresh=$$(`#stage [data-t="${k}"]`),aft=$('#aft');
+    if(fresh.length){fresh.forEach(e=>{e.style.transition='none';e.style.opacity=0});cu.push([late,()=>fresh.forEach(e=>{e.style.transition='';e.style.opacity=''})])}
+    if(aft&&G.after){const full=aft.innerHTML,was=G.after(k-1);if(was!==full){aft.innerHTML=was;cu.push([S.aft!=null?S.aft:late,()=>{aft.innerHTML=full}])}}
+    const move=mover(mv),cue=cues(cu);
+    const settle=p=>{for(const o of pops){
+      if(p<o.t)continue;
+      if(!o.on){o.on=true;o.e.classList.add('open','cur')}
+      const u=clamp((p-o.t)/(1-MOVE),0,1);
+      if(u<1){o.v.setAttribute('transform',`scale(${(.7+.3*back(u)).toFixed(3)})`);o.v.style.opacity=Math.min(1,.15+u*3).toFixed(3)}
+      else{o.v.removeAttribute('transform');o.v.style.opacity=''}}};
+    return p=>{const q=p/MOVE,c=Math.min(1,q);move(q);cue(c);if(S.tick)S.tick(c);settle(p)};
   }};
 }
-// a block goes into a box, changes round by round (the real AES states) and leaves as the result
+// a block goes into a box, changes round by round (the real AES states) and leaves as the result.
+// inP ends at the centre of the box and outP starts there, so the block never jumps
 function through(box,v,dec,inP,outP,a,b,extra={}){
   const st=roundsOf(D.rk,v,dec),i=a+(b-a)*.28,o=a+(b-a)*.76;
   return{tok:{v,legs:[[a,i,inP],[o,b,outP]],at:st.map((s,r)=>[i+(o-i)*(r+.5)/st.length,s]),...extra},tick:[box,i,o],pulse:[box,i,o]};
@@ -1052,7 +1081,7 @@ function through(box,v,dec,inP,outP,a,b,extra={}){
 const fH=b=>`<span class="fv">${hexs(b)}</span>`;
 // the strip under a chart: what has come out so far, block by block
 function strip(lab,list,tOf,k,role,badge){
-  return`<div class="res r-${role}"><span class="rl">${lab}</span><span class="rv">${list.map((b,i)=>tOf(i)<=k?`<b>${hexs(b)}</b>`:`<i>${'·'.repeat(2*b.length)}</i>`).join(' ')}</span>${badge||''}</div>`;
+  return`<div class="res r-${role}"><span class="rl">${lab}</span><span class="rv">${list.map((b,i)=>tOf(i)<=k?`<b data-t="${tOf(i)}">${hexs(b)}</b>`:`<i>${'·'.repeat(2*b.length)}</i>`).join(' ')}</span>${badge||''}</div>`;
 }
 const okB=t=>`<span class="vok">✓ ${t}</span>`;
 function textStrip(lab,bytes,show){
@@ -1067,13 +1096,14 @@ function chainTab(o){
   const G=()=>chart(o.tag(),o.build);
   return{dir:true,n:()=>G().st.length+1,
     render(k){
-      const g=G();stage.innerHTML=(o.top?o.top():'')+drawGraph(g,k)+(o.below?o.below(g,k):'');panTo(g,k);
-      $('#explain').innerHTML=k===0?o.intro(g):g.st[k-1].say+(k===g.st.length&&o.outro?o.outro(g):'');
+      const g=G(),txt=j=>j===0?o.intro(g):g.st[j-1].say+(j===g.st.length&&o.outro?o.outro(g):'');
+      putGraph(g,k,o.top?o.top():'',o.below?o.below(g,k):'');
+      $('#explain').innerHTML=txt(k);holdExplain(`${o.tag()}|${ST.mode}`,()=>g.st.map((_,j)=>txt(j+1)).concat(txt(0)));
       $('#extra').innerHTML=o.extra(g,k)+(o.quiz?quiz(o.quiz):'');
       if(o.after)o.after(g,k);
     },
     plan:k=>planGraph(G(),k),
-    focus(){follow($('#chS'))}};
+    focus(){follow($('#chS'),$('#explain'))}};
 }
 /* ---------- pictures: every 4 pixels (RGBA) are one AES block ---------- */
 const PW=256;
@@ -1127,10 +1157,26 @@ function paintPics(){
   const d=picData(ST.pic);put('p0',d);put('p1',picOut(ST.pic,'ecb',[]));put('p2',picOut(ST.pic,'cbc',fromHex(D.iv.cbc)));put('p3',picOut(ST.pic,'ctr',fromHex(D.iv.ctr)));
 }
 /* ---------- the panel text ---------- */
-const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.map(p=>`<p>${p}</p>`).join('');
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+/* The text of a walkthrough changes length from step to step. Room is kept for its longest text, so the chart and
+   the cards under it stay where they are. The spare room is outside the card: above it on a narrow screen, where
+   the text sits on top of the chart, and below it in the side panel. */
+const EH={k:'',h:0,on:false},NARROW=matchMedia('(max-width:1000px)');
+function holdExplain(key,list){
+  const ex=$('#explain'),ck=`${key}|${ex.clientWidth}|${D.v}`;
+  if(EH.k!==ck){
+    const now=ex.innerHTML;let h=0;
+    for(const s of list()){ex.innerHTML=s;h=Math.max(h,ex.offsetHeight)}     // measured in place, before anything is painted
+    ex.innerHTML=now;EH.k=ck;EH.h=h;
+  }
+  const spare=Math.max(0,EH.h-ex.offsetHeight)+'px';EH.on=true;
+  ex.style.marginTop=NARROW.matches?spare:'';ex.style.marginBottom=NARROW.matches?'':spare;
+}
 const fm=s=>`<span class="fm">${s}</span>`;
 const pc=(good,bad)=>`<ul class="pros">${good.map(x=>`<li class="y">${x}</li>`).join('')}${bad.map(x=>`<li class="n">${x}</li>`).join('')}</ul>`;
 const nm=(l,i)=>`${l}${sub_(i)}`;
+// the first bytes of an XOR written out, so that "mixed" means something exact
+const bb=(a,b)=>{const m=Math.min(a.length,b.length),n=Math.min(3,m);return`<span class="bb">Byte by byte: ${a.slice(0,n).map((v,i)=>`<code>${hx(v)} ⊕ ${hx(b[i])} = ${hx(v^b[i])}</code>`).join(', ')}${m>n?', and so on':''}.</span>`};
 
 /* ---------- one question per mode: answer first, then read why ---------- */
 const QZ={
@@ -1154,11 +1200,11 @@ function gECB(dec){
   I.forEach((b,i)=>{
     const x=cx(i);
     G.bk('i'+i,x,yT,b,nm(nT,i+1),rT,{given:1});G.box('a'+i,x,yA,dec?'AES⁻¹':'AES');G.bk('o'+i,x,yB,O[i],nm(nB,i+1),rB,{capB:1});
-    const w1=G.w('i'+i,[[x,yT+41],[x,yA-37]]),w2=G.w('o'+i,[[x,yA+37],[x,yB-41]]),th=through('a'+i,b,dec,w1,w2,0,.97);
+    G.w('i'+i,[[x,yT+41],[x,yA-37]]);G.w('o'+i,[[x,yA+37],[x,yB-41]]);const th=through('a'+i,b,dec,[[x,yT],[x,yA]],[[x,yA],[x,yB]],0,.97);
     const twin=I.findIndex((y,j)=>j<i&&hexs(y)===hexs(b));
     G.step({x,open:[['o'+i,.97]],boxes:['a'+i],toks:[th.tok],ticks:[th.tick],pulse:[th.pulse],hot:['i'+i,'o'+i],
-      say:say(`Block ${i+1} of ${n}`,`${nm(nT,i+1)} goes through ${dec?'AES⁻¹':'AES'} with the key, on its own. No other block is involved.`,fm(`${nm(nB,i+1)} = ${dec?'D':'E'}<sub>K</sub>(${nm(nT,i+1)}) =<br>${fH(O[i])}`),
-        twin>=0?`<span class="warn">Same input as block ${twin+1}, so the same output. Anyone can see that, without the key.</span>`:'')});
+      say:say(`Block ${i+1} of ${n}`,i?`${nm(nT,i+1)} goes through ${dec?'AES⁻¹':'AES'} on its own, with the same key. Nothing from the other blocks is used.`:`${nm(nT,1)} goes into ${dec?'AES⁻¹':'AES'} together with the key, and ${nm(nB,1)} comes out. The ten small bars in the box are the ten rounds.`,fm(`${nm(nB,i+1)} = ${dec?'D':'E'}<sub>K</sub>(${nm(nT,i+1)}) =<br>${fH(O[i])}`),
+        twin>=0?`<span class="warn">${nm(nT,i+1)} is the same as ${nm(nT,twin+1)}, so ${nm(nB,i+1)} is the same as ${nm(nB,twin+1)}.${dec?'':' Anyone who sees the ciphertext can tell that the message repeats, and no key is needed for that.'}</span>`:'')});
   });
   G.after=k=>{let h='';for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){if(hexs(I[i])!==hexs(I[j])||G.by['o'+j].t>k)continue;
     const a=cx(i),b=cx(j),y=yB+64;h+=`<path class="same" d="M${a} ${y} C${a} ${y+34},${b} ${y+34},${b} ${y}"/><text class="samet" x="${(a+b)/2}" y="${y+40}">identical blocks</text>`}return h};
@@ -1180,18 +1226,20 @@ function gCBC(dec){
   if(!dec){
     const yP=64,yX=146,yV=196,yA=270,yC=384,yT=330;
     G.bk('iv',60,yX,iv,'IV','iv',{given:1});
-    Pb.forEach((p,i)=>{const x=cx(i),xm=x+CW/2;
+    Pb.forEach((p,i)=>{const x=cx(i),xm=x+CW/2,tw=Pb.findIndex((y,j)=>j<i&&hexs(y)===hexs(p));
       G.bk('p'+i,x,yP,p,nm('P',i+1),'p',{given:1});G.xor('x'+i,x,yX);G.bk('v'+i,x,yV,V[i],'','x',{c:SC,q:0});G.box('a'+i,x,yA,'AES');G.bk('c'+i,x,yC,Cb[i],nm('C',i+1),'c',{capB:1});
       const a=G.w('p'+i,[[x,yP+41],[x,yX-15]]),b=G.w('v'+i,[[x,yX+15],[x,yA-37]]),c=G.w('c'+i,[[x,yA+37],[x,yC-41]]);
       if(i<n-1){G.w('f'+i,[[x,yT],[xm,yT],[xm,yX],[x+CW-15,yX]]);G.dot(x,yT)}
       if(!i)G.w('fiv',[[101,yX],[x-15,yX]]);
-      const fp=i?G.wires.find(w=>w.id==='f'+(i-1)).pts:[[101,yX],[x-15,yX]];
+      const fp=i?[...G.wires.find(w=>w.id==='f'+(i-1)).pts.slice(0,-1),[x,yX]]:[[60,yX],[x,yX]];
       G.step({x,open:[['v'+i,.86]],hot:['p'+i,i?'f'+(i-1):'fiv','v'+i],pulse:[['x'+i,.46,.62]],dur:2300,
-        toks:[{v:p,legs:[[0,.5,a]],end:.52},{v:prev(i),legs:[[0,.5,fp]],end:.52},{v:V[i],legs:[[.54,.86,[[x,yX],[x,yV]]]],end:.87}],
-        say:say(`Block ${i+1} · XOR`,`Before AES, ${nm('P',i+1)} is mixed with ${i?'the previous ciphertext block':'the IV'}. That is what hides repeats: the input of AES is now different.`,fm(`${nm('P',i+1)} ⊕ ${pn(i)} =<br>${fH(V[i])}`))});
-      const th=through('a'+i,V[i],false,[[x,yV],[x,yA]],c,0,.96);
+        toks:[{v:p,legs:[[0,.5,[[x,yP],[x,yX]]]]},{v:prev(i),legs:[[0,.5,fp]]},{v:V[i],legs:[[.54,.86,[[x,yX],[x,yV]]]]}],
+        say:say(`Block ${i+1} · XOR`,i?`${nm('P',i+1)} is XORed with ${nm('C',i)}, the ciphertext of the block before it. So ${nm('C',i+1)} will depend on every block up to here, not only on ${nm('P',i+1)}.`:`Before AES, P₁ is XORed with the IV, byte by byte. The IV is not secret, but it is new and random for every message.`,fm(`${nm('P',i+1)} ⊕ ${pn(i)} =<br>${fH(V[i])}`),bb(p,prev(i)),
+          tw>=0?`<span class="okn">${nm('P',i+1)} is the same as ${nm('P',tw+1)}. But ${nm('P',tw+1)} was XORed with ${tw?nm('C',tw):'the IV'} and ${nm('P',i+1)} is XORed with ${nm('C',i)}, so AES gets a different input this time.</span>`:'')});
+      const th=through('a'+i,V[i],false,[[x,yV],[x,yA]],[[x,yA],[x,yC]],0,.96);
       G.step({x,open:[['c'+i,.96]],boxes:['a'+i],toks:[th.tok],ticks:[th.tick],pulse:[th.pulse],hot:['v'+i,'c'+i],
-        say:say(`Block ${i+1} · AES`,`Ten rounds of AES with the key. The result is ${nm('C',i+1)}${i<n-1?', and it goes on to the next block as well':''}.`,fm(`${nm('C',i+1)} = E<sub>K</sub>(${nm('P',i+1)} ⊕ ${pn(i)}) =<br>${fH(Cb[i])}`))});
+        say:say(`Block ${i+1} · AES`,`Ten rounds of AES with the key. The result is ${nm('C',i+1)}.${i<n-1?` A copy of it goes on to block ${i+2}, where it will be XORed with ${nm('P',i+2)}.`:''}`,fm(`${nm('C',i+1)} = E<sub>K</sub>(${nm('P',i+1)} ⊕ ${pn(i)}) =<br>${fH(Cb[i])}`),
+          tw>=0&&hexs(Cb[i])!==hexs(Cb[tw])?`<span class="okn">${nm('C',i+1)} is different from ${nm('C',tw+1)}, although ${nm('P',i+1)} and ${nm('P',tw+1)} are the same. In ECB they came out the same.</span>`:'')});
     });
   }else{
     const yC=64,yT=128,yA=176,yV=258,yX=318,yP=394;
@@ -1201,13 +1249,13 @@ function gCBC(dec){
       const a=G.w('c'+i,[[x,yC+41],[x,yA-37]]),b=G.w('v'+i,[[x,yA+37],[x,yX-15]]),c=G.w('p'+i,[[x,yX+15],[x,yP-41]]);
       if(i<n-1){G.w('f'+i,[[x,yT],[xm,yT],[xm,yX],[x+CW-15,yX]]);G.dot(x,yT)}
       if(!i)G.w('fiv',[[101,yX],[x-15,yX]]);
-      const fp=i?G.wires.find(w=>w.id==='f'+(i-1)).pts:[[101,yX],[x-15,yX]];
-      const th=through('a'+i,Cb[i],true,a,[[x,yA],[x,yV]],0,.96);
+      const fp=i?[...G.wires.find(w=>w.id==='f'+(i-1)).pts.slice(0,-1),[x,yX]]:[[60,yX],[x,yX]];
+      const th=through('a'+i,Cb[i],true,[[x,yC],[x,yA]],[[x,yA],[x,yV]],0,.96);
       G.step({x,open:[['v'+i,.96]],boxes:['a'+i],toks:[th.tok],ticks:[th.tick],pulse:[th.pulse],hot:['c'+i,'v'+i],
-        say:say(`Block ${i+1} · AES⁻¹`,`${nm('C',i+1)} goes through the inverse cipher. The result is not the plaintext yet.`,fm(`D<sub>K</sub>(${nm('C',i+1)}) =<br>${fH(V[i])}`))});
+        say:say(`Block ${i+1} · AES⁻¹`,`${nm('C',i+1)} goes through the inverse cipher. The result is not the plaintext yet: it is ${nm('P',i+1)} ⊕ ${pn(i)}, the value that went into AES during encryption.`,fm(`D<sub>K</sub>(${nm('C',i+1)}) =<br>${fH(V[i])}`))});
       G.step({x,open:[['p'+i,.92]],hot:['v'+i,'p'+i,i?'f'+(i-1):'fiv'],pulse:[['x'+i,.46,.62]],dur:2300,
-        toks:[{v:V[i],legs:[[0,.5,[[x,yV],[x,yX]]]],end:.52},{v:prev(i),legs:[[0,.5,fp]],end:.52},{v:p,legs:[[.54,.92,c]],end:.93}],
-        say:say(`Block ${i+1} · XOR`,`XOR with ${i?'the previous ciphertext block':'the IV'} removes the mixing. Each block needs only two ciphertext blocks, so decryption can run in parallel.`,fm(`${nm('P',i+1)} = D<sub>K</sub>(${nm('C',i+1)}) ⊕ ${pn(i)} =<br>${fH(p)}`))});
+        toks:[{v:V[i],legs:[[0,.5,[[x,yV],[x,yX]]]]},{v:prev(i),legs:[[0,.5,fp]]},{v:p,legs:[[.54,.92,[[x,yX],[x,yP]]]]}],
+        say:say(`Block ${i+1} · XOR`,i?`XOR with ${nm('C',i)} cancels the mixing. Only two ciphertext blocks were needed for this block, and the receiver has them all from the start. So decryption can run in parallel.`:`XOR with the IV once more cancels it, because x ⊕ y ⊕ y = x. What is left is P₁.`,fm(`${nm('P',i+1)} = D<sub>K</sub>(${nm('C',i+1)}) ⊕ ${pn(i)} =<br>${fH(p)}`),bb(V[i],prev(i)))});
     });
   }
   return G;
@@ -1230,22 +1278,25 @@ function gStream(mode,dec){
   for(let i=0;i<n;i++){
     const ax=cx(i)+36,xs=right?ax+104:cx(i)-64,sideW=right?[[xs-41,yX],[ax+15,yX]]:[[xs+41,yX],[ax-15,yX]];
     G.bk('i'+i,ax,yI,I[i],`${inCap}${sub_(i+1)}`,i&&mode!=='ctr'?(mode==='cfb'?'c':'s'):'iv',{given:!i});
-    G.box('a'+i,ax,yA,'AES');G.bk('s'+i,ax,yS,S[i],'','s',{c:SW,q:0});G.xor('x'+i,ax,yX);
+    G.box('a'+i,ax,yA,'AES');G.bk('s'+i,ax,yS,S[i],nm('S',i+1),'s',{c:SW,q:0,capS:1});G.xor('x'+i,ax,yX);
     G.bk('d'+i,xs,yX,X[i],nm(nX,i+1),rX,{given:1,capB:1});G.bk('o'+i,ax,yO,O[i],nm(nO,i+1),rO,{capB:1});
     const w1=G.w('i'+i,[[ax,yI+41],[ax,yA-37]]),w2=G.w('s'+i,[[ax,yA+37],[ax,yS-31]]),w3=G.w('k'+i,[[ax,yS+31],[ax,yX-15]]),w4=G.w('d'+i,sideW),w5=G.w('o'+i,[[ax,yX+15],[ax,yO-41]]);
     let feed=null;
     if(i){const ap=cx(i-1)+36;
       feed=mode==='ctr'?[[ap+41,yI],[ax-41,yI]]:mode==='ofb'?[[ap,(yA+37+yS-31)/2],[ap+88,(yA+37+yS-31)/2],[ap+88,yI],[ax-41,yI]]:dec?[[ap+104,yX-41],[ap+104,yI],[ax-41,yI]]:[[ap,(yX+15+yO-41)/2],[ap+88,(yX+15+yO-41)/2],[ap+88,yI],[ax-41,yI]];
       G.w('f'+i,feed);if(mode==='ctr')G.lab((ap+ax)/2,yI-8,'+1');else if(!(mode==='cfb'&&dec))G.dot(feed[0][0],feed[0][1])}
-    const th=through('a'+i,I[i],false,w1,w2,feed?.3:0,.97),toks=[th.tok];
-    if(feed)toks.unshift({v:I[i],legs:[[0,.28,feed]],end:.3});
-    const iname=`${inCap}${sub_(i+1)}`;
+    const th=through('a'+i,I[i],false,[[ax,yI],[ax,yA]],[[ax,yA],[ax,yS]],feed?.3:0,.97),toks=[th.tok];
+    if(feed)toks.unshift({v:I[i],legs:[[0,.28,mode==='ctr'?[[cx(i-1)+36,yI],[ax,yI]]:[...feed.slice(0,-1),[ax,yI]]]]});
+    const iname=`${inCap}${sub_(i+1)}`,tw=X.findIndex((y,j)=>j<i&&hexs(y)===hexs(X[i]));
     G.step({x:ax,open:[...(i?[['i'+i,.28]]:[]),['s'+i,.97]],boxes:['a'+i],toks,ticks:[th.tick],pulse:[th.pulse],hot:[...(i?['f'+i]:[]),'i'+i,'s'+i],dur:i?3000:2500,
-      say:say(`Block ${i+1} · keystream`,mode==='ctr'?(i?`The counter goes up by one. That block goes through AES.`:'The first counter block goes through AES.'):mode==='ofb'?(i?'The last AES output goes back into AES.':'The IV goes through AES.'):(i?`The last ciphertext block goes into AES.`:'The IV goes through AES.'),
-        `AES is used forward${dec?', even though we are decrypting':''}: its output is XORed with the data, so it never has to be undone.`,fm(`S${sub_(i+1)} = E<sub>K</sub>(${iname}) =<br>${fH(S[i])}`))});
+      say:say(`Block ${i+1} · keystream`,
+        i?(mode==='ctr'?`The counter goes up by one, and that block goes into AES.`:mode==='ofb'?`The last AES output, ${nm('S',i)}, goes back into AES.`:`The last ciphertext block, ${nm('C',i)}, goes into AES.`):`${mode==='ctr'?'The first counter block':'The IV'} goes into AES. What comes out, S₁, is keystream: 16 random-looking bytes.`,
+        i?(mode==='ctr'?`Nothing from block ${i} was needed for this, neither ${nm('P',i)} nor ${nm('C',i)}. So the blocks can be computed in any order, or all at once.`:mode==='ofb'?`The message plays no part here, so the whole keystream could be made in advance. But ${nm('S',i+1)} has to wait for ${nm('S',i)}.`:dec?`The receiver has every ciphertext block from the start, so these steps can run in parallel.`:`So block ${i+1} has to wait until ${nm('C',i)} is ready, as in CBC.`):dec?`AES runs forward here too, although we are decrypting. Its output is only XORed with the data, so it never has to be undone.`:`The message has not been touched yet. AES only makes the keystream.`,
+        fm(`S${sub_(i+1)} = E<sub>K</sub>(${iname}) =<br>${fH(S[i])}`))});
     G.step({x:ax,open:[['o'+i,.92]],hot:['k'+i,'d'+i,'o'+i],pulse:[['x'+i,.46,.62]],dur:2300,
-      toks:[{v:S[i],legs:[[0,.5,[[ax,yS],[ax,yX]]]],end:.52},{v:X[i],legs:[[0,.5,sideW]],end:.52},{v:O[i],legs:[[.54,.92,w5]],end:.93}],
-      say:say(`Block ${i+1} · XOR`,`Only the keystream touches the data, one XOR per byte.${X[i].length<16?` This block has ${X[i].length} bytes, so only ${X[i].length} keystream bytes are used: no padding.`:''}`,fm(`${nm(nO,i+1)} = ${nm(nX,i+1)} ⊕ S${sub_(i+1)} =<br>${fH(O[i])}`))});
+      toks:[{v:S[i],legs:[[0,.5,[[ax,yS],[ax,yX]]]]},{v:X[i],legs:[[0,.5,[[xs,yX],[ax,yX]]]]},{v:O[i],legs:[[.54,.92,[[ax,yX],[ax,yO]]]]}],
+      say:say(`Block ${i+1} · XOR`,`${dec?'The same keystream is XORed in once more and cancels, because x ⊕ y ⊕ y = x. What is left is the plaintext.':'Only the keystream touches the data, one XOR per byte.'}${X[i].length<16?` This block has ${X[i].length} bytes, so only ${X[i].length} keystream bytes are used: no padding.`:''}`,fm(`${nm(nO,i+1)} = ${nm(nX,i+1)} ⊕ S${sub_(i+1)} =<br>${fH(O[i])}`),bb(X[i],S[i]),
+        !dec&&tw>=0?`<span class="okn">${nm('P',i+1)} is the same as ${nm('P',tw+1)}, but ${nm('S',i+1)} is not the same as ${nm('S',tw+1)}. So ${nm('C',i+1)} comes out different.</span>`:'')});
   }
   return G;
 }
@@ -1297,11 +1348,11 @@ function gGame(){
   const w1=G.w('m',[[255,110],[685,110]]),w2=G.w('b',[[726,151],[726,189]]),w3=G.w('c',[[647,226],[255,226]]),w4=G.w('q',[[255,342],[647,342]]),w5=G.w('r',[[726,379],[726,408],[90,408],[90,383]]);
   G.lab(470,102,'M₀, M₁');G.lab(470,218,'C');G.lab(470,334,pred?'M′':'M₀');G.lab(470,402,'C′');
   G.after=k=>k>=2?`<g class="coin"><circle cx="836" cy="110" r="25"/><text x="836" y="115">b=${b}</text></g>`:'';
-  G.step({x:470,dur:1800,hot:['m'],toks:[{v:M0,legs:[[0,.96,[[90,110],[726,110]]]],end:.97},{v:M1,legs:[[.1,1,[[214,110],[726,110]]]],end:1}],
+  G.step({x:470,dur:1800,hot:['m'],toks:[{v:M0,legs:[[0,.9,[[90,110],[726,110]]]]},{v:M1,legs:[[.1,1,[[214,110],[726,110]]]]}],
     say:say('Step 1 · two messages','The attacker chooses any two messages of the same length and sends both.',fm(`M₀ = ${toText(M0)}<br>M₁ = ${toText(M1)}`))});
-  G.step({x:470,dur:2600,open:[['mb',.2],['c',.96]],hot:['b','c'],pulse:[['a1',.34,.62]],boxes:['a1'],toks:[{v:b?M1:M0,legs:[[.2,.36,[[726,110],[726,226]]],[.6,.96,[[726,226],[214,226]]]],at:[[.48,ch.c]],end:.97}],
+  G.step({x:470,dur:2600,aft:.2,open:[['mb',.2],['c',.96]],hot:['b','c'],pulse:[['a1',.34,.62]],ticks:[['a1',.36,.6]],boxes:['a1'],toks:[{v:b?M1:M0,legs:[[.2,.36,[[726,110],[726,226]]],[.6,.96,[[726,226],[214,226]]]],at:[[.48,ch.c]]}],
     say:say('Step 2 · the challenge',`The challenger flips a coin: <b>b = ${b}</b>. It encrypts only M<sub>b</sub> and sends the result back. The attacker must find out which one it was.`,fm(`C =<br>${fH(ch.c)}`))});
-  G.step({x:470,dur:2600,open:[['q',.1],['cp',.96]],hot:['q','r'],pulse:[['a2',.42,.62]],boxes:['a2'],toks:[{v:q,legs:[[.1,.42,w4]],at:[[.5,r.c]],end:.5},{v:r.c,legs:[[.56,.96,w5]],end:.97}],
+  G.step({x:470,dur:2600,open:[['q',.1],['cp',.96]],hot:['q','r'],pulse:[['a2',.42,.62]],ticks:[['a2',.42,.56]],boxes:['a2'],toks:[{v:q,legs:[[.1,.42,[[214,342],[726,342]]],[.56,.96,[[726,342],[726,408],[90,408],[90,342]]]],at:[[.5,r.c]]}],
     say:pred?say('Step 3 · a clever question','The attacker saw the IV of the challenge and can predict the next one. So it builds a message that cancels the difference between them.',fm(`M′ = M₀ ⊕ IV ⊕ IV<sub>next</sub> =<br>${fH(q)}`),`If C came from M₀, AES now gets exactly the same input as before: M′ ⊕ IV<sub>next</sub> = M₀ ⊕ IV.`):
       say('Step 3 · a free question','This is the “chosen plaintext” part: the attacker may ask for the encryption of anything. Here it simply asks for M₀.',fm(`C′ =<br>${fH(r.c)}`))});
   G.step({x:150,dur:1500,pulse:[],toks:[],
@@ -1337,12 +1388,13 @@ T.iv={
       return;
     }
     const G=chart(`iv${ST.ivS}${ST.roll}`,gGame);
-    stage.innerHTML=sw+`<div class="row subs"><span class="flh">Scheme</span><span class="seg sm wr">${SCH.map(([id,n,d])=>`<button data-ivs="${id}" class="${ST.ivS===id?'on':''}">${n}: ${d}</button>`).join('')}</span><button data-roll="1">New round</button></div>`+drawGraph(G,k)+ivTable();panTo(G,k);
-    $('#explain').innerHTML=k===0?say('The IND-CPA game','This is how cryptographers define “hides everything”. The attacker may ask for encryptions of anything it likes, and then has to tell two messages apart.','Press <b>Step</b> to play one round.'):G.st[k-1].say;
+    putGraph(G,k,sw+`<div class="row subs"><span class="flh">Scheme</span><span class="seg sm wr">${SCH.map(([id,n,d])=>`<button data-ivs="${id}" class="${ST.ivS===id?'on':''}">${n}: ${d}</button>`).join('')}</span><button data-roll="1">New round</button></div>`,ivTable());
+    const txt=j=>j===0?say('The IND-CPA game','This is how cryptographers define “hides everything”. The attacker may ask for encryptions of anything it likes, and then has to tell two messages apart.','Press <b>Step</b> to play one round.'):G.st[j-1].say;
+    $('#explain').innerHTML=txt(k);holdExplain(`iv${ST.ivS}${ST.roll}`,()=>G.st.map((_,j)=>txt(j+1)).concat(txt(0)));
     $('#extra').innerHTML=`<h3>IND-CPA in one line</h3>${fm('Adv = | Pr[guess = b] − ½ |')}<p>A scheme is <b>IND-CPA secure</b> if every efficient attacker has a negligible advantage.</p><p>So a scheme that always gives the same ciphertext can never be secure.</p><ul class="pros"><li class="y"><b>CBC, CFB:</b> IV random and unpredictable</li><li class="y"><b>CTR, OFB, GCM:</b> nonce unique, a simple counter is fine</li></ul>`+quiz('iv');
   },
   plan(k){return planGraph(chart(`iv${ST.ivS}${ST.roll}`,gGame),k)},
-  focus(){follow($('#chS'))}};
+  focus(){follow($('#chS'),$('#explain'))}};
 /* ---------- GCM: CTR for secrecy, GHASH for the tag ---------- */
 const GC=11,GS=7;
 function gGCM(dec){
@@ -1383,22 +1435,22 @@ function gGCM(dec){
   G.lab(ax(feed[0].col)-52,yG+5,'0');G.w('g0',[[ax(feed[0].col)-44,yG],[ax(feed[0].col)-15,yG]]);
   G.lab(10,yG-34,'GHASH','gl');
   // steps
-  const thH=through('ah',Array(16).fill(0),false,wz,wh,0,.97),thJ=through('aj',J,false,wj,wsj,0,.97);
+  const thr=(box,v,x)=>through(box,v,false,[[x,yI],[x,yA]],[[x,yA],[x,yS]],0,.97),thH=thr('ah',Array(16).fill(0),ax(0)),thJ=thr('aj',J,ax(1));
   G.step({x:ax(0),open:[['h',.97]],boxes:['ah'],toks:[thH.tok],ticks:[],pulse:[thH.pulse],hot:['z','h'],say:say('Setup · the hash key','AES encrypts a block of zeros. The result <b>H</b> is the key of the hash that makes the tag.',fm(`H = E<sub>K</sub>(0¹²⁸) =<br>${fH(H)}`))});
   G.step({x:ax(1),open:[['sj',.97]],boxes:['aj'],toks:[thJ.tok],ticks:[],pulse:[thJ.pulse],hot:['j','sj'],say:say('Setup · the tag mask','The 12-byte nonce plus the counter 1 makes J₀. Its encryption S₀ is kept for the very end, to hide the hash value.',fm(`S₀ = E<sub>K</sub>(J₀) =<br>${fH(S0)}`))});
   const ctrStep=i=>{const c=col(i),x=ax(c),xs=cx(c)-46,th=through('a'+i,T_[i],false,[[x,yI],[x,yA]],[[x,yA],[x,yS]],.14,.6);
     const wd=dec?[[x,yC],[x,yX]]:[[xs,yX],[x,yX]],wo=dec?[[x,yX],[xs,yX]]:[[x,yX],[x,yC]],oid=dec?'p'+i:'p'+i,nX=dec?`C${sub_(i+1)}`:`P${sub_(i+1)}`,nO=dec?`P${sub_(i+1)}`:`C${sub_(i+1)}`;
     return{x,dur:3400,open:[['t'+i,.13],['s'+i,.6],[dec?'p'+i:'p'+i,.97]],boxes:['a'+i],hot:['i'+i,'sa'+i,'k'+i,'dc'+i,...(dec?['dp'+i]:['dd'+i])],pulse:[th.pulse,['x'+i,.76,.86]],
-      toks:[{v:T_[i],legs:[[0,.13,[[ax(c-1)+31,yI],[x-31,yI]]]],end:.14},th.tok,{v:S_[i],legs:[[.62,.76,[[x,yS],[x,yX]]]],end:.77},{v:dec?Cb[i]:Pb[i],legs:[[.62,.76,wd]],end:.77},{v:dec?Pb[i]:Cb[i],legs:[[.8,.97,wo]],end:.98}],
+      toks:[{v:T_[i],legs:[[0,.13,[[ax(c-1),yI],[x,yI]]]]},th.tok,{v:S_[i],legs:[[.62,.76,[[x,yS],[x,yX]]]]},{v:dec?Cb[i]:Pb[i],legs:[[.62,.76,wd]]},{v:dec?Pb[i]:Cb[i],legs:[[.8,.97,wo]]}],
       say:say(`Block ${i+1} · CTR`,`This part is exactly CTR mode, with a 32-bit counter that starts right after J₀.`,fm(`${nO} = ${nX} ⊕ E<sub>K</sub>(T${sub_(i+1)}) =<br>${fH(dec?Pb[i]:Cb[i])}`))}};
   const hashStep=j=>{const f=feed[j],x=ax(f.col),m=x+CW/2,M=mul[j],prevX=j?feed[j-1]:null,prevP=prevX?[[ax(prevX.col)+CW/2,yG],[x,yG]]:[[x-44,yG],[x,yG]];
-    return{x:m,dur:3200,open:[['X'+j,.97]],boxes:['m'+j],hot:['gd'+j,'gm'+j,j?'gn'+(j-1):'g0'],pulse:[['gx'+j,.2,.32],['m'+j,.32,.92]],mul:M,
-      toks:[{v:f.raw,legs:[[0,.2,[[x,yC],[x,yG]]]],end:.21},{v:M.inX,legs:[[.22,.32,[[x,yG],[m,yG]]]],end:.33}],
-      tick:p=>{const q=clamp((p-.32)/.6,0,1);gfShow(M,Math.round(q*128))},
+    return{x:m,dur:3200,open:[['X'+j,.97]],boxes:['m'+j],hot:['gd'+j,'gm'+j,j?'gn'+(j-1):'g0'],pulse:[['gx'+j,.16,.32],['m'+j,.34,.92]],mul:M,
+      toks:[...(j?[{v:mul[j-1].out,legs:[[0,.2,prevP]]}]:[]),{v:f.raw,legs:[[0,.2,[[x,yC],[x,yG]]]]},{v:M.inX,legs:[[.24,.34,[[x,yG],[m,yG]]]]}],
+      tick:p=>{const q=clamp((p-.34)/.58,0,1);gfShow(M,Math.round(q*128))},
       say:say(`GHASH · ${f.name}`,f.id==='len'?'The last block holds the two lengths in bits, so nothing can be cut off unnoticed.':f.role==='a'?'Additional data is hashed first. It is not encrypted, but any change to it will break the tag.':'The ciphertext is hashed, not the plaintext. A receiver can check the tag before decrypting anything.',
         `XOR the block into the hash value, then multiply by H in GF(2¹²⁸). Watch the 128 bits below.${f.raw.length<16?' A short block is filled with zeros first.':''}`,fm(`X = (X ⊕ ${f.name}) · H =<br>${fH(M.out)}`))}};
   const tagStep=()=>({x:ax(tagC),open:[['tag',.94]],hot:['mask','gtt',...[`gn${feed.length-1}`]],pulse:[['gt',.54,.66]],dur:2800,
-    toks:[{v:S0,legs:[[0,.54,[[ax(1),yS],...maskW.slice(0)]]],end:.55},{v:X,legs:[[.3,.54,[[ax(feed.at(-1).col)+CW/2,yG],[ax(tagC),yG]]]],end:.55},{v:o.T,legs:[[.58,.94,[[ax(tagC),yG],[ax(tagC),yC]]]],end:.95}],
+    toks:[{v:S0,legs:[[0,.54,[[ax(1),yS],...maskW.slice(0,-1),[ax(tagC),yG]]]]},{v:X,legs:[[.3,.54,[[ax(feed.at(-1).col)+CW/2,yG],[ax(tagC),yG]]]]},{v:o.T,legs:[[.58,.94,[[ax(tagC),yG],[ax(tagC),yC]]]]}],
     say:say(dec?'Check · a new tag':'The tag',`The final hash value is XORed with S₀. Now the 16-byte tag cannot be computed without the key.`,fm(`Tag = X ⊕ S₀ =<br>${fH(o.T)}`),dec?'<span class="okn">The computed tag equals the received one, so the message is genuine and the plaintext may be released.</span>':'')});
   G.feed=feed;
   if(!dec){for(let i=0;i<n;i++)G.step(ctrStep(i));feed.forEach((_,j)=>G.step(hashStep(j)));G.step(tagStep())}
@@ -1425,7 +1477,9 @@ function gfPanel(M,i){
   <div class="gfv"><span>Input</span><code>${M?hexs(M.inX):'·'.repeat(32)}</code><span>V</span><code id="gfV">${'·'.repeat(32)}</code><span>Z</span><code id="gfZ">${'0'.repeat(32)}</code></div></div>`;
 }
 function gfShow(M,n){
-  if(!M)return;const c=$$('#gfB i');c.forEach((e,j)=>{e.classList.toggle('dn',j<n);e.classList.toggle('now',j===n)});
+  if(!M)return;const B=$('#gfB');if(!B||B._n===n)return;
+  const c=B.children,lo=B._n==null?0:Math.min(B._n,n),hi=B._n==null?127:Math.min(127,Math.max(B._n,n));   // only the cells that changed
+  for(let j=lo;j<=hi;j++){c[j].classList.toggle('dn',j<n);c[j].classList.toggle('now',j===n)}B._n=n;
   const s=M.steps[Math.min(n,127)],z=n?M.steps[n-1].z:0n;
   const V=$('#gfV'),Z=$('#gfZ');if(V)V.textContent=hexs(fromB(s.v));if(Z)Z.textContent=hexs(fromB(z));
 }
@@ -1487,11 +1541,11 @@ function gFlip(){
   G.w('fiv',[[88,yX+96],[cx(0)-40,yX+96],[cx(0)-40,yX],[cx(0)-15,yX]],'bad');
   const ch=say,sh=(b,i)=>toText(b).slice(0,i)+`<b class="x">${toText(b)[i]}</b>`+toText(b).slice(i+1);
   G.step({x:60,open:[['dl',.5]],toks:[],dur:1400,say:ch('Step 1 · the plan','The attacker has no key, but knows this is a payment and where the amount sits.',`The digit <b>1</b> is byte ${AI}. To turn it into <b>9</b>:`,fm(`Δ = '1' ⊕ '9' = 31 ⊕ 39 = 08`))});
-  G.step({x:60,open:[['iv2',.9]],hot:['dl','iv'],toks:[{v:dv,legs:[[0,.42,dW]],end:.43},{v:iv2,legs:[[.48,.9,iW]],end:.91}],pulse:[],dur:2000,say:ch('Step 2 · flip','XOR Δ into the IV, which travels in the clear. Only one bit changes. Nothing else is touched.',fm(`IV′ = IV ⊕ Δ =<br>${fH(iv2)}`))});
+  G.step({x:60,open:[['iv2',.9]],hot:['dl','iv'],toks:[{v:dv,legs:[[0,.42,[[60,yX-110],[60,yX]]]]},{v:iv2,legs:[[.48,.9,[[60,yX],[60,yX+96]]]]}],pulse:[],dur:2000,say:ch('Step 2 · flip','XOR Δ into the IV, which travels in the clear. Only one bit changes. Nothing else is touched.',fm(`IV′ = IV ⊕ Δ =<br>${fH(iv2)}`))});
   [0,1].forEach(i=>{const x=cx(i),th=through('a'+i,Cb[i],true,[[x,yC],[x,yA]],[[x,yA],[x,yV]],0,.5);
-    const fp=i?G.wires.find(w=>w.id==='f0').pts:G.wires.find(w=>w.id==='fiv').pts;
-    G.step({x,open:[['v'+i,.5],['p'+i,.97]],boxes:['a'+i],hot:['c'+i,'v'+i,'p'+i,i?'f0':'fiv'],pulse:[th.pulse,['x'+i,.72,.8]],dur:3200,
-      toks:[th.tok,{v:Vb[i],legs:[[.52,.72,[[x,yV],[x,yX]]]],end:.73},{v:i?Cb[0]:iv2,legs:[[.52,.72,fp]],end:.73},{v:P2[i],legs:[[.76,.97,[[x,yX],[x,yP]]]],end:.98}],
+    const fw=G.wires.find(w=>w.id===(i?'f0':'fiv')).pts,fp=i?[...fw.slice(0,-1),[x,yX]]:[[60,yX+96],...fw.slice(1,-1),[x,yX]];
+    G.step({x,open:[['v'+i,.5],['p'+i,.97]],boxes:['a'+i],hot:['c'+i,'v'+i,'p'+i,i?'f0':'fiv'],pulse:[th.pulse,['x'+i,.68,.84]],ticks:[th.tick],dur:3200,
+      toks:[th.tok,{v:Vb[i],legs:[[.52,.72,[[x,yV],[x,yX]]]]},{v:i?Cb[0]:iv2,legs:[[.52,.72,fp]]},{v:P2[i],legs:[[.76,.97,[[x,yX],[x,yP]]]]}],
       say:ch(`Step ${3+i} · the server decrypts block ${i+1}`,i?'Block 2 is untouched. No error anywhere, and the text looks normal.':'The server uses the changed IV. The result differs from the real message in exactly the bit that was flipped.',fm(i?`P₂ = ${toText(P2[1])}`:`P₁ = ${sh(P2[0],AI)}`))})});
   return G;
 }
@@ -1561,12 +1615,13 @@ function renderGN(k,tabs){
     ${row(4,'Forge a message',chipB(q.C3,'C₃','c')+chipB(q.T3,'T₃','t')+`<span class="gq">${toText(q.M[2])}</span>`)}
     ${row(5,'The server checks the tag',q.tagOK?`<span class="vbad">✓ tag valid: forged message accepted</span>`:'')}
   </div>`;
-  $('#explain').innerHTML=[say('GCM nonce reuse','GCM is only as strong as its nonce. Here the same nonce is used for two short messages, and the attacker knows the first one.','This is a real attack, computed in your browser on real AES-GCM. Press <b>Step</b>.'),
+  const A=[say('GCM nonce reuse','GCM is only as strong as its nonce. Here the same nonce is used for two short messages, and the attacker knows the first one.','This is a real attack, computed in your browser on real AES-GCM. Press <b>Step</b>.'),
     say('Step 1 · XOR the two tags','Each tag is C·H² ⊕ len·H ⊕ S₀. The nonce repeated, so S₀ is the same in both, and the length too.',fm('T₁ ⊕ T₂ = (C₁ ⊕ C₂) · H²'),'One equation with one unknown.'),
     say('Step 2 · solve for H','Field arithmetic does the rest: divide, then take the square root.',fm(`H² = (T₁ ⊕ T₂) · (C₁ ⊕ C₂)⁻¹<br>H = (H²)^(2¹²⁷) =<br>${fH(q.H)}`),'H was supposed to stay secret for the whole life of the key.'),
     say('Step 3 · the mask','With H known, the mask of this nonce follows from any tag.',fm(`S₀ = T₁ ⊕ C₁·H² ⊕ len·H =<br>${fH(q.S0)}`)),
     say('Step 4 · forge','The attacker knows M₁, so it has the keystream. It encrypts its own text and computes a tag for it.',fm(`C₃ = M₃ ⊕ (C₁ ⊕ M₁)<br>T₃ = C₃·H² ⊕ len·H ⊕ S₀`)),
-    say('Step 5 · accepted','The server computes the tag with the real key, and it matches.','<span class="warn">One repeated nonce and the attacker can forge messages for this nonce, and knows H for the rest of the key\'s life. No key was found.</span>')][k];
+    say('Step 5 · accepted','The server computes the tag with the real key, and it matches.','<span class="warn">One repeated nonce and the attacker can forge messages for this nonce, and knows H for the rest of the key\'s life. No key was found.</span>')];
+  $('#explain').innerHTML=A[k];holdExplain('atkgnon',()=>A);
   $('#extra').innerHTML=`<h3>Why this worked here</h3><p>With one-block messages the equation is of degree 2, so a square root solves it. Longer messages give a polynomial of higher degree, and its roots can still be found.</p><p>This is known as the forbidden attack (Joux, 2006).</p><p class="note">The fix: never repeat a nonce. If that cannot be guaranteed, use a mode built for it, such as AES-GCM-SIV.</p>`;
 }
 function paintN(){ // the pictures of the nonce attack
@@ -1586,9 +1641,9 @@ T.atk={dir:false,
     if(ST.atk==='oracle')return renderPO(k,tabs);
     if(ST.atk==='flip'){
       const G=chart('atk',gFlip),done=k>=G.st.length-1;
-      stage.innerHTML=tabs+drawGraph(G,k)+`<div class="res r-p"><span class="rl">Sent</span><span class="rv rt">${AM} ${AM2}</span></div>`+(done?`<div class="res r-bad"><span class="rl">Received</span><span class="rv rt">${AM.slice(0,AI)}<b class="x">9</b>${AM.slice(AI+1)} ${AM2}</span><span class="vbad">no error, no warning</span></div>`:'');
-      panTo(G,k);
-      $('#explain').innerHTML=k===0?say('CBC bit flipping','The server decrypts with CBC and acts on the text. Encryption hides the message, but it does not stop anyone from changing it.','Here the attacker changes <b>0100</b> into <b>0900</b> without knowing the key. Press <b>Step</b>.'):G.st[k-1].say+(k===G.st.length?'<p><span class="warn">The attacker never saw the key or the plaintext.</span></p>':'');
+      putGraph(G,k,tabs,`<div class="res r-p"><span class="rl">Sent</span><span class="rv rt">${AM} ${AM2}</span></div>`+(done?`<div class="res r-bad" data-t="${G.st.length-1}"><span class="rl">Received</span><span class="rv rt">${AM.slice(0,AI)}<b class="x">9</b>${AM.slice(AI+1)} ${AM2}</span><span class="vbad">no error, no warning</span></div>`:''));
+      const txt=j=>j===0?say('CBC bit flipping','The server decrypts with CBC and acts on the text. Encryption hides the message, but it does not stop anyone from changing it.','Here the attacker changes <b>0100</b> into <b>0900</b> without knowing the key. Press <b>Step</b>.'):G.st[j-1].say+(j===G.st.length?'<p><span class="warn">The attacker never saw the key or the plaintext.</span></p>':'');
+      $('#explain').innerHTML=txt(k);holdExplain('atkflip',()=>G.st.map((_,j)=>txt(j+1)).concat(txt(0)));
       $('#extra').innerHTML=`<h3>Why it works</h3>${fm('P₁ = D<sub>K</sub>(C₁) ⊕ IV')}<p>Whatever is XORed into the IV lands in P₁ unchanged.</p><p>A flip inside C₁ works on P₂ the same way, but then P₁ turns to garbage.</p><p class="note">The fix is authentication: use <button class="link" data-goto="gcm">GCM</button>, or add a MAC and check it first.</p>`;
       return;
     }
@@ -1600,12 +1655,13 @@ T.atk={dir:false,
       <div class="ngr"><div class="ngl">A tempting fix: start the second counter one block later</div>${f('n5','C₁ ⊕ C₂','looks random','',k<3)}${f('n6','Shifted by one block','both pictures are back','bad',k<4)}</div>
       <div class="ngr"><div class="ngl">The real fix: a new nonce for each message</div>${f('n7','C₁ ⊕ C₂','looks random','good',k<5)}</div></div>`;
     paintN();
-    $('#explain').innerHTML=[say('CTR nonce reuse','CTR is safe only while every counter block is used once. Here two pictures are encrypted with the same key and the same starting counter.','Press <b>Step</b>.'),
+    const A=[say('CTR nonce reuse','CTR is safe only while every counter block is used once. Here two pictures are encrypted with the same key and the same starting counter.','Press <b>Step</b>.'),
       say('Step 1 · encrypt','Each ciphertext alone looks random. Nothing seems wrong.',fm('C₁ = P₁ ⊕ S<br>C₂ = P₂ ⊕ S')),
       say('Step 2 · XOR the two ciphertexts','The attacker needs no key: the keystream cancels out.',fm('C₁ ⊕ C₂ = P₁ ⊕ S ⊕ P₂ ⊕ S = P₁ ⊕ P₂'),'<span class="warn">Both pictures show through, with no key at all.</span>'),
       say('Step 3 · a tempting fix','Start the second message one counter later. The XOR of the two ciphertexts now looks random. Is that safe?'),
       say('Step 4 · shift by one block','No. Both messages still use the same keystream blocks, just one position apart. The attacker tries small shifts of one ciphertext against the other.',fm('C₁[i+1] ⊕ C₂[i] = P₁[i+1] ⊕ P₂[i]'),'<span class="warn">Both pictures are back, 4 pixels apart. A different starting value does not help if the two ranges overlap.</span>'),
-      say('Step 5 · the real fix','No counter block may ever be used twice under one key. So each message gets its own nonce in the first half of the counter block, and it counts only in the second half.','As long as that counter never runs over, two messages cannot reach the same block.','GCM has the same rule, and there a repeat also lets an attacker forge tags: <button class="link" data-atk="gnon">see that attack</button>.')][k];
+      say('Step 5 · the real fix','No counter block may ever be used twice under one key. So each message gets its own nonce in the first half of the counter block, and it counts only in the second half.','As long as that counter never runs over, two messages cannot reach the same block.','GCM has the same rule, and there a repeat also lets an attacker forge tags: <button class="link" data-atk="gnon">see that attack</button>.')];
+    $('#explain').innerHTML=A[k];holdExplain('atknonce',()=>A);
     $('#extra').innerHTML=`<h3>The same trick on text</h3><p>Two messages encrypted this way give P₁ ⊕ P₂. Guess a common word in one of them and the other message appears at that spot.</p><p class="note">The rule: no counter block is ever used twice under one key. A new start value is not enough, the ranges must not overlap.</p>`;
   },
   plan(k){
@@ -1666,9 +1722,10 @@ T.ov={n:()=>3,render(k){
   stage.innerHTML=`<div class="h3">${k===0?'The message':'The message, cut into 16-byte blocks'}</div><div class="msg" id="msgB">${msgCells(k>=1,k>=2)}</div>
     <div class="sec"><div class="h3">Six ways to connect the blocks · click one</div><div class="mgrid">${OC.map(([t,s,a,b,c,st,lab])=>`<button class="mcard" data-goto="${t}"${t==='cf'?` data-sub="${s}"`:''}><span class="mh"><b>${a}</b><span class="st ${st}">${lab}</span></span><span class="mf">${b}</span>${miniD(s)}<span class="md">${c}</span></button>`).join('')}</div></div>`;
   const left=D.msg.length%16,pn=16-left;
-  $('#explain').innerHTML=[say('The problem','AES encrypts exactly <b>16 bytes</b> at a time, no more and no less.',`This message has ${D.msg.length} bytes. A <b>mode of operation</b> is the recipe for using a block cipher on a message of any length.`,'Press <b>Step</b>.'),
+  const A=[say('The problem','AES encrypts exactly <b>16 bytes</b> at a time, no more and no less.',`This message has ${D.msg.length} bytes. A <b>mode of operation</b> is the recipe for using a block cipher on a message of any length.`,'Press <b>Step</b>.'),
     say('Step 1 · cut into blocks',`Every 16 bytes make a block.${left?` The last block is short: only ${left} bytes.`:''}`),
-    say('Step 2 · padding',D.usePad?`ECB and CBC need full blocks, so PKCS#7 fills the rest: ${pn} bytes, each with the value ${pn}. That tells the receiver how much to remove.${left?'':' A message that fits exactly still gets a whole extra block of padding.'}`:'This example is a NIST test vector, which is already a whole number of blocks and uses no padding.','CTR, CFB, OFB and GCM work like stream ciphers and need no padding at all.','Now choose a mode below.')][k];
+    say('Step 2 · padding',D.usePad?`ECB and CBC need full blocks, so PKCS#7 fills the rest: ${pn} bytes, each with the value ${pn}. That tells the receiver how much to remove.${left?'':' A message that fits exactly still gets a whole extra block of padding.'}`:'This example is a NIST test vector, which is already a whole number of blocks and uses no padding.','CTR, CFB, OFB and GCM work like stream ciphers and need no padding at all.','Now choose a mode below.')];
+  $('#explain').innerHTML=A[k];holdExplain('ov',()=>A);
   $('#extra').innerHTML=`<h3>Words you will meet</h3><p><b>Block</b>: 16 bytes for AES.</p><p><b>Key</b>: secret, the same for every block.</p><p><b>IV</b> or <b>nonce</b>: not secret, but different for every message, so that the same text encrypts differently.</p><p><b>Keystream</b>: random-looking bytes that are XORed with the data.</p><p><b>Tag</b>: a short value that proves nothing was changed.</p><p><b>AEAD</b>: encryption that also detects changes, such as GCM.</p>`;
 },
 plan(k){
@@ -1677,7 +1734,7 @@ plan(k){
     const old=$('#msgB'),h=old.innerHTML;old.innerHTML=msgCells(false,false);const from=$$('#msgB .mc').map(rectOf);old.innerHTML=h;
     const to=$$('#msgB .mc:not(.pd)').map(rectOf),mv=[];const all=$$('#msgB .mc:not(.pd)');all.forEach(e=>e.classList.add('ghost'));
     const cu=[];from.forEach((f,i)=>{const b=D.msg[i],n=fxNode(tok(printable(D.msg)?safeCh(b):hx(b),f.w,f.h,[`hsl(${(i>>4)*67+200},52%,42%)`]));
-      const a=.0+.3*i/from.length,z=a+.66;mv.push({node:n,pts:[xy(f),xy(to[i])],a,b:z,end:z+.01});cu.push([z,()=>all[i].classList.remove('ghost')])});
+      const a=.0+.3*i/from.length,z=a+.66;mv.push({node:n,pts:[xy(f),xy(to[i])],a,b:z,end:z+.01,fi:0,fo:0});cu.push([z,()=>all[i].classList.remove('ghost')])});
     return both(mover(mv),cues(cu))}};
   return{dur:900,start(){const c=$$('#msgB .mc.pd');if(!c.length)return null;c.forEach(e=>e.classList.add('ghost'));return cues(c.map((e,i)=>[(i+1)/(c.length+1),()=>e.classList.remove('ghost')]))}};
 }};
@@ -1689,6 +1746,8 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)');
 const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
 const speed=()=>+$('#spd').value;
 function curN(){return T[ST.tab].n()}
+// every picture goes through here: the height kept for the text belongs to one walkthrough only
+function paint(t,k){const ex=$('#explain');ex.style.marginTop=ex.style.marginBottom='';EH.on=false;t.render(k)}
 function controls(k){
   const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
   $('#ctrl').hidden=!stepped&&!t.rounds;
@@ -1701,20 +1760,20 @@ function controls(k){
 function show(){
   if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
   const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
-  fxClear();t.render(k);controls(k);
+  fxClear();paint(t,k);controls(k);
 }
 function startStage(to){
   stopAnim(true);
   const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
-  ST.step[tab]=to;fxClear();t.render(to);            // the target picture; start() hides what is still to come
+  ST.step[tab]=to;fxClear();paint(t,to);             // the target picture; start() hides what is still to come
   const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
-  if(!tick){fxClear();t.render(to);controls(to);next();return}
+  if(!tick){fxClear();paint(t,to);controls(to);next();return}
   const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
   ENG.anim=a;controls(to);tick(0);
   if(t.focus&&$('#follow').checked)t.focus(to);
   requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
 }
-function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();T[a.tab].render(a.to);controls(a.to);next()}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();paint(T[a.tab],a.to);controls(a.to);next()}
 // when playing, the next step starts only after this one has finished, plus a short pause
 function next(){
   if(!ENG.playing)return;const k=ST.step[ST.tab];
@@ -1724,14 +1783,17 @@ function next(){
 function stopAnim(complete){
   if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
   const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
-  if(a.tab===ST.tab){T[a.tab].render(ST.step[a.tab]);controls(ST.step[a.tab])}
+  if(a.tab===ST.tab){paint(T[a.tab],ST.step[a.tab]);controls(ST.step[a.tab])}
 }
 function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
 // keep the moving part in view (the "follow" box); only the page scrolls, never a wide drawing sideways
-function follow(el){
-  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
-  if(r.top>=8&&r.bottom<=vh-8)return;
-  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+function follow(el,head){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;let top=r.top;
+  // on a narrow screen the text sits above the drawing: keep both in view when they fit
+  if(head){const h=head.getBoundingClientRect(),t=h.bottom-Math.max(h.height,EH.on?EH.h:0);if(h.bottom<=r.top+1&&r.bottom-t<=vh-16)top=t}
+  const H=r.bottom-top;
+  if(top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:H>vh-16?top-8:top-(vh-H)/2,behavior:RM.matches?'auto':'smooth'});
 }
 function fillRounds(){
   const t=T[ST.tab];
