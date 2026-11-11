@@ -955,6 +955,13 @@ function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.
 const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
 const hide=els=>els.forEach(e=>{if(e)e.style.opacity=0});
 const tgl=(els,c,on)=>els.forEach(e=>{if(e)e.classList.toggle(c,on)});
+/* parts of the picture that a step brings in. Each is dimmed first (to the look of class cls, or hidden) and from
+   its time t it comes in over w of the step. items: [[element, t], …] → tick(p) */
+function bring(items,w=.2,cls){
+  const L=items.filter(x=>x[0]).map(([e,t])=>{if(cls)e.classList.add(cls);else e.style.opacity=0;return{e,t,d:cls?+getComputedStyle(e).opacity:0,on:false}});
+  return p=>{for(const o of L){if(p<o.t)continue;if(!o.on){o.on=true;if(cls)o.e.classList.remove(cls)}
+    const ww=Math.min(w,1-o.t),u=ww>0?clamp((p-o.t)/ww,0,1):1;o.e.style.opacity=u<1?(o.d+(1-o.d)*ease(u)).toFixed(3):(cls?'':1)}};
+}
 // the same token, new value / size / colours
 const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
 
@@ -1059,14 +1066,14 @@ function dhScene(k){
 }
 QZ.dh={q:'Eve changes nothing, she only listens. Can she find s from A and B alone?',o:['Yes, s = A · B mod p','Only by solving a discrete log, as far as we know','Yes, if she knows p'],a:1,why:'Finding gᵃᵇ from gᵃ and gᵇ is the Diffie–Hellman problem. The best known way is to compute a discrete log, and that is why p must be large.'};
 T.dh={n:()=>7,render(k){
-  const K=D,s=modpow(K.B,K.a,K.p),key=keyOf(s);
+  const K=D,s=modpow(K.B,K.a,K.p),key=keyOf(s),sm=K.p<(1n<<40n);
   stage.innerHTML=wide(dhScene(k))+pickBox()+`<div class="nvs"><span class="flh">Numbers</span>${nv(K.p,'p')}${nv(K.A,'A')}${nv(K.B,'B')}${k>=5?nv(s,'s'):''}</div>`+(k>=6?`<div class="res r-ok"><span class="rl">AES key</span><span class="rv">SHA-256(s), first 16 bytes: ${hexs(key)}</span><span class="vok">the same on both sides</span></div>`:'');
   $('#explain').innerHTML=[say('Diffie–Hellman','Two people who never met agree on a secret over an open line. Press <b>Step</b>.'),
     say('Step 1 · public parameters','A prime p and a base g. They can be published once and used by everyone.'),
     say('Step 2 · secret numbers','Alice picks a, Bob picks b, at random. Neither is ever sent.'),
-    say('Step 3 · public values',`Each computes a power of g. This is fast, with <a href="rsa.html">square and multiply</a>.`,fm(`A = gᵃ mod p = ${fmtN(K.A)}<br>B = gᵇ mod p = ${fmtN(K.B)}`)),
+    say('Step 3 · public values',`Each computes a power of g. This is fast, with <a href="rsa.html">square and multiply</a>.`,fm(`A = gᵃ mod p${sm?` = ${K.g}<sup>${K.a}</sup> mod ${K.p}`:''} = ${fmtN(K.A)}<br>B = gᵇ mod p${sm?` = ${K.g}<sup>${K.b}</sup> mod ${K.p}`:''} = ${fmtN(K.B)}`)),
     say('Step 4 · swap','A and B cross the network. Eve copies them.'),
-    say('Step 5 · the same secret','Each raises the other side’s value to their own secret.',fm(`Bᵃ = (gᵇ)ᵃ = gᵃᵇ<br>Aᵇ = (gᵃ)ᵇ = gᵃᵇ<br>s = ${fmtN(s)}`)),
+    say('Step 5 · the same secret','Each raises the other side’s value to their own secret. Both get the same number, because (gᵇ)ᵃ = (gᵃ)ᵇ = gᵃᵇ.',fm(`Alice: Bᵃ mod p${sm?` = ${K.B}<sup>${K.a}</sup> mod ${K.p}`:''} = ${fmtN(s)}<br>Bob: Aᵇ mod p${sm?` = ${K.A}<sup>${K.b}</sup> mod ${K.p}`:''} = ${fmtN(modpow(K.A,K.b,K.p))}`),'Eve has p, g, A and B, but neither a nor b.'),
     say('Step 6 · a key','s is hashed into an AES key, and from now on they use <a href="modes.html">AES-GCM</a>.','<span class="warn">Plain DH checks nobody’s identity: see the next tab.</span>')][k];
   $('#extra').innerHTML=`<h3>Diffie–Hellman in one line</h3>${fm('s = Bᵃ = Aᵇ = gᵃᵇ mod p')}${pc(['No secret is ever sent','With a fresh a and b for each session, old traffic stays safe even if a long-term key leaks later'],['Slow compared to AES, so it only sets up the key','Proves nothing about who is on the other end'])}`+quiz('dh');
 },
@@ -1075,10 +1082,10 @@ plan(k){
   if(k===6)return null;
   return{dur:k===4?1900:900,start(){
     const svg=$('#dhS');if(!svg)return null;
-    if(open){const e=open.map(i=>$('#'+i));e.forEach(x=>x.classList.add('off'));return cues(e.map((x,i)=>[.25+.4*i,()=>x.classList.remove('off')]))}
-    const M=svgMap(svg),s=M.s,R=$('#d-Br'),Q=$('#d-Ar'),E=$('#d-eve');[R,Q,E].forEach(x=>x.classList.add('off'));
+    if(open)return bring(open.map((i,j)=>[$('#'+i),.15+.35*j]),.35,'off');
+    const M=svgMap(svg),s=M.s,R=$('#d-Br'),Q=$('#d-Ar'),E=$('#d-eve'),come=bring([[E,.42],[R,.84],[Q,.84]],.16,'off');
     const A=fxNode(tok(fmtN(D.A,8),98*s,26*s,['var(--pub)'])),B=fxNode(tok(fmtN(D.B,8),98*s,26*s,['var(--pub)']));
-    return both(mover([{node:A,pts:[M(CX.l,RY.pu),M(CX.e,RY.pu-30),M(CX.r,RY.rx)],a:0,b:.96,end:.97},{node:B,pts:[M(CX.r,RY.pu),M(CX.e,RY.pu+22),M(CX.l,RY.rx)],a:.04,b:.96,end:.97}]),cues([[.5,()=>E.classList.remove('off')],[.96,()=>{R.classList.remove('off');Q.classList.remove('off')}]]));
+    return both(mover([{node:A,pts:[M(CX.l,RY.pu),M(CX.e,RY.pu-30),M(CX.r,RY.rx)],a:0,b:.84,end:.86},{node:B,pts:[M(CX.r,RY.pu),M(CX.e,RY.pu+22),M(CX.l,RY.rx)],a:.04,b:.84,end:.86}]),come);
   }};
 },
 focus(){follow($('#dhS'))}};
@@ -1213,7 +1220,7 @@ T.dl={n:()=>ST.dlV==='bsgs'?bsN():ST.dlV==='rho'?3:1,render(k){
     const d=bsData();stage.innerHTML=sw+bsView(k);
     const s=d.gs[Math.min(k-2,d.gs.length-1)];
     $('#explain').innerHTML=k===0?say('Baby-step giant-step',`Trying every exponent takes up to 100 steps. Shanks’s trick takes about 2√100 = 20, by trading memory for time.`,'Write x = i·11 + j. Press <b>Step</b>.'):k===1?say('Step 1 · baby steps','Compute g⁰ to g¹⁰ and store them in a table. These are the blue points.',fm('g⁰, g¹, … g¹⁰')):
-      k>=d.gs.length+1?say('A hit',`h·g<sup>−${d.hit.i}·11</sup> is in the table at j = ${d.hit.j}. So h = g<sup>${d.hit.i}·11 + ${d.hit.j}</sup>.`,fm(`x = ${d.res}`)):say(`Giant step ${k-2}`,'Start at h and jump back by g¹¹ each time. Any jump of 11 cannot pass over the blue arc of 11 points.',fm(`h·g<sup>−${Number(s.i)*11}</sup> = ${s.y}: ${s.pos<BM?'in the table':'not in the table'}`));
+      k>=d.gs.length+1?say('A hit',`h·g<sup>−${d.hit.i}·11</sup> is in the table at j = ${d.hit.j}. So h = g<sup>${d.hit.i}·11 + ${d.hit.j}</sup>.`,fm(`x = ${d.res}`)):say(`Giant step ${k-2}`,k===2?'Start at h and jump back by g¹¹ each time. Any jump of 11 cannot pass over the blue arc of 11 points.':'Jump back by g¹¹ once more, and look in the table again.',fm(`h·g<sup>−${Number(s.i)*11}</sup> = ${s.y}: ${s.pos<BM?'in the table':'not in the table'}`));
     $('#extra').innerHTML=`<h3>In one line</h3>${fm('x = i·m + j, m ≈ √n')}<p>About 2√n steps, and √n entries of memory.</p>`+quiz('dl');
   }else if(ST.dlV==='rho'){
     const d=rhoData();stage.innerHTML=sw+rhoView(k);
@@ -1247,10 +1254,10 @@ T.ph={n:()=>phData().r.parts.length+3,render(k){
    ${last?`<div class="res ${d.ok?'r-ok':'r-bad'}"><span class="rl">Chinese remainder</span><span class="rv">x = ${d.r.x} ${d.ok?'✓':'✗'}. Only ${d.tot} steps in total, against about ${(2n**31n).toLocaleString('en-US')} for rho on a 63-bit group.</span></div>
    <div class="sec"><div class="pich"><div><div class="h3">The same size, with a safe prime</div><div class="pics-s">A 64-bit safe prime has no small subgroups to hide in. Rho, for at most 3 seconds:</div></div><button data-safe="1">Try it</button></div><div id="sfO"></div></div>`:''}`;
   $('#explain').innerHTML=k===0?say('Size is not everything','This prime has 63 bits, so a plain search would take far too long. But p − 1 has only small factors, and that ruins it.','Press <b>Step</b>.'):k===1?say('Step 1 · factor p − 1','The group has p − 1 elements, so it has a subgroup for every divisor. Here all of them are small.'):
-    !last?say(`Step ${k} · the part of size ${P[sh].qe}`,'Raise g and h to the power (p − 1) / size. That throws away everything except x modulo this size.',fm(`gᵢ = g<sup>(p−1)/${P[sh].qe}</sup><br>hᵢ = h<sup>(p−1)/${P[sh].qe}</sup><br>gᵢ^xᵢ = hᵢ`),`A tiny problem, solved in ${P[sh].steps} steps.`):say('Last step · put it together','Knowing x modulo each size gives x modulo p − 1, by the Chinese remainder theorem.','<span class="warn">63 bits fell in a moment. The work depends on the largest factor of p − 1, not on p.</span>');
+    !last?say(`Step ${k} · the part of size ${P[sh].qe}`,sh?`The same trick with the next factor: it leaves only x modulo ${P[sh].qe}.`:'Raise g and h to the power (p − 1) / size. That throws away everything except x modulo this size.',fm(`gᵢ = g<sup>(p−1)/${P[sh].qe}</sup><br>hᵢ = h<sup>(p−1)/${P[sh].qe}</sup><br>gᵢ^xᵢ = hᵢ`),`A tiny problem: x ≡ ${P[sh].x} (mod ${P[sh].qe}), found ${P[sh].steps?`in ${P[sh].steps} step${P[sh].steps===1?'':'s'}`:'at once'}.`):say('Last step · put it together','Knowing x modulo each size gives x modulo p − 1, by the Chinese remainder theorem.','<span class="warn">63 bits fell in a moment. The work depends on the largest factor of p − 1, not on p.</span>');
   $('#extra').innerHTML=`<h3>What to use instead</h3><p>A <b>safe prime</b> p = 2q + 1, where q is prime, leaves only subgroups of sizes 1, 2, q and 2q.</p><p>The group on this page, <b>ffdhe2048</b> from RFC 7919, is one: g = 2 lies in the subgroup of order q.</p><p class="note">Also check values you receive. In a <b>small-subgroup attack</b>, a fake A from a tiny subgroup makes your reply leak a mod its size.</p>`+quiz('ph');
 },
-plan(k){if(k<2)return null;return{dur:600,start(){const e=$('#ep'+(k-2));if(!e)return null;e.classList.add('off');return cues([[.4,()=>e.classList.remove('off')]])}}}};
+plan(k){if(k<2)return null;return{dur:600,start(){const e=$('#ep'+(k-2));if(!e)return null;return bring([[e,.2]],.6,'off')}}}};
 function safeRun(){
   const o=$('#sfO'),p=BigInt(SAFE[64]),q=(p-1n)/2n,g=4n,x=randBits(60)%q,h=modpow(g,x,p),it=rhoLog(g,h,p,q),t0=performance.now();let r=it.next(),last=0;
   o.innerHTML='<div class="res"><span class="rl">Working</span><span class="rv">…</span></div>';
@@ -1268,10 +1275,10 @@ function egKey(){
   return ST.egk={v:D.v,r:ST.egR,k,k2};
 }
 function egView(k){
-  const{p,g,b:x,B:y,m}=D,K=egKey(),c=egEnc(m,y,K.k,g,p),c2=egEnc(m,y,K.k2,g,p),s=modpow(c.c1,x,p);
+  const{p,g,b:x,B:y,m}=D,K=egKey(),c=egEnc(m,y,K.k,g,p),c2=egEnc(m,y,K.k2,g,p),s=modpow(c.c1,x,p),sm=p<(1n<<40n);
   return{body:row(k,0,'Bob’s keys',`<span class="flh">private x = b, public y = gˣ</span>${nv(y,'y')}`)+row(k,1,'Alice picks a random k, once',nv(K.k,'k'))+row(k,2,'c₁ = gᵏ mod p',nv(c.c1,'c₁'))+row(k,3,'c₂ = m · yᵏ mod p',nv(c.c2,'c₂'))+row(k,4,'Bob computes s = c₁ˣ',nv(s,'s')+`<span class="flh">the same as yᵏ</span>`)+row(k,5,'m = c₂ · s⁻¹ mod p',nv(egDec(c,x,p),'m')+(egDec(c,x,p)===m?'<span class="vok">✓ the message</span>':''))+row(k,6,'The same message again, with a new k',nv(c2.c1,'c₁′')+nv(c2.c2,'c₂′')+`<span class="vok">completely different</span>`),
     say:[say('ElGamal','Diffie–Hellman gives two people a shared secret. ElGamal uses that secret at once, to hide one message.','Bob’s public key plays the part of B, and Alice makes a fresh a for each message. Here that one-time number is called k. Press <b>Step</b>.'),
-      say('Step 1 · a one-time number','k must be random and used only once.'),say('Step 2 · the first part','This is Alice’s half of a Diffie–Hellman exchange.'),say('Step 3 · the second part','yᵏ is the shared secret, and it masks m by multiplication.'),say('Step 4 · Bob’s side','Bob gets the same shared secret from c₁ and his private key.',fm('c₁ˣ = (gᵏ)ˣ = (gˣ)ᵏ = yᵏ')),say('Step 5 · unmask','He divides, that is, he multiplies by the inverse.',fm('c₂ · s⁻¹ = m · yᵏ · y⁻ᵏ = m')),
+      say('Step 1 · a one-time number','k must be random and used only once. It does the job of Alice’s secret a in Diffie–Hellman.'),say('Step 2 · the first part','This is Alice’s half of a Diffie–Hellman exchange.',fm(`c₁ = gᵏ mod p${sm?` = ${g}<sup>${K.k}</sup> mod ${p}`:''} = ${fmtN(c.c1)}`)),say('Step 3 · the second part','yᵏ is the shared secret, and it masks m by multiplication.',fm(`c₂ = m · yᵏ mod p${sm?` = ${m} · ${y}<sup>${K.k}</sup> mod ${p}`:''} = ${fmtN(c.c2)}`)),say('Step 4 · Bob’s side','Bob gets the same shared secret from c₁ and his private key.',fm(`c₁ˣ = (gᵏ)ˣ = (gˣ)ᵏ = yᵏ<br>s = c₁ˣ mod p${sm?` = ${c.c1}<sup>${x}</sup> mod ${p}`:''} = ${fmtN(s)}`)),say('Step 5 · unmask','He divides, that is, he multiplies by the inverse.',fm(`c₂ · s⁻¹ = m · yᵏ · y⁻ᵏ = m`+(sm?`<br>${c.c2} · ${modinv(s,p)} mod ${p} = ${egDec(c,x,p)}`:''))),
       say('Step 6 · randomised','Unlike plain RSA, ElGamal is randomised by design: a new k gives a new ciphertext, and repeats do not show.',`<span class="okn">This is the idea of <a href="modes.html">Why an IV</a> again, built into a public-key scheme.</span>`)][k],
     why:`<h3>ElGamal in one line</h3>${fm('(c₁, c₂) = (gᵏ, m · yᵏ)')}${fm('m = c₂ · c₁⁻ˣ')}${pc(['Randomised by design','Security rests on the DDH assumption'],['The ciphertext is twice as long as m','k must never repeat','Malleable, like plain RSA'])}<p class="note">IND-CPA needs three things: g of prime order, m encoded inside that subgroup, and DDH holding there. <button class="link" data-egv="leak">See what leaks otherwise</button>.</p>`};
 }
@@ -1313,6 +1320,23 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)');
 const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
 const speed=()=>+$('#spd').value;
 function curN(){return T[ST.tab].n()}
+/* The text of a walkthrough changes length from step to step. Room is kept for its longest text, so the picture and
+   the cards under the text stay where they are: on a narrow screen the card keeps that height, in the side panel
+   the spare room is a gap under the card. Every picture is drawn through drawStep(). */
+const ROOM={k:'',h:0},NARROW=matchMedia('(max-width:1000px)');
+function drawStep(t,k){
+  const ex=$('#explain'),n=t.n();ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2){t.render(k);return}
+  const sig=Object.entries(ST).filter(([,v])=>v===null||typeof v!=='object').map(([a,v])=>a+'='+v).join(','),ck=`${n}|${ex.clientWidth}|${D.v}|${sig}`;
+  if(ROOM.k!==ck){
+    // each step is drawn once, unseen, to find the longest text; of a long walkthrough only its first and last steps
+    const js=n<=24?[...Array(n).keys()]:[0,1,2,3,4,5,6,7,n-4,n-3,n-2,n-1];let h=0;
+    for(const j of js){t.render(j);h=Math.max(h,ex.offsetHeight)}
+    ROOM.k=ck;ROOM.h=h;
+  }
+  t.render(k);
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
 function controls(k){
   const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
   $('#ctrl').hidden=!stepped&&!t.rounds;
@@ -1325,20 +1349,20 @@ function controls(k){
 function show(){
   if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
   const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
-  fxClear();t.render(k);controls(k);
+  fxClear();drawStep(t,k);controls(k);
 }
 function startStage(to){
   stopAnim(true);
   const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
-  ST.step[tab]=to;fxClear();t.render(to);            // the target picture; start() hides what is still to come
+  ST.step[tab]=to;fxClear();drawStep(t,to);          // the target picture; start() hides what is still to come
   const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
-  if(!tick){fxClear();t.render(to);controls(to);next();return}
+  if(!tick){fxClear();drawStep(t,to);controls(to);next();return}
   const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
   ENG.anim=a;controls(to);tick(0);
   if(t.focus&&$('#follow').checked)t.focus(to);
   requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
 }
-function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();T[a.tab].render(a.to);controls(a.to);next()}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();drawStep(T[a.tab],a.to);controls(a.to);next()}
 // when playing, the next step starts only after this one has finished, plus a short pause
 function next(){
   if(!ENG.playing)return;const k=ST.step[ST.tab];
@@ -1348,7 +1372,7 @@ function next(){
 function stopAnim(complete){
   if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
   const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
-  if(a.tab===ST.tab){T[a.tab].render(ST.step[a.tab]);controls(ST.step[a.tab])}
+  if(a.tab===ST.tab){drawStep(T[a.tab],ST.step[a.tab]);controls(ST.step[a.tab])}
 }
 function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
 // keep the moving part in view (the "follow" box); only the page scrolls, never a wide drawing sideways

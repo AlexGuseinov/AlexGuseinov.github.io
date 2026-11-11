@@ -515,8 +515,6 @@ button.nv:hover{outline:1.5px solid var(--accent)}
 .kv{font:700 15px var(--mono);fill:var(--ink)}
 .kc.big rect{stroke-width:3;fill:color-mix(in srgb,var(--c) 12%,var(--panel))}
 .kc.off{opacity:.14}
-.kc.pop rect{animation:kpop .4s ease}
-@keyframes kpop{from{stroke-width:6}to{stroke-width:2}}
 .kw{stroke:var(--line2);stroke-width:2;fill:none}
 .kw.pub{stroke:var(--pub)}.kw.pri{stroke:var(--pri)}
 .kw.on{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:8 5;animation:flow .55s linear infinite}
@@ -871,6 +869,13 @@ function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.
 const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
 const hide=els=>els.forEach(e=>{if(e)e.style.opacity=0});
 const tgl=(els,c,on)=>els.forEach(e=>{if(e)e.classList.toggle(c,on)});
+/* parts of the picture that a step brings in. Each is dimmed first (to the look of class cls, or hidden) and from
+   its time t it comes in over w of the step. items: [[element, t], …] → tick(p) */
+function bring(items,w=.2,cls){
+  const L=items.filter(x=>x[0]).map(([e,t])=>{if(cls)e.classList.add(cls);else e.style.opacity=0;return{e,t,d:cls?+getComputedStyle(e).opacity:0,on:false}});
+  return p=>{for(const o of L){if(p<o.t)continue;if(!o.on){o.on=true;if(cls)o.e.classList.remove(cls)}
+    const ww=Math.min(w,1-o.t),u=ww>0?clamp((p-o.t)/ww,0,1):1;o.e.style.opacity=u<1?(o.d+(1-o.d)*ease(u)).toFixed(3):(cls?'':1)}};
+}
 // the same token, new value / size / colours
 const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
 
@@ -925,7 +930,7 @@ T.ov={n:()=>6,render(k){
 },
 plan(k){
   const toks={2:[['oLk','oLa',iLock(true,'pub')],['oLk','oLe',iLock(true,'pub')]],4:[['oBa','oBb',iBox(true)]]}[k];
-  if(k===1)return{dur:1000,start(){const a=['oLk','oKy'].map(i=>$('#'+i));hide(a);return cues(a.map((e,i)=>[.2+.4*i,()=>{e.style.opacity=1}]))}};
+  if(k===1)return{dur:1000,start(){const a=['oLk','oKy'].map(i=>$('#'+i));return bring(a.map((e,i)=>[e,.12+.4*i]),.3)}};
   if(k===3)return{dur:900,start(){const a=$('#oBa');if(!a)return null;hide([a]);return p=>{a.style.opacity=p}}};
   if(k===5)return{dur:900,start(){const a=$('#oBb');if(!a)return null;a.innerHTML=iBox(true);return cues([[.55,()=>{a.innerHTML=iBox(false,'hi Bob')}]])}};
   return{dur:2000,start(){
@@ -1049,8 +1054,8 @@ T.kg={n:()=>7,render(k){
     say('Step 1 · two primes',`Bob picks p and q at random and tells nobody. Below you can watch a browser do it for real numbers.`),
     say('Step 2 · the modulus',`n = p · q = ${fmtN(D.n)}. It is public, and hiding p and q inside it is what makes RSA work.`),
     say('Step 3 · φ(n)',`φ(n) = (p − 1)(q − 1) = ${fmtN(D.phi)}. Bob can compute this only because he knows p and q.`),
-    say('Step 4 · the public exponent',`Bob picks e = ${fmtN(D.e)}, which must share no factor with φ(n). Real keys almost always use 65537.`,fm(`gcd(e, φ(n)) = ${gcd(D.e,D.phi)}`)),
-    say('Step 5 · the private exponent',`d is the inverse of e modulo φ(n), found with the extended Euclidean algorithm.`,fm(`e · d mod φ(n) = ${D.e*D.d%D.phi}`)),
+    say('Step 4 · the public exponent',`Bob picks e = ${fmtN(D.e)}, which must share no factor with φ(n). Otherwise e would have no inverse, and the next step could not find d. Real keys almost always use 65537.`,fm(`gcd(e, φ(n)) = ${gcd(D.e,D.phi)}`)),
+    say('Step 5 · the private exponent',`d is the inverse of e modulo φ(n), found with the extended Euclidean algorithm. It is the number that undoes e: raising to e and then to d brings every message back.`,fm(`e · d mod φ(n) = ${D.e*D.d%D.phi}`+(D.n<(1n<<40n)?`<br>${D.e} · ${D.d} = ${D.e*D.d} = ${(D.e*D.d-1n)/D.phi} · ${D.phi} + 1`:''))),
     say('Step 6 · done','The pair (n, e) goes out to the world. Bob keeps d.','<span class="warn">p, q and φ(n) must stay secret too: any one of them gives d.</span>')][k];
   $('#extra').innerHTML=`<h3>How common are primes?</h3><p>About 1 number in ln(N) near N is prime. For 1024 bits that is 1 in ${Math.round(1024*Math.LN2)}, or 1 in ${Math.round(512*Math.LN2)} odd numbers. So a search takes only hundreds of tries.</p><p><b>Miller–Rabin</b> tests a number for primality without factoring it. A composite passes one round with a chance of at most ¼.</p>`+quiz('kg');
 },
@@ -1058,12 +1063,13 @@ plan(k){
   const mv={2:[['p','n'],['q','n']],3:[['p','f'],['q','f']],5:[['f','d'],['e','d']],6:[['n','P'],['e','P'],['d','S']]}[k],open={1:['p','q'],2:['n'],3:['f'],4:['e'],5:['d'],6:['P','S']}[k];
   return{dur:mv?1500:800,start(){
     const svg=$('#kgS');if(!svg)return null;const M=svgMap(svg),s=M.s,ms=[],cu=[];
-    open.forEach(id=>{const e=$('#k-'+id);e.classList.add('off');cu.push([mv?.92:.5,()=>{e.classList.remove('off');e.classList.add('pop')}])});
+    const t0=mv?.78:.3,els=open.map(id=>$('#k-'+id)),frames=els.map(e=>{const r=e.querySelector('rect');return{r,w:parseFloat(getComputedStyle(r).strokeWidth)||2}});
+    const come=bring(els.map(e=>[e,t0]),.16,'off'),settle=p=>frames.forEach(f=>{const u=clamp((p-t0)/(1-t0),0,1);f.r.style.strokeWidth=p>=t0&&u<1?(f.w+4*(1-ease(u))).toFixed(2):''});
     (mv||[]).forEach(([a,b],i)=>{const v={p:D.p,q:D.q,n:D.n,f:D.phi,e:D.e,d:D.d}[a],c=['p','q','f','d'].includes(a)?'var(--pri)':'var(--pub)',n=fxNode(tok(fmtN(v,8),96*s,26*s,[c]));
       const id=Object.keys(KEDGE).find(x=>x===a.replace('f','f')+b)||(a+b),pts=KEDGE[id]||[KPOS[a],KPOS[b]];
-      ms.push({node:n,pts:[M(...KPOS[a]),...pts.map(q=>M(...q)),M(...KPOS[b])],a:.04*i,b:.92,end:.93});
+      ms.push({node:n,pts:[M(...KPOS[a]),...pts.map(q=>M(...q)),M(...KPOS[b])],a:.04*i,b:.78,end:.8});
       const w=$('#kw-'+id);if(w)w.classList.add('on')});
-    return both(mover(ms),cues(cu));
+    return both(mover(ms),cues(cu),come,settle);
   }};
 },
 focus(){follow($('#kgS'))}};
@@ -1099,9 +1105,9 @@ T.ed={n:()=>6,render(k){
   const big=D.m>1n&&D.e<100000n?expDigits(D.m,D.e):0;
   $('#explain').innerHTML=[say('RSA in two lines',`Encryption and decryption are the same operation with different exponents. Each one is a jump between two points on this ring.`,D.n<=121n?'The thin lines show where every number goes under the public key: a full shuffle.':'','Press <b>Step</b>.'),
     say('Step 1 · the message is a number',txt?`RSA only works on numbers, so the text “${toText(b)}” is read as one big number.`:`RSA only works on numbers, and they must be below n.`,fm(`m = ${fmtN(D.m)}`)),
-    say('Step 2 · encrypt',`Anyone can do this with Bob’s public key.`,fm(`c = m<sup>e</sup> mod n =<br>${fmtN(D.c)}`),big?`m<sup>e</sup> would have ${big.toLocaleString('en-US')} digits, but the computer never builds it: see <button class="link" data-goto="sm">square and multiply</button>.`:''),
+    say('Step 2 · encrypt',`Anyone can do this with Bob’s public key.`,fm(`c = m<sup>e</sup> mod n${D.n<(1n<<40n)?` = ${D.m}<sup>${D.e}</sup> mod ${D.n}`:''} =<br>${fmtN(D.c)}`),big?`m<sup>e</sup> would have ${big.toLocaleString('en-US')} digits, but the computer never builds it: see <button class="link" data-goto="sm">square and multiply</button>.`:''),
     say('Step 3 · send',`c travels across the open network. To Eve it is just a number.`,`The jump looks random: the position of c tells nothing about m.`),
-    say('Step 4 · decrypt',`Only Bob has d, and the same operation brings the number home.`,fm(`m = c<sup>d</sup> mod n =<br>${fmtN(modpow(D.c,D.d,D.n))}`)),
+    say('Step 4 · decrypt',`Only Bob has d, and the same operation brings the number home.`,fm(`m = c<sup>d</sup> mod n${D.n<(1n<<40n)?` = ${D.c}<sup>${D.d}</sup> mod ${D.n}`:''} =<br>${fmtN(modpow(D.c,D.d,D.n))}`)),
     say('Step 5 · why it comes back',`e and d were chosen so that e · d = 1 + k · φ(n). Euler’s theorem removes the rest:`,fm('c<sup>d</sup> = m<sup>ed</sup> = m · (m<sup>φ(n)</sup>)<sup>k</sup> ≡ m · 1<sup>k</sup> = m'),'The last step uses gcd(m, n) = 1, but the result holds for every m below n, thanks to the Chinese remainder theorem.')][k];
   $('#extra').innerHTML=`<h3>RSA in one line</h3>${fm('c = m<sup>e</sup> mod n')}${fm('m = c<sup>d</sup> mod n')}${pc(['Needs no shared secret','The same maths also gives signatures'],['Far slower than AES','This plain form is not safe: <button class="link" data-goto="atk">see the attacks</button>'])}`+quiz('ed');
 },
@@ -1340,11 +1346,10 @@ plan(k){
   const show={1:['oDB'],2:['oSd'],3:['oM1','oX1','oMd'],4:['oM2','oX2','oMs'],5:['oEM']}[k],lines={3:['a','b','c','d'],4:['e','f','g','h']}[k];
   if(!show)return null;
   return{dur:lines?1700:900,start(){
-    const svg=$('#oaS');if(!svg)return null;const M=svgMap(svg),s=M.s,els=show.map(i=>$('#'+i)),ms=[],cu=[];hide(els);
-    els.forEach((e,i)=>cu.push([lines?(.5+.45*i/els.length):.3,()=>{e.style.opacity=1}]));
+    const svg=$('#oaS');if(!svg)return null;const M=svgMap(svg),s=M.s,els=show.map(i=>$('#'+i)),ms=[],cu=[],come=bring(els.map((e,i)=>[e,lines?(.5+.4*i/els.length):.2]),lines?.14:.4);
     (lines||[]).forEach(id=>{const w=$('#ol-'+id);if(w)w.classList.add('on')});
     if(lines){const p=k===3?OLINE.a.concat(OLINE.b):OLINE.e.concat(OLINE.f),n=fxNode(tok(k===3?'seed':'masked',76*s,24*s,['var(--pri)']));ms.push({node:n,pts:p.map(q=>M(...q)),a:0,b:.92,end:.93})}
-    return both(mover(ms),cues(cu));
+    return both(mover(ms),cues(cu),come);
   }};
 },
 focus(){follow($('#oaS'))}};
@@ -1356,6 +1361,23 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)');
 const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
 const speed=()=>+$('#spd').value;
 function curN(){return T[ST.tab].n()}
+/* The text of a walkthrough changes length from step to step. Room is kept for its longest text, so the picture and
+   the cards under the text stay where they are: on a narrow screen the card keeps that height, in the side panel
+   the spare room is a gap under the card. Every picture is drawn through drawStep(). */
+const ROOM={k:'',h:0},NARROW=matchMedia('(max-width:1000px)');
+function drawStep(t,k){
+  const ex=$('#explain'),n=t.n();ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2){t.render(k);return}
+  const sig=Object.entries(ST).filter(([,v])=>v===null||typeof v!=='object').map(([a,v])=>a+'='+v).join(','),ck=`${n}|${ex.clientWidth}|${D.v}|${sig}`;
+  if(ROOM.k!==ck){
+    // each step is drawn once, unseen, to find the longest text; of a long walkthrough only its first and last steps
+    const js=n<=24?[...Array(n).keys()]:[0,1,2,3,4,5,6,7,n-4,n-3,n-2,n-1];let h=0;
+    for(const j of js){t.render(j);h=Math.max(h,ex.offsetHeight)}
+    ROOM.k=ck;ROOM.h=h;
+  }
+  t.render(k);
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
 function controls(k){
   const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
   $('#ctrl').hidden=!stepped&&!t.rounds;
@@ -1368,20 +1390,20 @@ function controls(k){
 function show(){
   if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
   const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
-  fxClear();t.render(k);controls(k);
+  fxClear();drawStep(t,k);controls(k);
 }
 function startStage(to){
   stopAnim(true);
   const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
-  ST.step[tab]=to;fxClear();t.render(to);            // the target picture; start() hides what is still to come
+  ST.step[tab]=to;fxClear();drawStep(t,to);          // the target picture; start() hides what is still to come
   const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
-  if(!tick){fxClear();t.render(to);controls(to);next();return}
+  if(!tick){fxClear();drawStep(t,to);controls(to);next();return}
   const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
   ENG.anim=a;controls(to);tick(0);
   if(t.focus&&$('#follow').checked)t.focus(to);
   requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
 }
-function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();T[a.tab].render(a.to);controls(a.to);next()}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();drawStep(T[a.tab],a.to);controls(a.to);next()}
 // when playing, the next step starts only after this one has finished, plus a short pause
 function next(){
   if(!ENG.playing)return;const k=ST.step[ST.tab];
@@ -1391,7 +1413,7 @@ function next(){
 function stopAnim(complete){
   if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
   const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
-  if(a.tab===ST.tab){T[a.tab].render(ST.step[a.tab]);controls(ST.step[a.tab])}
+  if(a.tab===ST.tab){drawStep(T[a.tab],ST.step[a.tab]);controls(ST.step[a.tab])}
 }
 function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
 // keep the moving part in view (the "follow" box); only the page scrolls, never a wide drawing sideways
