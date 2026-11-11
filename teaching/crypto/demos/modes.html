@@ -877,6 +877,14 @@ function syncFields(){
   i.disabled=!k;i.value=k?D.iv[k]:'';i.placeholder=k?'':ST.tab==='ecb'?'ECB uses no IV':'set inside each mode';
   $('#ivL').textContent=k?L[k][0]:'IV';$('#ivH').textContent=k?L[k][1]:'';
   $('#aadF').hidden=ST.tab!=='gcm';
+  setMeta();
+}
+// the line under the inputs: how long the message is, and what the open mode does with a last block that is not full
+function setMeta(){
+  const m=D.msg;if(!m.length)return;
+  const n=D.sm.length,left=m.length%16,add=D.pm.flat().length-m.length,stream=['ctr','cf','gcm'].includes(ST.tab);
+  const pd=stream?` · no padding in this mode${left?`: the last block has only ${left} byte${left>1?'s':''}`:''}`:!D.usePad?' · no padding':ST.tab==='ecb'||ST.tab==='cbc'?` · padding adds ${add}`:` · ECB and CBC add ${add} bytes of padding`;
+  $('#meta').innerHTML=`<b>AES-128</b> · ${m.length} bytes = ${n} block${n>1?'s':''}${pd}`;
 }
 function loadPreset(id){
   const p=PRE.find(x=>x.id===id);D.preset=id;D.mF=p.text?'text':'hex';D.iv={...IVDEF};
@@ -911,7 +919,7 @@ function onInput(){
   $('#pre').value=isP?p.id:'custom';D.exp=isP?p.exp||null:null;
   D.rk=roundKeys(D.key);D.pm=blocks(D.usePad?pad(m):m);D.sm=blocks(m);D.v++;
   $('#mN').textContent=`${m.length} bytes`;
-  $('#meta').innerHTML=`<b>AES-128</b> · ${m.length} bytes = ${D.sm.length} block${D.sm.length>1?'s':''}${D.usePad?` · padding adds ${D.pm.flat().length-m.length}`:' · no padding'}`;
+  setMeta();
   ST.built='';show();
 }
 /* ---------- animation helpers (one set for all tabs, as in the DES demo) ---------- */
@@ -1018,7 +1026,7 @@ function drawNode(n,k){
 const ROLE={p:'Plaintext',c:'Ciphertext',iv:'Input block',s:'Keystream',x:'Value',g:'Hash value',t:'Tag',a:'Additional data',h:'Hash key H',bad:'Changed block'};
 let LASTG=null;
 function pickLine(G,k){const n=ST.pick&&G.by[ST.pick];
-  return`<div class="pick" id="pick">${n&&n.t<=k?`<b>${n.cap||ROLE[n.role]}</b> <code>${hexs(n.v)}</code>`:'Each small square is one byte, and its colour shows its value. Click a block to read its bytes.'}</div>`}
+  return`<div class="pick" id="pick">${n&&n.t<=k?`<b>${n.cap||ROLE[n.role]}</b> <code>${hexs(n.v)}</code>`:`Each small square is one byte, and its colour shows its value.${G.short?' An empty square is not a byte: the data ends there, and this mode adds no padding.':''} Click a block to read its bytes.`}</div>`}
 function drawGraph(G,k){
   LASTG=G;let h=`<div class="scroll" id="chS"><svg class="ch" id="ch" viewBox="0 0 ${G.W} ${G.H}" style="min-width:${Math.min(G.W,G.minW)}px;max-width:${Math.round(G.W*1.15)}px" role="img" aria-label="${G.label}"><defs>
     <marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="amk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
@@ -1274,12 +1282,13 @@ function gStream(mode,dec){
   const X=dec?Cb:Pb,O=dec?Pb:Cb,nX=dec?'C':'P',nO=dec?'P':'C',rX=dec?'c':'p',rO=dec?'p':'c';
   const CW=n>3?238:250,L=16,G=Graph(L+n*CW+84,492,`${mode.toUpperCase()}: AES makes a keystream that is XORed with the data`);
   const cx=i=>L+CW*(i+.5),yI=64,yA=170,yS=266,yX=336,yO=420,right=dec&&mode==='cfb',inCap=mode==='ctr'?'T':'I',SW=SC*1.5;
-  G.Cb=Cb;G.S=S;G.I=I;
+  G.Cb=Cb;G.S=S;G.I=I;G.short=Pb.some(b=>b.length<16);
+  const len=b=>b.length<16?` · ${b.length} byte${b.length>1?'s':''}`:'';
   for(let i=0;i<n;i++){
     const ax=cx(i)+36,xs=right?ax+104:cx(i)-64,sideW=right?[[xs-41,yX],[ax+15,yX]]:[[xs+41,yX],[ax-15,yX]];
     G.bk('i'+i,ax,yI,I[i],`${inCap}${sub_(i+1)}`,i&&mode!=='ctr'?(mode==='cfb'?'c':'s'):'iv',{given:!i});
     G.box('a'+i,ax,yA,'AES');G.bk('s'+i,ax,yS,S[i],nm('S',i+1),'s',{c:SW,q:0,capS:1});G.xor('x'+i,ax,yX);
-    G.bk('d'+i,xs,yX,X[i],nm(nX,i+1),rX,{given:1,capB:1});G.bk('o'+i,ax,yO,O[i],nm(nO,i+1),rO,{capB:1});
+    G.bk('d'+i,xs,yX,X[i],nm(nX,i+1)+len(X[i]),rX,{given:1,capB:1});G.bk('o'+i,ax,yO,O[i],nm(nO,i+1)+len(O[i]),rO,{capB:1});
     const w1=G.w('i'+i,[[ax,yI+41],[ax,yA-37]]),w2=G.w('s'+i,[[ax,yA+37],[ax,yS-31]]),w3=G.w('k'+i,[[ax,yS+31],[ax,yX-15]]),w4=G.w('d'+i,sideW),w5=G.w('o'+i,[[ax,yX+15],[ax,yO-41]]);
     let feed=null;
     if(i){const ap=cx(i-1)+36;
@@ -1400,7 +1409,7 @@ const GC=11,GS=7;
 function gGCM(dec){
   const rk=D.rk,iv=fromHex(D.iv.gcm),A=blocks(D.aad),Pb=D.sm,n=Pb.length,o=gcmE(rk,iv,A,Pb),Cb=o.C,H=o.H,J=o.J,S0=E(rk,J);
   const a=A.length,cols=2+n+2,CW=156,L=8,G=Graph(L+cols*CW+8,512,'GCM: CTR encryption on top, the GHASH tag below');
-  G.minW=980;G.o=o;
+  G.minW=980;G.o=o;G.short=Pb.concat(A).some(b=>b.length<16);
   const cx=i=>L+CW*(i+.5),ax=i=>cx(i)+24,yI=44,yA=122,yS=196,yX=262,yC=338,yG=424,yB=484,col=i=>2+i,lenC=2+n,tagC=3+n;
   // setup columns: H = E(0), S0 = E(J0)
   G.bk('z',ax(0),yI,Array(16).fill(0),'0¹²⁸','iv',{c:GC,given:1,q:0});G.box('ah',ax(0),yA,'AES',{small:1});G.bk('h',ax(0),yS,H,'H','h',{c:GS+1,capB:0});
