@@ -12,6 +12,7 @@
   --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
   --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
 }
 @media (prefers-color-scheme:dark){:root{
@@ -494,6 +495,51 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 .kc2{font:13px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
 .ksb{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}.ksb.on{fill:var(--accentBg);stroke:var(--accent);stroke-width:2.5}
 .nr .c.hi{background:var(--xorBg);border-color:var(--xor)}
+/* parts of a picture that can be clicked */
+.prw g[data-goto]{cursor:pointer;outline:none}
+.prw g[data-goto] .lab{fill:var(--ink);text-decoration:underline}
+.prw g[data-goto]:hover .lab,.prw g[data-goto]:focus-visible .lab{fill:var(--accent)}
+.prw g[data-cell]{cursor:pointer;outline:none}
+.prw g[data-cell]:hover .nc,.prw g[data-cell]:focus-visible .nc,.prw g[data-pb]:hover .bb{stroke:var(--ink);stroke-width:2}
+.nr .c[data-kn]{cursor:pointer}
+.nr .c[data-kn]:hover,.nr .c[data-kn]:focus-visible{border-color:var(--accent);outline:none}
+.nr .c.pk{outline:3px solid var(--ink);outline-offset:1px}
+.dgw[data-step]{cursor:pointer;border-radius:5px;outline:none}
+.dgw[data-step]:hover b,.dgw[data-step]:focus-visible b{color:var(--accent)}
+.dgw[data-step]:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.pickline{margin:10px auto 0;max-width:780px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc a{color:var(--accent)}
+.doc a:focus-visible,.doc button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.m{font:13.5px/1.7 var(--mono)}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* a worked example: the name of a value on the left, the value on the right */
+table.kv{border-collapse:collapse;margin:2px 0}
+table.kv td{padding:1px 14px 1px 0;vertical-align:baseline;font-size:14.5px}
+table.kv td:first-child{color:var(--muted)}
+table.kv td.m{padding-right:0;word-break:break-all}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -545,6 +591,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline. Test vectors from Bogdanov et al., CHES 2007.</footer>
 
@@ -643,7 +690,7 @@ const NAME={in:'Input',ark:'addRoundKey',sl:'sBoxLayer',pl:'pLayer',isl:'inverse
 const SHORT={in:'IN',ark:'K',sl:'S',pl:'P',isl:'S⁻¹',ipl:'P⁻¹'};
 
 /* ---------- tabs ---------- */
-const ST={tab:'ov',step:{},round:{rd:1,sl:1,pl:1,ark:1,ks:1},mode:'enc',built:'',pick:null,rdPick:null,plPick:null,flip:63};
+const ST={tab:'ov',step:{},round:{rd:1,sl:1,pl:1,ark:1,ks:1},mode:'enc',built:'',pick:null,rdPick:null,plPick:null,flip:63,rdCell:null,kn:null,df:null};
 const stage=$('#stage');
 const T={};
 /* ---------- animation helpers (one set for all tabs, as in the DES demo) ---------- */
@@ -801,14 +848,22 @@ const rbx=i=>rcx(i>>2)+(1.5-(i&3))*12;                  // bit i inside its nibb
 const wirePts=(i,steps=14)=>{const x0=rbx(i),x1=rbx(P(i)),y0=RD.BT+12,y1=RD.WB,ym=(y0+y1)/2,pts=[];
   for(let q=0;q<=steps;q++){const t=q/steps,u=1-t;pts.push([u*u*u*x0+3*u*u*t*x0+3*u*t*t*x1+t*t*t*x1,u*u*u*y0+3*u*u*t*ym+3*u*t*t*ym+t*t*t*y1])}return pts};
 function rdData(r){const a=findOp('ark',r),s=findOp('sl',r),p=findOp('pl',r);return{L:[a.p,a.s,s.s,p.s],K:D.KS.K[r-1]}}
+// one line under the round picture: how the clicked nibble was computed
+function rdLine(r,k,L,K){const c=ST.rdCell;if(!c||c[0]>k)return'';const[l,n]=c,v=nib(L[l],n);
+  if(l===0)return`nibble ${n} of the round input = <b>${h1(v)}</b>: ${r===1?'nibble '+n+' of the plaintext':'nibble '+n+' of the output of round '+(r-1)}`;
+  if(l===1)return`nibble ${n}: ${h1(nib(L[0],n))} ⊕ ${h1(nib(K,n))} (K${r}) = <b>${h1(v)}</b> · ${b4(nib(L[0],n))} ⊕ ${b4(nib(K,n))} = ${b4(v)}`;
+  if(l===2)return`nibble ${n}: S(${h1(nib(L[1],n))}) = <b>${h1(v)}</b>, column ${h1(nib(L[1],n))} of the S-box table`;
+  const src=[3,2,1,0].map(j=>PI[4*n+j]);
+  return`nibble ${n} = <b>${b4(v)}</b>: its bits ${[3,2,1,0].map(j=>4*n+j).join(', ')} came from bits ${src.join(', ')} after sBoxLayer, the outputs of S-boxes ${src.map(i=>i>>2).join(', ')}`}
 T.rd={n:()=>4,rounds:()=>range(1,31),render(k){
   const r=ST.round.rd,{L,K}=rdData(r),g=RD,pk=ST.rdPick,tg=pk!=null?[0,1,2,3].map(j=>P(4*pk+j)>>2):[];
-  const row=(l,y,id)=>{let s='';for(let n=0;n<16;n++){const sh=k>=l,v=nib(L[l],n),hi=l===3&&tg.includes(n)||l===2&&pk===n;
-    s+=`<g data-rl="${l}" data-n="${n}"><rect class="nc" x="${rcx(n)-g.NW/2}" y="${y}" width="${g.NW}" height="${g.NH}" rx="5" style="fill:${sh?`color-mix(in srgb,${ncol(v)} 26%,var(--panel))`:'none'};${hi?'stroke:var(--xor);stroke-width:2.4':''}"/><text class="nt${sh?'':' emp'}" x="${rcx(n)}" y="${y+g.NH/2}">${sh?h1(v):'·'}</text></g>`}return s};
+  const row=(l,y,id)=>{let s='';for(let n=0;n<16;n++){const sh=k>=l,v=nib(L[l],n),hi=l===3&&tg.includes(n)||l===2&&pk===n,pc=sh&&ST.rdCell&&ST.rdCell[0]===l&&ST.rdCell[1]===n;
+    s+=`<g data-rl="${l}" data-n="${n}"${sh?` data-cell="${l},${n}" tabindex="0" role="button"`:''}><rect class="nc" x="${rcx(n)-g.NW/2}" y="${y}" width="${g.NW}" height="${g.NH}" rx="5" style="fill:${sh?`color-mix(in srgb,${ncol(v)} 26%,var(--panel))`:'none'};${pc?'stroke:var(--ink);stroke-width:2.8':hi?'stroke:var(--xor);stroke-width:2.4':''}"/><text class="nt${sh?'':' emp'}" x="${rcx(n)}" y="${y+g.NH/2}">${sh?h1(v):'·'}</text></g>`}return s};
   const bits=(l,y,shown)=>{let s='';for(let i=0;i<64;i++){const v=bit(L[l],i);s+=`<g data-bl="${l}" data-i="${i}"><rect class="bb" x="${rbx(i)-5}" y="${y}" width="10" height="12" rx="2" style="fill:${shown?(v?bcol(i&3):'var(--panel)'):'none'}"/>${shown?`<text class="bv" x="${rbx(i)}" y="${y+6}" style="${v?'fill:#fff':''}">${v}</text>`:''}</g>`}return s};
   let s=`<svg id="rdSvg" viewBox="0 0 ${g.W} ${g.H}" role="img" aria-label="One PRESENT round">`;
   const lab=(y,t)=>`<text class="lab" x="8" y="${y}" dominant-baseline="central">${t}</text>`,mid=y=>y+g.NH/2;
-  s+=lab(mid(g.Y0),`round ${r} input`)+lab(g.XY,`⊕ round key K${r}`)+lab(mid(g.Y1),'after addRoundKey')+lab(mid(g.SBY),'sBoxLayer: 16 × S')+lab(mid(g.Y2),'after sBoxLayer')+lab((g.BT+g.WB)/2,'pLayer: 64 wires')+lab(mid(g.Y3),`round ${r} output`);
+  const glab=(y,t,tab)=>`<g data-goto="${tab}" data-round="${r}" tabindex="0" role="button"><title>Open ${NAME[tab]} for round ${r}</title>${lab(y,t)}</g>`;
+  s+=lab(mid(g.Y0),`round ${r} input`)+glab(g.XY,`⊕ round key K${r}`,'ark')+lab(mid(g.Y1),'after addRoundKey')+glab(mid(g.SBY),'sBoxLayer: 16 × S','sl')+lab(mid(g.Y2),'after sBoxLayer')+glab((g.BT+g.WB)/2,'pLayer: 64 wires','pl')+lab(mid(g.Y3),`round ${r} output`);
   // wires (pLayer) under everything else
   for(let i=0;i<64;i++){const on=pk!=null&&(i>>2)===pk,d=wirePts(i).map((q,j)=>(j?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('');
     s+=`<path class="w${on?' on':pk!=null?' dim':''}" data-w="${i}" d="${d}" style="stroke:${bcol(i&3)};opacity:${on?1:pk!=null?'':'.55'}"/>`}
@@ -820,7 +875,8 @@ T.rd={n:()=>4,rounds:()=>range(1,31),render(k){
   s+=row(0,g.Y0)+row(1,g.Y1)+row(2,g.Y2)+bits(2,g.BT,k>=2)+bits(3,g.WB-12,k>=3)+row(3,g.Y3);
   for(let n=0;n<16;n++)s+=`<text class="ni" x="${rcx(n)}" y="${g.Y0-4}">${n}</text>`;
   s+='</svg>';
-  stage.innerHTML=`<div class="h3">Round ${r} of 31 with the real values (nibble 15 on the left). Wire colours: bit 0, 1, 2, 3 of each nibble. Click an S-box to follow its 4 output bits.</div><div class="prw scroll"><div style="min-width:820px">${s}</div></div>`;
+  stage.innerHTML=`<div class="h3">Round ${r} of 31 with the real values (nibble 15 on the left). Wire colours: bit 0, 1, 2, 3 of each nibble. Click an S-box to follow its 4 output bits.</div><div class="prw scroll"><div style="min-width:820px">${s}</div></div>
+    <p class="pickline">${rdLine(r,k,L,K)}</p><p class="hint">Click a nibble to see how it was computed, or an underlined row name to open its tab.</p>`;
   const msg=[`<p>One PRESENT round has three steps. Press <b>Step</b> to go through them with the real values.</p>`,
     `<p><b>addRoundKey</b>: every nibble is XORed with the matching nibble of K${r} (the small purple numbers).</p>`,
     `<p><b>sBoxLayer</b>: every nibble goes through the same 4-bit S-box. This is the only non-linear step.</p>`,
@@ -991,6 +1047,14 @@ function ringSVG(val,kb,k,r){
     :`<text class="kc2" x="${KR.C}" y="${KR.C+6}">bit ${kb-1} at the top, then clockwise</text>`;
   return s+'</svg>';
 }
+// one line under the register: where the clicked nibble came from in this step
+function ksLine(st,kb,k,r){const n=ST.kn;if(n==null||n>=kb/4)return'';const top=kb-64,sbLo=kb===80?76:120,ctrLo=kb===80?15:62;
+  const v=nib([st.reg,st.rot,st.sb,st.nx][k],n),hd=`nibble ${n} (bits ${4*n+3} … ${4*n}) = <b>${h1(v)}</b>: `;
+  if(k===0)return hd+(4*n>=top?`it becomes nibble ${n-top/4} of K${r}`:`not part of K${r}, it waits in the register`);
+  if(k===1)return hd+`bits ${[3,2,1,0].map(j=>(4*n+j-61+kb)%kb).join(', ')} before the rotation, since bit i comes from bit (i − 61) mod ${kb}`;
+  if(k===2)return hd+(4*n>=sbLo?`S(${h1(nib(st.rot,n))}) = ${h1(v)}`:'unchanged by this step');
+  const c=nib(B(r)<<B(ctrLo),n);
+  return hd+(4*n<=ctrLo+4&&4*n+3>=ctrLo?`${b4(nib(st.sb,n))} ⊕ ${b4(c)} (counter bits) = ${b4(v)}`:'unchanged by this step')}
 T.ks={n:()=>4,rounds:()=>range(1,31),render(k){
   const r=ST.round.ks,st=D.KS.st[r-1],kb=D.kb,top=kb-64,sbLo=kb===80?76:120,ctrLo=kb===80?15:62;
   const val=[st.reg,st.rot,st.sb,st.nx][k];
@@ -998,7 +1062,8 @@ T.ks={n:()=>4,rounds:()=>range(1,31),render(k){
   stage.innerHTML=`<div class="klab" style="text-align:center"><b>${cap}</b></div>
     <div class="kringw">${ringSVG(val,kb,k,r)}</div>
     <div class="klab">The same register in hex (nibble ${kb/4-1} on the left)${k===0?' · purple: the round key K'+r:''}</div>
-    <div class="scroll"><div style="width:max-content;margin:0 auto">${nibs(nv(val),{n:kb/4,cls:n=>k===0&&4*n>=top?'key':k===2&&4*n>=sbLo?'chg':k===3&&4*n<=ctrLo+4&&4*n+3>=ctrLo?'hi':''})}</div></div>
+    <div class="scroll"><div style="width:max-content;margin:0 auto">${nibs(nv(val),{n:kb/4,cls:n=>(k===0&&4*n>=top?'key':k===2&&4*n>=sbLo?'chg':k===3&&4*n<=ctrLo+4&&4*n+3>=ctrLo?'hi':'')+(n===ST.kn?' pk':'')}).replace(/ data-n="(\d+)"/g,' data-n="$1" data-kn="$1" tabindex="0" role="button"')}</div></div>
+    <p class="pickline">${ksLine(st,kb,k,r)}</p><p class="hint">Click a nibble of the register to see where it came from.</p>
     <div class="sec"><div class="h3">Round key K${r} = the leftmost 64 bits of the register at round ${r}</div><p class="mono k" style="text-align:center;font-size:16px;margin:0">${hex(D.KS.K[r-1])}</p></div>
     <div class="sec"><div class="h3">All round keys (click one)</div><div class="rkl">${D.KS.K.map((v,i)=>`<div data-kr="${Math.min(i+1,31)}" class="${i+1===r?'on':''}"><span>K${i+1}</span>${hex(v)}</div>`).join('')}</div></div>`;
   const ex=[`<p>PRESENT-${kb} keeps the key in a ${kb}-bit register, drawn here as a ring. At round ${r}, the round key K${r} is its <b>leftmost 64 bits</b> (the purple arc).</p><p>Then the register is updated in 3 steps for the next round. Press <b>Step</b>.</p>`,
@@ -1081,12 +1146,12 @@ const pc64=v=>{let n=0;while(v){n+=Number(v&1n);v>>=1n}return n};
 T.df={n:()=>32,render(k){
   const fb=ST.flip,pt2=D.pt^(1n<<B(fb)),t2=encTrace(pt2,D.KS),st=(ops,r)=>ops.filter(x=>x.r===r).at(-1).s;
   let pick='';for(let n=15;n>=0;n--)pick+=`<div class="n4"><span>${h1(nib(pt2,n))}</span><div>${[3,2,1,0].map(j=>{const i=4*n+j;return `<i class="${i===fb?'flip':(bit(D.pt,i)?'one':'')}" data-fb="${i}" title="bit ${i}"></i>`}).join('')}</div></div>`;
-  const diffs=range(0,31).map(r=>st(D.enc,r)^st(t2,r)),counts=diffs.map(pc64);
+  const diffs=range(0,31).map(r=>st(D.enc,r)^st(t2,r)),counts=diffs.map(pc64);ST.df={fb,diffs,counts,ct2:t2.at(-1).s};
   const grid=(d,on)=>`<div class="dg16">${range(0,15).map(q=>{const n=15-q,v=nib(d,n),c=v?((v&1)+((v>>1)&1)+((v>>2)&1)+((v>>3)&1)):0;return `<i style="${on&&c?`background:color-mix(in srgb,var(--xor) ${30+17*c}%,var(--panel))`:''}"></i>`}).join('')}</div>`;
   stage.innerHTML=`<div class="h3">Plaintext bits (bit 63 on the left). Click a bit to flip it. Now flipped: bit ${fb}.</div>
     <div class="bitpick">${pick}</div>
-    <div class="sec"><div class="h3">Which nibbles differ after each round (darker = more different bits). Press Step to go round by round.</div>
-      <div class="dgr">${diffs.map((d,r)=>`<div class="dgw" data-dr="${r}">${r===0?'start':'r'+r}<b>${r<=k?counts[r]:'–'}</b>${grid(d,r<=k)}</div>`).join('')}</div></div>
+    <div class="sec"><div class="h3">Which nibbles differ after each round (darker = more different bits). Press Step to go round by round, or click a round.</div>
+      <div class="dgr">${diffs.map((d,r)=>`<div class="dgw" data-dr="${r}" data-step="${r}" tabindex="0" role="button" title="Go to ${r===0?'the start':'round '+r}">${r===0?'start':'r'+r}<b>${r<=k?counts[r]:'–'}</b>${grid(d,r<=k)}</div>`).join('')}</div></div>
     <div class="sec"><div class="h3">Number of different bits after each round (out of 64)</div>
       <div class="bars"><div class="ref" style="bottom:50%"><span>32 = half</span></div>${counts.map((n,r)=>`<div class="bar" data-br="${r}" data-n="${n}" style="height:${r<=k?n/64*100:0}%"></div>`).join('')}</div>
       <div class="blbl"><span>start</span><span>round 16</span><span>round 31</span></div></div>`;
@@ -1101,6 +1166,177 @@ plan(k){return{dur:1100,start(){
   const cells=[...g.querySelectorAll('.dg16 i')],cnt=g.querySelector('b'),N=+bar.dataset.n;hide(cells);
   return p=>{cells.forEach((e,i)=>{e.style.opacity=clamp(p*2-i*.04,0,1)});const q=ease(clamp(p*1.25-.25,0,1));bar.style.height=(q*N/64*100)+'%';cnt.textContent=Math.round(q*N)};
 }}}};
+
+/* ---------- the longer read under each picture: one article per tab (two for Encrypt / Decrypt) ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const KV=rows=>`<table class="kv">${rows.map(([a,b])=>`<tr><td>${a}</td><td class="m">${b}</td></tr>`).join('')}</table>`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',PREF=[`${PAAR}, chapter 3: section 3.7.3, “Lightweight Cipher PRESENT”.`];
+const REFS={ov:PREF,rd:PREF,sl:PREF,pl:PREF,ark:PREF,ks:PREF,'x/enc':PREF,'x/dec':PREF,
+  df:[`${PAAR}, chapter 3: section 3.1.1, “Confusion and Diffusion”, and section 3.7.3, “Lightweight Cipher PRESENT”.`]};
+const MORE=id=>REFS[id]&&REFS[id].length?box('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const goT=(tab,r,t)=>`<button class="link" data-goto="${tab}"${r!=null?` data-round="${r}"`:''}>${t}</button>`;
+
+T.ov.doc=()=>{const kb=D.kb,r1=findOp('pl',1).s;
+  return`<h2>PRESENT: a substitution–permutation network for small chips</h2>
+  <p class="lead">PRESENT is a block cipher. It turns a 64-bit block of plaintext into a 64-bit block of ciphertext under a secret key of 80 or 128 bits. It was presented by Bogdanov et al. at CHES 2007 as a cipher for very small hardware.</p>
+  <h3>What a substitution–permutation network is</h3>
+  <p>A substitution–permutation network (SPN) repeats one round many times. A round has three layers:</p>
+  <ol class="pts"><li><b>Key addition</b>: the state is XORed with a round key. This is the only place where the key enters.</li>
+    <li><b>Substitution</b>: the state is cut into small pieces, and each piece is replaced by a table lookup, an <b>S-box</b>. This layer is non-linear: its output is not a XOR of its input bits.</li>
+    <li><b>Permutation</b>: bits move between pieces, so that each S-box of the next round gets bits from different S-boxes of this round.</li></ol>
+  <p>The S-boxes give <b>confusion</b>: the relation between key, plaintext and ciphertext becomes complicated. The permutation gives <b>diffusion</b>: one changed input bit soon changes many state bits.</p>
+  <table class="cmp3"><tr><th>Layer</th><th>In PRESENT</th><th>On a chip</th></tr>
+    <tr><td>key addition</td><td>64 XORs with the round key</td><td>64 XOR gates</td></tr>
+    <tr><td>substitution</td><td>16 copies of one 4-bit S-box</td><td>16 small identical circuits</td></tr>
+    <tr><td>permutation</td><td>bit i moves to 16·i mod 63</td><td>only wires, no gates</td></tr></table>
+  <h3>Your example (PRESENT-${kb})</h3>
+  ${EX(KV([[`Key (${kb} bits)`,hex(D.key,kb/4)],['Plaintext',hex(D.pt)],['K1',hex(D.KS.K[0])],['After round 1',hex(r1)],['K32',hex(D.KS.K[31])],['Ciphertext',hex(D.ct)]]))}
+  <p>The key schedule makes 32 round keys from the key. Rounds 1 … 31 use K1 … K31. K32 is XORed once more after round 31, so the last pLayer is also covered by key material.</p>
+  <h3>Why it is built this way</h3>
+  <p>On a chip the cost is mostly area: the number of gates and memory cells. An 8-bit S-box, as in AES, is a table with 256 entries. The 4-bit S-box of PRESENT has 16 entries, and one small circuit is copied 16 times. The permutation only moves bits, so on a chip it is a set of wires.</p>
+  <p>The price is that one round mixes little. PRESENT therefore uses 31 rounds, where AES-128 uses 10.</p>
+  ${NO(`A 64-bit block is small. Under one key, two equal ciphertext blocks become likely after about 2³² blocks (the birthday bound), which is ${M('2³² · 8 bytes = 32 GiB')}. In CBC mode such a collision reveals the XOR of two plaintext blocks. Keep the data per key far below this.`)}
+  ${USE(`PRESENT is a <b>lightweight</b> cipher: it is meant for devices with very little area and energy, such as RFID tags and sensor nodes. Compare it with <a href="aes.html">AES</a> (the same three layers, on bytes), with <a href="dipper.html">Dipper</a> (another lightweight design on this site) and with <a href="des.html">DES</a> (a Feistel network, the other classic structure).`)}
+  ${MORE('ov')}`};
+
+T.rd.doc=k=>{const r=ST.round.rd,{L,K}=rdData(r),n=ST.rdCell?ST.rdCell[1]:ST.rdPick!=null?ST.rdPick:15;
+  const x0=nib(L[0],n),kn=nib(K,n),x1=x0^kn,x2=S[x1],to=[3,2,1,0].map(j=>P(4*n+j));
+  return`<h2>One round of PRESENT</h2>
+  <p class="lead">A round takes a 64-bit state and a 64-bit round key and returns a new 64-bit state. All 31 rounds do the same three things; only the round key changes.</p>
+  <h3>How it works</h3>
+  <p>In one line, round r computes ${M('state ← P( S( state ⊕ K<sub>r</sub> ) )')}, where S applies the S-box to each of the 16 nibbles and P moves the 64 bits. After round 31 one more key is added: ${M('ciphertext = state ⊕ K32')}.</p>
+  <p>The three layers work on different units. addRoundKey works on single bits, sBoxLayer on nibbles (4 bits), pLayer on single bits again. A nibble is never mixed with its neighbours inside the S-box layer. Only pLayer carries bits from one nibble to others.</p>
+  <h3>One nibble through round ${r}</h3>
+  ${EX(`Nibble ${n} of round ${r}:`+KV([['input',`${h1(x0)} = ${b4(x0)}`],[`⊕ K${r} nibble`,`${h1(kn)} = ${b4(kn)}`],['= after addRoundKey',`${h1(x1)} = ${b4(x1)}`],['S-box',`S(${h1(x1)}) = ${h1(x2)} = ${b4(x2)}`],['pLayer',`bits ${[3,2,1,0].map(j=>4*n+j).join(', ')} go to ${to.join(', ')}`],['next S-boxes',`nibbles ${to.map(i=>i>>2).join(', ')}`]]))}
+  <p>Click a nibble in the picture to follow it here; clicking an S-box does the same.</p>
+  <h3>Why this order</h3>
+  <p>Key addition comes first, so that even the first S-box sees a value the attacker does not know. The S-box comes before the permutation, so that its 4 output bits, which depend on each other, are sent to 4 different S-boxes of the next round. A whole round is 16 S-boxes side by side plus wires, so a chip can compute one round in one clock cycle.</p>
+  ${NO(`Decryption is not the same circuit. It needs the inverse permutation and the inverse S-box, and runs the layers in reverse order. In a Feistel network such as <a href="des.html">DES</a>, decryption uses the same round with the round keys in reverse order.`)}
+  ${USE(`AES has the same round shape: AddRoundKey, SubBytes, and a linear layer (ShiftRows and MixColumns). See <a href="aes.html">the AES page</a>. The layers are explained one by one in ${goT('ark',r,'addRoundKey')}, ${goT('sl',r,'sBoxLayer')} and ${goT('pl',r,'pLayer')}.`)}
+  ${MORE('rd')}`};
+
+T.sl.doc=k=>{const r=ST.round.sl,o=findOp('sl',r),n=k>0?16-k:15,x=nib(o.p,n),y=S[x];
+  // a = 0 satisfies the equation for every b, so the example then starts from a = 1
+  const a=x||1;let b=1;while(b<15&&!(S[a^b]^S[a]^S[b]^S[0]))b++;
+  const z=S[a^b]^S[a]^S[b]^S[0],fx=range(0,15).filter(v=>S[v]===v);
+  return`<h2>sBoxLayer: one 4-bit S-box, 16 times</h2>
+  <p class="lead">An S-box (substitution box) is a fixed table that replaces a small input by a small output. PRESENT has one S-box from 4 bits to 4 bits, and sBoxLayer applies it to each of the 16 nibbles of the state.</p>
+  <h3>The table</h3>
+  ${M('x &nbsp;&nbsp;&nbsp;: '+range(0,15).map(h1).join(' ')+'<br>S(x) : '+S.map(h1).join(' '))}
+  <p>Every value 0 … f appears exactly once in the second row. So S is a <b>bijection</b> (one-to-one), and it has an inverse S⁻¹, which decryption uses.</p>
+  <h3>Your nibble</h3>
+  ${EX(`Round ${r}, nibble ${n} (bits ${4*n+3} … ${4*n}):<br>${M(`x = ${h1(x)} = ${b4(x)} &nbsp;→&nbsp; S(x) = ${h1(y)} = ${b4(y)}`)}<br>The other 15 nibbles use the same table at the same time.`)}
+  <h3>Why it must be non-linear</h3>
+  <p>A map F is <b>affine</b> when ${M('F(a ⊕ b) = F(a) ⊕ F(b) ⊕ F(0)')} for all a, b. An affine cipher can be solved with linear algebra. pLayer and addRoundKey are affine, so the S-box is the only defence. ${x?'For your nibble as a, the equation fails:':'Your nibble is 0, and a = 0 satisfies the equation for every b. So the example takes a = 1, and there the equation fails:'}</p>
+  ${EX(M(`a = ${h1(a)}, b = ${h1(b)}<br>S(a ⊕ b) = S(${h1(a^b)}) = ${h1(S[a^b])}<br>S(a) ⊕ S(b) ⊕ S(0) = ${h1(S[a])} ⊕ ${h1(S[b])} ⊕ ${h1(S[0])} = ${h1(S[a]^S[b]^S[0])}<br>difference: ${h1(z)}`))}
+  <h3>What makes this S-box good</h3>
+  <ul class="pts"><li><b>Differential uniformity ${DU}</b>: for any non-zero input difference Δin, at most ${DU} of the 16 inputs x give any one output difference Δout (largest entry of the table under the picture). An attacker who follows differences succeeds with probability at most ${DU}/16 per S-box.</li>
+    <li><b>Linearity ${LIN}</b>: a XOR of some input bits equals a XOR of some output bits for at least ${8-LIN/2} and at most ${8+LIN/2} of the 16 inputs, never for all or none. This limits linear cryptanalysis.</li>
+    <li><b>Fixed points</b>: ${fx.length?`S(x) = x for x = ${fx.map(h1).join(', ')}`:'S(x) ≠ x for every x'}.</li></ul>
+  ${NO(`A small S-box is cheap but weak: one 4-bit S-box can only be so non-linear. This is why PRESENT needs many rounds. A badly chosen 4-bit S-box, for example one that is affine, would make the whole cipher affine, and an affine cipher can be solved with linear algebra from a few known plaintexts.`)}
+  ${USE(`AES uses one 8-bit S-box built from inversion in GF(2⁸) (see <a href="aes.html">AES</a> and <a href="fields.html">fields</a>). 4-bit S-boxes are common in lightweight ciphers because a 16-entry table is small on a chip.`)}
+  ${MORE('sl')}`};
+
+T.pl.doc=k=>{const r=ST.round.pl,i=ST.plPick!=null?ST.plPick:k>0?4*(16-k)+3:5,n=i>>2,j=i&3,q=Math.floor(16*i/63),pi=P(i);
+  const fx=range(0,63).filter(v=>P(v)===v);
+  return`<h2>pLayer: a permutation of the 64 bits</h2>
+  <p class="lead">pLayer moves every bit of the state to a new position. No bit is changed, added or lost: the state after pLayer has exactly the same number of ones.</p>
+  <h3>The rule</h3>
+  <p>Bit i goes to position ${M('P(i) = 16 · i mod 63')} for i = 0 … 62, and bit 63 stays at 63.</p>
+  ${EX(`Bit ${i} (bit ${j} of nibble ${n}):<br>${M(i===63?'bit 63 stays: P(63) = 63':`16 · ${i} = ${16*i} = ${q} · 63 + ${pi}, so P(${i}) = ${pi}`)}<br>Click a bit in the top row of the picture to compute another one.`)}
+  <h3>The same rule in nibbles</h3>
+  <p>Write i = 4n + j, where n is the nibble and j the bit inside it. Since 64 = 63 + 1, ${M('16 · (4n + j) = 64n + 16j ≡ n + 16j (mod 63)')}. So bit j of nibble n goes to position 16j + n. For bit ${i}: ${M(`16 · ${j} + ${n} = ${16*j+n}`)}.</p>
+  <p>Block j of the output (positions 16j … 16j + 15) collects bit j of all 16 S-boxes. The 4 bits of one S-box land in 4 different blocks, and so in 4 different nibbles.</p>
+  <h3>The inverse</h3>
+  <p>Since 4 · 16 = 64 ≡ 1 (mod 63), the inverse is ${M('P⁻¹(i) = 4 · i mod 63')}. Check: ${M(i===63?'P⁻¹(63) = 63':`4 · ${pi} mod 63 = ${4*pi%63}`)}. The positions that do not move are ${fx.join(', ')}.</p>
+  <h3>Why a bit permutation</h3>
+  <p>The only job of the linear layer is to spread the output of each S-box over several S-boxes of the next round. A bit permutation does this, and on a chip it is only wires: zero gates and no delay.</p>
+  ${NO(`A permutation alone gives no security: ${M('P(a ⊕ b) = P(a) ⊕ P(b)')}, so it is linear. All of the non-linearity comes from the S-boxes. In software a bit permutation is slow when done bit by bit (64 shifts and masks per round), so fast software versions use lookup tables or bit-slicing.`)}
+  ${USE(`AES spreads bytes with ShiftRows and MixColumns. MixColumns mixes more per round than a bit permutation, but it costs gates (see <a href="aes.html">AES</a>). The effect of pLayer over many rounds is shown in ${goT('df',null,'Diffusion')}.`)}
+  ${MORE('pl')}`};
+
+T.ark.doc=k=>{const r=ST.round.ark,o=findOp('ark',r),K=D.KS.K[r-1],n=k>0?16-k:15,a=nib(o.p,n),kk=nib(K,n);
+  const X=D.KS.K.reduce((u,v)=>u^v,0n);
+  return`<h2>addRoundKey: XOR with the round key</h2>
+  <p class="lead">addRoundKey XORs the 64-bit state with a 64-bit round key, bit by bit. It is the only step that depends on the key; every other step is public.</p>
+  <h3>How it works</h3>
+  <p>XOR (⊕) of two bits is 1 when the bits differ and 0 when they are equal. Each of the 64 state bits is XORed with the bit of K${r} at the same position. Bits do not interact with each other.</p>
+  ${EX(`Round key K${r} = ${M(hex(K))}<br>Nibble ${n}: ${M(`${b4(a)} ⊕ ${b4(kk)} = ${b4(a^kk)}`)}, in hex ${M(`${h1(a)} ⊕ ${h1(kk)} = ${h1(a^kk)}`)}`)}
+  <p>K${r} is the leftmost 64 bits of the key register at round ${r}, see the ${goT('ks',Math.min(r,31),'key schedule')}.</p>
+  <h3>Why XOR</h3>
+  <p>XOR is its own inverse: ${M('(s ⊕ K) ⊕ K = s')}. So decryption removes the key with the same operation. XOR is also the cheapest gate that mixes two bits so that the output reveals neither of them alone.</p>
+  ${NO(`Key additions alone are useless. Without the S-boxes in between, the 32 additions would act like one XOR with ${M('K1 ⊕ K2 ⊕ … ⊕ K32 = '+hex(X))}, and one known plaintext–ciphertext pair would reveal it. The S-boxes between the additions prevent this.`)}
+  ${USE(`The same step is called AddRoundKey in <a href="aes.html">AES</a>. In <a href="des.html">DES</a> the round key is XORed inside the round function instead of onto the whole state.`)}
+  ${MORE('ark')}`};
+
+T.ks.doc=k=>{const r=ST.round.ks,st=D.KS.st[r-1],kb=D.kb,w=kb/4,top=kb-64,ctrLo=kb===80?15:62,ot=kb===80?128:80;
+  return`<h2>The key schedule of PRESENT-${kb}</h2>
+  <p class="lead">The key schedule turns the ${kb}-bit key into 32 round keys of 64 bits. It keeps a ${kb}-bit register; each round key is the leftmost 64 bits of the register, and between two rounds the register is updated in three steps.</p>
+  <h3>The three steps</h3>
+  <ol class="pts"><li><b>Rotate</b> the register left by 61 places: bit i moves to position (i + 61) mod ${kb}.</li>
+    <li><b>S-box</b>: ${kb===80?'the top nibble (bits 79 … 76) goes through the PRESENT S-box':'the two top nibbles (bits 127 … 124 and 123 … 120) go through the PRESENT S-box'}.</li>
+    <li><b>Counter</b>: the round number r, as 5 bits, is XORed into bits ${ctrLo+4} … ${ctrLo}.</li></ol>
+  <p>${kb===80?'PRESENT-128 uses the same steps on a 128-bit register, with two S-boxes (bits 127 … 120) and the counter in bits 66 … 62.':'PRESENT-80 uses the same steps on an 80-bit register, with one S-box (bits 79 … 76) and the counter in bits 19 … 15.'} Enter a key of ${ot/4} hex digits to see it.</p>
+  <h3>Your register, round ${r}</h3>
+  ${EX(KV([['register',hex(st.reg,w)],[`K${r} (left 64 bits)`,hex(D.KS.K[r-1])],['1 · rotated by 61',hex(st.rot,w)],['2 · after S-box',hex(st.sb,w)],[`3 · ⊕ counter ${r} = ${r.toString(2).padStart(5,'0')}`,hex(st.nx,w)],[`K${r+1}`,hex(D.KS.K[r])]]))}
+  <p>Click a nibble of the register in the picture: the line under it says where that nibble came from in the current step.</p>
+  <h3>Why these steps</h3>
+  <ul class="pts"><li>The <b>rotation</b> makes each round key take a different part of the key, so after a few rounds every key bit has been used.</li>
+    <li>The <b>S-box</b> makes the round keys a non-linear function of the key. Without it, every round key bit would be a XOR of key bits.</li>
+    <li>The <b>counter</b> makes every round different. If all rounds were identical, a slide attack could compare the cipher with itself shifted by one round.</li>
+    <li>The cost is ${kb===80?'one S-box':'two S-boxes'} and a few XOR gates per round, plus the register itself.</li></ul>
+  ${NO(`Every step can be undone: the rotation, the bijective S-box and the XOR. So whoever learns the whole register at any round can run the schedule backwards to the key. K1 alone is the top 64 bits of the key, ${M(hex(D.KS.K[0]))}, so it reveals 64 of the ${kb} key bits.`)}
+  ${USE(`Compare the key expansion of <a href="aes.html">AES</a>, which also uses its S-box and a round constant. <a href="dipper.html">Dipper</a> is another lightweight design on this site with its own key schedule.`)}
+  ${MORE('ks')}`};
+
+T.x.doc=k=>{const enc=ST.mode==='enc',ops=enc?D.enc:D.dec,o=ops[k],n=ops.length-1;
+  if(enc){const ok=D.expect?hex(D.ct)===D.expect:null;
+  return`<h2>Encryption from start to end</h2>
+  <p class="lead">Encryption runs the round 31 times and then adds K32. The chips above the picture are all ${n} steps of this run.</p>
+  <h3>The algorithm</h3>
+  ${M(`state ← plaintext<br>for r = 1 … 31:<br>&nbsp;&nbsp;state ← state ⊕ K<sub>r</sub><br>&nbsp;&nbsp;state ← sBoxLayer(state)<br>&nbsp;&nbsp;state ← pLayer(state)<br>ciphertext ← state ⊕ K32`)}
+  <h3>Your run</h3>
+  ${EX(KV([['Plaintext',hex(D.pt)],[`Key (${D.kb} bits)`,hex(D.key,D.kb/4)],['Steps',`31 · 3 + 1 = ${n}`],['S-box lookups',`31 · 16 = ${31*16}`],['Now',`step ${k}: ${NAME[o.op]}${o.op==='ark'?' K'+o.ki:''} → ${hex(o.s)}`],['Ciphertext',hex(D.ct)]])+(ok===true?'This equals the test vector published with PRESENT.':ok===false?'This does not equal the published test vector.':''))}
+  <p>The four PRESENT-80 examples in the list are the test vectors from the PRESENT paper. A test vector is a known plaintext, key and ciphertext; an implementation that reproduces it is very likely correct.</p>
+  ${NO(`Encrypting each 64-bit block on its own (ECB mode) shows patterns: equal plaintext blocks give equal ciphertext blocks. Longer messages need a mode of operation, see <a href="modes.html">modes</a>.`)}
+  ${USE(`Switch to <b>Decrypt</b> to run the same keys backwards. The same three-layer structure on bytes is in <a href="aes.html">AES</a>.`)}
+  ${MORE('x/enc')}`}
+  const s31=findOp('pl',31).s,a=D.dec[1].s;
+  return`<h2>Decryption: every step undone in reverse order</h2>
+  <p class="lead">Decryption starts from the ciphertext and undoes the steps of encryption from the last to the first, with the round keys K32 … K1.</p>
+  <h3>The algorithm</h3>
+  ${M(`state ← ciphertext ⊕ K32<br>for r = 31 … 1:<br>&nbsp;&nbsp;state ← pLayer⁻¹(state)<br>&nbsp;&nbsp;state ← sBoxLayer⁻¹(state)<br>&nbsp;&nbsp;state ← state ⊕ K<sub>r</sub><br>plaintext ← state`)}
+  <p>pLayer⁻¹ moves bit i to 4 · i mod 63. sBoxLayer⁻¹ uses the inverse table ${M('S⁻¹ = '+SI.map(h1).join(''))}.</p>
+  <h3>Your run</h3>
+  ${EX(KV([['Ciphertext',hex(D.ct)],['⊕ K32',hex(D.KS.K[31])],['= state',hex(a)],['end of round 31 in encryption',hex(s31)],['Now',`step ${k} of ${n}: ${NAME[o.op]}${o.op==='ark'?' K'+o.ki:''} → ${hex(o.s)}`],['Result',`${hex(D.dec.at(-1).s)}${D.dec.at(-1).s===D.pt?' = the plaintext':''}`]]))}
+  <p>The first step already gives back the state after round 31 of encryption, because ${M('(s ⊕ K32) ⊕ K32 = s')}.</p>
+  ${NO(`Decryption needs the round keys in reverse order. A chip can store all 32, or run the key schedule backwards from the last register value, since each update step can be undone. Both cost area. A mode such as CTR uses only the encryption direction, so a chip for such a mode needs no decryption circuit (see <a href="modes.html">modes</a>).`)}
+  ${USE(`In a Feistel network such as <a href="des.html">DES</a>, decryption is the same circuit as encryption with the keys reversed. An SPN like PRESENT or <a href="aes.html">AES</a> needs the inverse S-box and inverse linear layer.`)}
+  ${MORE('x/dec')}`};
+
+T.df.doc=k=>{const f=ST.df;if(!f)return'';const {fb,diffs,counts}=f,FULL=(1n<<64n)-1n;
+  // which bits may depend on the flipped bit: an S-box spreads to its whole nibble, pLayer moves the bits
+  let m=1n<<B(fb),r16=0,rAll=0;
+  for(let r=1;r<=31&&!rAll;r++){let t=0n;for(let n=0;n<16;n++)if(nib(m,n))t|=15n<<B(4*n);m=pLayer(t);
+    if(!r16&&range(0,15).every(n=>nib(m,n)))r16=r;if(m===FULL)rAll=r}
+  const nibs16=counts.map((c,r)=>range(0,15).filter(n=>nib(diffs[r],n)).length),first16=nibs16.findIndex(v=>v===16);
+  const tail=counts.slice(5),avg=tail.reduce((a,b)=>a+b,0)/tail.length;
+  return`<h2>Diffusion: how one bit spreads</h2>
+  <p class="lead">Diffusion means that a change in one input bit soon changes many state bits. This tab encrypts two plaintexts that differ only in bit ${fb} and counts the differing bits after each round.</p>
+  <h3>How the difference spreads</h3>
+  <p>A difference in one bit enters one S-box. The S-box output can differ in up to 4 bits, and pLayer sends those bits to 4 different nibbles. In the next round up to 4 S-boxes are active, then up to 16. addRoundKey does not change a difference, because both states get the same key: ${M('(a ⊕ K) ⊕ (b ⊕ K) = a ⊕ b')}.</p>
+  <h3>Counted for bit ${fb}</h3>
+  ${EX(KV([['rounds until the difference can reach all 16 nibbles',r16||'more than 31'],['rounds until all 64 bits can depend on it',rAll||'more than 31'],['different bits after rounds 1, 2, 3',`${counts[1]}, ${counts[2]}, ${counts[3]}`],['different nibbles after rounds 1, 2, 3',`${nibs16[1]}, ${nibs16[2]}, ${nibs16[3]}`],['first round with all 16 nibbles different',first16>0?first16:'none in 31 rounds'],['average different bits, rounds 5 … 31',avg.toFixed(1)+' of 64'],['ciphertexts differ in',pc64(D.ct^f.ct2)+' bits']]))}
+  <p>The first two lines follow the rule "an S-box spreads to its whole nibble, pLayer moves bits". They say which bits can change at all. The other lines are what really happened with your plaintext and key: an S-box may change fewer than 4 output bits.</p>
+  <h3>Why about half</h3>
+  <p>For a good cipher the two states after many rounds look like two independent random 64-bit strings. Two random bits differ with probability 1/2, so about 32 of 64 bits differ, and the count goes up and down around 32 from round to round.</p>
+  ${NO(`Full diffusion after a few rounds does not mean that a few rounds are secure. Differential cryptanalysis follows differences that occur with high probability, and an S-box with differential uniformity ${DU} lets a chosen output difference happen with probability up to ${DU}/16. Many rounds are needed to make every such path unlikely; see the table on the ${goT('sl',null,'sBoxLayer')} tab.`)}
+  ${USE(`The same experiment is a standard first test of a new cipher design (the avalanche effect). Compare how <a href="aes.html">AES</a> spreads bytes and how <a href="des.html">DES</a> spreads bits through its Feistel rounds.`)}
+  ${MORE('df')}`};
 
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
@@ -1117,7 +1353,11 @@ function controls(k){
   $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
   $('#fWrap').hidden=!t.focus;
+  fillDoc(k);
 }
+// the longer read under the picture; rewritten only when its text changes, so a selection survives a step
+let DOCH=null;
+function fillDoc(k){const t=T[ST.tab],h=t.doc?t.doc(k):'',d=$('#doc');d.hidden=!h;if(h!==DOCH){d.innerHTML=h;DOCH=h}}
 // static picture of the current step; any running animation or pending play step is dropped
 function show(){
   if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
@@ -1191,9 +1431,14 @@ document.addEventListener('click',e=>{
   const j=e.target.closest('[data-jump]');if(j){setPlaying(false);ST.step.x=+j.dataset.jump;show();return}
   const kr=e.target.closest('[data-kr]');if(kr){setPlaying(false);ST.round.ks=+kr.dataset.kr;fillRounds();ST.step.ks=0;show();return}
   const fb=e.target.closest('[data-fb]');if(fb){ST.flip=+fb.dataset.fb;show();return}
+  const cl=e.target.closest('[data-cell]');if(cl){const[l,n]=cl.dataset.cell.split(',').map(Number),c=ST.rdCell;ST.rdCell=c&&c[0]===l&&c[1]===n?null:[l,n];show();return}
+  const kn=e.target.closest('[data-kn]');if(kn){const n=+kn.dataset.kn;ST.kn=ST.kn===n?null:n;show();return}
+  const sp=e.target.closest('[data-step]');if(sp){setPlaying(false);ST.step[ST.tab]=+sp.dataset.step;show();return}
 });
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  const act=e.target.closest&&e.target.closest('svg [data-goto],svg [data-cell],[data-kn],.dgw[data-step]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
   if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
