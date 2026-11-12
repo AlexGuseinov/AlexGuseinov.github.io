@@ -14,6 +14,7 @@
   --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
   --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
   --blk:#f1efe9;--node:#b3b0a4;--gold:#c2932a;--goldBg:#f8efd6;
+  --side:#dcd8cc;--side2:#c7c2b4;--grid:rgba(28,27,25,.075);--shd:rgba(40,34,20,.34);
   --sh:0 1px 2px rgba(28,27,25,.07),0 8px 18px -8px rgba(28,27,25,.22);
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -24,6 +25,7 @@
   --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
   --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
   --blk:#2b2b31;--node:#62626c;--gold:#e0b95a;--goldBg:#3a3018;
+  --side:#3a3a42;--side2:#2b2b31;--grid:rgba(255,255,255,.06);--shd:rgba(0,0,0,.6);
   --sh:0 1px 2px rgba(0,0,0,.4),0 8px 18px -8px rgba(0,0,0,.7);
 }}
 *{box-sizing:border-box}
@@ -88,7 +90,7 @@ input[type=range]{width:120px;accent-color:var(--accent)}
   --tr:transform var(--tm) var(--ease) var(--dl,0s),opacity var(--tf) ease var(--dl,0s),height var(--tw,var(--tm)) var(--ease) var(--dl,0s),width var(--tw,var(--tm)) var(--ease) var(--dl,0s),background-color var(--tf) ease var(--dl,0s),color var(--tf) ease var(--dl,0s),border-color var(--tf) ease var(--dl,0s),box-shadow var(--tf) ease;
   transition:var(--tr),visibility 0s linear var(--dl,0s)}
 .e.off{visibility:hidden;pointer-events:none;transition:var(--tr),visibility 0s linear calc(var(--dl,0s) + var(--tf))}
-#fit.snap .e,#fit.snap .e *,#fit.snap .w,#fit.snap .w *{transition:none!important;animation:none!important}
+#fit.snap,#fit.snap *{transition:none!important;animation:none!important}
 .w{color:var(--line2);opacity:1;transition:opacity var(--tf) ease var(--dl,0s),color var(--tf) ease var(--dl,0s)}
 .w path:first-child{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0;transition:stroke-dashoffset var(--tm) var(--ease) var(--dl,0s)}
 .w .hd{fill:currentColor;stroke:none}
@@ -102,29 +104,63 @@ input[type=range]{width:120px;accent-color:var(--accent)}
 [data-st=dim]{--tb:var(--blk);--tc:var(--faint)}
 @keyframes chg{from{opacity:0;transform:translateY(4px)}}
 .chg{animation:chg .42s ease-out}
-/* a block of the chain */
-.blk{width:130px;height:186px;background:var(--panel);border:1px solid var(--line2);border-radius:11px;box-shadow:var(--sh);overflow:hidden;font-size:11.5px;line-height:1.2;--c:var(--accent)}
-.blk[data-st=ok]{--c:var(--ok)}.blk[data-st=bad]{--c:var(--xor)}.blk[data-st=work]{--c:var(--amb)}.blk[data-st=dim]{--c:var(--faint)}
-.blk .bh{height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;background:var(--c);color:var(--onAccent);font-weight:700;font-size:12.5px;transition:background-color var(--tf) ease var(--dl,0s)}
-.blk .bh i{font-style:normal;display:inline-block}
-.blk .br{height:38px;padding:5px 9px 0;transition:background-color var(--tf) ease var(--dl,0s)}
-.blk .br+.br{border-top:1px solid var(--line)}
-.blk .br>span{display:block;font-size:9.5px;color:var(--muted);margin-bottom:2px;white-space:nowrap}
-.blk .br code{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:top;font:500 11.5px var(--mono);color:var(--ink);white-space:nowrap;transition:color var(--tf) ease var(--dl,0s)}
-.blk .br[data-r=tx] code{font-family:var(--sans)}
-.blk .br.hl{background:var(--ambBg)}
-.blk .br.bad code{color:var(--xor);font-weight:700}
-.blk .br.good code{color:var(--ok);font-weight:700}
-.blk.pk{cursor:pointer}
-.blk.sel{box-shadow:0 0 0 3px var(--amb),var(--sh)}
-.blk.cmp{width:292px;height:88px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:24px 32px 32px}
-.blk.cmp .bh{grid-column:1/3;height:24px}
-.blk.cmp .br{height:32px;padding:3px 9px 0;border-top:1px solid var(--line)}
-.blk.cmp .br[data-r=prev]{grid-column:1;grid-row:2}.blk.cmp .br[data-r=tx]{grid-column:2;grid-row:2;border-left:1px solid var(--line)}
-.blk.cmp .br[data-r=hash]{grid-column:1;grid-row:3}.blk.cmp .br[data-r=nonce]{grid-column:2;grid-row:3;border-left:1px solid var(--line)}
+/* ---------- a block in 3D: a slab whose front face shows everything the block contains ---------- */
+.persp{position:absolute;left:0;top:0;width:100%;height:100%;perspective:2600px;perspective-origin:50% 45%;pointer-events:none}
+.world{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d;transition:transform calc(var(--tm)*1.7) cubic-bezier(.45,.05,.2,1)}
+.world.drag,.world.drag .p3{transition:none!important}
+.p3{position:absolute;left:0;top:0;transform-style:preserve-3d;transition:transform var(--tm) var(--ease) var(--dl,0s);pointer-events:auto}
+.p3.flat{transform-style:flat;transition:transform var(--tm) var(--ease) var(--dl,0s),opacity var(--tf) ease var(--dl,0s);pointer-events:none}
+.p3.off{visibility:hidden}
+.host3{transform-style:preserve-3d}
+.w3s{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;transform:translateZ(16px);pointer-events:none}
+.floor{position:absolute;left:-1500px;top:-700px;width:3000px;height:1400px;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:50px 50px;background-position:center;
+  -webkit-mask-image:radial-gradient(closest-side,#000 30%,transparent);mask-image:radial-gradient(closest-side,#000 30%,transparent)}
+.shd{position:absolute;left:-170px;top:-60px;width:340px;height:120px;pointer-events:none;background:radial-gradient(closest-side,var(--shd),transparent);transition:opacity var(--tf) ease var(--dl,0s)}
+.slab{position:absolute;left:-124px;top:-182px;width:248px;height:364px;transform-style:preserve-3d;--c:var(--accent);cursor:default}
+.slab[data-st=ok]{--c:var(--ok)}.slab[data-st=bad]{--c:var(--xor)}.slab[data-st=work]{--c:var(--amb)}.slab[data-st=dim]{--c:var(--faint)}
+.slab .fc{position:absolute;backface-visibility:hidden;-webkit-backface-visibility:hidden;transition:opacity var(--tf) ease var(--dl,0s),background-color var(--tf) ease var(--dl,0s),box-shadow var(--tf) ease}
+.slab.gone .fc{opacity:0}
+.slab .fr{left:0;top:0;width:248px;height:364px;transform:translateZ(14px);background:var(--panel);border-radius:11px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line2)}
+.slab .bk{left:0;top:0;width:248px;height:364px;transform:rotateY(180deg) translateZ(14px);background:var(--side2);border-radius:11px}
+.slab .rt,.slab .lf{left:110px;top:6px;width:28px;height:352px;background:linear-gradient(90deg,var(--side),var(--side2))}
+.slab .rt{transform:rotateY(90deg) translateZ(123.5px)}.slab .lf{transform:rotateY(-90deg) translateZ(123.5px)}
+.slab .tp,.slab .bt{left:6px;top:168px;width:236px;height:28px}
+.slab .tp{transform:rotateX(90deg) translateZ(181.5px);background:linear-gradient(var(--c),color-mix(in srgb,var(--c) 78%,#000))}
+.slab .bt{transform:rotateX(-90deg) translateZ(181.5px);background:var(--side2)}
+.slab.sel .fr{box-shadow:inset 0 0 0 2.5px var(--amb),0 0 0 5px color-mix(in srgb,var(--amb) 30%,transparent)}
+.slab.pk{cursor:pointer}
+.fr .bh{height:38px;display:flex;align-items:center;gap:8px;padding:0 13px;background:var(--c);color:var(--onAccent);transition:background-color var(--tf) ease var(--dl,0s)}
+.fr .bh b{font-size:15.5px;white-space:nowrap}
+.fr .bh small{font-size:11px;font-weight:600;opacity:.82;white-space:nowrap}
+.fr .bh i{margin-left:auto;font-style:normal;font-size:16px;font-weight:800}
+.fr .sec{display:flex;align-items:center;justify-content:space-between;height:24px;margin-top:4px;padding:0 13px;font:700 9.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.fr .sec em{font-style:normal;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--faint)}
+.fr .r{height:35px;padding:4px 13px 0;transition:background-color var(--tf) ease var(--dl,0s)}
+.fr .r>span{display:block;height:12px;font-size:9.5px;line-height:12px;color:var(--muted);white-space:nowrap}
+.fr .r code{display:block;height:16px;font:500 12px/16px var(--mono);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color var(--tf) ease var(--dl,0s)}
+.fr .g2{display:grid;grid-template-columns:1fr 1fr}
+.fr .tx{display:flex;align-items:center;gap:6px;height:22px;padding:0 13px;font-size:12px;white-space:nowrap;transition:background-color var(--tf) ease var(--dl,0s),color var(--tf) ease var(--dl,0s)}
+.fr .tx b{margin-left:auto;font:600 12px var(--mono)}
+.fr .tx.cb>span{color:var(--ok);font-weight:600}
+.fr .tx.cb b{color:var(--ok)}
+.fr .hs{position:absolute;left:0;right:0;bottom:0;height:58px;padding:7px 13px 0;border-top:1px solid var(--line);background:color-mix(in srgb,var(--c) 9%,var(--panel));transition:background-color var(--tf) ease var(--dl,0s)}
+.fr .hs>span{display:block;height:12px;font-size:9.5px;line-height:12px;color:var(--muted);white-space:nowrap}
+.fr .hs code{display:block;margin-top:4px;font:700 14px/18px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color var(--tf) ease var(--dl,0s)}
+.fr .hs code .z{color:var(--ok)}
+.fr .hl{background:var(--ambBg)}
+.fr .bad code,.fr .tx.bad,.fr .tx.bad>span,.fr .tx.bad b{color:var(--xor);font-weight:700}
+.fr .good code{color:var(--ok)}
+.fr .chd{background:var(--ambBg)}
+.cl{font-size:12.5px;line-height:1.35;color:var(--muted);white-space:nowrap}
+.cl b{display:block;color:var(--ink);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.cl.r{text-align:left}.cl.l{text-align:right}
+#bView{position:absolute;right:8px;top:8px;font-size:12.5px;padding:4px 9px;z-index:5}
+#view.dr{touch-action:pan-y;cursor:grab}#view.dr:active{cursor:grabbing}
 /* small parts */
 .tile{width:50px;height:50px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:19px;line-height:1.05;
-  background:var(--tb,var(--blk));color:var(--tc,var(--ink));box-shadow:var(--sh);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
+  background:var(--tb,var(--blk));color:var(--tc,var(--ink));border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
+  box-shadow:0 5px 0 -1px color-mix(in srgb,var(--tb,var(--side)) 70%,#000),0 12px 16px -8px rgba(0,0,0,.35)}
 .tile small{font-size:9.5px;font-weight:600;margin-top:2px;white-space:nowrap}
 .tile.s{width:40px;height:40px;font-size:16px;border-radius:9px}.tile.xs{width:32px;height:32px;font-size:13px;border-radius:8px}.tile.xs small{font-size:7.5px;margin-top:1px}
 .node{width:28px;height:28px;border-radius:50%;background:var(--tb,var(--node));border:2px solid color-mix(in srgb,var(--ink) 16%,transparent);box-shadow:0 2px 5px -1px rgba(0,0,0,.25)}
@@ -161,7 +197,7 @@ input[type=range]{width:120px;accent-color:var(--accent)}
 .txc.nar{width:336px}.txc.mini.nar{width:330px}
 /* Merkle tree nodes */
 .mk{width:82px;height:40px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--tb,var(--blk));color:var(--tc,var(--ink));
-  border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);box-shadow:var(--sh);font-size:11px;line-height:1.2}
+  border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);box-shadow:0 4px 0 -1px color-mix(in srgb,var(--tb,var(--side)) 70%,#000),0 10px 14px -8px rgba(0,0,0,.32);font-size:11px;line-height:1.2}
 .mk b{font-size:11px}.mk code{font:500 10.5px var(--mono);display:inline-block}
 .mk.nar{width:40px;height:36px;border-radius:7px}.mk.nar b{font-size:10px}.mk.nar code{font-size:8.5px}
 .mk.head{width:230px}.mk.head.nar{width:200px;height:38px}.mk.head.nar code{font-size:10px}
@@ -289,7 +325,7 @@ table.cmp tr.now td{background:var(--ambBg)}
 
 <main class="wrap layout" id="layout">
   <div class="card stage" id="stage">
-    <div id="view"><div id="fit"><svg id="wires" xmlns="http://www.w3.org/2000/svg"></svg><div id="els"></div></div><div id="tip"></div></div>
+    <div id="view"><div id="fit"><svg id="wires" xmlns="http://www.w3.org/2000/svg"></svg><div id="els"></div></div><div id="tip"></div><button id="bView" hidden title="Turn the picture back to its starting view">⟲ View</button></div>
     <div class="ctl" id="ctrl">
       <button id="bReset" title="Back to the start">⟲</button>
       <button id="bBack" title="One step back (← key)">◀ Back</button>
@@ -374,7 +410,7 @@ function seal(b){b.root=merkleRoot(b.txs.map(txid));b.hash=sha256d(header(b));b.
 function mine(b,d,from=0,max=5e6){b.root=merkleRoot(b.txs.map(txid));const u=header(b),v=new DataView(u.buffer);
   for(let n=from;n<from+max;n++){v.setUint32(76,n,true);const h=sha256d(u);if(lz(h)>=d){b.nonce=n;b.hash=h;b.lz=lz(h);return n}}
   return -1}
-const T0=1762905600;   // 12 November 2026, 00:00 UTC
+const T0=1794441600;   // 12 November 2026, 00:00 UTC
 function mkChain(spec,d){let prev=new Uint8Array(32);
   return spec.map((txs,i)=>{const b={i,ver:1,prev,txs:[...txs],time:T0+i*600,bits:bitsFor(d),nonce:0};mine(b,d);prev=b.hash;return b})}
 const cloneChain=c=>c.map(b=>({...b,txs:[...b.txs],prev:b.prev.slice(),hash:b.hash.slice(),root:b.root.slice()}));
@@ -442,7 +478,7 @@ function mk(cls,html){const e=document.createElement('div');e.className='e '+cls
 // put a part with its anchor point (its centre, unless ax/ay say otherwise) at (x, y). o: opacity, s: scale, d: delay in seconds
 function put(e,x,y,o){o=o||{};const op=o.o??1,ax=o.ax??.5,ay=o.ay??.5;
   e.style.transformOrigin=`${ax*100}% ${ay*100}%`;
-  e.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(${-ax*100}%,${-ay*100}%) scale(${o.s??1})`;
+  e.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(${-ax*100}%,${-ay*100}%) scale(${o.s??1})${o.t3||''}`;
   e.style.opacity=op;e.style.setProperty('--dl',dly(o.d));e.classList.toggle('off',op<.01);if(o.z!=null)e.style.zIndex=o.z;return e}
 const hide=e=>{e.style.opacity=0;e.classList.add('off');return e};
 const st=(e,s)=>{if(e.dataset.st!==s)e.dataset.st=s;return e};
@@ -450,8 +486,8 @@ const st=(e,s)=>{if(e.dataset.st!==s)e.dataset.st=s;return e};
 function txt(e,v,sel){const t=sel?e.querySelector(sel):e;if(t._v===v)return;const first=t._v===undefined;t._v=v;t.innerHTML=v;
   if(!E.snap&&!first){t.classList.remove('chg');void t.offsetWidth;t.classList.add('chg')}}
 /* wires: lines and arrows on the SVG layer under the parts */
-function wire(cls){const g=document.createElementNS(NS,'g');g.setAttribute('class','w hid '+(cls||''));
-  g.innerHTML='<path pathLength="1"/><path class="hd" d="M0 0L-10 -5L-10 5Z"/>';WIR.appendChild(g);return g}
+function wire(cls,parent){const g=document.createElementNS(NS,'g');g.setAttribute('class','w hid '+(cls||''));
+  g.innerHTML='<path pathLength="1"/><path class="hd" d="M0 0L-10 -5L-10 5Z"/>';(parent||WIR).appendChild(g);return g}
 function geom(g,d,head){g.firstChild.setAttribute('d',d);if(head)g.lastChild.setAttribute('transform',`translate(${head[0]},${head[1]}) rotate(${head[2]})`);g._d=d}
 // o: {on, st, d (delay), path, head, op}. A visible wire whose shape changes fades out, takes the new shape and draws itself again
 function setWire(g,o){const on=o.on!==false&&o.on!==0;if(o.st!==undefined)g.dataset.st=o.st||'';g.style.setProperty('--dl',dly(o.d));
@@ -476,28 +512,77 @@ function arrive(e,from,delay,dur){if(E.snap)return;
     {duration:(dur||.6)*1000/speed(),delay:(delay||0)*1000/speed(),easing:'cubic-bezier(.4,0,.2,1)',fill:'backwards'});E.fx.push(an)}
 function after(s,fn){if(E.snap)return;E.timers.push(setTimeout(fn,s*1000/speed()))}
 function stopFx(){for(const a of E.fx)try{a.cancel()}catch(e){}E.fx=[];for(const t of E.timers)clearTimeout(t);E.timers=[];for(const d of E.tmp)d.remove();E.tmp=[]}
-function clearStage(){stopFx();ELS.innerHTML='';WIR.innerHTML=''}
+function clearStage(){stopFx();ELS.innerHTML='';WIR.innerHTML='';E.world=null}
 function snapDo(fn){E.snap=true;FIT.classList.add('snap');try{fn()}finally{void FIT.offsetWidth;FIT.classList.remove('snap');E.snap=false}}
 function setSpeed(){const s=speed();FIT.style.setProperty('--tm',(.72/s).toFixed(3)+'s');FIT.style.setProperty('--tf',(.4/s).toFixed(3)+'s')}
-// scale the design box to the card; below 600 px the pictures use their narrow layout
+// scale the design box to the card; below 600 px the pictures use their narrow layout.
+// CSS zoom keeps text sharp at any factor (also on 3D parts); browsers without it get a transform
+const ZOOM=window.CSS&&CSS.supports('zoom','1.5');
 function fit(force){const cw=VIEW.clientWidth;if(!cw||(cw===E.cw&&!force))return;E.cw=cw;const nar=cw<600,t=T[ST.tab];
   if(nar!==E.narrow){E.narrow=nar;if(t&&t.o){rebuild();return}}
-  if(!t)return;const[W,H]=t.size(),f=Math.min(cw/W,1.45,Math.max(470,innerHeight*.8)/H);E.f=f;
-  FIT.style.width=W+'px';FIT.style.height=H+'px';FIT.style.transform=`translate(${((cw-W*f)/2).toFixed(1)}px,0) scale(${f.toFixed(4)})`;VIEW.style.height=(H*f).toFixed(1)+'px'}
+  if(!t)return;const[W,H]=t.size(),f=Math.min(cw/W,t.maxF||1.45,Math.max(470,innerHeight*.8)/H);E.f=f;
+  FIT.style.width=W+'px';FIT.style.height=H+'px';
+  if(ZOOM){FIT.style.zoom=f.toFixed(4);FIT.style.transform='';FIT.style.left=((cw-W*f)/2/f).toFixed(1)+'px'}
+  else FIT.style.transform=`translate(${((cw-W*f)/2).toFixed(1)}px,0) scale(${f.toFixed(4)})`;
+  VIEW.style.height=(H*f).toFixed(1)+'px'}
 
-/* ---------- a block of the chain, as a card ---------- */
-const BLK_HTML='<div class="bh"><b></b><i></i></div>'+[['prev','previous hash'],['tx','transactions'],['nonce','nonce'],['hash','hash of this block']].map(([k,l])=>`<div class="br" data-r="${k}"><span>${l}</span><code></code></div>`).join('');
-const mkBlock=()=>mk('blk'+(E.narrow?' cmp':''),BLK_HTML);
-function setBlock(e,f){txt(e,f.title,'.bh b');txt(e,f.mark||'','.bh i');st(e,f.st);
-  for(const k of['prev','tx','nonce','hash']){const r=e.querySelector(`[data-r=${k}]`),v=f[k];txt(r.lastChild,v.v);r.classList.toggle('hl',!!v.hl);r.classList.toggle('bad',!!v.bad);r.classList.toggle('good',!!v.good)}}
-// what a block of a toy chain shows on its card
-function face(b,j,o){o=o||{};const bad=!j.ok;return{title:o.name||(b.i===0?'Genesis':'Block '+b.i),st:o.st||(bad?'bad':'ok'),mark:o.mark??(bad?'✗':'✓'),
-  prev:{v:b.i===0?'00000000…':sh(hid(b.prev),8),bad:!j.link,hl:o.hl==='prev'},
-  tx:{v:esc(b.txs[0])+(b.txs.length>1?` <span style="color:var(--muted)">+${b.txs.length-1}</span>`:''),bad:!!o.txbad,hl:o.hl==='tx'},
-  nonce:{v:o.nonce??fmt(b.nonce),hl:o.hl==='nonce'},
-  hash:{v:o.hash??sh(hid(b.hash),8),bad:!j.pow,good:j.pow&&!bad,hl:o.hl==='hash'}}}
-// where a wire meets a card: the previous-hash row on one side, the hash row on the other (relative to the card's centre)
-const BW=130,BH=186,ROW={prev:-46,hash:68},CW=292,CH_=88,CROW={prev:-4,hash:28};
+/* ---------- a block as a 3D slab. The front face shows everything a Bitcoin block contains:
+   the six fields of the 80-byte header, the transactions, and the hash of the header ---------- */
+const SLAB_HTML=`<div class="fc fr"><div class="bh"><b></b><small></small><i></i></div>
+<div class="sec">Header<em>6 fields · 80 bytes · hashed</em></div>
+<div class="r" data-r="prev"><span>previous block hash</span><code></code></div>
+<div class="r" data-r="root"><span>Merkle root of the transactions</span><code></code></div>
+<div class="g2"><div class="r" data-r="ver"><span>version</span><code></code></div><div class="r" data-r="time"><span>time (UTC)</span><code></code></div>
+<div class="r" data-r="bits"><span>bits: the target</span><code></code></div><div class="r" data-r="nonce"><span>nonce</span><code></code></div></div>
+<div class="sec" data-r="txh">Transactions<em></em></div>
+<div class="tx" data-r="tx0"></div><div class="tx" data-r="tx1"></div><div class="tx" data-r="tx2"></div>
+<div class="hs" data-r="hash"><span>block hash = SHA-256(SHA-256(header))</span><code></code></div></div>
+<div class="fc bk"></div><div class="fc rt"></div><div class="fc lf"></div><div class="fc tp"></div><div class="fc bt"></div>`;
+// heights from the CSS: where the rows sit, measured from the centre of the card (364 px high, 248 wide)
+const SW=248,SH=364,SROW={prev:-92,root:-57,hash:152,hdrTop:-140,hdrBot:24,txTop:28,txBot:118};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const tfmt=t=>{const d=new Date(t*1000),p=n=>String(n).padStart(2,'0');return`${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`};
+// a block hash with its leading zeros marked, when they are what makes the block valid
+const hashHTML=(h,good,n)=>{const s=hid(h).slice(0,n||22),z=good?s.match(/^0*/)[0]:'';return(z?`<span class="z">${z}</span>`:'')+s.slice(z.length)+'…'};
+function mkSlab(parent){const w=document.createElement('div');w.className='p3';w.innerHTML=`<div class="slab">${SLAB_HTML}</div>`;(parent||E.world||ELS).appendChild(w);w.sl=w.firstChild;return w}
+function setRow(r,v){if(!v){r.style.visibility='hidden';return}r.style.visibility='';if(r.lastChild.tagName==='CODE')txt(r.lastChild,v.v);
+  r.classList.toggle('hl',!!v.hl);r.classList.toggle('bad',!!v.bad);r.classList.toggle('good',!!v.good);r.classList.toggle('chd',!!v.chd)}
+function setSlab(w,f){const sl=w.sl;st(sl,f.st||'');txt(sl,f.title,'.bh b');txt(sl,f.sub||'','.bh small');txt(sl,f.mark||'','.bh i');
+  for(const k of['prev','root','ver','time','bits','nonce','hash'])setRow(sl.querySelector(`[data-r=${k}]`),f[k]);
+  txt(sl,f.ntx,'[data-r=txh] em');
+  f.txs.forEach((t,i)=>{const r=sl.querySelector(`[data-r=tx${i}]`);if(!t){r.innerHTML='';r.className='tx';return}
+    txt(r,`<span>${esc(t.name)}</span><b>${esc(t.amt)}</b>`);r.className='tx'+(t.cb?' cb':'')+(t.bad?' bad':'')+(t.hl?' hl':'')+(t.chd?' chd':'')})}
+// everything a block of a toy chain shows. j: how it is judged (pow, link, ok); o: highlights and overrides
+function face3(b,j,o){o=o||{};const bad=!j.ok,hl=o.hl||'',ref=o.ref,n=b.txs.length;
+  const txs=[0,1,2].map(i=>{const s=b.txs[i];if(s==null)return null;const m=s.match(/^(.*?)\s+([\d.,]+)$/),chg=ref&&ref.txs[i]!==s;
+    return{name:m?m[1]:s,amt:m?m[2]:'',cb:/^Coinbase/.test(s),bad:chg&&(bad||o.txred),chd:chg&&!bad&&!o.txred,hl:hl==='tx'+i}});
+  const rootChg=ref&&!eq(ref.root,b.root);
+  return{title:o.name||(b.i===0?'Genesis block':'Block '+b.i),sub:o.sub??'height '+b.i,st:o.st||(bad?'bad':'ok'),mark:o.mark??(bad?'✗':'✓'),
+    prev:{v:b.i===0&&!o.prev?'0'.repeat(24)+'…':(o.prev||hid(b.prev).slice(0,24)+'…'),bad:!j.link,hl:hl==='prev'},
+    root:{v:hid(o.rootOf||b.root).slice(0,24)+'…',hl:hl==='root',bad:rootChg&&(bad||o.txred)&&!o.rootOf,chd:rootChg&&!bad&&!o.txred},
+    ver:{v:String(b.ver)},time:{v:tfmt(b.time)},bits:{v:'0x'+b.bits.toString(16).padStart(8,'0')},nonce:{v:o.nonce??fmt(b.nonce),hl:hl==='nonce'},
+    ntx:n+(n===1?' transaction':' transactions'),txs,
+    hash:{v:o.hash??hashHTML(b.hash,j.pow&&!bad),bad:!j.pow,good:j.pow&&!bad,hl:hl==='hash'}}}
+// numbers that run while a block is being mined
+function spinSlab(w,dur){const sl=w.sl,t0=performance.now(),r=rng(t0|0),set=(k,v)=>{const c=sl.querySelector(`[data-r=${k}] code`);c._v=v;c.innerHTML=v};
+  st(sl,'work');txt(sl,'mining…','.bh i');const hr=sl.querySelector('[data-r=hash]');hr.classList.remove('good');hr.classList.add('bad');
+  const tick=()=>{set('nonce',fmt(Math.floor((performance.now()-t0)*9+r()*50)));let h='';for(let i=0;i<22;i++)h+='0123456789abcdef'[Math.floor(r()*16)];set('hash',h+'…');
+    if(performance.now()-t0<dur*1000/speed())E.timers.push(setTimeout(tick,60))};tick()}
+
+/* ---------- a 3D world: a camera (focus point, zoom, turn, tilt) that the browser moves smoothly ---------- */
+const CAM={x:0,y:0,s:1,yaw:-16,pitch:8,cy:.5},UCAM={yaw:0,pitch:0};
+function mkWorld(){const p=document.createElement('div');p.className='persp';const w=document.createElement('div');w.className='world';p.appendChild(w);ELS.appendChild(p);
+  const s=document.createElementNS(NS,'svg');s.setAttribute('class','w3s');w.appendChild(s);E.world=w;E.wsvg=s;return w}
+function mk3(cls,html,flat){const e=document.createElement('div');e.className='p3'+(flat?' flat':'')+(cls?' '+cls:'');if(html!=null)e.innerHTML=html;E.world.appendChild(e);return e}
+// place a part of the world at (x, y, z). r: an extra rotation; c: anchor at its centre; o: opacity (flat parts only)
+function put3(e,x,y,z,o){o=o||{};e.style.transform=`translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,${(z||0).toFixed(1)}px)${o.r||''}${o.c?' translate(-50%,-50%)':''}${o.s!=null&&o.s!==1?` scale(${o.s})`:''}`;
+  e.style.setProperty('--dl',dly(o.d));if(o.o!=null){e.style.opacity=o.o;e.classList.toggle('off',o.o<.01)}return e}
+function cam3(v){if(v)Object.assign(CAM,{cy:.5},v);if(!E.world)return;const t=T[ST.tab],[W,H]=t.size();
+  E.world.style.transform=`translate(${(W/2).toFixed(1)}px,${(H*(CAM.cy??.5)).toFixed(1)}px) rotateX(${-(CAM.pitch+UCAM.pitch)}deg) rotateY(${CAM.yaw+UCAM.yaw}deg) scale3d(${CAM.s},${CAM.s},${CAM.s}) translate3d(${-CAM.x}px,${-CAM.y}px,0)`;
+  $('#bView').hidden=!(UCAM.yaw||UCAM.pitch)}
+// a list of timed actions. Moving backwards, or drawing without motion, runs them all at once
+function seq(fwd,items){if(!fwd||E.snap){for(const it of items)it[1]();return}for(const it of items)if(it[0]<=0)it[1]();else after(it[0],it[1])}
+
 const tileHTML=(a,b)=>b?`${a}<small>${b}</small>`:String(a);
 
 /* ================= a ring of nodes: used by "Why" and by "Network and forks" ================= */
@@ -602,68 +687,114 @@ T.net={n:8,size:()=>E.narrow?[360,540]:[760,470],
     <tr><td class="t">Split at the fork</td><td>${pa} blue, ${pb} orange</td></tr></table>
     <p style="margin-top:8px">The hop counts are computed from the drawn connections. Each node has ${NB[1].length} or ${NB[0].length} neighbours.</p>`}}}
 
-/* ================= 2 · Blocks and hash pointers ================= */
+/* ================= 2 · Blocks and hash pointers, in 3D ================= */
 const D=12;   // the toy chain asks for 12 zero bits: three hex zeros in front of every block hash
-const SPEC=[['Coinbase → Alice 50'],['Alice → Bob 6','Alice → Carol 4','Bob → Dave 1'],['Bob → Eve 2','Carol → Alice 1'],['Dave → Alice 3','Eve → Bob 1','Alice → Carol 5'],['Carol → Dave 2','Bob → Alice 1']];
+// as in Bitcoin, the first transaction of every block is the coinbase, which pays the miner
+const SPEC=[['Coinbase → Alice 50'],['Coinbase → Bob 50','Alice → Bob 6','Alice → Carol 4'],['Coinbase → Carol 50','Bob → Eve 2','Carol → Alice 1'],
+  ['Coinbase → Dave 50','Dave → Alice 3','Eve → Bob 1'],['Coinbase → Eve 50','Carol → Dave 2','Bob → Alice 1']];
 const CH=mkChain(SPEC,D);ST.sb=cloneChain(CH);
-const TAM=cloneChain(CH);TAM[1].txs[0]='Alice → Bob 60';seal(TAM[1]);
+const PAYI=b=>Math.min(1,b.txs.length-1);   // the payment the reader may edit: the first one after the coinbase
+const TAM=cloneChain(CH);TAM[1].txs[1]='Alice → Bob 60';seal(TAM[1]);
 const FIX=cloneChain(TAM),FIXT=[0];for(let i=1;i<5;i++){if(i>1)FIX[i].prev=FIX[i-1].hash;FIXT[i]=mine(FIX[i],D)+1}
 const OKJ={pow:true,link:true,ok:true};
-// the picture of step k: which chain, how each block is judged, what is visible
+// the picture of step k: which chain, how each block is judged, what is visible, which arrows, what is highlighted
 function chainState(k){
   if(k===7){const c=ST.sb,j=judge(c,D);return{c,j,vis:[1,1,1,1,1],link:[0,...c.slice(1).map((b,i)=>j[i+1].link?(j[i+1].ok?'ok':'dim'):'bad')],hl:{}}}
-  if(k<=3)return{c:CH,j:CH.map(()=>OKJ),vis:CH.map((b,i)=>k>=3||i===1||(k===2&&i===2)),link:[0,k>=3?'ok':0,k>=2?'ok':0,k>=3?'ok':0,k>=3?'ok':0],hl:k===0?{}:k===1?{1:'hash'}:k===2?{1:'hash',2:'prev'}:{}};
-  if(k===4){const c=CH.map((b,i)=>i===1?TAM[1]:b);return{c,j:c.map((b,i)=>i===1?{pow:TAM[1].lz>=D,link:true,ok:false}:OKJ),vis:[1,1,1,1,1],link:[0,'ok','ok','ok','ok'],hl:{1:'tx'}}}
+  if(k<=3)return{c:CH,j:CH.map(()=>OKJ),vis:CH.map((b,i)=>k>=3||i===1||(k===2&&i===2)),link:[0,k>=3?'ok':0,k>=2?'ok':0,k>=3?'ok':0,k>=3?'ok':0],hl:k===1?{1:'hash'}:k===2?{1:'hash',2:'prev'}:{}};
+  if(k===4){const c=CH.map((b,i)=>i===1?TAM[1]:b);return{c,j:c.map((b,i)=>i===1?{pow:TAM[1].lz>=D,link:true,ok:false}:OKJ),vis:[1,1,1,1,1],link:[0,'ok','ok','ok','ok'],hl:{}}}
   if(k===5){const j=judge(TAM,D);return{c:TAM,j,vis:[1,1,1,1,1],link:[0,'ok','bad','dim','dim'],hl:{2:'prev'}}}
   return{c:FIX,j:FIX.map(()=>OKJ),vis:[1,1,1,1,1],link:[0,'ok','ok','ok','ok'],hl:{}}}
-// numbers that run while a block is being mined
-function spin(e,dur){const t0=performance.now(),r=rng(t0|0),set=(k,v)=>{const c=e.querySelector(`[data-r=${k}] code`);c._v=v;c.textContent=v};
-  st(e,'work');txt(e,'…','.bh i');e.querySelector('[data-r=hash]').classList.remove('good');e.querySelector('[data-r=hash]').classList.add('bad');
-  const tick=()=>{set('nonce',fmt(Math.floor((performance.now()-t0)*7+r()*40)));set('hash',Math.floor(r()*0xfffffff).toString(16).padStart(8,'0')+'…');
-    if(performance.now()-t0<dur*1000/speed())E.timers.push(setTimeout(tick,66))};tick()}
-T.chain={n:8,size:()=>E.narrow?[360,572]:[760,408],
-  // centre and scale of card i at step k
-  box(i,k){if(E.narrow)return k<=1?{x:180,y:i===1?250:62+i*110,s:i===1?1.18:1}:k===2&&(i===1||i===2)?{x:200,y:i===1?196:330,s:1}:{x:200,y:62+i*110,s:1};
-    return k<=1&&i===1?{x:380,y:204,s:1.9}:k===2&&(i===1||i===2)?{x:i===1?262:498,y:204,s:1.55}:{x:76+i*152,y:204,s:1}},
-  // the pointer from the previous-hash field of block i to the hash of the block before it
-  wpath(i,k){const B=this.box(i,k),A=this.box(i-1,k),s=B.s;
-    if(E.narrow){const sx=B.x-s*CW/2,sy=B.y+s*CROW.prev,ex=A.x-s*CW/2,ey=A.y+s*CROW.hash;return{path:`M${sx} ${sy}C${sx-48} ${sy} ${ex-48} ${ey} ${ex-9} ${ey}`,head:[ex-1,ey,0],mid:[sx-34,(sy+ey)/2]}}
-    const sx=B.x-s*BW/2,sy=B.y+s*ROW.prev,ex=A.x+s*BW/2,ey=A.y+s*ROW.hash,g=sx-ex;
-    return{path:`M${sx} ${sy}C${(sx-g*.95).toFixed(1)} ${sy} ${(ex+g*.95).toFixed(1)} ${ey} ${ex+9} ${ey}`,head:[ex+1,ey,180],mid:[(sx+ex)/2,(sy+ey)/2]}},
-  build(){const o=this.o={b:[],l:[null],x:[null]};
-    for(let i=1;i<5;i++)o.l.push(wire('thick'));
-    for(let i=0;i<5;i++){const b=mkBlock();b.addEventListener('click',()=>{if((ST.step.chain||0)===7){ST.sel=i;ST.msg='';show(false)}});
-      b.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&(ST.step.chain||0)===7){e.preventDefault();e.stopPropagation();b.click()}});o.b.push(b)}
-    for(let i=1;i<5;i++)o.x.push(mk('lab x','✗'))},
-  fc(s,i,k){const b=s.c[i];return face(b,s.j[i],{hl:s.hl[i],txbad:b.txs[0]!==CH[i].txs[0]})},
-  pose(k,fwd){const o=this.o,s=chainState(k),run=k===6&&fwd&&!E.snap,t=run?chainState(5):s;
-    for(let i=0;i<5;i++){const B=this.box(i,k),sel=k===7&&i===ST.sel;setBlock(o.b[i],this.fc(t,i,k));
-      o.b[i].classList.toggle('sel',sel);o.b[i].classList.toggle('pk',k===7);if(k===7)o.b[i].tabIndex=0;else o.b[i].removeAttribute('tabindex');
-      put(o.b[i],B.x,B.y-(sel?(E.narrow?0:10):0),{s:B.s,o:t.vis[i]?1:0,d:fwd&&k===3&&i!==1&&i!==2?.25+Math.abs(i-1.5)*.08:0,z:sel?2:1})}
-    for(let i=1;i<5;i++){const w=this.wpath(i,k),l=t.link[i];
-      setWire(o.l[i],{on:!!l,st:l==='ok'?'ok':l==='bad'?'bad':'dim',path:w.path,head:w.head,d:fwd&&l&&(k===2||k===3)?.45:0,wait:.6});
-      put(o.x[i],w.mid[0],w.mid[1],{o:l==='bad'?1:0,s:l==='bad'?1:.4,d:fwd&&l==='bad'?.3:0})}
-    if(run)for(let i=1;i<5;i++){const t0=(i-1)*1.35;   // the repair, block by block
-      after(t0,()=>{if(i>1){setWire(o.l[i],{on:true,st:'ok'});put(o.x[i],...this.wpath(i,k).mid,{o:0,s:.4});const r=o.b[i].querySelector('[data-r=prev]');r.classList.remove('bad');txt(r.lastChild,sh(hid(FIX[i].prev),8))}spin(o.b[i],.95)});
-      after(t0+1,()=>setBlock(o.b[i],face(FIX[i],OKJ,{txbad:i===1})))}},
-  hold:k=>k===6?8.5:5,tip:k=>k===7?'Click a block to choose it':'',
+const P3=330,FLOOR=SH/2+3;   // distance between blocks in the world; the floor under them
+T.chain={n:8,drag:true,maxF:1.3,size:()=>E.narrow?[400,560]:[1000,540],
+  // the camera of step k: what it looks at, how near, turned and tilted (degrees)
+  cam(k){const N=E.narrow,near={s:N?1.2:1.34,yaw:-13,pitch:6},mid={s:N?1.02:1.1,yaw:-13,pitch:6},far={s:N?.25:.58,yaw:N?-28:-22,pitch:N?12:10,cy:.55};
+    return[{x:P3,...near},{x:P3,...near,yaw:-10},{x:1.5*P3,s:N?.6:1.08,yaw:-12,pitch:6},{x:2*P3,...far},{x:P3,...mid},{x:N?2*P3:2.15*P3,...far,s:N?.25:.61},{x:2*P3,...far},{x:ST.sel*P3,...mid}][k]},
+  build(){const o=this.o={b:[],sh:[],l:[null],x:[null]};mkWorld();
+    o.floor=put3(mk3('floor',null,true),2*P3,FLOOR,0,{r:' rotateX(90deg)'});
+    for(let i=0;i<5;i++)o.sh.push(put3(mk3('shd',null,true),i*P3,FLOOR-1,0,{r:' rotateX(90deg)',o:0}));
+    for(let i=1;i<5;i++)o.l.push(wire('thick',E.wsvg));
+    for(let i=0;i<5;i++){const w=mkSlab();o.b.push(w);put3(w,i*P3,0,0);w.sl.classList.add('gone');
+      w.sl.addEventListener('click',()=>{if((ST.step.chain||0)===7&&!E.dragged){ST.sel=i;ST.msg='';show(false)}});
+      w.sl.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&(ST.step.chain||0)===7){e.preventDefault();e.stopPropagation();w.sl.click()}})}
+    for(let i=1;i<5;i++)o.x.push(mk3('lab x','✗',true));
+    // notes beside the first block: what is header and what is body, and what is hashed
+    const L=P3-SW/2-16,R=P3+SW/2+16;
+    o.cw=[wire('nh',E.wsvg),wire('nh',E.wsvg),wire('',E.wsvg),wire('',E.wsvg)];
+    geom(o.cw[0],`M${L+8} ${SROW.hdrTop+4}H${L}V${SROW.hdrBot-4}H${L+8}`);geom(o.cw[1],`M${L+8} ${SROW.txTop+4}H${L}V${SROW.txBot-4}H${L+8}`);
+    geom(o.cw[2],`M${R-10} ${(SROW.txTop+SROW.txBot)/2}C${R+34} ${(SROW.txTop+SROW.txBot)/2} ${R+34} ${SROW.root} ${R-2} ${SROW.root}`,[R-4,SROW.root,180]);
+    geom(o.cw[3],`M${R+40} ${SROW.hdrTop+30}C${R+40} ${SROW.hash-40} ${R+30} ${SROW.hash} ${R-2} ${SROW.hash}`,[R-4,SROW.hash,180]);
+    o.c1=mk3('cl l','<b>Header</b>6 fields, always 80 bytes.<br>Only these bytes are hashed.',true);
+    o.c2=mk3('cl l','<b>Body</b>the transactions; they reach<br>the header through the Merkle root',true);
+    o.c3=mk3('cl r','<b>Merkle tree</b>one hash for all<br>transactions (tab 4)',true);
+    o.c4=mk3('cl r','<b>SHA-256, twice</b>over the 80 header bytes.<br>The result names the block.',true);
+    o.c5=mk3('cl r','<b>Hash pointer</b>',true);
+    cam3({...this.cam(0),y:0});UCAM.yaw=UCAM.pitch=0},
+  fc(s,i,o){const b=s.c[i];return face3(b,s.j[i],{hl:s.hl[i],ref:CH[i],...(o||{})})},
+  // the pointer from the previous-hash field of block i to the hash field of the block before it
+  wpath(i){const sx=i*P3-SW/2+2,sy=SROW.prev,ex=(i-1)*P3+SW/2,ey=SROW.hash,g=sx-ex;
+    return{path:`M${sx} ${sy}C${(sx-g*1.1).toFixed(1)} ${sy} ${(ex+g*1.1).toFixed(1)} ${ey} ${ex+9} ${ey}`,head:[ex+1,ey,180],mid:[(sx+ex)/2,(sy+ey)/2]}},
+  // draw one whole state of the chain: cards, arrows, crosses, shadows
+  paint(s,o){o=o||{};const B=this.o,lift=o.lift||{};
+    for(let i=0;i<5;i++){const w=B.b[i],v=!!s.vis[i];setSlab(w,o.faces&&o.faces[i]||this.fc(s,i));w.sl.classList.toggle('gone',!v);
+      w.sl.classList.toggle('sel',!!o.sel&&o.sel===i);w.sl.classList.toggle('pk',!!o.pick);if(o.pick)w.sl.tabIndex=0;else w.sl.removeAttribute('tabindex');
+      put3(w,i*P3,lift[i]?-14:0,lift[i]?46:0,{d:o.dl&&o.dl[i]});put3(B.sh[i],i*P3,FLOOR-1,0,{r:' rotateX(90deg)',o:v?(lift[i]?.6:1):0,s:lift[i]?1.12:1})}
+    for(let i=1;i<5;i++){const w=this.wpath(i),l=s.link[i];setWire(B.l[i],{on:!!l,st:l==='ok'?'ok':l==='bad'?'bad':'dim',path:w.path,head:w.head,d:o.wd||0});
+      put3(B.x[i],w.mid[0],w.mid[1],18,{c:1,o:l==='bad'?1:0,s:l==='bad'?1:.4})}},
+  notes(k,fwd){const B=this.o,N=E.narrow,L=P3-SW/2-34,R=P3+SW/2+28,d=fwd?.5:0;
+    const on=(e,v,x,y,dd)=>put3(e,x,y,16,{o:v&&!N?1:0,d:dd??d});
+    on(B.c1,k===0,L,(SROW.hdrTop+SROW.hdrBot)/2,0);B.c1.style.translate='-100% -50%';
+    on(B.c2,k===0,L,(SROW.txTop+SROW.txBot)/2);B.c2.style.translate='-100% -50%';
+    on(B.c3,k===0,R+30,(SROW.txTop+SROW.root)/2-6);B.c3.style.translate='0 -50%';
+    on(B.c4,k===1,R+46,SROW.hdrTop+10);B.c4.style.translate='0 -100%';
+    const w2=this.wpath(2);on(B.c5,k===2,w2.mid[0],-SH/2-22,fwd?.9:0);B.c5.style.translate='-50% -50%';
+    setWire(B.cw[0],{on:k===0&&!N,st:'ok',d:0});setWire(B.cw[1],{on:k===0&&!N,st:'amb',d:d});setWire(B.cw[2],{on:k===0&&!N,st:'amb',d:d+.3});setWire(B.cw[3],{on:k===1&&!N,st:'good',d:d})},
+  pose(k,fwd){const B=this.o,s=chainState(k),run=fwd&&!E.snap,prevVis=this.vis0;this.vis0=s.vis;
+    this.notes(k,fwd);
+    if(k===4&&run){   // the change travels: the transaction, then the Merkle root, then the hash of the header
+      const s3=chainState(3);cam3(this.cam(4));
+      this.paint(s3);
+      seq(true,[[.55,()=>setSlab(B.b[1],face3(TAM[1],OKJ,{ref:CH[1],txred:1,rootOf:CH[1].root,hash:hashHTML(CH[1].hash,true)}))],
+        [1.15,()=>setSlab(B.b[1],face3(TAM[1],OKJ,{ref:CH[1],txred:1,hash:hashHTML(CH[1].hash,true),hl:'root'}))],
+        [1.8,()=>this.paint(s)]]);return}
+    if(k===5&&run){   // the break spreads along the chain
+      const s4=chainState(4),mix=n=>({c:s.c,j:s.j.map((x,i)=>i<=n?x:s4.j[i]),vis:s.vis,link:s.link.map((x,i)=>i<=n?x:s4.link[i]),hl:n>=2?s.hl:{}});
+      cam3(this.cam(5));this.paint(mix(1));seq(true,[[.5,()=>this.paint(mix(2))],[.9,()=>this.paint(mix(3))],[1.3,()=>this.paint(mix(4))]]);return}
+    if(k===6&&run){   // the forger mines the blocks again, one after the other, and the camera follows him
+      const cur=cloneChain(TAM),st5=chainState(5),items=[];cam3({...this.cam(4),x:P3});this.paint(st5);
+      for(let i=1;i<5;i++){const t0=(i-1)*1.75;
+        items.push([t0,()=>{cam3({...this.cam(4),x:i*P3});
+          if(i>1){cur[i].prev=FIX[i-1].hash;const ss={c:cur,j:judge(cur,D),vis:st5.vis,link:[0,...cur.slice(1).map((b,m)=>m+1<=i?'ok':'dim')],hl:{}};
+            ss.j=ss.j.map((x,m)=>m<i?OKJ:x);this.paint(ss,{lift:{[i]:1}});const pr=B.b[i].sl.querySelector('[data-r=prev]');pr.classList.add('hl')}
+          else this.paint(st5,{lift:{1:1}})}]);
+        items.push([t0+.55,()=>spinSlab(B.b[i],.85)]);
+        items.push([t0+1.45,()=>{cur[i]=FIX[i];setSlab(B.b[i],face3(FIX[i],OKJ,{ref:CH[i]}));put3(B.b[i],i*P3,0,0)}])}
+      items.push([7.1,()=>{cam3(this.cam(6));this.paint(s)}]);seq(true,items);return}
+    if(k===7&&run&&ST.mined&&ST.mined.length){   // blocks the reader asked to mine
+      const list=ST.mined;ST.mined=null;const fin=chainState(7),pre=ST.premine||fin,items=[];this.paint(pre,{sel:ST.sel,pick:1});
+      list.forEach((i,n)=>{const t0=n*1.2;items.push([t0,()=>{cam3({...this.cam(7),x:i*P3});put3(B.b[i],i*P3,-14,46);spinSlab(B.b[i],.75)}]);
+        items.push([t0+.95,()=>{put3(B.b[i],i*P3,0,0);setSlab(B.b[i],this.fc(fin,i))}])});
+      items.push([list.length*1.2+.1,()=>{cam3(this.cam(7));this.paint(fin,{sel:ST.sel,pick:1})}]);seq(true,items);return}
+    cam3(this.cam(k));
+    this.paint(s,{sel:k===7?ST.sel:-1,pick:k===7,dl:run&&k===3?[0,0,0,.12,.24]:run&&k===2?[0,0,0]:null,wd:run&&(k===2||k===3)?.45:0});
+    if(run&&(k===2||k===3))for(let i=0;i<5;i++){const was=prevVis&&prevVis[i];if(s.vis[i]&&!was){const w=B.b[i];w.style.transition='none';put3(w,i*P3+(i<1?-80:80),30,-90);void w.offsetWidth;w.style.transition='';put3(w,i*P3,0,0,{d:.08*i})}}},
+  hold:k=>k===6?9.5:k===4?5.5:5,tip:k=>k===7?'Drag to turn the picture · click a block to choose it':'Drag to turn the picture',
   say(k){const b=CH[1],h1=hid(b.hash),t1=hid(TAM[1].hash),tot=FIXT.reduce((a,x)=>a+x,0);return[
-    say('Step 0 · One block',`<b>A block is a batch of transactions with a small header.</b> This is block 1 of a toy chain. It holds ${b.txs.length} transactions; the first one is printed on it.`,'In Bitcoin the header is always 80 bytes: a version number, the hash of the previous block, one hash that stands for all the transactions (tab 4), the time, the target and a nonce (tab 5).'),
-    say('Step 1 · The hash is the block’s name',`Hash the 80 header bytes with SHA-256, twice. The result is this block’s identity:${fm(h1)}`,'Nobody chooses this value. Change a single bit of the header and about half of the 256 output bits change, so a block and its hash cannot be separated.'),
-    say('Step 2 · The next block stores that hash',`Block 2 has a field <b>previous hash</b>, and it holds exactly ${sh(h1,10)} This is a <b>hash pointer</b>: it says which block comes before, and at the same time fixes what that block must contain.`),
+    say('Step 0 · What is inside a block','<b>A block has two parts.</b> The <b>header</b> has six fields and is always 80 bytes: the version, the hash of the previous block, the Merkle root, the time, the target (“bits”) and the nonce. The <b>body</b> holds the transactions.',`The first transaction is the <b>coinbase</b>: it has no sender and creates the miner’s reward. This is block 1 of a toy chain that your browser has built in the real Bitcoin format; it holds ${b.txs.length} transactions.`),
+    say('Step 1 · The hash is the block’s name',`Hash the 80 header bytes with SHA-256, twice. The result is this block’s identity:${fm(h1)}`,'Only the header is hashed. The transactions still count, because the Merkle root in the header is computed from all of them. Change a single bit anywhere and about half of the 256 output bits change.'),
+    say('Step 2 · The next block stores that hash',`Block 2 has a field <b>previous block hash</b>, and it holds exactly ${sh(h1,10)} This is a <b>hash pointer</b>: it says which block comes before, and at the same time fixes what that block must contain.`),
     say('Step 3 · A chain','<b>Every block points back at the one before it</b>, down to the first block, the genesis block, whose previous hash is all zeros.','The hash of the newest block therefore depends on every byte of every block before it. Whoever knows the last hash can check the whole history.'),
-    say('Step 4 · Somebody edits an old payment',`In block 1, “Alice → Bob 6” becomes “Alice → Bob <b class="cn">60</b>”. The transaction hash in the header changes, so the block hash changes:${fm('before  '+sh(h1,24)+'<br>after   '+sh(t1,24))}`,'The new hash does not start with three zeros any more. The work that was put into this block (tab 5) is lost.'),
+    say('Step 4 · Somebody edits an old payment',`In block 1, “Alice → Bob 6” becomes “Alice → Bob <b class="cn">60</b>”. Watch the change travel: the transaction changes, so the <b>Merkle root</b> changes, so the header changes, so the <b>block hash</b> changes:${fm('before  '+sh(h1,24)+'<br>after   '+sh(t1,24))}`,'The new hash does not start with three zeros any more. The work that was put into this block (tab 5) is lost.'),
     say('Step 5 · Every later block is cut off',`Block 2 still stores the old hash ${sh(h1,10)} No block with that hash exists now, so the pointer leads nowhere, and blocks 2, 3 and 4 no longer stand on anything.`,'One changed digit in an old block is visible from the tip of the chain. That is why a node only has to remember the newest hash to notice any change.'),
     say('Step 6 · To repair it, redo all the work',`The forger finds a new nonce for block 1 (<b>${fmt(FIXT[1])}</b> tries here), writes the new hash into block 2, which changes block 2’s own hash, finds a new nonce for block 2, and so on: <b>${fmt(tot)}</b> tries for four blocks.`,'In Bitcoin every one of these blocks costs the whole network about ten minutes of work, and meanwhile the honest chain keeps growing. Tab 7 shows that race.'),
-    say('Step 7 · Your turn','<b>Break the chain yourself.</b> Click a block, change its first transaction below and watch what turns red. “Mine this block” copies in the previous hash and searches a new nonce.',ST.msg||'Try to repair the chain after a change in block 1: you will have to mine four blocks, in order.')][k]},
-  bar(k){if(k!==7)return'';const b=ST.sb[ST.sel];
+    say('Step 7 · Your turn','<b>Break the chain yourself.</b> Click a block, change one of its payments below and watch what turns red. “Mine this block” copies in the previous hash and searches a new nonce.',ST.msg||'Try to repair the chain after a change in block 1: you will have to mine four blocks, in order.')][k]},
+  bar(k){if(k!==7)return'';const b=ST.sb[ST.sel],pi=PAYI(b);
     return`<label class="fld"><span class="flh">Block</span><select data-sb="sel">${ST.sb.map((x,i)=>`<option value="${i}"${i===ST.sel?' selected':''}>${i?'Block '+i:'Genesis'}</option>`).join('')}</select></label>
-    <label class="fld" style="flex:1 1 220px"><span class="flh">Its first transaction</span><input type="text" data-sb="tx" value="${esc(b.txs[0])}" maxlength="24" spellcheck="false"></label>
+    <label class="fld" style="flex:1 1 220px"><span class="flh">${pi?'Its first payment':'Its only transaction'}</span><input type="text" data-sb="tx" value="${esc(b.txs[pi])}" maxlength="24" spellcheck="false"></label>
     <button data-sb="mine" class="pri">Mine this block</button><button data-sb="all">Mine all broken blocks</button><button data-sb="reset">Start again</button>`},
   extra(k){const s=chainState(k);
     return`<h3>The chain, value by value</h3><div class="scroll"><table class="kv"><tr><th>#</th><th>previous hash</th><th>nonce</th><th>hash</th><th></th></tr>${
       s.c.map((b,i)=>s.vis[i]?`<tr class="${!s.j[i].ok?'bad':k===7&&i===ST.sel?'sel':''}"><td>${i}</td><td style="${s.j[i].link?'':'color:var(--xor)'}">${i?sh(hid(b.prev),9):'000000000…'}</td><td>${fmt(b.nonce)}</td><td style="${s.j[i].pow?'':'color:var(--xor)'}">${sh(hid(b.hash),9)}</td><td class="t">${s.j[i].ok?Y:N}</td></tr>`:'').join('')}</table></div>
-      <p style="margin-top:8px">Rule of this toy chain: a block hash must start with ${D} zero bits, that is ${D/4} hex zeros. Bitcoin asks for about 80 zero bits.</p>
+      <p style="margin-top:8px">Rule of this toy chain: a block hash must start with ${D} zero bits, that is ${D/4} hex zeros (green on the cards). Bitcoin asks for about 80 zero bits.</p>
       ${k===1?`<p>Avalanche: the same header with nonce + 1 hashes to${fm(sh(hid(sha256d(header({...CH[1],nonce:CH[1].nonce+1}))),40))}</p>`:''}`}};
 
 /* ================= 3 · Transactions and signatures ================= */
@@ -774,13 +905,13 @@ T.merkle={n:7,size:()=>E.narrow?[360,486]:[760,476],
 
 /* ================= 5 · Proof of work ================= */
 const PD=6;   // the scripted search asks for 6 zero bits: the target is 1/64 of the line
-const PWB={i:5,ver:1,prev:CH[4].hash,txs:['Reward 3.125','Dave → Eve 1','Alice → Bob 2'],bits:bitsFor(PD),nonce:0,time:T0+3000};
+const PWB={i:5,ver:1,prev:CH[4].hash,txs:['Coinbase → Miner 3.125','Dave → Eve 1','Alice → Bob 2'],bits:bitsFor(PD),nonce:0,time:T0+3000};
 const PWT=[];   // every try of the scripted search: nonce, hash, where it falls
 {for(let t=0;t<2000;t++){PWB.time=T0+3000+t;const n=mine(PWB,PD);if(n>=44&&n<=72)break}
  const u=header(PWB),v=new DataView(u.buffer);for(let n=0;n<=PWB.nonce;n++){v.setUint32(76,n,true);const h=sha256d(u);PWT.push({n,h,f:frac(h),z:lz(h)})}}
 // three miners with 50, 30 and 20 percent of the hash rate search for the same block
 const MIN=[{n:'A',w:.5,c:'accent'},{n:'B',w:.3,c:'amb'},{n:'C',w:.2,c:'key'}],PWR=[];
-{for(let seed=1;seed<400;seed++){const r=rng(seed),hs=MIN.map(m=>{const b={...PWB,txs:['Reward 3.125 to '+m.n,...PWB.txs.slice(1)],time:PWB.time+60};b.root=merkleRoot(b.txs.map(txid));return{u:header(b),n:0}});
+{for(let seed=1;seed<400;seed++){const r=rng(seed),hs=MIN.map(m=>{const b={...PWB,txs:['Coinbase → Miner '+m.n+' 3.125',...PWB.txs.slice(1)],time:PWB.time+60};b.root=merkleRoot(b.txs.map(txid));m.root=b.root;return{u:header(b),n:0}});
   PWR.length=0;let hit=false;while(PWR.length<78&&!hit){const x=r(),j=x<.5?0:x<.8?1:2,m=hs[j];new DataView(m.u.buffer).setUint32(76,m.n,true);const h=sha256d(m.u);hit=lz(h)>=PD;PWR.push({m:j,n:m.n++,h,f:frac(h),z:lz(h),hit})}
   if(hit&&PWR.length>=36)break}}
 const dur=s=>s<90?s.toFixed(0)+' seconds':s<5400?(s/60).toFixed(0)+' minutes':s<172800?(s/3600).toFixed(1)+' hours':s<63072000?(s/86400).toFixed(0)+' days':fmt(Math.round(s/31557600))+' years';
@@ -788,9 +919,9 @@ const dur=s=>s<90?s.toFixed(0)+' seconds':s<5400?(s/60).toFixed(0)+' minutes':s<
 function bitsHTML(h,d){const n=Math.min(32,Math.max(16,Math.ceil((d+3)/4)*4)),r=rev(h);let s='';
   for(let i=0;i<n;i++){const b=r[i>>3]>>(7-(i&7))&1;if(i&&i%4===0)s+=' ';s+=i<d?`<b style="color:var(--${b?'xor':'ok'})">${b}</b>`:`<span style="color:var(--faint)">${b}</span>`}return s+'…'}
 T.pow={n:7,size:()=>E.narrow?[360,500]:[760,470],
-  G(){return E.narrow?{blk:[96,112],rd:[262,112],my:252,mx:[66,180,294],x0:20,L:320,y:440,from:[96,180]}:{blk:[226,112],rd:[478,112],my:262,mx:[250,380,510],x0:40,L:680,y:404,from:[226,180]}},
+  G(){return E.narrow?{blk:[94,134],bs:.56,rd:[262,112],my:268,mx:[66,180,294],x0:20,L:320,y:440,from:[94,238]}:{blk:[214,150],bs:.74,rd:[486,140],my:334,mx:[250,380,510],x0:40,L:680,y:404,from:[214,288]}},
   build(){const o=this.o={},N=E.narrow;
-    o.rail=mk('rail');o.zone=mk('zone');o.blk=mk('blk',BLK_HTML);
+    o.rail=mk('rail');o.zone=mk('zone');o.blk=mk('host3');mkSlab(o.blk);o.slab=o.blk.firstChild;o.slab.sl=o.slab.firstChild;
     o.read=mk('pan rdo'+(N?' nar':''),'<small></small><code class="hx"></code><code class="bt"></code><div class="v"></div>');if(N){o.read.style.width='176px';o.read.style.height='150px'}
     o.l0=mk('lab m sm','0');o.l1=mk('lab m sm','2²⁵⁶');o.lt=mk('lab sm cg','target');o.cap=mk('lab m sm','every hash lands somewhere on this line');
     o.min=MIN.map(m=>st(mk('chipm',`Miner ${m.n} · ${m.w*100}%`),m.c));
@@ -802,15 +933,16 @@ T.pow={n:7,size:()=>E.narrow?[360,500]:[760,470],
     if(k===5)return PWR.map(t=>({f:t.f,c:`var(--${MIN[t.m].c})`,big:t.hit,m:t.m}));
     return k===6?ST.pw.dots||[]:[]},
   // show one try on the block and in the read-out
-  one(t,d,q,name){const o=this.o;
-    if(t.wait){setBlock(o.blk,face({...PWB,nonce:0,hash:t.h},{pow:true,link:true,ok:true},{name:'Block 5',st:'',mark:'',hl:'nonce',nonce:'?',hash:'?'}));o.blk.querySelector('[data-r=hash]').classList.remove('good');
+  one(t,d,q,name){const o=this.o,mi=name?MIN.find(m=>m.n===name):null,k=ST.step.pow||0,
+      base=k===6&&ST.pw.blk?ST.pw.blk:mi?{...PWB,txs:['Coinbase → Miner '+name+' 3.125',...PWB.txs.slice(1)],root:mi.root,time:PWB.time+60}:PWB;
+    if(t.wait){setSlab(o.slab,face3({...base,nonce:0,hash:t.h},OKJ,{name:'Block 5',sub:'being built',st:'',mark:'',hl:'nonce',nonce:'?',hash:'?'}));o.slab.sl.querySelector('[data-r=hash]').classList.remove('good','bad');
       txt(o.read,'nothing tried yet','small');txt(o.read,'hash: ?','.hx');txt(o.read,'','.bt');const v=o.read.querySelector('.v');v.className='v';txt(v,`needed: the first ${d} bits are zero`);return}
-    const good=t.z>=d,f=face({...PWB,txs:name?['Reward 3.125 to '+name,...PWB.txs.slice(1)]:PWB.txs,nonce:t.n,hash:t.h},{pow:good,link:true,ok:good},{name:'Block 5',st:good?'ok':'work',mark:good?'✓':'?',hl:'nonce'});
-    if(q){const set=(e,v)=>{e._v=v;e.innerHTML=v};set(o.blk.querySelector('[data-r=nonce] code'),f.nonce.v);set(o.blk.querySelector('[data-r=hash] code'),f.hash.v);set(o.read.querySelector('small'),`try ${fmt(t.n+1)} · nonce ${fmt(t.n)}`);set(o.read.querySelector('.hx'),sh(hid(t.h),E.narrow?16:24));set(o.read.querySelector('.bt'),bitsHTML(t.h,d));return}
-    setBlock(o.blk,f);txt(o.read,`try ${fmt(t.n+1)} · nonce ${fmt(t.n)}${name?' of miner '+name:''}`,'small');txt(o.read,sh(hid(t.h),E.narrow?16:24),'.hx');txt(o.read,bitsHTML(t.h,d),'.bt');
+    const good=t.z>=d,f=face3({...base,nonce:t.n,hash:t.h},{pow:good,link:true,ok:good},{name:'Block 5',st:good?'ok':'work',mark:good?'✓':'…',hl:'nonce'});
+    if(q){const set=(e,v)=>{e._v=v;e.innerHTML=v};set(o.slab.sl.querySelector('[data-r=nonce] code'),f.nonce.v);set(o.slab.sl.querySelector('[data-r=hash] code'),f.hash.v);set(o.read.querySelector('small'),`try ${fmt(t.n+1)} · nonce ${fmt(t.n)}`);set(o.read.querySelector('.hx'),sh(hid(t.h),E.narrow?16:24));set(o.read.querySelector('.bt'),bitsHTML(t.h,d));return}
+    setSlab(o.slab,f);txt(o.read,`try ${fmt(t.n+1)} · nonce ${fmt(t.n)}${name?' of miner '+name:''}`,'small');txt(o.read,sh(hid(t.h),E.narrow?16:24),'.hx');txt(o.read,bitsHTML(t.h,d),'.bt');
     const v=o.read.querySelector('.v');v.className='v '+(good?'y':'n');txt(v,good?`✓ the first ${d} bits are zero`:`✗ a 1 among the first ${d} bits`)},
   pose(k,fwd){const o=this.o,G=this.G(),d=k===4?10:k===6?ST.pw.d:PD,zw=Math.max(G.L/2**d,3),bs=this.dots(k),run=fwd&&!E.snap,last=PWT.at(-1),won=PWR.at(-1),p=ST.pw;
-    put(o.blk,...G.blk);put(o.read,...G.rd);put(o.rail,G.x0+G.L/2,G.y);o.rail.style.width=G.L+'px';
+    put(o.blk,...G.blk,{s:G.bs,t3:' perspective(1600px) rotateX(-7deg) rotateY(-16deg)'});put(o.read,...G.rd);put(o.rail,G.x0+G.L/2,G.y);o.rail.style.width=G.L+'px';
     put(o.zone,G.x0,G.y,{ax:0});o.zone.style.width=zw.toFixed(1)+'px';
     put(o.l0,G.x0,G.y+22);put(o.l1,G.x0+G.L,G.y+22);put(o.lt,G.x0,G.y-(E.narrow?40:44),{ax:0});put(o.cap,G.x0+G.L/2,G.y+22,{o:k===0?1:0});
     o.min.forEach((m,j)=>put(m,G.mx[j],G.my,{o:k===5?1:0,s:k===5&&won.m===j?1.2:k===5?1:.8,d:run&&k===5&&won.m===j?PWR.length*.06+.3:0}));
@@ -1456,7 +1588,7 @@ function show(fwd,keepBar){
   if(!keepBar){const h=t.bar?t.bar(k):'';if(h)$('#bar').innerHTML=h;$('#barwrap').classList.toggle('open',!!h);$('#barwrap').inert=!h}
   $('#prog').textContent=`Step ${k} of ${t.n-1}`;$('#pfill').style.width=`${100*k/(t.n-1)}%`;
   $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=t.n-1;
-  $('#tip').textContent=(t.tip&&t.tip(k))||''}
+  $('#tip').textContent=(t.tip&&t.tip(k))||'';VIEW.classList.toggle('dr',!!t.drag)}
 // draw the open tab again from nothing, without motion (a new tab, or the layout changed between wide and narrow)
 function rebuild(){const t=T[ST.tab];if(!t)return;clearStage();t.shown=0;t.rid=null;t.build();fit(true);snapDo(()=>show(false))}
 function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
@@ -1471,15 +1603,15 @@ function setTab(id){
   try{localStorage.setItem('bc-tab',id);history.replaceState(null,'','#'+id)}catch(e){}}
 
 /* ---------- the parts the reader can play with ---------- */
-function sbMine(all){const c=ST.sb;
-  if(all){let total=0,n=0;for(let i=0;i<c.length;i++)if(!judge(c,D)[i].ok){if(i>0)c[i].prev=c[i-1].hash;total+=mine(c[i],D)+1;n++}
+function sbMine(all){const c=ST.sb,pre={...chainState(7),c:cloneChain(c)};pre.j=judge(pre.c,D);ST.premine=pre;ST.mined=[];
+  if(all){let total=0;for(let i=0;i<c.length;i++)if(!judge(c,D)[i].ok){if(i>0)c[i].prev=c[i-1].hash;total+=mine(c[i],D)+1;ST.mined.push(i)}const n=ST.mined.length;
     ST.msg=n?`Mined ${n} block${n>1?'s':''}, in order: <b>${fmt(total)}</b> tries in all. The chain is valid again, with new hashes from the changed block on.`:'Nothing to repair: the chain is valid.'}
-  else{const i=ST.sel,b=c[i];if(i>0)b.prev=c[i-1].hash;const n=mine(b,D)+1,j=judge(c,D);
+  else{const i=ST.sel,b=c[i];if(i>0)b.prev=c[i-1].hash;const n=mine(b,D)+1,j=judge(c,D);ST.mined=[i];
     ST.msg=`${i?'Block '+i:'The genesis block'}: nonce <b>${fmt(b.nonce)}</b> found after ${fmt(n)} tries.`+(j[i].ok?(j.every(x=>x.ok)?' The whole chain is valid.':' Now the next block points at an old hash.'):' The block before it is still broken, so this one does not count yet.')}
   show(true)}
 function pwStop(){const p=ST.pw;if(!p.run)return;p.run=false;clearTimeout(p.timer);const b=$('[data-pw=go]');if(b)b.textContent='Mine';const l=$('#pwlive');if(l)l.innerHTML=T.pow.live()}
 function pwStart(){const p=ST.pw;Object.assign(p,{run:true,tries:0,secs:0,found:null,rate:0,n:0,runs:(p.runs||0)+1,dots:[],ball:0,stamp:0,last:null});
-  const b={...PWB,bits:bitsFor(p.d),time:PWB.time+600+p.runs};b.root=merkleRoot(b.txs.map(txid));p.u=header(b);p.dv=new DataView(p.u.buffer);p.t0=performance.now();
+  const b={...PWB,bits:bitsFor(p.d),time:PWB.time+600+p.runs};b.root=merkleRoot(b.txs.map(txid));p.blk=b;p.u=header(b);p.dv=new DataView(p.u.buffer);p.t0=performance.now();
   show(false);pwTick()}
 function pwTick(){const p=ST.pw;if(!p.run)return;const t0=performance.now();let h=null,hit=false;
   while(!hit&&performance.now()-t0<10)for(let i=0;i<250;i++){p.dv.setUint32(76,p.n,true);h=sha256d(p.u);p.tries++;if(lz(h)>=p.d){hit=true;break}p.n++}
@@ -1494,6 +1626,15 @@ $('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.
 $('#bStep').onclick=()=>go(1);$('#bBack').onclick=()=>go(-1);$('#bReset').onclick=()=>go(0);
 $('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const t=T[ST.tab];if(!t)return;if((ST.step[ST.tab]||0)>=t.n-1){ST.step[ST.tab]=0;show(false)}setPlaying(true)};
 $('#spd').addEventListener('input',setSpeed);
+// turning a 3D picture by dragging it; a click that did not move still reaches the block under the pointer
+{let D0=null;
+ VIEW.addEventListener('pointerdown',e=>{const t=T[ST.tab];if(!t||!t.drag||!E.world||e.button>0||e.target.closest('button'))return;D0={x:e.clientX,y:e.clientY,yaw:UCAM.yaw,pitch:UCAM.pitch,moved:false,id:e.pointerId};E.dragged=false});
+ VIEW.addEventListener('pointermove',e=>{if(!D0||e.pointerId!==D0.id)return;const dx=e.clientX-D0.x,dy=e.clientY-D0.y;
+   if(!D0.moved&&Math.hypot(dx,dy)<6)return;if(!D0.moved){D0.moved=true;E.dragged=true;E.world.classList.add('drag');try{VIEW.setPointerCapture(e.pointerId)}catch(_){}}
+   UCAM.yaw=clamp(D0.yaw+dx*.18,-50,50);UCAM.pitch=clamp(D0.pitch-dy*.12,-10,26);cam3();e.preventDefault()});
+ const end=e=>{if(!D0)return;const m=D0.moved;D0=null;if(E.world)E.world.classList.remove('drag');if(m)setTimeout(()=>{E.dragged=false},0)};
+ VIEW.addEventListener('pointerup',end);VIEW.addEventListener('pointercancel',end);
+ $('#bView').onclick=()=>{UCAM.yaw=UCAM.pitch=0;cam3()}}
 document.addEventListener('click',e=>{const q=s=>e.target.closest(s);let b;
   if(b=q('[data-qz]')){const[id,i]=b.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
   if(b=q('[data-goto]')){e.preventDefault();setTab(b.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:RM.matches?'auto':'smooth'});return}
@@ -1505,7 +1646,7 @@ document.addEventListener('click',e=>{const q=s=>e.target.closest(s);let b;
   if(b=q('[data-ps=draw]')){const r=rng(Date.now()&0xffffff),c=VS.map(()=>0);for(let i=0;i<1000;i++)c[whoAt(Math.floor(r()*VTOT))]++;ST.ps.draws=c;show(false);return}});
 document.addEventListener('change',e=>{const s=e.target.closest('[data-sb=sel]');if(s){ST.sel=+s.value;ST.msg='';show(false)}});
 document.addEventListener('input',e=>{const q=s=>e.target.closest(s);let i;
-  if(i=q('[data-sb=tx]')){const b=ST.sb[ST.sel];b.txs[0]=i.value||' ';seal(b);ST.msg='';show(false,true);return}
+  if(i=q('[data-sb=tx]')){const b=ST.sb[ST.sel];b.txs[PAYI(b)]=i.value||' ';seal(b);ST.msg='';show(false,true);return}
   if(i=q('[data-pw=d]')){pwStop();const p=ST.pw;p.d=+i.value;p.found=null;p.tries=0;p.last=null;p.dots=[];$('#pwd').textContent=p.d;$('#pwn').textContent=fmt(2**p.d);show(false,true);$('#pwlive').innerHTML=T.pow.live();return}
   if(i=q('[data-at]')){const a=ST.at;if(i.dataset.at==='q')a.q=+i.value/100;else a.z=+i.value;a.race=null;$('#atq').textContent=pct(a.q,0);$('#atz').textContent=a.z;show(false,true);$('#atlive').innerHTML=T.attack.live()}});
 document.addEventListener('keydown',e=>{
