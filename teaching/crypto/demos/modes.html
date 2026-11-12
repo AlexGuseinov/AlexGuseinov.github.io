@@ -13,6 +13,7 @@
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
@@ -672,6 +673,44 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
 .pics-s .vok{white-space:normal;display:inline-block}
 .why3 button.link,.why4 button.link{display:inline;text-align:left}
 .pob,.lamp,.pon{max-width:240px;margin-left:auto;margin-right:auto}
+/* parts of a picture that can be clicked */
+.nd{outline:none}
+.nd:hover .fr{stroke-width:3}
+.nd:focus-visible .fr{stroke:var(--accent);stroke-width:3;stroke-dasharray:none}
+.cmp tr[data-goto]{cursor:pointer}
+.cmp tr[data-goto]:hover td{background:var(--accentBg)}
+.twr[data-ivs],.ivr[data-ivs]{cursor:pointer;outline:none}
+.twr[data-ivs]:hover,.twr[data-ivs]:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.ivr[data-ivs]{border-radius:7px}
+.ivr[data-ivs]:hover,.ivr[data-ivs]:focus-visible{background:var(--accentBg)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.doc a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -727,6 +766,7 @@ figure.off canvas{opacity:.08}figure.off figcaption{opacity:.35}
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: your text and pictures stay in this browser. Test vectors from NIST SP 800-38A and the GCM specification.</footer>
 
@@ -1021,12 +1061,27 @@ function drawNode(n,k){
     return`<g class="ab${n.t<=k?' done':''}" id="n-${n.id}" ${at}><rect class="bx" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="9"/><text class="abl" x="${n.small?-w/2+8:-68}" y="${n.small?-7:-6}">${n.lab}</text><text class="akk" x="${n.small?-w/2+8:-68}" y="${n.small?10:13}">K</text>${t}</g>`;
   }
   const open=n.t<=k,c=n.c,f=pw(c)/2+4,ph=n.q===0?'':`<text class="nq">?</text>`;
-  return`<g class="nd r-${n.role}${open?' open':''}${n.t===k&&k>0?' cur':''}" id="n-${n.id}" data-nd="${n.id}" ${at}><rect class="fr" x="${-f}" y="${-f}" width="${2*f}" height="${2*f}" rx="7"/>${ph}<g class="val">${patch(n.v,c,c>=14)}</g>${n.cap?(n.capS?`<text class="ncap side" x="${f+8}" y="0">${n.cap}</text>`:`<text class="ncap" y="${n.capB?f+16:-f-7}">${n.cap}</text>`):''}</g>`;
+  return`<g class="nd r-${n.role}${open?' open':''}${n.t===k&&k>0?' cur':''}" id="n-${n.id}" data-nd="${n.id}" tabindex="0" role="button" ${at}><rect class="fr" x="${-f}" y="${-f}" width="${2*f}" height="${2*f}" rx="7"/>${ph}<g class="val">${patch(n.v,c,c>=14)}</g>${n.cap?(n.capS?`<text class="ncap side" x="${f+8}" y="0">${n.cap}</text>`:`<text class="ncap" y="${n.capB?f+16:-f-7}">${n.cap}</text>`):''}</g>`;
 }
 const ROLE={p:'Plaintext',c:'Ciphertext',iv:'Input block',s:'Keystream',x:'Value',g:'Hash value',t:'Tag',a:'Additional data',h:'Hash key H',bad:'Changed block'};
 let LASTG=null;
-function pickLine(G,k){const n=ST.pick&&G.by[ST.pick];
-  return`<div class="pick" id="pick">${n&&n.t<=k?`<b>${n.cap||ROLE[n.role]}</b> <code>${hexs(n.v)}</code>`:`Each small square is one byte, and its colour shows its value.${G.short?' An empty square is not a byte: the data ends there, and this mode adds no padding.':''} Click a block to read its bytes.`}</div>`}
+// the formula behind a block of the open chart, for the line under it; given blocks have none
+function howOf(G,id){
+  const t=ST.tab,dec=ST.mode==='dec',L=id.replace(/\d+$/,''),j=+((id.match(/\d+$/)||['0'])[0]),s=sub_(j+1),q=sub_(j),pv=j?'C'+q:'IV';
+  const EK=x=>`E<sub>K</sub>(${x})`,DK=x=>`D<sub>K</sub>(${x})`;
+  let f={};
+  if(t==='ecb')f={o:dec?`P${s} = ${DK('C'+s)}`:`C${s} = ${EK('P'+s)}`};
+  else if(t==='cbc')f=dec?{v:`${DK('C'+s)} = P${s} ⊕ ${pv}`,p:`P${s} = ${DK('C'+s)} ⊕ ${pv}`}:{v:`P${s} ⊕ ${pv}`,c:`C${s} = ${EK(`P${s} ⊕ ${pv}`)}`};
+  else if(t==='ctr'||t==='cf'){const m=t==='ctr'?'ctr':ST.sub,I=m==='ctr'?'T':'I';
+    f={i:j?`${I}${s} = ${m==='ctr'?`T${q} + 1`:m==='ofb'?`S${q}`:`C${q}`}`:'',s:`S${s} = ${EK(I+s)}`,o:dec?`P${s} = C${s} ⊕ S${s}`:`C${s} = P${s} ⊕ S${s}`}}
+  else if(t==='gcm')f={h:`H = ${EK('0¹²⁸')}`,sj:`S₀ = ${EK('J₀')}`,j:'J₀ = nonce ‖ 00000001',t:`T${s} = inc32(${j?'T'+q:'J₀'})`,s:`S${s} = ${EK('T'+s)}`,
+    p:dec?`P${s} = C${s} ⊕ S${s}`:`C${s} = P${s} ⊕ ${EK('T'+s)}`,X:G.feed&&G.feed[j]?`X = (X ⊕ ${G.feed[j].name}) · H`:'',tag:'Tag = X ⊕ S₀',len:'len = bit length of A ‖ bit length of C'};
+  else if(t==='iv')f={c:'C = encryption of M<sub>b</sub>',q:ST.ivS==='cbcp'?'M′ = M₀ ⊕ IV ⊕ IV<sub>next</sub>':'',cp:`C′ = encryption of ${ST.ivS==='cbcp'?'M′':'M₀'}`};
+  else if(t==='atk'&&ST.atk==='flip')f={dl:`Δ = '1' ⊕ '9' at byte ${AI}`,iv2:'IV′ = IV ⊕ Δ',v:DK('C'+s),p:j?`P₂ = ${DK('C₂')} ⊕ C₁`:`P₁ = ${DK('C₁')} ⊕ IV′`};
+  return f[L]||'';
+}
+function pickLine(G,k){const n=ST.pick&&G.by[ST.pick],f=n?howOf(G,n.id):'';
+  return`<div class="pick" id="pick">${n&&n.t<=k?`<b>${n.cap||ROLE[n.role]}</b> <code>${hexs(n.v)}</code>${f?` · ${f}`:''}`:`Each small square is one byte, and its colour shows its value.${G.short?' An empty square is not a byte: the data ends there, and this mode adds no padding.':''} Click a block to read its bytes and how it was computed.`}</div>`}
 function drawGraph(G,k){
   LASTG=G;let h=`<div class="scroll" id="chS"><svg class="ch" id="ch" viewBox="0 0 ${G.W} ${G.H}" style="min-width:${Math.min(G.W,G.minW)}px;max-width:${Math.round(G.W*1.15)}px" role="img" aria-label="${G.label}"><defs>
     <marker id="am" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="amk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
@@ -1371,8 +1426,8 @@ function gGame(){
 }
 const ivResult=(w,n)=>{const p=100*w/n;return n?`${p.toFixed(0)}%`:''};
 function ivTable(){
-  return`<div class="sec"><div class="pich"><div><div class="h3">Play it many times</div><div class="pics-s">The same attacker against each scheme, with a new coin every round. A good scheme leaves the attacker at 50%.</div></div><button class="pri" data-ivrun="1">Play 200 rounds</button></div>
-  <div class="ivt">${SCH.map(([id,n,d])=>{const v=ST.ivR[id];return`<div class="ivr"><span class="ivn"><b>${n}</b> ${d}</span><span class="ivb"><i id="ivb-${id}" style="width:${v?100*v.w/v.n:0}%"></i><u></u></span><span class="ivp" id="ivp-${id}">${v?ivResult(v.w,v.n):''}</span><span class="ivv" id="ivv-${id}">${v?ivVerdict(v):''}</span></div>`}).join('')}</div></div>`;
+  return`<div class="sec"><div class="pich"><div><div class="h3">Play it many times</div><div class="pics-s">The same attacker against each scheme, with a new coin every round. A good scheme leaves the attacker at 50%. Click a row to play one round against that scheme.</div></div><button class="pri" data-ivrun="1">Play 200 rounds</button></div>
+  <div class="ivt">${SCH.map(([id,n,d])=>{const v=ST.ivR[id];return`<div class="ivr" data-ivs="${id}" role="button" tabindex="0"><span class="ivn"><b>${n}</b> ${d}</span><span class="ivb"><i id="ivb-${id}" style="width:${v?100*v.w/v.n:0}%"></i><u></u></span><span class="ivp" id="ivp-${id}">${v?ivResult(v.w,v.n):''}</span><span class="ivv" id="ivv-${id}">${v?ivVerdict(v):''}</span></div>`}).join('')}</div></div>`;
 }
 const ivVerdict=v=>v.n<200?'':v.w/v.n>.9?'<span class="st bad">broken</span>':'<span class="st best">coin flip</span>';
 function ivRun(){
@@ -1390,8 +1445,8 @@ T.iv={
     const sw=`<div class="row subs"><span class="seg sm"><button data-ivv="twice" class="${ST.ivV==='twice'?'on':''}">Same message, four times</button><button data-ivv="game" class="${ST.ivV==='game'?'on':''}">The IND-CPA game</button></span></div>`;
     if(ST.ivV==='twice'){
       const R=twiceRows();
-      stage.innerHTML=sw+`<div class="pich"><div><div class="h3">One block sent four times: ${toText(M0)}</div><div class="pics-s">Each square is the ciphertext of the same message under the same key.</div></div><button data-roll="1">Send again</button></div>
-      <div class="twg">${SCH.map(([id,n,d],i)=>{const h=R[i].map(hexs),eq=new Set(h).size===1;return`<div class="twr ${eq?'eq':'df'}"><div class="twn"><b>${n}</b>${d}</div><div class="twp">${R[i].map(tw).join('')}</div><div class="twv">${eq?'all equal':'all different'}</div></div>`}).join('')}</div>`;
+      stage.innerHTML=sw+`<div class="pich"><div><div class="h3">One block sent four times: ${toText(M0)}</div><div class="pics-s">Each square is the ciphertext of the same message under the same key. Click a row to play the IND-CPA game against that scheme.</div></div><button data-roll="1">Send again</button></div>
+      <div class="twg">${SCH.map(([id,n,d],i)=>{const h=R[i].map(hexs),eq=new Set(h).size===1;return`<div class="twr ${eq?'eq':'df'}" data-ivv="game" data-ivs="${id}" role="button" tabindex="0"><div class="twn"><b>${n}</b>${d}</div><div class="twp">${R[i].map(tw).join('')}</div><div class="twv">${eq?'all equal':'all different'}</div></div>`}).join('')}</div>`;
       $('#explain').innerHTML=say('Why an IV?','Without an IV, encryption is a fixed function: the same message always gives the same ciphertext. An attacker sees when you repeat yourself.','The green rows give a new ciphertext every time, because each encryption starts from a new value.','Press <b>Send again</b> and watch which rows change.');
       $('#extra').innerHTML=`<h3>Is different enough?</h3><p>CBC with a counting IV looks fine here: all four differ. But different is not enough.</p><p class="note">Open <button class="link" data-ivv="game">the IND-CPA game</button> to see it broken.</p>`+quiz('iv');
       return;
@@ -1693,7 +1748,8 @@ T.cmp={n:()=>1,render(){
     ['CTR','ctr',y,n,y,y,'1 bit',m('unique, never repeat'),n,'<span class="st ok">Good</span>'],
     ['GCM','gcm',y,n,y,y,'message rejected',m('unique, never repeat'),y,'<span class="st best">Recommended</span>']];
   stage.innerHTML=`<div class="scroll"><table class="cmp"><tr><th>Mode</th><th>Hides patterns<br>(IND-CPA)</th><th>Needs<br>padding</th><th>Parallel<br>encrypt</th><th>Parallel<br>decrypt</th><th>A 1-bit error costs</th><th>IV or nonce</th><th>Detects<br>changes</th><th>Today</th></tr>
-    ${R.map(r=>`<tr><td><button class="link mn" data-goto="${r[1]}"${r[0]==='OFB'?' data-sub="ofb"':r[0]==='CFB'?' data-sub="cfb"':''}>${r[0]}</button></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="txt">${r[6]}</td><td class="txt">${r[7]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`).join('')}</table></div>
+    ${R.map(r=>{const sb=r[0]==='OFB'?' data-sub="ofb"':r[0]==='CFB'?' data-sub="cfb"':'';return`<tr data-goto="${r[1]}"${sb}><td><button class="link mn" data-goto="${r[1]}"${sb}>${r[0]}</button></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="txt">${r[6]}</td><td class="txt">${r[7]}</td><td>${r[8]}</td><td>${r[9]}</td></tr>`}).join('')}</table></div>
+    <p class="hint">Click a row to open that mode.</p>
     <div class="sec"><div class="h3">Which one should I use?</div><div class="pick3">
       <div class="pk best"><b>Encrypting data</b>Use an authenticated mode. AES-GCM is the usual choice, as long as every nonce is unique.</div>
       <div class="pk ok"><b>Random access to stored data</b>CTR, with a MAC on top, because CTR alone detects nothing.</div>
@@ -1747,6 +1803,315 @@ plan(k){
     return both(mover(mv),cues(cu))}};
   return{dur:900,start(){const c=$$('#msgB .mc.pd');if(!c.length)return null;c.forEach(e=>e.classList.add('ghost'));return cues(c.map((e,i)=>[(i+1)/(c.length+1),()=>e.classList.remove('ghost')]))}};
 }};
+/* ---------- the longer read under each picture: one article per tab or sub-view ---------- */
+const dbox=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>dbox('Example',b),NO=b=>dbox('Careful',b,'no'),USE=b=>dbox('In cryptography',b,'use');
+const MQ=s=>`<span class="m">${s}</span>`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents; page ranges: the course syllabus
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const AZB4=`${AZB}: pp. 217–236, block ciphers (lecture 4 of the syllabus).`,P5=s=>`${PAAR}, chapter 5: ${s}`;
+const PCBC='section 5.1.2, “Cipher Block Chaining Mode (CBC) and Initialization Vectors”',PGCM=`${PAAR}, chapter 13: section 13.3.4, “Authenticated Encryption: The Galois Counter Mode (GCM)”`;
+const REFS={
+  ov:[P5('section 5.1, “Modes of Operation for Encryption and Authentication”.'),AZB4],
+  ecb:[P5('section 5.1.1, “Electronic Codebook Mode (ECB)”.'),AZB4],
+  cbc:[P5(`${PCBC}. CBC used as a MAC is chapter 13, section 13.3.1, “CBC-MAC”.`),AZB4],
+  ctr:[P5('section 5.1.5, “Counter Mode (CTR)”.'),AZB4],
+  'cf/cfb':[P5('section 5.1.4, “Cipher Feedback Mode (CFB)”.'),AZB4],
+  'cf/ofb':[P5('section 5.1.3, “Output Feedback Mode (OFB)”.'),AZB4],
+  'iv/twice':[P5(`${PCBC}.`)],
+  'iv/game':[P5(`${PCBC}.`)],
+  gcm:[`${PGCM}, and section 13.3.5, “Galois Counter Message Authentication Code (GMAC)”.`],
+  fl:[P5('section 5.1, “Modes of Operation for Encryption and Authentication”.')],
+  'atk/flip':[P5(`${PCBC}. Message authentication is chapter 13, section 13.1, “Principles of Message Authentication Codes”.`)],
+  'atk/oracle':[P5(`${PCBC}. Message authentication is chapter 13, section 13.1, “Principles of Message Authentication Codes”.`)],
+  'atk/nonce':[P5('section 5.1.5, “Counter Mode (CTR)”. The same mistake with a one-time pad is chapter 2, section 2.2.2, “The One-Time Pad”.')],
+  'atk/gnon':[`${PGCM}.`],
+  cmp:[P5('section 5.1, “Modes of Operation for Encryption and Authentication”.'),`${PGCM}.`,AZB4]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?dbox('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const tq=b=>printable(b)?` “${esc(toText(b))}”`:'';                 // a block as text, when it is readable
+const chq=b=>b>=32&&b<127?` '${esc(String.fromCharCode(b))}'`:'';
+const btn=(tab,t,x='')=>`<button class="link" data-goto="${tab}"${x}>${t}</button>`;
+const ivOf=m=>fromHex(D.iv[m]);
+// the GCM attack needs an inverse and a square root in GF(2^128): computed once per input, not at every step
+let GNM=null;
+const gnMemo=()=>{const k=D.v+'|'+D.iv.gcm;if(!GNM||GNM.k!==k)GNM={k,q:gnData()};return GNM.q};
+
+T.ov.doc=()=>{
+  const L=D.msg.length,left=L%16,P=D.pm,np=P.length,pn=16-left;
+  const rows=P.map((b,i)=>`Block ${i+1}: ${b.map((v,j)=>16*i+j<L?hx(v):`<b>${hx(v)}</b>`).join(' ')}`).join('<br>');
+  return`<h2>Modes of operation</h2>
+  <p class="lead">A block cipher such as AES takes a key and exactly one 16-byte block, and returns one 16-byte block. A mode of operation is the rule that uses it to encrypt a message of any length.</p>
+  <h3>What a mode decides</h3>
+  <ul class="pts"><li>What goes into AES for each block: the message block itself (ECB), the message block mixed with the ciphertext block before it (CBC), or a counter or an earlier AES output (CTR, CFB, OFB, GCM).</li>
+  <li>How the blocks are linked, and so whether several blocks can be processed at the same time.</li>
+  <li>What happens to a last block that is not full: padding, or a shorter last piece.</li>
+  <li>Which extra value makes two encryptions of the same message differ: an IV (initialisation vector) or a nonce (number used once).</li>
+  <li>Whether the receiver can detect a change. Only a mode with a tag, such as GCM, can.</li></ul>
+  <h3>Your message in blocks</h3>
+  <p>Your message has ${L} bytes. ${D.usePad?`ECB and CBC pad it to ${16*np} bytes, which is ${np} block${np>1?'s':''}. The padding bytes are in bold.`:`That is ${np} full blocks, so this example adds no padding.`}</p>
+  ${EX(MQ(rows))}
+  <h3>Padding</h3>
+  <p>The padding on this page is PKCS#7. If p bytes are missing to the end of the last block, p bytes are added, and each of them has the value p. The receiver reads the last byte and removes that many bytes.${D.usePad?` Here p = ${pn}, so ${pn} byte${pn>1?'s':''} with the value ${hx(pn)} ${pn>1?'were':'was'} added.`:''}</p>
+  <p>At least one byte is always added. A message that already fills its last block gets a whole extra block: 16 bytes with the value 16, which is 10 in hex. Without that rule, the receiver could not tell a last data byte 01 from padding.</p>
+  ${NO(`The receiver checks the padding after decryption. If it tells anyone whether the padding was valid, by an error message or by a slower reply, an attacker can read the message without the key: ${btn('atk','see the padding oracle',' data-atk="oracle"')}.`)}
+  <h3>Two families</h3>
+  <p><b>Block modes</b> (ECB, CBC): AES sees the data. So every block must be full, and decryption needs the inverse cipher AES⁻¹.</p>
+  <p><b>Stream modes</b> (CTR, CFB, OFB, GCM): AES only produces a keystream, a sequence of random-looking bytes that is XORed with the data. No padding is needed, the ciphertext is as long as the message, and only the forward direction of AES is used.</p>
+  ${USE(`NIST SP 800-38A (2001) defines five modes for confidentiality: ECB, CBC, CFB, OFB and CTR. NIST SP 800-38D (2007) defines GCM. AES itself is FIPS 197. What happens inside one AES block: <a href="aes.html">AES</a>. A block cipher with 8-byte blocks: <a href="des.html">DES</a>.`)}
+  ${MORE('ov')}`};
+
+T.ecb.doc=()=>{
+  const P=D.pm,C=ecbE(D.rk,P),n=P.length,h=P.map(hexs),rep=h.findIndex((x,i)=>h.indexOf(x)<i),tw=rep<0?-1:h.indexOf(h[rep]),j=h.findIndex(x=>x!==h[0]);
+  const ex=P.slice(0,3).map((p,i)=>`${nm('P',i+1)} = ${hexs(p)}${tq(p)}<br>${nm('C',i+1)} = ${hexs(C[i])}`).join('<br>')+(n>3?'<br>…':'');
+  const sw=j>0?ecbD(D.rk,[C[j],C[0]]):null;
+  return`<h2>ECB · Electronic Codebook</h2>
+  <p class="lead">ECB encrypts every block on its own with the same key: C<sub>i</sub> = E<sub>K</sub>(P<sub>i</sub>). The name comes from a codebook: for one key, ECB works like a fixed table with one ciphertext block for each possible plaintext block.</p>
+  <h3>How it works</h3>
+  <p>The padded message is cut into 16-byte blocks. Each block P<sub>i</sub> goes through AES with the key K, and the output is C<sub>i</sub>. To decrypt, each C<sub>i</sub> goes through the inverse cipher: P<sub>i</sub> = D<sub>K</sub>(C<sub>i</sub>). No block uses a value from another block, and there is no IV.</p>
+  <ul class="pts"><li>All blocks can be encrypted or decrypted at the same time, and in any order.</li><li>A wrong bit in C<sub>i</sub> garbles all of P<sub>i</sub>, because AES⁻¹ spreads it over the whole block. The other blocks are not affected.</li></ul>
+  <h3>Your message</h3>
+  ${EX(MQ(ex))}
+  <p>${tw>=0?`${nm('P',tw+1)} and ${nm('P',rep+1)} are equal, so ${nm('C',tw+1)} and ${nm('C',rep+1)} are equal too: both are ${hexs(C[rep])}. Anyone who sees the ciphertext can tell this, without the key.`:'No two blocks of your message are equal, so the ciphertext shows no repeat. Choose the example “Repeating blocks” to see one.'}</p>
+  <h3>Why it is weak</h3>
+  <p>ECB is deterministic: one block under one key always gives the same ciphertext block. So the ciphertext shows which blocks are equal, inside one message and between messages. In a picture, a large area of one colour is made of many equal blocks, and its outline stays visible after encryption.</p>
+  <p>The blocks are also independent. An attacker can swap, remove or repeat ciphertext blocks, and every block still decrypts without an error.</p>
+  ${sw?EX(`Put ${nm('C',j+1)} first and ${nm('C',1)} second. The receiver decrypts<br>${MQ(hexs(sw[0])+tq(sw[0])+'<br>'+hexs(sw[1])+tq(sw[1]))}<br>Both are valid plaintext blocks, and nothing tells the receiver that the order was changed.`):''}
+  ${NO('Some libraries choose ECB when no mode is named. In Java, <span class="m">Cipher.getInstance("AES")</span> returns AES in ECB mode with PKCS#5 padding. Always name the mode.')}
+  ${USE('ECB is one of the five modes of NIST SP 800-38A. It is not used for messages, but every other mode on this page calls the same function E<sub>K</sub>. CTR, for example, is ECB applied to counter blocks, with the result XORed into the data. One call of E<sub>K</sub>, round by round: <a href="aes.html">AES</a>.')}
+  ${MORE('ecb')}`};
+
+T.cbc.doc=()=>{
+  const iv=ivOf('cbc'),P=D.pm,C=cbcE(D.rk,iv,P),n=P.length,h=P.map(hexs),rep=h.findIndex((x,i)=>h.indexOf(x)<i),tw=rep<0?-1:h.indexOf(h[rep]);
+  const ex=P.slice(0,2).map((p,i)=>{const pr=i?C[i-1]:iv,pn=i?nm('C',i):'IV';return`${nm('P',i+1)} = ${hexs(p)}<br>${pn} = ${hexs(pr)}<br>${nm('P',i+1)} ⊕ ${pn} = ${hexs(xorB(p,pr))}<br>${nm('C',i+1)} = E<sub>K</sub>(${nm('P',i+1)} ⊕ ${pn}) = ${hexs(C[i])}`}).join('<br><br>');
+  return`<h2>CBC · Cipher Block Chaining</h2>
+  <p class="lead">CBC XORs each plaintext block with the ciphertext block before it, and then encrypts the result. For the first block, the IV (initialisation vector) takes the place of the block before it.</p>
+  <h3>How it works</h3>
+  ${MQ('C<sub>i</sub> = E<sub>K</sub>(P<sub>i</sub> ⊕ C<sub>i−1</sub>), with C<sub>0</sub> = IV<br>P<sub>i</sub> = D<sub>K</sub>(C<sub>i</sub>) ⊕ C<sub>i−1</sub>')}
+  <ul class="pts"><li>Encryption is sequential: block i cannot start before C<sub>i−1</sub> is known.</li><li>Decryption is not: C<sub>i</sub> and C<sub>i−1</sub> are both in the received message, so all blocks can be decrypted at the same time.</li><li>Decryption needs the inverse cipher AES⁻¹, and the message needs padding.</li></ul>
+  <h3>Your message</h3>
+  ${EX(MQ(ex))}
+  ${tw>=0?`<p>${nm('P',tw+1)} and ${nm('P',rep+1)} are equal. They are XORed with different values before AES, so ${nm('C',tw+1)} = ${hexs(C[tw])} and ${nm('C',rep+1)} = ${hexs(C[rep])} differ. In ECB they would be equal.</p>`:''}
+  <h3>Why it is built this way</h3>
+  <p>The XOR with C<sub>i−1</sub> makes the input of AES depend on every earlier block and on the IV. Equal plaintext blocks therefore meet AES as different inputs. A new random IV for every message makes even the same message encrypt to a new ciphertext.</p>
+  <p>A flipped bit in C<sub>i</sub> garbles all of P<sub>i</sub>, because C<sub>i</sub> goes through AES⁻¹. It also flips the same bit of P<sub>i+1</sub>, because C<sub>i</sub> is XORed into it. The block after that is correct again. ${btn('fl','Try it')}.</p>
+  ${NO(`<ul><li>The IV must be unpredictable. If an attacker knows the next IV before choosing a message, CBC loses its security: ${btn('iv','see the game',' data-ivv="game"')}. In TLS 1.0 the IV of a record was the last ciphertext block of the record before, and the BEAST attack (2011) used exactly that.</li><li>CBC gives no integrity: ${btn('atk','the bit-flipping attack',' data-atk="flip"')} changes the message without the key.</li><li>The padding check can leak the whole message: ${btn('atk','padding oracle',' data-atk="oracle"')}.</li></ul>`)}
+  ${USE(`TLS up to version 1.2 has cipher suites with CBC and a separate MAC. TLS 1.3 removed them and allows only authenticated modes. The last CBC block depends on every message block, and CBC-MAC uses that block as a tag; its standard form, CMAC, is NIST SP 800-38B.`)}
+  ${MORE('cbc')}`};
+
+T.ctr.doc=()=>{
+  const t0=ivOf('ctr'),P=D.sm,n=P.length,Tc=[],S=[];let t=t0;for(let i=0;i<n;i++){Tc.push(t);S.push(E(D.rk,t));t=incr(t)}
+  const C=P.map((p,i)=>xorB(p,S[i])),last=P[n-1],b0=P[0][0];
+  return`<h2>CTR · Counter mode</h2>
+  <p class="lead">CTR encrypts a sequence of counter blocks, not the message. The outputs form a keystream, and the message is XORed with it. The message itself never goes through AES.</p>
+  <h3>How it works</h3>
+  ${MQ('S<sub>i</sub> = E<sub>K</sub>(T<sub>i</sub>), T<sub>i+1</sub> = T<sub>i</sub> + 1<br>C<sub>i</sub> = P<sub>i</sub> ⊕ S<sub>i</sub> &nbsp;and&nbsp; P<sub>i</sub> = C<sub>i</sub> ⊕ S<sub>i</sub>')}
+  <p>T<sub>1</sub> is the first counter block, and every next one is larger by one. Decryption computes the same keystream and XORs it again, so it is the same operation as encryption. AES⁻¹ is never used.</p>
+  <p>This page treats the whole 16-byte block as one 128-bit number. A common layout puts a nonce in the first bytes and counts only in the last bytes. NIST SP 800-38A leaves the layout to the user and asks only that no counter block repeats under one key.</p>
+  <h3>Your message</h3>
+  ${EX(MQ(`T₁ = ${hexs(Tc[0])}<br>S₁ = E<sub>K</sub>(T₁) = ${hexs(S[0])}<br>P₁ = ${hexs(P[0])}<br>C₁ = P₁ ⊕ S₁ = ${hexs(C[0])}`+(n>1?`<br>T₂ = T₁ + 1 = ${hexs(Tc[1])}`:''))+(last.length<16?`<br>The last block has ${last.length} byte${last.length>1?'s':''}, so only the first ${last.length} keystream byte${last.length>1?'s':''} of ${nm('S',n)} are used: ${nm('C',n)} = ${hexs(C[n-1])}. The rest of ${nm('S',n)} is thrown away.`:''))}
+  <h3>Why it is built this way</h3>
+  <ul class="pts"><li>Every counter block is known in advance, so all blocks can be encrypted and decrypted at the same time.</li><li>Any single block can be reached directly: block ${n} needs only T<sub>1</sub> + ${n-1} = ${hexs(Tc[n-1])}, one AES call.</li><li>No padding: the ciphertext is exactly as long as the message.</li><li>Only the forward direction of AES is needed, so a hardware design needs no circuit for AES⁻¹.</li></ul>
+  ${NO(`<ul><li>A counter block that repeats under one key gives the same keystream twice, and the XOR of the two ciphertexts is the XOR of the two messages: ${btn('atk','see nonce reuse',' data-atk="nonce"')}.</li><li>CTR is malleable: a flipped ciphertext bit flips the same plaintext bit. Flipping bit 0 of the first byte of C₁ turns the plaintext byte ${hx(b0)}${chq(b0)} into ${hx(b0^1)}${chq(b0^1)}, and the receiver sees no error.</li></ul>`)}
+  ${USE(`The encryption part of ${btn('gcm','GCM')} is CTR. CCM, the mode of WPA2 Wi-Fi, combines CTR with CBC-MAC. A stream cipher works on the same principle, with a keystream from another generator: <a href="lfsr.html">LFSR</a>, <a href="a51.html">A5/1</a>.`)}
+  ${MORE('ctr')}`};
+
+function docCFB(){
+  const iv=ivOf('cfb'),P=D.sm,n=P.length,C=cfbE(D.rk,iv,P),S1=E(D.rk,iv),same=D.iv.cfb===D.iv.ofb;
+  return`<h2>CFB · Cipher Feedback</h2>
+  <p class="lead">CFB encrypts the previous ciphertext block and XORs the result with the next plaintext block. It turns AES into a stream cipher whose keystream depends on the ciphertext.</p>
+  <h3>How it works</h3>
+  ${MQ('I<sub>1</sub> = IV, I<sub>i</sub> = C<sub>i−1</sub><br>C<sub>i</sub> = P<sub>i</sub> ⊕ E<sub>K</sub>(I<sub>i</sub>) &nbsp;and&nbsp; P<sub>i</sub> = C<sub>i</sub> ⊕ E<sub>K</sub>(I<sub>i</sub>)')}
+  <p>Encryption is sequential, because I<sub>i</sub> is the ciphertext just produced. Decryption can run in parallel, because the receiver has all ciphertext blocks from the start. Both directions use only E<sub>K</sub>, and no padding is needed.</p>
+  <h3>Your message</h3>
+  ${EX(MQ(`I₁ = IV = ${hexs(iv)}<br>S₁ = E<sub>K</sub>(I₁) = ${hexs(S1)}<br>C₁ = P₁ ⊕ S₁ = ${hexs(C[0])}`+(n>1?`<br>I₂ = C₁, so S₂ = E<sub>K</sub>(C₁) = ${hexs(E(D.rk,C[0]))}`:'')))}
+  ${same?`<p>OFB with the same IV gives the same C₁, ${hexs(ofbX(D.rk,iv,[P[0]])[0])}, because in both modes S₁ = E<sub>K</sub>(IV). The two modes differ only from block 2 on, in the one wire that feeds back.</p>`:''}
+  <h3>The segment size</h3>
+  <p>NIST SP 800-38A defines CFB with a segment size s: each step uses s bits of keystream and feeds back s bits of ciphertext. The usual choices are 1, 8 and 128 bits. This page uses s = 128, called CFB-128. CFB-8 costs one AES call per byte, but after a lost or extra byte, decryption is correct again once 16 correct ciphertext bytes have passed through the feedback register. A mode with this property is called self-synchronising.</p>
+  ${NO(`<ul><li>The IV must be unpredictable, as in CBC. SP 800-38A asks this for both modes.</li><li>A flipped bit in C<sub>i</sub> flips the same bit of P<sub>i</sub>, which an attacker can aim, and garbles P<sub>i+1</sub>, because C<sub>i</sub> goes into AES for the next block. ${btn('fl','Try it')}.</li><li>No integrity.</li></ul>`)}
+  ${USE('OpenPGP, the format of PGP and GnuPG encrypted files, uses a variant of CFB.')}
+  ${MORE('cf/cfb')}`;
+}
+function docOFB(){
+  const iv=ivOf('ofb'),P=D.sm,n=P.length,S1=E(D.rk,iv),S2=E(D.rk,S1),C=ofbX(D.rk,iv,P);
+  return`<h2>OFB · Output Feedback</h2>
+  <p class="lead">OFB applies AES again and again to its own output, starting from the IV. These outputs are the keystream, and the message is XORed with it.</p>
+  <h3>How it works</h3>
+  ${MQ('S<sub>0</sub> = IV, S<sub>i</sub> = E<sub>K</sub>(S<sub>i−1</sub>)<br>C<sub>i</sub> = P<sub>i</sub> ⊕ S<sub>i</sub> &nbsp;and&nbsp; P<sub>i</sub> = C<sub>i</sub> ⊕ S<sub>i</sub>')}
+  <p>The keystream does not depend on the message, so it can be computed before the message is known. But S<sub>i</sub> needs S<sub>i−1</sub>, so neither direction runs in parallel. Encryption and decryption are the same operation, and only E<sub>K</sub> is used.</p>
+  <h3>Your message</h3>
+  ${EX(MQ(`S₁ = E<sub>K</sub>(IV) = ${hexs(S1)}<br>S₂ = E<sub>K</sub>(S₁) = ${hexs(S2)}<br>C₁ = P₁ ⊕ S₁ = ${hexs(C[0])}`+(n>1?`<br>C₂ = P₂ ⊕ S₂ = ${hexs(C[1])}`:'')))}
+  <h3>Why it is built this way</h3>
+  <p>The ciphertext never goes back into AES, so a flipped bit in C<sub>i</sub> flips only that bit of P<sub>i</sub>. Errors do not spread.</p>
+  ${NO(`<ul><li>The IV must be unique under one key. The same IV gives the same keystream, and then C ⊕ C′ = P ⊕ P′: ${btn('atk','see nonce reuse',' data-atk="nonce"')}.</li><li>Two different IVs can still overlap. If a new IV happens to equal some S<sub>j</sub> of an earlier message, the new keystream is the old one shifted by j blocks. For random IVs this is very unlikely.</li><li>An attacker can flip chosen plaintext bits, and nothing detects it.</li></ul>`)}
+  ${USE(`OFB is one of the five modes of NIST SP 800-38A. ${btn('ctr','CTR')} has the same error behaviour, runs in parallel, and makes overlaps easy to rule out, so new designs choose CTR.`)}
+  ${MORE('cf/ofb')}`;
+}
+T.cf.doc=()=>ST.sub==='ofb'?docOFB():docCFB();
+
+T.iv.doc=k=>{
+  if(ST.ivV!=='game'){
+    const R=twiceRows();
+    return`<h2>Why an IV</h2>
+  <p class="lead">An IV (initialisation vector) or nonce (number used once) is a second input to encryption, next to the key. It is not secret, it travels with the ciphertext, and it changes for every message.</p>
+  <h3>How it works</h3>
+  <p>Without it, encryption depends only on the key and the message, so the same message always gives the same ciphertext. With a new IV, the same message gives a new ciphertext. The receiver decrypts with the IV that came with the message.</p>
+  <h3>The four encryptions above</h3>
+  ${EX(`<table class="cmp3"><tr><th>Scheme</th><th>Different results</th><th>First result, first 8 bytes</th></tr>${SCH.map(([id,nn,d],i)=>`<tr><td>${nn}, ${d}</td><td>${new Set(R[i].map(hexs)).size} of 4</td><td>${MQ(hexs(R[i][0]).slice(0,16)+'…')}</td></tr>`).join('')}</table>`)}
+  <h3>Two kinds of rule</h3>
+  <ul class="pts"><li><b>Random and unpredictable</b>: CBC and CFB. The attacker must not know the IV before choosing a message.</li><li><b>Unique</b>: CTR, OFB and GCM. A simple counter is fine, but no value may come twice under one key.</li></ul>
+  ${NO(`“All different” is not the same as secure. CBC with a counting IV gives four different results above, and still loses the IND-CPA game: ${btn('iv','see why',' data-ivv="game"')}.`)}
+  ${USE('The IV is sent in the clear, usually in front of the ciphertext. CBC, CFB and OFB use a whole block, 16 bytes for AES. GCM normally uses a 12-byte nonce.')}
+  ${MORE('iv/twice')}`;
+  }
+  const G=chart(`iv${ST.ivS}${ST.roll}`,gGame),{b,ch,q,r,guess}=G.R,sc=SCH.find(s=>s[0]===ST.ivS),pred=ST.ivS==='cbcp',v=ST.ivR,done=v[SCH[0][0]]&&v[SCH[0][0]].n>=200;
+  const ex=k<2?'Press <b>Step</b>: the values of this round appear here as the round is played.':MQ(`b = ${b}<br>C = ${hexs(ch.c)}`+(k>=3?(pred?`<br>IV = ${hexs(ch.iv)}<br>IV<sub>next</sub> = ${hexs(incr(ch.iv))}<br>M′ = M₀ ⊕ IV ⊕ IV<sub>next</sub> = ${hexs(q)}`:`<br>question: M₀`)+`<br>C′ = ${hexs(r.c)}`:'')+(k>=4?`<br>C′ ${hexs(r.c)===hexs(ch.c)?'=':'≠'} C, so the guess is ${guess}; ${guess===b?'right':'wrong'}`:''));
+  return`<h2>The IND-CPA game</h2>
+  <p class="lead">IND-CPA means indistinguishability under a chosen-plaintext attack. It is the usual definition of “encryption hides the message”: even an attacker who can get encryptions of messages of its choice cannot tell which of two messages was encrypted.</p>
+  <h3>How the game works</h3>
+  <ol class="pts"><li>The attacker chooses two messages M₀ and M₁ of the same length.</li><li>The challenger, who has the key, flips a coin b and returns C, the encryption of M<sub>b</sub>.</li><li>The attacker may ask for encryptions of any messages, before and after the challenge.</li><li>The attacker outputs a guess for b.</li></ol>
+  <p>Guessing at random wins half of the time. The advantage is how much better the attacker does: |Pr[guess = b] − ½|. A scheme is IND-CPA secure if every efficient attacker has a negligible advantage.</p>
+  <h3>This round: ${sc[1]}, ${sc[2]}</h3>
+  ${EX(ex)}
+  ${done?`<p>Your 200 rounds: ${SCH.map(([id,nn,d])=>`${nn} with ${d}, ${Math.round(100*v[id].w/v[id].n)}%`).join('; ')}.</p>`:''}
+  <h3>Why deterministic encryption always loses</h3>
+  <p>If the same message always gives the same ciphertext, the attacker asks for the encryption of M₀ and compares it with C. Equal means b = 0. So a secure scheme must be randomised, with a new random IV, or stateful, with a counter that never repeats.</p>
+  <p>The counting IV fails for another reason. CBC puts M ⊕ IV into AES. When the attacker knows the next IV, it chooses M′ = M₀ ⊕ IV ⊕ IV<sub>next</sub>, so AES gets M₀ ⊕ IV once more, exactly the input of the challenge if b = 0. In CTR the message never enters AES, so a predictable counter does not help the attacker.</p>
+  ${NO('Encryption does not hide the length of a message. That is why the game asks for two messages of the same length. ECB and CBC show the length rounded up to a whole block, and the stream modes show it exactly.')}
+  ${USE(`A stronger goal, IND-CCA, also lets the attacker ask for decryptions of other ciphertexts. CBC and CTR fail it, because a changed ciphertext still decrypts: ${btn('atk','bit flipping',' data-atk="flip"')}. Authenticated modes such as ${btn('gcm','GCM')} reject changed ciphertexts.`)}
+  ${MORE('iv/game')}`};
+
+T.gcm.doc=()=>{
+  const g=chart('gcm',gGCM),o=g.o,S0=E(D.rk,o.J),lb=g.feed.at(-1).raw,a=D.aad.length,c=D.sm.flat().length;
+  return`<h2>GCM · Galois/Counter Mode</h2>
+  <p class="lead">GCM is authenticated encryption with associated data (AEAD). CTR mode encrypts the message, and GHASH, a hash with the secret key H, makes a 16-byte tag over the additional data and the ciphertext.</p>
+  <h3>How it works</h3>
+  <ol class="pts"><li>H = E<sub>K</sub>(0¹²⁸), the encryption of a zero block. It is the same for every message under the key K.</li><li>For a 12-byte nonce N, J₀ = N ‖ 00000001.</li><li>The counter blocks start at inc32(J₀). The function inc32 adds 1 to the last 4 bytes only. The message is encrypted in CTR mode with them.</li><li>GHASH starts with X = 0 and, for each block B, computes X = (X ⊕ B) · H. The blocks are the additional data A, then the ciphertext C, each filled with zeros to a whole block, then one block with the bit lengths of A and C.</li><li>Tag = X ⊕ E<sub>K</sub>(J₀).</li></ol>
+  <p>The receiver computes the tag from A and C, compares it with the received tag, and releases the plaintext only if they are equal.</p>
+  <h3>Your message</h3>
+  ${EX(MQ(`N = ${D.iv.gcm}<br>H = ${hexs(o.H)}<br>J₀ = ${hexs(o.J)}<br>S₀ = E<sub>K</sub>(J₀) = ${hexs(S0)}<br>T₁ = inc32(J₀) = ${hexs(inc32(o.J))}<br>C₁ = P₁ ⊕ E<sub>K</sub>(T₁) = ${hexs(o.C[0])}<br>len = ${hexs(lb)}<br>X = ${hexs(g.X)}<br>Tag = X ⊕ S₀ = ${hexs(o.T)}`)+`<br>The length block holds ${8*a} and ${8*c}: ${a} byte${a===1?'':'s'} of additional data and ${c} byte${c===1?'':'s'} of ciphertext, in bits. GHASH needed ${g.feed.length} multiplications by H.`)}
+  <h3>The field GF(2¹²⁸)</h3>
+  <p>The product · H is computed in GF(2¹²⁸), the finite field with 2¹²⁸ elements. A block is a polynomial of degree below 128 whose coefficients are bits. Adding is XOR, and a product is reduced modulo x¹²⁸ + x⁷ + x² + x + 1. GCM reads the bits of a block from the left, so this polynomial appears in the code as the byte e1 followed by fifteen zero bytes. More on such fields: <a href="fields.html">Fields</a>.</p>
+  <h3>Why it is built this way</h3>
+  <p>GHASH costs one field multiplication per block, which is fast in hardware and in software. On its own it would not be secret enough: X is a polynomial in H. The mask E<sub>K</sub>(J₀) is new for every nonce and hides X like a one-time pad. A hash of this kind, hidden by a one-time mask, is called a Wegman–Carter MAC.</p>
+  ${NO(`<ul><li>A nonce must never repeat under one key: ${btn('atk','see what a repeat reveals',' data-atk="gnon"')}.</li><li>Do not release plaintext before the tag has been checked.</li><li>NIST SP 800-38D also allows tags shorter than 16 bytes. Every bit removed makes a forgery easier.</li><li>One message may have at most 2³⁹ − 256 bits, because the counter has only 32 bits.</li><li>Nonces of other lengths are allowed; then J₀ is computed with GHASH. 12 bytes is the recommended length.</li></ul>`)}
+  ${USE('GCM is defined in NIST SP 800-38D (2007). Every TLS 1.3 implementation must support the cipher suite TLS_AES_128_GCM_SHA256, and IPsec uses AES-GCM as well.')}
+  ${MORE('gcm')}`};
+
+T.fl.doc=()=>{
+  const F=ST.fb,Pb=D.pm,n=Pb.length,b=clamp(F.b,0,n-1),i=F.i,m=1<<F.bit,p=Pb[b][i],nx=b<n-1?Pb[b+1][i]:null,hidden=F.pred&&FM.some(([x])=>F.g[x]==null);
+  const head=`<h2>Where one bit error goes</h2>
+  <p class="lead">A flipped ciphertext bit can damage one bit, one block or two blocks of the decrypted message. Which one it is follows from the place where that ciphertext bit enters the decryption formula.</p>`;
+  if(hidden)return head+`<p>Write down the decryption formula of each mode and follow C${sub_(b+1)} through it. Answer all six predictions, and this article explains the results.</p>${MORE('fl')}`;
+  const{T1,T2}=flipRun(),s=sub_(b+1),s2=sub_(b+2);
+  return head+`<h3>Three rules</h3>
+  <ul class="pts"><li><b>Through AES⁻¹</b>: the whole block is garbled, because AES spreads every input bit over all 128 output bits.</li><li><b>XORed into the output</b>: exactly the same bit flips, and nothing else.</li><li><b>Fed back into AES</b> for the next block: that next block is garbled.</li></ul>
+  <table class="cmp3"><tr><th>Mode</th><th>Decryption</th><th>A bit flip in C${s}</th></tr>
+  <tr><td>ECB</td><td>P<sub>i</sub> = D<sub>K</sub>(C<sub>i</sub>)</td><td>P${s} garbled</td></tr>
+  <tr><td>CBC</td><td>P<sub>i</sub> = D<sub>K</sub>(C<sub>i</sub>) ⊕ C<sub>i−1</sub></td><td>P${s} garbled${nx!=null?`, one bit of P${s2}`:''}</td></tr>
+  <tr><td>CFB</td><td>P<sub>i</sub> = C<sub>i</sub> ⊕ E<sub>K</sub>(C<sub>i−1</sub>)</td><td>one bit of P${s}${nx!=null?`, P${s2} garbled`:''}</td></tr>
+  <tr><td>OFB, CTR</td><td>P<sub>i</sub> = C<sub>i</sub> ⊕ S<sub>i</sub></td><td>one bit of P${s}</td></tr>
+  <tr><td>GCM</td><td>tag checked first</td><td>message rejected</td></tr></table>
+  ${b===n-1?`<p class="fine">C${s} is the last block, so there is no next block to damage.</p>`:''}
+  <h3>Your error</h3>
+  ${EX(`Bit ${F.bit} of byte ${i} in C${s}, a mask of ${hx(m)}.<br>CTR and OFB: byte ${i} of P${s} goes from ${hx(p)}${chq(p)} to ${hx(p^m)}${chq(p^m)}.`+(nx!=null?`<br>CBC: byte ${i} of P${s2} goes from ${hx(nx)}${chq(nx)} to ${hx(nx^m)}${chq(nx^m)}.`:'')+`<br>GCM: the receiver computes the tag over the changed ciphertext and gets ${MQ(hexs(T2))}, but the received tag is ${MQ(hexs(T1))}.`)}
+  <h3>Why it matters</h3>
+  <p>Small error spread looks friendly, but it has a cost. When a flipped bit flips exactly one plaintext bit, an attacker can change the message bit by bit, on purpose. Transmission errors are usually caught by checksums in the network layers anyway. The property that matters for security is what an attacker can change unnoticed.</p>
+  ${NO('Garbled text is not a reliable alarm. In CTR and OFB nothing is garbled at all. In CBC the attacker controls the next block exactly, and a program that reads the data may skip the garbled block without complaint.')}
+  ${USE(`The same rules, used as an attack: ${btn('atk','CBC bit flipping',' data-atk="flip"')}. The defence is a tag, as in ${btn('gcm','GCM')}.`)}
+  ${MORE('fl')}`};
+
+function docFlip(){
+  const iv=ivOf('cbc'),Pb=[[...te.encode(AM)],[...te.encode(AM2)]],Cb=cbcE(D.rk,iv,Pb),dv=Array(16).fill(0);dv[AI]=0x31^0x39;
+  const iv2=xorB(iv,dv),G=chart('atk',gFlip),c1=Cb[0].slice();c1[AI]^=dv[AI];const Q=cbcD(D.rk,iv,[c1,Cb[1]]);
+  return`<h2>CBC bit flipping</h2>
+  <p class="lead">Bit flipping changes a CBC-encrypted message in a chosen way, without the key. The attacker needs the ciphertext and a guess of the plaintext at the place it wants to change.</p>
+  <h3>How it works</h3>
+  ${MQ('P₁ = D<sub>K</sub>(C₁) ⊕ IV<br>IV′ = IV ⊕ Δ &nbsp;gives&nbsp; D<sub>K</sub>(C₁) ⊕ IV ⊕ Δ = P₁ ⊕ Δ')}
+  <p>To turn a known byte x into y, the attacker sets Δ = x ⊕ y at that byte and 0 everywhere else. The receiver decrypts without any error.</p>
+  <h3>The example above</h3>
+  ${EX(MQ(`P₁ = ${esc(AM)}<br>byte ${AI}: '1' = 31, wanted '9' = 39, Δ = 31 ⊕ 39 = 08<br>IV = ${hexs(iv)}<br>IV′ = ${hexs(iv2)}<br>P₁ after decryption: ${esc(toText(G.P2[0]))}`))}
+  <h3>Changing a ciphertext block instead</h3>
+  <p>The same change in C₁ works on P₂, because P₂ = D<sub>K</sub>(C₂) ⊕ C₁. But C₁ also goes through AES⁻¹, so P₁ is destroyed.</p>
+  ${EX(MQ(`C₁ with byte ${AI} XORed with 08<br>P₁ = ${hexs(Q[0])}<br>P₂ = ${printable(Q[1])?esc(toText(Q[1])):hexs(Q[1])}`))}
+  <h3>Why it works</h3>
+  <p>The last operation of CBC decryption is an XOR with a value the attacker can change, and XOR passes any change straight through. CBC protects confidentiality, not integrity.</p>
+  ${NO('Checking that the text looks normal does not help: with the IV variant, no block is garbled at all.')}
+  ${USE(`The fix is authentication. Compute a MAC over the IV and the ciphertext and check it before decrypting (encrypt-then-MAC), or use an authenticated mode such as ${btn('gcm','GCM')}. CTR and OFB are open to the same attack: ${btn('fl','compare the modes')}.`)}
+  ${MORE('atk/flip')}`;
+}
+function docOracle(k){
+  const d=poData(),e=d.log[Math.max(0,k-1)],pos=e.pos;
+  return`<h2>The padding oracle</h2>
+  <p class="lead">A padding oracle is anything that tells an attacker whether the padding of a decrypted CBC message was valid: an error message, an error code, or a difference in response time. With it, the attacker decrypts a block byte by byte, without the key.</p>
+  <h3>How it works</h3>
+  <p>The attacker sends the real C₁ with a fake IV F of its choice. The server computes P′ = D<sub>K</sub>(C₁) ⊕ F and checks the padding of P′.</p>
+  <ol class="pts"><li>Try all 256 values of the last byte F[15]. When the server accepts, P′ most likely ends in 01, so D<sub>K</sub>(C₁)[15] = F[15] ⊕ 01.</li><li>The plaintext byte follows with the real IV: P[15] = D<sub>K</sub>(C₁)[15] ⊕ IV[15].</li><li>Set F[15] so that P′[15] = 02, and search F[14] until P′ ends in 02 02. Continue the same way up to sixteen bytes of 10.</li></ol>
+  <h3>${k?'This step':'The first byte'}: byte ${pos}</h3>
+  ${EX(MQ(`accepted guess F[${pos}] = ${hx(e.g)}, wanted ending ${hx(e.v)}<br>D<sub>K</sub>(C₁)[${pos}] = ${hx(e.g)} ⊕ ${hx(e.v)} = ${hx(e.I)}<br>P[${pos}] = ${hx(e.I)} ⊕ IV[${pos}] = ${hx(e.I)} ⊕ ${hx(d.ivb[pos])} = ${hx(e.P)}${chq(e.P)}`)+`<br>All 16 bytes took ${d.q} queries.`)}
+  <h3>A false alarm at the last byte</h3>
+  <p>At the first byte, the server also accepts a P′ that ends in 02 02, if P′[14] happens to be 02. Then the attacker would take the wrong value. So after a hit, the page changes F[14] and asks again: an ending in 01 stays valid, an ending in 02 02 does not.</p>
+  <h3>Longer messages</h3>
+  <p>For block i, the ciphertext block C<sub>i−1</sub> plays the part of the IV. So every block can be read the same way, with at most 256 queries per byte and 4096 per block.</p>
+  ${NO('A better error message is not a fix, because a difference in time can leak the same bit. The receiver must reject a changed ciphertext before it looks at the padding: a MAC over the ciphertext, checked first and in constant time.')}
+  ${USE(`An authenticated mode such as ${btn('gcm','GCM')} rejects every changed ciphertext before decryption and needs no padding at all.`)}
+  ${MORE('atk/oracle')}`;
+}
+function docNonce(){
+  const t0=ivOf('ctr'),C1=ctrX(D.rk,t0,[M0])[0],C2=ctrX(D.rk,t0,[M1])[0],X=xorB(C1,C2),ok=hexs(X)===hexs(xorB(M0,M1)),crib=[...te.encode('ATTACK')],got=crib.map((c,i)=>c^X[i]);
+  return`<h2>CTR nonce reuse</h2>
+  <p class="lead">Nonce reuse in CTR means that two messages are encrypted under one key with the same counter blocks. Both get the same keystream, and the XOR of the two ciphertexts removes it.</p>
+  <h3>How it works</h3>
+  ${MQ('C₁ = P₁ ⊕ S, C₂ = P₂ ⊕ S<br>C₁ ⊕ C₂ = P₁ ⊕ P₂')}
+  <p>No key is needed. What is left is the XOR of two messages, and that is weak: if the attacker guesses a word in one message, the XOR with C₁ ⊕ C₂ at that place shows the other message there. Sliding a guessed word along all positions is called crib dragging.</p>
+  <h3>An example with your key and counter</h3>
+  ${EX(MQ(`T₁ = ${hexs(t0)}<br>P₁ = ${toText(M0)}, C₁ = ${hexs(C1)}<br>P₂ = ${toText(M1)}, C₂ = ${hexs(C2)}<br>C₁ ⊕ C₂ = ${hexs(X)}${ok?' = P₁ ⊕ P₂':''}<br>guess “ATTACK” at the start: ${hexs(crib)} ⊕ ${hexs(X.slice(0,6))} = “${esc(toText(got))}”`))}
+  <h3>Why it works</h3>
+  <p>The keystream depends only on the key and the counter blocks. The message plays no part, so two messages with the same counter blocks get the same keystream.</p>
+  ${NO('<ul><li>A different start value does not help if the two ranges of counter blocks overlap, as the pictures above show.</li><li>With a nonce in the first bytes and a counter in the last, the counter must never run over into the nonce part.</li><li>One known message also gives the keystream, S = C₁ ⊕ P₁, and with it the attacker can encrypt any text of its choice under that counter.</li></ul>')}
+  ${USE(`The same rule holds for OFB with a repeated IV, for ${btn('atk','GCM',' data-atk="gnon"')}, and for every stream cipher, for example <a href="a51.html">A5/1</a>. Using a one-time pad twice is the oldest form of this mistake, often called a two-time pad.`)}
+  ${MORE('atk/nonce')}`;
+}
+function docGnon(){
+  const q=gnMemo();
+  return`<h2>GCM nonce reuse</h2>
+  <p class="lead">If GCM uses the same nonce twice under one key, both tags carry the same mask S₀. The XOR of the tags removes it and leaves an equation whose only unknown is the hash key H.</p>
+  <h3>How it works</h3>
+  <p>With one ciphertext block and no additional data, GHASH has two blocks: C and the length block L. So T = C · H² ⊕ L · H ⊕ S₀. For two messages of the same length, L is the same too, and</p>
+  ${MQ('T₁ ⊕ T₂ = (C₁ ⊕ C₂) · H²<br>H² = (T₁ ⊕ T₂) · (C₁ ⊕ C₂)⁻¹')}
+  <p>In GF(2¹²⁸), squaring is one-to-one, so every element has exactly one square root: H = (H²)^(2¹²⁷). The attacker gets H itself, not a list of candidates.</p>
+  <h3>Your values</h3>
+  ${EX(MQ(`C₁ ⊕ C₂ = ${hexs(q.dC)}<br>T₁ ⊕ T₂ = ${hexs(q.dT)}<br>H = ${hexs(q.H)}${q.hOK?' (the real H)':''}<br>S₀ = ${hexs(q.S0)}${q.sOK?' (the real S₀)':''}<br>forged: C₃ = ${hexs(q.C3)}, T₃ = ${hexs(q.T3)}${q.tagOK?', accepted':''}`))}
+  <h3>Why it is so bad</h3>
+  <p>H = E<sub>K</sub>(0¹²⁸) is the same for every message under the key. With H, the mask of any nonce follows from one message seen with that nonce: S₀ = T ⊕ GHASH<sub>H</sub>(A, C). So the attacker can forge messages under every nonce it has seen, as long as the key is in use.</p>
+  ${NO('<ul><li>Longer messages give an equation of higher degree in H. Its roots can still be found efficiently, and a few candidates remain; one more pair of messages decides between them.</li><li>Random 12-byte nonces collide by chance after enough messages. NIST SP 800-38D therefore limits random nonces to 2³² messages per key.</li><li>The repeat also breaks secrecy, exactly as in CTR.</li></ul>')}
+  ${USE('Repeated GCM nonces have been found on real HTTPS servers (2016). TLS 1.3 avoids repeats by construction: the nonce of each record is a fixed per-connection value XORed with the record number. Where a repeat cannot be ruled out, AES-GCM-SIV limits the damage.')}
+  ${MORE('atk/gnon')}`;
+}
+T.atk.doc=k=>ST.atk==='oracle'?docOracle(k):ST.atk==='nonce'?docNonce():ST.atk==='gnon'?docGnon():docFlip();
+
+T.cmp.doc=()=>{
+  const L=D.msg.length,np=D.pm.length,ns=D.sm.length,na=blocks(D.aad).length;
+  return`<h2>Comparing the modes</h2>
+  <p class="lead">The table above compares six modes on the same block cipher. Every entry follows from the formula of the mode, so it can be checked instead of memorised.</p>
+  <h3>How to read a column</h3>
+  <ul class="pts"><li><b>Hides patterns</b>: the mode needs a new IV or nonce for each message, and equal blocks must not give equal output. ECB has neither.</li><li><b>Needs padding</b>: only when AES itself sees the data block, as in ECB and CBC. When AES only makes keystream, the last piece is simply shorter.</li><li><b>Parallel</b>: look at the input of AES for block i. If it needs C<sub>i−1</sub> (CBC and CFB encryption) or S<sub>i−1</sub> (OFB), the blocks wait for each other.</li><li><b>A 1-bit error</b>: follow the bit through the decryption formula, ${btn('fl','as in Flip a bit')}.</li><li><b>Detects changes</b>: only a tag does that.</li></ul>
+  <h3>Your message in each mode</h3>
+  ${EX(`Message: ${L} bytes. Additional data for GCM: ${D.aad.length} bytes.<table class="cmp3"><tr><th>Mode</th><th>Bytes sent</th><th>AES calls</th></tr>
+  <tr><td>ECB</td><td>${16*np}</td><td>${np}</td></tr>
+  <tr><td>CBC</td><td>${16*np} + 16 for the IV</td><td>${np}</td></tr>
+  <tr><td>CFB, OFB</td><td>${L} + 16 for the IV</td><td>${ns}</td></tr>
+  <tr><td>CTR</td><td>${L} + 16 for the counter</td><td>${ns}</td></tr>
+  <tr><td>GCM</td><td>${L} + 12 for the nonce + 16 for the tag</td><td>${ns+2}, plus ${na+ns+1} multiplications in GF(2¹²⁸)</td></tr></table>`)}
+  <p>GCM needs two more AES calls than CTR: one for H, which can be kept for the whole key, and one for the mask S₀.</p>
+  <h3>Why the advice is AEAD</h3>
+  <p>Every row without a tick under “Detects changes” can be changed without the receiver noticing, and this page shows how for each of them. An AEAD mode, short for authenticated encryption with associated data, gives secrecy and integrity in one step, with one key and one nonce.</p>
+  ${NO('If a mode without a tag must be used, add a MAC with a separate key, compute it over the IV and the ciphertext, and check it before decrypting. This order is called encrypt-then-MAC. TLS up to version 1.2 computed the MAC first and encrypted it with the message, and that order made the padding oracle attacks on TLS possible.')}
+  ${USE('Disk encryption uses its own mode, XTS, because a disk sector has no room for an IV or a tag. One block of the cipher itself: <a href="aes.html">AES</a>, <a href="des.html">DES</a>.')}
+  ${MORE('cmp')}`};
+
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
    plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
@@ -1764,7 +2129,11 @@ function controls(k){
   $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
   $('#fWrap').hidden=!t.focus;
+  // the longer read under the picture: rewritten only when it changes, so a selection or reading position survives a step
+  let h='';try{h=t.doc?t.doc(k)||'':''}catch(e){console.error(e)}
+  const dc=$('#doc');dc.hidden=!h;if(h!==DOCH){DOCH=h;dc.innerHTML=h}
 }
+let DOCH='';
 // static picture of the current step; any running animation or pending play step is dropped
 function show(){
   if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
@@ -1837,12 +2206,12 @@ $('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;setPlayin
 function setSub(s){ST.sub=s;ST.step.cf=0;syncFields()}
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-goto]');
-  if(g){if(g.dataset.sub)setSub(g.dataset.sub);if(g.dataset.atk){ST.atk=g.dataset.atk;ST.step.atk=0}setTab(g.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  if(g){if(g.dataset.sub)setSub(g.dataset.sub);if(g.dataset.atk){ST.atk=g.dataset.atk;ST.step.atk=0}if(g.dataset.ivv){ST.ivV=g.dataset.ivv;ST.step.iv=0}setTab(g.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
   const s=e.target.closest('[data-sub]');if(s){setPlaying(false);stopAnim(false);setSub(s.dataset.sub);show();return}
   const nd=e.target.closest('[data-nd]');if(nd&&LASTG){ST.pick=nd.dataset.nd;$('#pick').outerHTML=pickLine(LASTG,ST.step[ST.tab]||0);return}
   const a=e.target.closest('[data-atk]');if(a){setPlaying(false);stopAnim(false);ST.atk=a.dataset.atk;ST.step.atk=0;show();return}
   const p=e.target.closest('[data-pic]');if(p){ST.pic=p.dataset.pic;$$('#picS [data-pic]').forEach(x=>x.classList.toggle('on',x===p));$('#picS .pup').classList.remove('on');paintPics();return}
-  const iv=e.target.closest('[data-ivv]');if(iv){setPlaying(false);stopAnim(false);ST.ivV=iv.dataset.ivv;ST.step.iv=0;show();return}
+  const iv=e.target.closest('[data-ivv]');if(iv){setPlaying(false);stopAnim(false);ST.ivV=iv.dataset.ivv;if(iv.dataset.ivs)ST.ivS=iv.dataset.ivs;ST.step.iv=0;show();return}
   const is=e.target.closest('[data-ivs]');if(is){setPlaying(false);stopAnim(false);ST.ivS=is.dataset.ivs;ST.step.iv=0;show();return}
   const ro=e.target.closest('[data-roll]');if(ro){setPlaying(false);stopAnim(false);ST.roll++;ST.step.iv=0;show();return}
   if(e.target.closest('[data-ivrun]')){ivRun();return}
@@ -1858,6 +2227,8 @@ document.addEventListener('change',async e=>{
 });
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  const act=e.target.closest&&e.target.closest('svg [data-nd],[role=button][data-ivs]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
   if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
