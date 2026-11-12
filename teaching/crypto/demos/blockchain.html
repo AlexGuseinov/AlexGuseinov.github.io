@@ -14,7 +14,7 @@
   --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
   --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
   --blk:#f1efe9;--node:#b3b0a4;--gold:#c2932a;--goldBg:#f8efd6;
-  --side:#dcd8cc;--side2:#c7c2b4;--grid:rgba(28,27,25,.075);--shd:rgba(40,34,20,.34);
+  --side:#dcd8cc;--side2:#c7c2b4;--grid:rgba(28,27,25,.075);--shd:rgba(40,34,20,.34);--nb:#e7e3d8;
   --sh:0 1px 2px rgba(28,27,25,.07),0 8px 18px -8px rgba(28,27,25,.22);
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -25,7 +25,7 @@
   --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
   --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
   --blk:#2b2b31;--node:#62626c;--gold:#e0b95a;--goldBg:#3a3018;
-  --side:#3a3a42;--side2:#2b2b31;--grid:rgba(255,255,255,.06);--shd:rgba(0,0,0,.6);
+  --side:#3a3a42;--side2:#2b2b31;--grid:rgba(255,255,255,.06);--shd:rgba(0,0,0,.6);--nb:#3d3d45;
   --sh:0 1px 2px rgba(0,0,0,.4),0 8px 18px -8px rgba(0,0,0,.7);
 }}
 *{box-sizing:border-box}
@@ -157,6 +157,49 @@ input[type=range]{width:120px;accent-color:var(--accent)}
 .cl.r{text-align:left}.cl.l{text-align:right}
 #bView{position:absolute;right:8px;top:8px;font-size:12.5px;padding:4px 9px;z-index:5}
 #view.dr{touch-action:pan-y;cursor:grab}#view.dr:active{cursor:grabbing}
+/* ---------- generic 3D parts: boxes standing on the floor, lines lying on it, labels and panels ---------- */
+.bx{position:absolute;left:0;top:0;transform-style:preserve-3d;--bc:var(--nb);--cap:var(--node)}
+.bx .f{position:absolute;backface-visibility:hidden;-webkit-backface-visibility:hidden;background-color:var(--bc);transition:background-color var(--tf) ease var(--dl,0s),opacity var(--tf) ease var(--dl,0s)}
+.bx .f1,.bx .f3{background-color:color-mix(in srgb,var(--bc) 72%,#000)}
+.bx .f2{background-color:color-mix(in srgb,var(--bc) 84%,#000)}
+.bx .f4{background-color:var(--cap)}
+.bx .f5{background-color:color-mix(in srgb,var(--bc) 55%,#000)}
+.bx .f0{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--fc,var(--ink));font-weight:700;line-height:1.15;overflow:hidden}
+.bx .bsh{position:absolute;transform:translateY(-1px) rotateX(90deg);background:radial-gradient(closest-side,var(--shd),transparent);transition:opacity var(--tf) ease var(--dl,0s)}
+.bx.stack .f0,.bx.stack .f1,.bx.stack .f2,.bx.stack .f3{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1.5px,transparent 1.5px 8px)}
+.p3.gone .f,.p3.gone .bsh,.p3.gone .wheel{opacity:0}
+.p3.dim .f{opacity:.32}.p3.dim .bsh{opacity:.3}
+.w3f{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;transform:translateY(-1.5px) rotateX(90deg);pointer-events:none}
+.w3f .w path:first-child{stroke-width:3}
+.w3f .w.thin path:first-child{stroke-width:2}
+.w3f .lane{transition:opacity var(--tf) ease}
+.l3{font:600 13px/1.2 var(--sans);color:var(--ink);white-space:nowrap;text-align:center;text-shadow:0 1px 0 var(--panel),0 0 6px var(--panel)}
+.l3.m{color:var(--muted);font-weight:500}.l3.sm{font-size:11.5px}.l3.big{font-size:16px}.l3.cg{color:var(--ok)}.l3.cb{color:var(--xor)}.l3.ca{color:var(--accent)}.l3.cm{color:var(--amb)}
+.l3 small{display:block;font-size:10.5px;font-weight:500;color:var(--muted)}
+.l3.pill{background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line2);border-radius:9px;padding:3px 8px;text-shadow:none;box-shadow:0 2px 6px -3px rgba(0,0,0,.3)}
+.coin3{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 13px var(--sans);color:#5a4100;
+  background:radial-gradient(circle at 35% 30%,#ffe9a6,var(--gold) 55%,#9c7413);box-shadow:0 3px 6px -2px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.25)}
+.sheet{width:24px;height:30px;border-radius:3px;background:var(--panel);border:1px solid var(--line2);box-shadow:0 2px 5px -2px rgba(0,0,0,.35);padding:5px 4px;display:flex;flex-direction:column;gap:3px}
+.sheet i{display:block;height:2px;border-radius:1px;background:var(--line2)}
+.sheet.chain{width:40px;height:16px;flex-direction:row;align-items:center;padding:0 3px;gap:2px;border-color:var(--ok)}
+.sheet.chain i{width:7px;height:8px;border-radius:2px;background:var(--ok)}
+.hud{position:absolute;left:0;top:0;background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:12.5px;line-height:1.4;box-shadow:var(--sh);white-space:nowrap}
+.hud b.t{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.hud .chip{display:inline-flex;align-items:center;gap:5px;margin-right:10px}.hud .chip i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.hud .bar{position:relative;height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:4px 0 2px}
+.hud .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;transition:width calc(var(--tm)*1.6) var(--ease) var(--dl,0s),background-color var(--tf)}
+.hud .tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);border-radius:1px}
+.hud .row2{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center}
+.wheel{position:absolute;border-radius:50%;transform:translateY(-2px) rotateX(90deg);box-shadow:0 0 0 3px var(--panel),0 0 0 4px var(--line2);transition:opacity var(--tf) ease}
+.wheel::after{content:'';position:absolute;inset:34%;border-radius:50%;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line2)}
+.ptr3{width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:16px solid var(--ink)}
+.bx .f0 .bkf{width:100%;height:100%;padding:9px 11px;text-align:left;font-weight:500;font-size:11px;line-height:1.3;color:var(--ink);display:flex;flex-direction:column;justify-content:flex-start}
+.bkf b{font-size:15px;font-weight:800}.bkf small{color:var(--muted);font-size:10px;margin-bottom:5px}
+.bkf .ln{display:flex;justify-content:space-between;gap:6px;border-top:1px solid var(--line);padding:3px 0;white-space:nowrap}
+.bkf .ln em{font-style:normal;font-weight:700}
+.bkf.bad .ln span::before{content:'✗ ';color:var(--xor);font-weight:700}
+.bx .f0 .bn{font-size:20px;font-weight:800}
+.bx .f0 .bs{font-size:9px;font-weight:600;opacity:.85;margin-top:1px}
 /* small parts */
 .tile{width:50px;height:50px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:19px;line-height:1.05;
   background:var(--tb,var(--blk));color:var(--tc,var(--ink));border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
@@ -585,55 +628,106 @@ function seq(fwd,items){if(!fwd||E.snap){for(const it of items)it[1]();return}fo
 
 const tileHTML=(a,b)=>b?`${a}<small>${b}</small>`:String(a);
 
-/* ================= a ring of nodes: used by "Why" and by "Network and forks" ================= */
+/* ---------- generic 3D parts for the other pictures: boxes on the floor, lines on the floor, travelling dots, panels ---------- */
+// a box w × h × d standing on the floor: its bottom centre is the anchor. o.front: html on the front face
+function mkBox(w,h,d,o){o=o||{};const p=document.createElement('div');p.className='p3'+(o.cls?' '+o.cls:'');
+  const f=(c,W,H,L,Tp,tr,html)=>`<div class="f ${c}" style="width:${W}px;height:${H}px;left:${L}px;top:${Tp}px;transform:${tr}">${html||''}</div>`;
+  p.innerHTML=`<div class="bx${o.stack?' stack':''}">`+(o.shadow===false?'':`<div class="bsh" style="width:${w*1.9}px;height:${d*1.9}px;left:${-w*.95}px;top:${-d*.95}px"></div>`)+
+    f('f0',w,h,-w/2,-h,`translateZ(${d/2}px)`,o.front)+f('f1',w,h,-w/2,-h,`rotateY(180deg) translateZ(${d/2}px)`)+
+    f('f2',d,h,-d/2,-h,`rotateY(90deg) translateZ(${w/2}px)`)+f('f3',d,h,-d/2,-h,`rotateY(-90deg) translateZ(${w/2}px)`)+
+    f('f4',w,d,-w/2,-h-d/2,'rotateX(90deg)')+f('f5',w,d,-w/2,-d/2,'rotateX(-90deg)')+'</div>';
+  (o.parent||E.world).appendChild(p);p.bx=p.firstChild;p.front=p.bx.querySelector('.f0');return p}
+// colour of a box: its body, its top, and the colour of the text on its front
+function tint(p,bc,cap,fc){const s=p.bx.style;s.setProperty('--bc',bc||'var(--nb)');s.setProperty('--cap',cap||bc||'var(--node)');s.setProperty('--fc',fc||(bc&&bc!=='var(--nb)'?'var(--onAccent)':'var(--ink)'));return p}
+const STC={accent:'var(--accent)',amb:'var(--amb)',ok:'var(--ok)',bad:'var(--xor)',key:'var(--key)',gold:'var(--gold)',dim:'var(--line2)'};
+// a layer that lies on the floor: its x is the world x, its y is the world z
+function mkFloorSvg(){const s=document.createElementNS(NS,'svg');s.setAttribute('class','w3f');E.world.appendChild(s);return s}
+function floorRect(svg,x,z,w,h,fill,rx){const r=document.createElementNS(NS,'rect');r.setAttribute('x',x);r.setAttribute('y',z);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('rx',rx||10);r.setAttribute('class','lane');r.style.fill=fill;svg.appendChild(r);return r}
+// a dot that travels from a to b through the 3D world, once
+function pulse3(a,b,c,delay,dur,r){if(E.snap)return;const d=document.createElement('div');d.className='dot';d.style.background=c;if(r)d.style.width=d.style.height=2*r+'px';E.world.appendChild(d);E.tmp.push(d);
+  const T3=p=>`translate3d(${p[0].toFixed(1)}px,${p[1].toFixed(1)}px,${p[2].toFixed(1)}px) translate(-50%,-50%)`;
+  const an=d.animate([{transform:T3(a),opacity:0},{opacity:1,offset:.14},{opacity:1,offset:.86},{transform:T3(b),opacity:0}],
+    {duration:(dur||.5)*1000/speed(),delay:(delay||0)*1000/speed(),easing:'cubic-bezier(.45,0,.25,1)',fill:'both'});E.fx.push(an);an.onfinish=()=>d.remove()}
+// a part that was hidden drops into its place from above (or from any start point)
+function drop3(p,x,y,z,from,d,r){p.style.transition='none';put3(p,from[0],from[1],from[2],{r});void p.offsetWidth;p.style.transition='';put3(p,x,y,z,{d,r})}
+// a label, upright, in the world
+const lab3=(cls,html)=>mk3('l3 '+(cls||''),html,true);
+
+/* ================= a ring of nodes on the floor: used by "Why" and by "Network and forks" ================= */
 const RN=12,HOP=.36;
 const EDGES=[];for(let i=0;i<RN;i++){EDGES.push([i,(i+1)%RN]);if(i%2===0)EDGES.push([i,(i+5)%RN])}
 const NB=Array.from({length:RN},()=>[]);for(const[a,b]of EDGES){NB[a].push(b);NB[b].push(a)}
 function bfs(s){const d=Array(RN).fill(99);d[s]=0;const q=[s];while(q.length){const u=q.shift();for(const v of NB[u])if(d[v]>d[u]+1){d[v]=d[u]+1;q.push(v)}}return d}
 // news spreads from one or more nodes; every node keeps what reached it first
 function spread(srcs){const ds=srcs.map(bfs),own=[],dist=[];for(let i=0;i<RN;i++){let b=0;for(let j=1;j<srcs.length;j++)if(ds[j][i]<ds[b][i])b=j;own[i]=b;dist[i]=ds[b][i]}return{own,dist}}
-const rp=(i,g)=>{const a=Math.PI/2-i*2*Math.PI/RN;return[g.cx+g.rx*Math.cos(a),g.cy+g.ry*Math.sin(a)]};
-function gossip(sp,cols,g){for(const[u,v]of EDGES)for(const[a,b]of[[u,v],[v,u]])if(sp.own[a]===sp.own[b]&&sp.dist[b]===sp.dist[a]+1)pulse(rp(a,g),rp(b,g),cols[sp.own[a]],sp.dist[a]*HOP,HOP,5)}
-function buildRing(o,g){o.links=EDGES.map(([a,b])=>{const w=wire('nh thin');geom(w,ln(rp(a,g),rp(b,g)));return w});
-  o.nodes=[];for(let i=0;i<RN;i++)o.nodes.push(mk('node'))}
+const RX=330,RZ=225,NH=40;   // the ring on the floor, and the height of a node
+const rp3=i=>{const a=Math.PI/2-i*2*Math.PI/RN;return[RX*Math.cos(a),0,RZ*Math.sin(a)]};
+const lift=(p,dy)=>[p[0],p[1]+dy,p[2]];
+function gossip3(sp,cols){for(const[u,v]of EDGES)for(const[a,b]of[[u,v],[v,u]])if(sp.own[a]===sp.own[b]&&sp.dist[b]===sp.dist[a]+1)pulse3(lift(rp3(a),-NH/2),lift(rp3(b),-NH/2),cols[sp.own[a]],sp.dist[a]*HOP,HOP,6)}
+function buildRing3(o){mkWorld();o.floor=put3(mk3('floor',null,true),0,0,0,{r:' rotateX(90deg)'});o.fl=mkFloorSvg();
+  o.links=EDGES.map(([a,b])=>{const w=wire('nh thin',o.fl),A=rp3(a),B=rp3(b);geom(w,ln([A[0],A[2]],[B[0],B[2]]));return w});
+  o.nodes=[];for(let i=0;i<RN;i++){const n=mkBox(54,NH,54);put3(n,...rp3(i));o.nodes.push(n)}
+  o.hud=mk('hud','');hide(o.hud)}
+// colour of a node: its whole body, with a lighter top
+function nodeTint(n,c){if(!c){tint(n,null,null);return}const v=STC[c];tint(n,v,`color-mix(in srgb,${v} 70%,#fff)`)}
+function hudSet(h,html,x,y,o){if(!html){put(h,x,y,{o:0,ax:0,ay:0});return}txt(h,html);put(h,x,y,Object.assign({ax:0,ay:0},o||{}))}
 
 /* ================= 1 · Why ================= */
-{const A=9,B=3,CA=6;
-T.why={n:7,size:()=>E.narrow?[360,520]:[760,470],
-  g:()=>E.narrow?{cx:180,cy:285,rx:150,ry:165}:{cx:380,cy:262,rx:290,ry:158},
-  build(){const o=this.o={},g=this.g(),c=[g.cx,g.cy];
-    o.star=[];for(let i=0;i<RN;i++){const w=wire('nh thin');geom(w,ln(rp(i,g),c));o.star.push(w)}
-    buildRing(o,g);
-    o.names=[[A,'Alice'],[B,'Bob'],[CA,'Carol']].map(([i,t])=>mk('lab big',t));
-    o.coin=[0,1,2].map(()=>mk('coin rnd','1'));
-    o.bank=mk('pan','<b>Bank</b><small>keeps the only ledger</small>');o.bank.style.width='150px';o.bank.style.textAlign='center';
-    o.mini=[1,2,3,4].map(i=>mk('tile s',String(i)));o.mw=[0,1,2].map(()=>wire('nh thick'));
-    o.cap=mk('lab m sm','the same chain on every node')},
-  pose(k,fwd){const o=this.o,g=this.g(),sp=spread([B,CA]),N=E.narrow;
-    o.nodes.forEach((n,i)=>{const p=rp(i,g);let s='',op=1,d=0;
-      if(k<=1)op=[A,B,CA].includes(i)?1:.32;
-      if(k===4)s='accent';
-      if(k===5){s=sp.own[i]?'key':'amb';d=fwd?sp.dist[i]*HOP+.05:0}
-      if(k===6)s='ok';
-      st(n,s);put(n,p[0],p[1],{o:op,d})});
-    o.links.forEach(w=>setWire(w,{on:k>=4}));
-    o.star.forEach(w=>setWire(w,{on:k===2||k===3,st:k===3?'bad':''}));
-    st(o.bank,k===3?'bad':'');put(o.bank,g.cx,g.cy,{o:k===2||k===3?1:0,s:k===2||k===3?1:.8});
-    const side=(i,dx,dy)=>{const p=rp(i,g);return[p[0]+dx,p[1]+dy]},ca=side(A,N?0:34,N?30:0),cb=side(B,N?0:-34,N?30:0),cc=side(CA,34,0);
-    put(o.coin[0],ca[0],ca[1],{o:k<=1?1:0});
-    put(o.coin[1],...(k>=1?cb:ca),{o:k===1?1:0});put(o.coin[2],...(k>=1?cc:ca),{o:k===1?1:0});
-    [[A,0],[B,1],[CA,2]].forEach(([i,j])=>{const p=rp(i,g);put(o.names[j],p[0],p[1]-27,{o:1})});
-    o.mini.forEach((m,i)=>{st(m,'accent');put(m,g.cx+(i-1.5)*(N?50:58),g.cy-6,{o:k===6?1:0,s:k===6?1:.7,d:fwd&&k===6?.15+i*.12:0})});
-    o.mw.forEach((w,i)=>setWire(w,{on:k===6,st:'ok',path:ln([g.cx+(i-1.5)*(N?50:58)+20,g.cy-6],[g.cx+(i-.5)*(N?50:58)-20,g.cy-6]),d:fwd?.3+i*.12:0}));
-    put(o.cap,g.cx,g.cy+32,{o:k===6?1:0,d:fwd?.6:0});
-    if(k===5&&fwd)gossip(sp,['var(--amb)','var(--key)'],g)},
-  split(){const sp=spread([B,CA]),c=sp.own.filter(x=>x===1).length;return[RN-c,c]},
+{const A=9,B=3,CA=6,PEOPLE=[[A,'Alice'],[B,'Bob'],[CA,'Carol']];
+const BANK_OK='<div class="bkf"><b>Bank</b><small>keeps the only ledger</small><div class="ln"><span>1 · Alice → Bob</span><em class="cy">✓</em></div><div class="ln"><span>2 · Alice → Carol</span><em class="cn">✗ spent</em></div><div class="ln"><span>balance Alice</span><em>0</em></div></div>';
+const BANK_BAD='<div class="bkf bad"><b>Bank</b><small>one point decides</small><div class="ln"><span>can freeze a payment</span></div><div class="ln"><span>can change a record</span></div><div class="ln"><span>can be hacked or go offline</span></div></div>';
+T.why={n:7,drag:true,maxF:1.3,size:()=>E.narrow?[400,520]:[960,540],
+  cam(k){const N=E.narrow,b={x:0,y:-70,s:N?.58:1.06,yaw:0,pitch:N?36:31,cy:.58};
+    return[{...b,yaw:-6},{...b},{...b,s:N?.52:1,pitch:26},{...b,s:N?.52:1,pitch:26,yaw:-6},{...b,pitch:34},{...b,yaw:5},{...b,y:-60,pitch:30}][k]},
+  build(){const o=this.o={};buildRing3(o);
+    o.spk=[];for(let i=0;i<RN;i++){const w=wire('nh thin',o.fl),p=rp3(i);geom(w,ln([0,0],[p[0]*.82,p[2]*.82]));o.spk.push(w)}
+    o.names=PEOPLE.map(([i,t])=>lab3('big pill',t));
+    o.coin=[0,1,2].map(()=>mk3('coin3','1',true));
+    o.bank=mkBox(184,124,44,{front:BANK_OK});put3(o.bank,0,0,0);o.bank.classList.add('gone');
+    o.sheets=[];for(let i=0;i<RN;i++)o.sheets.push(mk3('sheet','<i></i><i></i><i></i>',true));
+    o.cb=[];o.cw=[];for(let i=0;i<4;i++){const b=mkBox(46,46,18,{front:String(i+1),shadow:false});tint(b,'var(--accent)');o.cb.push(b)}
+    for(let i=0;i<3;i++)o.cw.push(wire('nh thick',E.wsvg));
+    o.cl=lab3('m','the same chain of blocks on every node');
+    cam3(this.cam(0));UCAM.yaw=UCAM.pitch=0},
+  pose(k,fwd){const o=this.o,sp=spread([B,CA]),run=fwd&&!E.snap,N=E.narrow;cam3(this.cam(k));
+    o.nodes.forEach((n,i)=>{const pe=PEOPLE.some(p=>p[0]===i);n.classList.toggle('dim',k<=1&&!pe);
+      const c=k===4?'accent':k===5?(sp.own[i]?'key':'amb'):k===6?'ok':null,d=run&&k===5?sp.dist[i]*HOP+.08:run&&k===6?.6+i*.04:0;
+      n.style.setProperty('--dl',dly(d));nodeTint(n,c)});
+    o.links.forEach(w=>setWire(w,{on:k>=4,st:k===6?'good':'',d:run&&k===4?.3:0}));
+    o.spk.forEach((w,i)=>setWire(w,{on:k===2||k===3,st:k===3?'bad':'ok',d:run&&k===2?.4+i*.03:0}));
+    PEOPLE.forEach(([i],j)=>put3(o.names[j],...lift(rp3(i),k>=4?-NH-60:-NH-18),{c:1,o:k===6?0:1}));
+    // the coin: one, then three copies
+    const above=(i,dy)=>lift(rp3(i),-NH-(dy||50));
+    put3(o.coin[0],...above(A),{c:1,o:k<=1?1:0});
+    put3(o.coin[1],...(k>=1?above(B):above(A)),{c:1,o:k===1?1:0,d:run&&k===1?.15:0});
+    put3(o.coin[2],...(k>=1?above(CA):above(A)),{c:1,o:k===1?1:0,d:run&&k===1?.35:0});
+    // the bank
+    const bankOn=k===2||k===3;o.bank.classList.toggle('gone',!bankOn);txt(o.bank.front,k===3?BANK_BAD:BANK_OK);
+    tint(o.bank,k===3?'var(--xorBg)':'var(--panel)',k===3?'color-mix(in srgb,var(--xor) 55%,var(--panel))':'var(--side)','var(--ink)');
+    if(run&&k===2)drop3(o.bank,0,0,0,[0,-120,0],0);else put3(o.bank,0,0,0);
+    // every node keeps the whole ledger
+    o.sheets.forEach((s,i)=>{s.classList.toggle('chain',k===6);txt(s,k===6?'<i></i><i></i><i></i><i></i>':'<i></i><i></i><i></i>');
+      put3(s,...lift(rp3(i),-NH-24),{c:1,o:k>=4?1:0,d:run&&k===4?.5+i*.05:0})});
+    // the answer: a chain of blocks
+    o.cb.forEach((b,i)=>{b.classList.toggle('gone',k!==6);const x=(i-1.5)*68;if(run&&k===6)drop3(b,x,-190,0,[x,-270,0],.1+i*.12);else put3(b,x,-190,0)});
+    o.cw.forEach((w,i)=>setWire(w,{on:k===6,st:'ok',path:ln([(i-1.5)*68+23,-213],[(i-.5)*68-23,-213]),d:run?.5+i*.12:0}));
+    put3(o.cl,0,-262,0,{c:1,o:k===6&&!N?1:0,d:run?.8:0});
+    // the panel with the numbers of the step
+    const[sb,sc]=this.split();
+    hudSet(o.hud,[`<b class="t">One digital coin</b>a file: it can be copied`,`<b class="t">The same coin, three times</b>Bob, Carol and Alice each hold a copy`,
+      `<b class="t">One ledger, in one place</b>the bank refuses the second payment`,`<b class="t">Everybody trusts the centre</b>one point decides, one point can fail`,
+      `<b class="t">No centre</b>${RN} nodes, ${EDGES.length} connections, each node a full copy`,
+      `<b class="t">Which payment came first?</b><span class="chip"><i style="background:var(--amb)"></i>${sb} nodes: Bob</span><span class="chip"><i style="background:var(--key)"></i>${sc} nodes: Carol</span>`,
+      `<b class="t">One agreed order</b>every node holds the same chain`][k],12,12,{d:run?.2:0});
+    if(k===5&&run)gossip3(sp,['var(--amb)','var(--key)'])},
+  split(){const sp=spread([B,CA]);const c=sp.own.filter(x=>x===1).length;return[RN-c,c]},
+  hold:k=>k===5?6:5,tip:()=>'Drag to turn the picture',
   say(k){const[sb,sc]=this.split();return[
-    say('Step 0 · The starting point','<b>Alice has a digital coin.</b> A banknote is a thing: when Alice hands it over, she no longer has it. A digital coin is a file, a string of bits.','The grey dots are other computers on the internet. Nobody is in charge of them.'),
+    say('Step 0 · The starting point','<b>Alice has a digital coin.</b> A banknote is a thing: when Alice hands it over, she no longer has it. A digital coin is a file, a string of bits.','The boxes are computers on the internet. Nobody is in charge of them.'),
     say('Step 1 · Double spending','<b>A file can be copied.</b> Alice sends the coin to Bob, and the same coin to Carol. She also keeps a copy. Now three people hold “the” coin.','A signature does not help here: both payments are really signed by Alice. The problem is not who paid, it is <b>that she paid twice</b>.'),
-    say('Step 2 · The classical answer','<b>A bank keeps the ledger.</b> The coins are gone; what exists is one list of balances at the bank. Every payment goes through the centre, which puts the payments in order and refuses the second one.','This is how cards and bank transfers work.'),
+    say('Step 2 · The classical answer','<b>A bank keeps the ledger.</b> The coins are gone; what exists is one list at the bank. Every payment goes through the centre, which puts the payments in order: the payment to Bob is first and accepted, the one to Carol comes second and is refused.','This is how cards and bank transfers work.'),
     say('Step 3 · The price of a centre','<b>Everybody has to trust the centre.</b> It can refuse or freeze a payment, change a record, be hacked, or simply be offline. One point decides, so one point can fail.'),
-    say('Step 4 · Nakamoto’s idea, 2008','<b>Give every computer the whole ledger.</b> The bank is gone. Each node keeps a full copy and talks only to a few neighbours. There is nothing in the middle to attack or to trust.'),
+    say('Step 4 · Nakamoto’s idea, 2008','<b>Give every computer the whole ledger.</b> The bank is gone. Each node keeps a full copy (the sheet above it) and talks only to a few neighbours. There is nothing in the middle to attack or to trust.'),
     say('Step 5 · A new problem: the order','Alice pays Bob <span class="cm">(orange)</span> and, at the same moment, pays Carol with the same coin <span class="ck">(purple)</span>. Each message spreads from neighbour to neighbour.',`Every node accepts the payment it hears first: ${sb} nodes say “Bob has the coin”, ${sc} say “Carol has it”. Without a centre, <b>who decides which came first?</b>`),
     say('Step 6 · The answer: a blockchain','The ledger is cut into <b>blocks</b>. Each block names the block before it by its hash, so the order is fixed and old blocks cannot be changed quietly. A <b>consensus rule</b> (proof of work or proof of stake) decides who may write the next block.','All nodes follow the same rule, so all copies of the ledger come out the same. The next tabs build this, one part at a time.')][k]},
   extra(){return`<h3>The four parts of a blockchain</h3>
@@ -646,32 +740,49 @@ T.why={n:7,size:()=>E.narrow?[360,520]:[760,470],
 
 /* ================= 6 · Network and forks ================= */
 {const M1=2,FA=1,FB=7,M3=0,IDS=['3','4','5','6a','6b','7'];
-T.net={n:8,size:()=>E.narrow?[360,540]:[760,470],
-  g:()=>E.narrow?{cx:180,cy:345,rx:150,ry:160}:{cx:380,cy:328,rx:300,ry:116},
-  tp(){const N=E.narrow,x0=N?66:236,dx=N?57:72,y=N?78:86,dy=N?27:29;return{3:[x0,y],4:[x0+dx,y],5:[x0+2*dx,y],'6a':[x0+3*dx,y-dy],'6b':[x0+3*dx,y+dy],7:[x0+4*dx,y-dy]}},
-  build(){const o=this.o={},g=this.g(),tp=this.tp(),h=E.narrow?20:25;buildRing(o,g);o.t={};
-    o.r={};for(const[a,b]of[['3','4'],['4','5'],['5','6a'],['5','6b'],['6a','7']]){const w=wire('nh thick');geom(w,ln([tp[a][0]+h,tp[a][1]],[tp[b][0]-h,tp[b][1]]));o.r[a+b]=w}
-    for(const id of IDS)o.t[id]=mk('tile'+(E.narrow?' s':''),id);
-    o.tag=mk('lab sm cg','your payment is here');o.cap=mk('lab m sm','the chain, as the nodes see it')},
-  pose(k,fwd){const o=this.o,g=this.g(),tp=this.tp(),one=spread([M1]),two=spread([FA,FB]),win=spread([M3]);
-    o.nodes.forEach((n,i)=>{const p=rp(i,g);let s='',sc=1,d=0;
-      if(k===1&&i===M1){s='accent';sc=1.35}
-      if(k===2){s='accent';d=one.dist[i]*HOP;if(i===M1)sc=1.35}
-      if(k===3){if(i===FA){s='accent';sc=1.35}if(i===FB){s='amb';sc=1.35}}
-      if(k===4||k===5){s=two.own[i]?'amb':'accent';if(k===4)d=two.dist[i]*HOP;if(i===FA||i===FB)sc=1.35;if(k===5&&i===M3)sc=1.6}
-      if(k===6){s='accent';d=win.dist[i]*HOP;if(i===M3)sc=1.6}
-      st(n,s);put(n,p[0],p[1],{s:sc,o:k===7?.4:1,d:fwd&&d?d+.05:0})});
-    o.links.forEach(w=>setWire(w,{on:true,op:k===7?.4:null}));
-    const vis={3:1,4:1,5:k>=1,'6a':k>=3,'6b':k>=3,7:k>=5},
-      state={3:'',4:'',5:k===1||k===2?'accent':'','6a':k===7?'ok':'accent','6b':k>=6?'dim':'amb',7:k===7?'ok':'accent'};
-    for(const id of IDS){const stale=id==='6b'&&k>=6;txt(o.t[id],stale?tileHTML('6b','stale'):id);st(o.t[id],state[id]);put(o.t[id],tp[id][0],tp[id][1],{o:vis[id]?(stale?.6:1):0,s:vis[id]?1:.6})}
-    setWire(o.r['34'],{on:true});setWire(o.r['45'],{on:k>=1});setWire(o.r['56a'],{on:k>=3,d:fwd&&k===3?.25:0});setWire(o.r['56b'],{on:k>=3,op:k>=6?.35:null,d:fwd&&k===3?.25:0});setWire(o.r['6a7'],{on:k>=5,d:fwd?.25:0});
-    put(o.tag,tp['6a'][0]+(E.narrow?10:36),tp['6a'][1]-(E.narrow?34:40),{o:k===7?1:0});
-    put(o.cap,tp[3][0]-(E.narrow?-30:118),tp[3][1]+(E.narrow?66:0),{o:k===7?0:1});
-    if(fwd){if(k===2)gossip(one,['var(--accent)'],g);if(k===4)gossip(two,['var(--accent)','var(--amb)'],g);if(k===6)gossip(win,['var(--accent)'],g)}},
+// the chain that every node keeps, floating above the ring: x, and the height of the bottom of each block
+const CP={3:[-190,-230],4:[-112,-230],5:[-34,-230],'6a':[44,-272],'6b':[44,-188],7:[122,-272]},CBW=56;
+T.net={n:8,drag:true,maxF:1.3,size:()=>E.narrow?[400,560]:[960,560],
+  cam(k){const N=E.narrow,b={x:0,y:-95,s:N?.56:.9,yaw:0,pitch:N?32:28,cy:.56};
+    return k===7?{x:-30,y:-255,s:N?1.25:1.75,yaw:-10,pitch:8,cy:.5}:[{...b,yaw:-6},{...b},{...b},{...b,yaw:4},{...b},{...b},{...b},b][k]},
+  build(){const o=this.o={};buildRing3(o);o.t={};o.r={};
+    for(const id of IDS){const b=mkBox(CBW,CBW,20,{front:`<span class="bn">${id}</span>`,shadow:false});o.t[id]=b}
+    const mid=id=>CP[id][1]-CBW/2;
+    for(const[a,c]of[['3','4'],['4','5'],['5','6a'],['5','6b'],['6a','7']]){const w=wire('thick',E.wsvg),x1=CP[a][0]+CBW/2,x2=CP[c][0]-CBW/2;
+      geom(w,`M${x1} ${mid(a)}C${x1+14} ${mid(a)} ${x2-14} ${mid(c)} ${x2-8} ${mid(c)}`,[x2-1,mid(c),0]);o.r[a+c]=w}
+    o.pay=lab3('cg','your payment');o.conf=lab3('sm m','');o.stale=lab3('sm m','stale');o.cap=lab3('m sm','the chain, as the nodes see it');
+    cam3(this.cam(0));UCAM.yaw=UCAM.pitch=0},
+  pose(k,fwd){const o=this.o,one=spread([M1]),two=spread([FA,FB]),win=spread([M3]),run=fwd&&!E.snap,N=E.narrow;cam3(this.cam(k));
+    o.nodes.forEach((n,i)=>{let c=null,d=0,up=0;
+      if(k===1&&i===M1){c='accent';up=1}
+      if(k===2){c='accent';d=one.dist[i]*HOP}
+      if(k===3){if(i===FA){c='accent';up=1}if(i===FB){c='amb';up=1}}
+      if(k===4||k===5){c=two.own[i]?'amb':'accent';if(k===4)d=two.dist[i]*HOP;if(k===5&&i===M3)up=1}
+      if(k===6){c='accent';d=win.dist[i]*HOP}
+      n.classList.toggle('dim',k===7);n.style.setProperty('--dl',dly(run?d+.06:0));nodeTint(n,c);
+      put3(n,...lift(rp3(i),up?-16:0),{d:run?d:0})});
+    o.links.forEach(w=>setWire(w,{on:true,op:k===7?.35:null}));
+    const vis={3:1,4:1,5:k>=1,'6a':k>=3,'6b':k>=3,7:k>=5},col={3:null,4:null,5:k===1||k===2?'accent':null,'6a':k===7?'ok':'accent','6b':k>=6?'dim':'amb',7:k===7?'ok':'accent'};
+    for(const id of IDS){const b=o.t[id],stale=id==='6b'&&k>=6,[x,y]=CP[id];b.classList.toggle('gone',!vis[id]);b.classList.toggle('dim',stale);
+      tint(b,col[id]?STC[col[id]]:'var(--nb)',col[id]?`color-mix(in srgb,${STC[col[id]]} 70%,#fff)`:'var(--side)',col[id]&&col[id]!=='dim'?'var(--onAccent)':'var(--ink)');
+      const yy=stale?y+26:y;if(run&&vis[id]&&!(this.vis0&&this.vis0[id]))drop3(b,x,yy,0,[x,yy-90,0],.15);else put3(b,x,yy,0)}
+    this.vis0=vis;
+    setWire(o.r['34'],{on:true,st:'ok'});setWire(o.r['45'],{on:true,st:'ok'});setWire(o.r['56a'],{on:k>=3,st:'ok',d:run&&k===3?.35:0});
+    setWire(o.r['56b'],{on:k>=3,st:k>=6?'dim':'amb',d:run&&k===3?.35:0});setWire(o.r['6a7'],{on:k>=5,st:'ok',d:run&&k===5?.35:0});
+    put3(o.pay,CP['6a'][0],CP['6a'][1]-CBW-16,4,{c:1,o:k===7?1:0});
+    txt(o.conf,'2 confirmations: 6a and 7');put3(o.conf,CP['6a'][0]+39,CP['6a'][1]+16,4,{c:1,o:k===7?1:0});
+    put3(o.stale,CP['6b'][0],CP['6b'][1]+46,4,{c:1,o:k>=6?1:0});
+    put3(o.cap,-110,-300,0,{c:1,o:k===0&&!N?1:0});
+    const[pa,pb]=this.parts(),chip=(c,t)=>`<span class="chip"><i style="background:var(--${c})"></i>${t}</span>`;
+    hudSet(o.hud,[`<b class="t">${RN} nodes · ${EDGES.length} connections</b>each one keeps blocks 3 and 4`,`<b class="t">A new block</b>only its miner knows block 5`,
+      `<b class="t">Gossip</b>every node checks block 5, then passes it on`,`<b class="t">Two blocks 6 at once</b>${chip('accent','6a')}${chip('amb','6b')}`,
+      `<b class="t">The network splits</b>${chip('accent',pa+' nodes follow 6a')}${chip('amb',pb+' follow 6b')}`,`<b class="t">Block 7 on top of 6a</b>the branch through 6a has more work`,
+      `<b class="t">The heaviest chain wins</b>${chip('accent','all '+RN+' nodes follow 6a → 7')}`,`<b class="t">Confirmations</b>a payment gets safer with every block on top`][k],12,12,{d:run?.2:0});
+    if(run){if(k===2)gossip3(one,['var(--accent)']);if(k===4)gossip3(two,['var(--accent)','var(--amb)']);if(k===6)gossip3(win,['var(--accent)'])}},
   parts(){const two=spread([FA,FB]),b=two.own.filter(x=>x===1).length;return[RN-b,b]},
+  hold:k=>k===2||k===4||k===6?6:5,tip:()=>'Drag to turn the picture',
   say(k){const[pa,pb]=this.parts();return[
-    say('Step 0 · A network without a centre',`<b>${RN} nodes, each connected to a few others.</b> Every node stores the whole chain (the tiles at the top: blocks 3 and 4) and checks everything it receives.`,'Bitcoin has many thousands of such nodes. A new node downloads the chain from its neighbours and verifies every block itself.'),
+    say('Step 0 · A network without a centre',`<b>${RN} nodes, each connected to a few others.</b> Every node stores the whole chain (floating above them: blocks 3 and 4) and checks everything it receives.`,'Bitcoin has many thousands of such nodes. A new node downloads the chain from its neighbours and verifies every block itself.'),
     say('Step 1 · A miner finds a block','<b>One node solves the puzzle for block 5.</b> For the moment it is the only one that knows the new block.'),
     say('Step 2 · Gossip','<b>The block spreads from neighbour to neighbour.</b> Each node first checks it (the hash is below the target, every signature is valid, no coin is spent twice) and only then passes it on. A bad block dies at the first honest node.','On the real network a block reaches most nodes within a few seconds.'),
     say('Step 3 · Two blocks at the same moment','<b>Two miners far apart both find a block 6</b> before either has heard of the other’s: <span class="ca">6a</span> and <span class="cm">6b</span>. Both are valid, and both point at block 5.','The chain has become a tree with two tips. This is a <b>fork</b>, and it happens by chance, without any attacker.'),
@@ -680,7 +791,7 @@ T.net={n:8,size:()=>E.narrow?[360,540]:[760,470],
     say('Step 6 · The longest chain wins','Block 7 spreads. Nodes on the orange side see a chain with more work and <b>switch to it</b>. Block 6b is dropped: it is <b>stale</b>.','Its transactions go back into the waiting pool and get into a later block. The miner of 6b loses the reward. The rule is short: <b>follow the valid chain with the most work</b>.'),
     say('Step 7 · Confirmations','<b>A payment is never final at once.</b> Your payment sits in block 6a, and block 7 is on top: it has 2 confirmations. A payment in 6b would have looked confirmed too, and was then undone.','Every new block makes it harder to undo. For large sums people wait about 6 blocks, roughly one hour. Tab 7 computes why.')][k]},
   extra(){const[pa,pb]=this.parts();return`<h3>What the colours mean</h3>
-    <div class="lg"><span><i class="sw" style="background:var(--node)"></i>knows nothing new</span><span><i class="sw" style="background:var(--accent)"></i>has the blue block</span><span><i class="sw" style="background:var(--amb)"></i>has the orange block</span></div>
+    <div class="lg"><span><i class="sw" style="background:var(--nb);outline:1px solid var(--line2)"></i>knows nothing new</span><span><i class="sw" style="background:var(--accent)"></i>has the blue block</span><span><i class="sw" style="background:var(--amb)"></i>has the orange block</span></div>
     <table class="kv" style="margin-top:10px"><tr><th>In this picture</th><th></th></tr>
     <tr><td class="t">Nodes</td><td>${RN}</td></tr><tr><td class="t">Connections</td><td>${EDGES.length}</td></tr>
     <tr><td class="t">Longest path of a message</td><td>${Math.max(...Array.from({length:RN},(_,i)=>Math.max(...bfs(i))))} hops</td></tr>
@@ -996,40 +1107,48 @@ const cnt=(ev,c,n)=>ev.slice(0,n).filter(x=>x===c).length;
 const R30=findRace(.3,3,r=>{const i=r.ev.map((e,j)=>cnt(r.ev,'h',j+1)).indexOf(3);return r.res==='honest'&&cnt(r.ev,'a',i+1)===1&&r.a===4&&r.h===RCAP});
 const R30cut=R30.ev.map((e,j)=>cnt(R30.ev,'h',j+1)).indexOf(3)+1;
 const R55=findRace(.55,3,r=>{const i=r.ev.map((e,j)=>cnt(r.ev,'h',j+1)).indexOf(3);return r.res==='attacker'&&cnt(r.ev,'a',i+1)===1&&r.h>=5&&r.h<=7});
-T.attack={n:6,size:()=>E.narrow?[360,400]:[760,440],
-  G(){return E.narrow?{ax:22,ay:200,hy:140,ty:260,x0:62,dx:35,r:16,lx:46,sy:352,cls:' xs'}:{ax:52,ay:216,hy:140,ty:292,x0:132,dx:72,r:25,lx:107,sy:398,cls:''}},
-  build(){const o=this.o={h:[],a:[],hw:[],aw:[]},G=this.G();
-    for(let n=1;n<=RCAP;n++)for(const[ws,y,up]of[[o.hw,G.hy,-1],[o.aw,G.ty,1]]){const w=wire('nh thick'),x=G.x0+(n-1)*G.dx;
-      geom(w,n===1?ln([G.ax+G.r,G.ay+up*G.r*.45],[x-G.r,y-up*G.r*.3]):ln([x-G.dx+G.r,y],[x-G.r,y]));ws.push(w)}
-    o.root=mk('tile'+G.cls,'0');for(let n=1;n<=RCAP;n++){o.h.push(mk('tile'+G.cls,''));o.a.push(mk('tile'+G.cls,''))}
-    o.lh=mk('lab sm ca','');o.la=mk('lab sm cb','');o.sc=mk('lab m','')},
+T.attack={n:6,drag:true,maxF:1.3,size:()=>E.narrow?[400,520]:[960,500],
+  // two lanes on the floor: the honest chain behind, the attacker's secret chain in front, both from block 0
+  G(){return{x0:-330,dx:68,zh:-64,za:64,bw:50}},
+  cam(k){const N=E.narrow;return{x:N?-10:10,y:-40,s:N?.55:1.06,yaw:-14,pitch:N?32:25,cy:.55}},
+  bx(lane,n){const G=this.G();return[G.x0+n*G.dx,0,lane==='h'?G.zh:G.za]},
+  build(){const o=this.o={h:[],a:[],hw:[],aw:[]},G=this.G();mkWorld();o.floor=put3(mk3('floor',null,true),0,0,0,{r:' rotateX(90deg)'});o.fl=mkFloorSvg();
+    const L=G.x0-40,W=(RCAP+1)*G.dx+50;o.lh=floorRect(o.fl,L,G.zh-36,W,72,'color-mix(in srgb,var(--accent) 12%,transparent)',14);o.la=floorRect(o.fl,L,G.za-36,W,72,'color-mix(in srgb,var(--xor) 11%,transparent)',14);
+    for(let n=1;n<=RCAP;n++)for(const[lane,ws]of[['h',o.hw],['a',o.aw]]){const w=wire('nh thick',o.fl),a=n===1?[G.x0,0,0]:this.bx(lane,n-1),b=this.bx(lane,n);
+      geom(w,ln([a[0]+(n===1?18:G.bw/2),a[2]],[b[0]-G.bw/2,b[2]]));ws.push(w)}
+    o.root=mkBox(G.bw,G.bw,G.bw,{front:'<span class="bn">0</span>'});put3(o.root,G.x0,0,0);
+    for(let n=1;n<=RCAP;n++)for(const lane of['h','a']){const b=mkBox(G.bw,G.bw,40,{front:`<span class="bn">${n}</span>`});b.classList.add('gone');put3(b,...this.bx(lane,n));o[lane].push(b)}
+    o.paid=lab3('cg sm','');o.sent=lab3('cg sm pill','');o.win=lab3('cb','');
+    o.hud=mk('hud','');hide(o.hud);o.res=mk('hud','');hide(o.res);
+    cam3(this.cam(0));UCAM.yaw=UCAM.pitch=0},
   // what step k shows: the race, how much of it, and how it ended
   st(k){if(k===5){const r=ST.at.race;return r?{q:r.q,z:r.z,ev:r.ev,res:r.res}:{q:ST.at.q,z:ST.at.z,ev:['h'],res:null}}
     if(k===4)return{q:.55,z:3,ev:R55.ev,res:R55.res};
     return{q:.3,z:3,ev:k===0?['h']:k===1?R30.ev.slice(0,R30cut):R30.ev,res:k>=2?R30.res:null}},
-  pose(k,fwd){const o=this.o,G=this.G(),s=this.st(k),H=cnt(s.ev,'h',99),A=cnt(s.ev,'a',99),lost=s.res==='attacker',
-      rid=k<4?'a':k===4?'b':'s'+ST.at.seed,prev=rid===this.rid?this.shown||0:0,at={h:[],a:[]},step=.3;
-    s.ev.forEach((e,i)=>at[e].push(i));const dl=i=>fwd&&i>=prev?(i-prev)*step+.05:0;
-    put(o.root,G.ax,G.ay);
-    for(let n=1;n<=RCAP;n++){const x=G.x0+(n-1)*G.dx,hv=n<=H,av=n<=A,hd=hv?dl(at.h[n-1]):0,ad=av?dl(at.a[n-1]):0;
-      txt(o.h[n-1],tileHTML(n,n===s.z?'sent':n===1?'paid':''));st(o.h[n-1],lost?'dim':'accent');put(o.h[n-1],x,G.hy,{o:hv?(lost?.6:1):0,s:hv?1:.5,d:hd});
-      txt(o.a[n-1],String(n));st(o.a[n-1],'bad');put(o.a[n-1],x,G.ty,{o:av?1:0,s:av?1:.5,d:ad});
-      setWire(o.hw[n-1],{on:hv,st:lost?'dim':'ok',d:hd});setWire(o.aw[n-1],{on:av,st:'bad',d:ad})}
-    txt(o.lh,lost?'honest chain: dropped, and the payment with it':`honest network · ${pct(1-s.q,0)} of the hash rate`);put(o.lh,G.lx,G.hy-G.r-18,{ax:0});
-    txt(o.la,(lost?'the attacker’s chain: now the one that counts · ':'attacker, in secret · ')+pct(s.q,0));put(o.la,G.lx,G.ty+G.r+18,{ax:0});
-    // the score follows the race, block by block
+  pose(k,fwd){const o=this.o,G=this.G(),s=this.st(k),H=cnt(s.ev,'h',99),A=cnt(s.ev,'a',99),lost=s.res==='attacker',run=fwd&&!E.snap,
+      rid=k<4?'a':k===4?'b':'s'+ST.at.seed,prev=rid===this.rid?this.shown||0:0,at={h:[],a:[]},step=.32;
+    cam3(this.cam(k));s.ev.forEach((e,i)=>at[e].push(i));const dl=i=>run&&i>=prev?(i-prev)*step+.05:0;
+    tint(o.root,'var(--nb)','var(--side)','var(--ink)');
+    for(let n=1;n<=RCAP;n++)for(const lane of['h','a']){const b=o[lane][n-1],vis=n<=(lane==='h'?H:A),i=at[lane][n-1],d=vis?dl(i):0,was=!b.classList.contains('gone'),p=this.bx(lane,n);
+      const c=lane==='h'?(lost?'var(--line2)':'var(--accent)'):'var(--xor)';tint(b,c,`color-mix(in srgb,${c} 70%,#fff)`,lane==='h'&&lost?'var(--muted)':'var(--onAccent)');
+      txt(b.front,`<span class="bn">${n}</span>`+(lane==='h'&&n===1?'<span class="bs">paid</span>':lane==='h'&&n===s.z?'<span class="bs">goods</span>':''));
+      b.classList.toggle('gone',!vis);b.style.setProperty('--dl',dly(d));
+      if(vis&&!was&&run)drop3(b,...p,[p[0],-130,p[2]],d);else put3(b,...p,{d});
+      setWire((lane==='h'?o.hw:o.aw)[n-1],{on:vis,st:lane==='h'?(lost?'dim':'ok'):'bad',d})}
+    o.lh.style.opacity=lost?.35:1;
+    put3(o.paid,0,0,0,{o:0});
+    put3(o.sent,...lift(this.bx('h',s.z),-G.bw-26),{c:1,o:H>=s.z&&!lost?1:0,d:run?dl(at.h[s.z-1]??0)+.2:0});txt(o.sent,`${s.z} confirmations: the shop sends the goods`);
+    put3(o.win,0,0,0,{o:0});
+    // the panel: hash rates, then the score as the race goes on
+    const pc=x=>pct(x,0),bar=(c,w)=>`<div class="bar"><i style="width:${w*100}%;background:var(--${c})"></i></div>`;
+    txt(o.hud,`<b class="t">Hash rate · the shop waits for ${s.z} confirmations</b><div class="row2" style="grid-template-columns:62px 130px 36px"><span>honest</span>${bar('accent',1-s.q)}<b>${pc(1-s.q)}</b><span>attacker</span>${bar('xor',s.q)}<b>${pc(s.q)}</b></div>`);
+    put(o.hud,12,12,{ax:0,ay:0});
     const tot=s.ev.length,score=n=>{const h=cnt(s.ev,'h',n),a=cnt(s.ev,'a',n),g=h-a,end=n>=tot;
-      txt(o.sc,k===0?'the race starts: the payment is in block 1':`honest ${h} · attacker ${a} · `+(end&&lost?'<b class="cn">the attacker has caught up</b>':g>0?`the attacker is ${g} behind`:g<0?`the attacker is ${-g} ahead`:'level'))};
-    put(o.sc,E.narrow?180:380,G.sy);
-    if(fwd&&!E.snap&&tot>prev+1){score(Math.max(prev,1));for(let i=prev;i<tot;i++)after((i-prev)*step+.3,()=>score(i+1))}else score(tot);
+      txt(o.res,k===0?'<b class="t">The race</b>the payment is in honest block 1':`<b class="t">After ${n} block${n>1?'s':''}</b>honest <b>${h}</b> · attacker <b>${a}</b> · `+(end&&lost?'<b class="cn">the attacker has caught up</b>':g>0?`attacker <b>${g}</b> behind`:g<0?`attacker ${-g} ahead`:'level'))};
+    put(o.res,E.narrow?12:948,E.narrow?488:12,{ax:E.narrow?0:1,ay:E.narrow?1:0});
+    if(run&&tot>prev+1){score(Math.max(prev,1));for(let i=prev;i<tot;i++)after((i-prev)*step+.35,()=>score(i+1))}else score(tot);
     this.shown=tot;this.rid=rid},
-  say(k){const q=.3,p=.7,a1=cnt(R30.ev,'a',R30cut),gap=R30.h-R30.a,s5=this.st(5);return[
-    say('Step 0 · The plan','<b>The attacker pays a shop and wants the money back.</b> His payment is in block 1 of the public chain. The shop will hand over the goods after 3 confirmations.','In secret he starts his own branch from block 0. In his version the same coins go back to himself. If his branch ever becomes the longer one, every node will switch to it, and the payment to the shop will never have happened.'),
-    say('Step 1 · A race',`He has 30% of the hash rate, the rest of the network 70%. Each new block is his with probability 0.3. While the honest chain grows to 3 blocks and the shop sends the goods, he finds ${a1} block${a1===1?'':'s'}: he is ${3-a1} behind.`),
-    say('Step 2 · Catching up from behind',`The race goes on. He needs luck again and again, while the honest side only has to keep its pace. Here he ends ${gap} blocks behind and gives up.`,`From n blocks behind, the chance of ever catching up is (q/p)ⁿ. With q = 0.3: ${[1,2,3,5].map(n=>`n = ${n}: ${pct(Math.pow(q/p,n))}`).join(', ')}. It shrinks by the same factor with every block.`),
-    say('Step 3 · How many confirmations?',`Counting every way the race can go, an attacker with 30% wins against 3 confirmations with probability <b>${pct(exactDS(.3,3))}</b>. With 6 confirmations: ${pct(exactDS(.3,6))}. An attacker with 10% against 6 confirmations: <b>${pct(exactDS(.1,6),3)}</b>.`,'This is where “wait for six blocks” comes from: against a small attacker the risk falls off very fast. Against a large one it does not. The table has the numbers.'),
-    say('Step 4 · More than half',`Now the attacker has 55%. He is behind after the shop’s 3 confirmations, but he finds blocks faster than everybody else together, so he <b>always</b> catches up in the end. Here he draws level at block ${R55.a}.`,'He publishes his branch. It has as much work as the honest one and he will add the next block first; the nodes switch, and the honest blocks, with the payment in them, are dropped. <b>“The longest chain is the truth” is only safe while honest miners hold the majority.</b>'),
-    say('Step 5 · Your turn','<b>Set the attacker’s share and the number of confirmations, and run races.</b> One race is drawn block by block. Ten thousand races give a frequency that you can compare with the formula.',s5.res?`This race: ${s5.res==='attacker'?'<b class="cn">the attacker caught up</b>, so the payment can be reversed.':s5.q>=.5?'he has not caught up within the nine blocks of the picture. With half of the hash rate or more he will in the end.':'<b class="cy">the attacker fell behind</b> and gave up.'}`:'')][k]},
+  hold:k=>k===2?6.5:k===4?6:5,tip:()=>'Drag to turn the picture',
   bar(k){if(k!==5)return'';const a=ST.at;
     return`<label class="fld"><span class="flh">Attacker’s share q: <b id="atq">${pct(a.q,0)}</b></span><input type="range" data-at="q" min="5" max="60" step="5" value="${a.q*100}" style="width:170px"></label>
     <label class="fld"><span class="flh">Confirmations z: <b id="atz">${a.z}</b></span><input type="range" data-at="z" min="1" max="8" step="1" value="${a.z}" style="width:130px"></label>
@@ -1040,7 +1159,15 @@ T.attack={n:6,size:()=>E.narrow?[360,400]:[760,440],
     return`<h3>Chance that the attacker succeeds</h3><div class="scroll"><table class="kv"><tr><th>z</th><th>q = 10%</th><th>q = 30%</th><th>q = 45%</th></tr>${zs.map(z=>`<tr><td>${z}</td><td>${f(exactDS(.1,z))}</td><td>${f(exactDS(.3,z))}</td><td>${f(exactDS(.45,z))}</td></tr>`).join('')}<tr><td class="t">any</td><td colspan="3" class="t">q ≥ 50%: <b>100%</b></td></tr></table></div>
       <p style="margin-top:8px">Exact values of the race drawn here (counted block by block). Nakamoto’s paper approximates the attacker’s progress by a Poisson law and gets slightly smaller numbers: for q = 10%, z = 6 it prints ${nakamoto(.1,6).toFixed(7)}, the exact value is ${exactDS(.1,6).toFixed(7)}.</p>
       <h3>What a 51% attacker can and cannot do</h3>
-      <p>${Y} take back his own recent payments · ${Y} keep chosen transactions out of blocks</p><p>${N} spend other people’s coins (no signature) · ${N} create coins out of nothing (nodes reject the block)</p>`}};
+      <p>${Y} take back his own recent payments · ${Y} keep chosen transactions out of blocks</p><p>${N} spend other people’s coins (no signature) · ${N} create coins out of nothing (nodes reject the block)</p>`},
+  say(k){const q=.3,p=.7,a1=cnt(R30.ev,'a',R30cut),gap=R30.h-R30.a,s5=this.st(5);return[
+    say('Step 0 · The plan','<b>The attacker pays a shop and wants the money back.</b> His payment is in block 1 of the public chain. The shop will hand over the goods after 3 confirmations.','In secret he starts his own branch from block 0. In his version the same coins go back to himself. If his branch ever becomes the longer one, every node will switch to it, and the payment to the shop will never have happened.'),
+    say('Step 1 · A race',`He has 30% of the hash rate, the rest of the network 70%. Each new block is his with probability 0.3. While the honest chain grows to 3 blocks and the shop sends the goods, he finds ${a1} block${a1===1?'':'s'}: he is ${3-a1} behind.`),
+    say('Step 2 · Catching up from behind',`The race goes on. He needs luck again and again, while the honest side only has to keep its pace. Here he ends ${gap} blocks behind and gives up.`,`From n blocks behind, the chance of ever catching up is (q/p)ⁿ. With q = 0.3: ${[1,2,3,5].map(n=>`n = ${n}: ${pct(Math.pow(q/p,n))}`).join(', ')}. It shrinks by the same factor with every block.`),
+    say('Step 3 · How many confirmations?',`Counting every way the race can go, an attacker with 30% wins against 3 confirmations with probability <b>${pct(exactDS(.3,3))}</b>. With 6 confirmations: ${pct(exactDS(.3,6))}. An attacker with 10% against 6 confirmations: <b>${pct(exactDS(.1,6),3)}</b>.`,'This is where “wait for six blocks” comes from: against a small attacker the risk falls off very fast. Against a large one it does not. The table has the numbers.'),
+    say('Step 4 · More than half',`Now the attacker has 55%. He is behind after the shop’s 3 confirmations, but he finds blocks faster than everybody else together, so he <b>always</b> catches up in the end. Here he draws level at block ${R55.a}.`,'He publishes his branch. It has as much work as the honest one and he will add the next block first; the nodes switch, and the honest blocks, with the payment in them, are dropped. <b>“The longest chain is the truth” is only safe while honest miners hold the majority.</b>'),
+    say('Step 5 · Your turn','<b>Set the attacker’s share and the number of confirmations, and run races.</b> One race is drawn block by block. Ten thousand races give a frequency that you can compare with the formula.',s5.res?`This race: ${s5.res==='attacker'?'<b class="cn">the attacker caught up</b>, so the payment can be reversed.':s5.q>=.5?'he has not caught up within the nine blocks of the picture. With half of the hash rate or more he will in the end.':'<b class="cy">the attacker fell behind</b> and gave up.'}`:'')][k]}};
+
 
 /* ================= 8 · Proof of stake ================= */
 const VS=[40,10,25,5,60,20,30,10],VTOT=VS.reduce((a,b)=>a+b,0),VCUM=VS.map((s,i)=>VS.slice(0,i).reduce((a,b)=>a+b,0));
@@ -1050,53 +1177,66 @@ const whoAt=r=>VS.findIndex((s,i)=>r>=VCUM[i]&&r<VCUM[i]+s);
 const PSR=Number(big(sha256(enc('epoch 7, slot 1')))%BigInt(VTOT)),PROP=whoAt(PSR);
 const byStake=VS.map((s,i)=>i).filter(i=>i!==PROP).sort((a,b)=>VS[a]-VS[b]);
 const OFF=byStake.slice(0,2),SLASH=byStake.filter(i=>VS[i]>=20&&VS[i]<=40)[0],VOTED=VTOT-OFF.reduce((a,i)=>a+VS[i],0);
-T.pos={n:7,size:()=>E.narrow?[360,490]:[760,474],
-  G(){return E.narrow?{x0:30,dx:43,base:330,h0:10,hs:1.85,bx:180,by:34,bw:150,my:98,mx:60,mw:240,sx:20,sw:320,sy:446}:{x0:80,dx:86,base:326,h0:12,hs:2.15,bx:380,by:38,bw:176,my:104,mx:230,mw:300,sx:40,sw:680,sy:436}},
-  build(){const o=this.o={bar:[],lab:[],top:[]},G=this.G(),N=E.narrow;
-    VS.forEach((s,j)=>{const b=mk('vbar'+(N?' nar':''));b.style.setProperty('--vc',VCOL[j]);o.bar.push(b);o.lab.push(mk('lab sm',''));o.top.push(mk('lab sm',''))});
-    o.blk=mk('tile','');o.blk.style.width=G.bw+'px';o.blk.style.height='52px';o.blk.style.fontSize='14px';
-    o.two=[0,1].map(i=>st(mk('tile xs',i?'B':'A'),'bad'));
-    o.track=mk('track');o.track.style.width=G.mw+'px';o.fill=mk('fill');o.fill.style.setProperty('--tw','1.3s');o.tick=mk('tick');o.ml=mk('lab sm','⅔');o.mt=mk('lab sm m','');
-    o.strip=mk('strip',VS.map((s,j)=>`<i style="width:${100*s/VTOT}%;background:${VCOL[j]}"></i>`).join(''));o.strip.style.width=G.sw+'px';
-    o.ptr=mk('ptr');o.dl=mk('lab sm','');o.s0=mk('lab sm m','0');o.s1=mk('lab sm m',String(VTOT));o.sl=mk('lab sm m','every coin of stake is one ticket')},
-  pose(k,fwd){const o=this.o,G=this.G(),run=fwd&&!E.snap,draws=k===6&&ST.ps.draws,wait=run&&k===1?1.75:0,
-      px=G.sx+(PSR+.5)/VTOT*G.sw,hOf=(j,cut)=>(G.h0+VS[j]*G.hs)*(cut?.55:1);
-    VS.forEach((s,j)=>{const x=G.x0+j*G.dx,cut=k>=5&&j===SLASH,off=(k===3||k===4)&&OFF.includes(j),isP=k>=1&&k<=4&&j===PROP,h=hOf(j,cut);
-      o.bar[j].style.height=h.toFixed(1)+'px';o.bar[j].style.setProperty('--vc',cut?'var(--xor)':off?'var(--node)':VCOL[j]);
-      put(o.bar[j],x,G.base,{ay:1,o:cut?.8:1});
-      txt(o.lab[j],`V${j+1}<br><span style="color:var(--muted);font-weight:500">${draws?draws[j]+(E.narrow?'':' wins'):s}</span>`);put(o.lab[j],x,G.base+20);
-      const t=cut?'slashed':off?'offline':isP?'proposer':'';if(t)txt(o.top[j],t);o.top[j].style.color=cut?'var(--xor)':off?'var(--muted)':'';
-      put(o.top[j],x,G.base-h-11,{o:t?1:0,d:isP?wait:0})});
-    // the lottery strip and its pointer
-    put(o.strip,G.sx,G.sy,{ax:0,o:k>=1?1:0});put(o.s0,G.sx,G.sy+20,{o:k>=1?1:0});put(o.s1,G.sx+G.sw,G.sy+20,{o:k>=1?1:0});put(o.sl,G.sx+G.sw/2,G.sy+20,{o:k>=1?1:0});
-    o.ptr.style.setProperty('--ease','cubic-bezier(.5,0,.15,1)');o.dl.style.setProperty('--ease','cubic-bezier(.5,0,.15,1)');o.ptr.style.setProperty('--tm',wait?(1.6/speed())+'s':'');put(o.ptr,k>=1?px:G.sx,G.sy-9,{ay:1,o:k>=1?1:0});
-    o.dl.style.setProperty('--tm',wait?(1.6/speed())+'s':'');put(o.dl,k>=1?px:G.sx,G.sy-32,{o:k>=1?1:0});
-    if(wait){for(let i=0;i<=14;i++)after(i*.11,()=>{const e=ease(i/14),v=Math.round(e*PSR);o.dl._v=null;o.dl.textContent=`draw: ${v}`});after(1.7,()=>txt(o.dl,`draw: <b>${PSR}</b> of ${VTOT}`))}
-    else txt(o.dl,`draw: <b>${PSR}</b> of ${VTOT}`);
-    // the block, the votes and the meter
-    const pxp=G.x0+PROP*G.dx,fin=k>=4;
-    txt(o.blk,tileHTML('Slot 1',fin?'final: it cannot be undone':`block proposed by V${PROP+1}`));st(o.blk,fin?'ok':'accent');
-    put(o.blk,k===2?pxp:G.bx,k===2?G.base-hOf(PROP)-58:G.by,{o:k>=2?1:0,s:k>=2?(k===2?.8:1):.6});
-    const on=k===3||k===4,fr=VOTED/VTOT;
-    put(o.track,G.mx+G.mw/2,G.my,{o:on?1:0});put(o.fill,G.mx,G.my,{ax:0,o:on?1:0,d:run&&k===3?.5:0});o.fill.style.width=(on?G.mw*fr:0).toFixed(1)+'px';o.fill.classList.toggle('ok',k===4);
-    put(o.tick,G.mx+G.mw*2/3,G.my,{o:on?1:0});put(o.ml,G.mx+G.mw*2/3,G.my+23,{o:on?1:0});
-    txt(o.mt,`${pct(fr)} of the stake has voted for the block`);put(o.mt,G.mx+G.mw/2,G.my-20,{o:on?1:0,d:run&&k===3?1.2:0});
-    if(run&&k===3)VS.forEach((s,j)=>{if(!OFF.includes(j)&&j!==PROP)pulse([G.x0+j*G.dx,G.base-hOf(j)],[G.bx,G.by+26],VCOL[j],.3+j*.1,.7,5)});
-    // two blocks for one slot
-    const sx=G.x0+SLASH*G.dx,sy=G.base-hOf(SLASH,true)-(E.narrow?48:52);
-    o.two.forEach((t,i)=>put(t,sx+(i?19:-19),sy,{o:k===5?1:0,s:k===5?1:.5,d:run&&k===5?i*.15:0}))},
-  hold:k=>k===1?6.5:5,
+
+// the validators stand on a turning wheel; each one on its own slice, as wide as its stake
+const WR=200,PRAD=150,PH=j=>14+VS[j]*2.15;
+const PHI=j=>(360*(VCUM[j]+VS[j]/2)/VTOT-90);              // where validator j stands on the wheel, in degrees
+const TH0=PHI(PROP)-90-150,TH1=PHI(PROP)-90-720;           // the wheel before the draw, and after it: the proposer in front
+const onWheel=(j,th,dy)=>{const a=(PHI(j)-th)*Math.PI/180;return[PRAD*Math.cos(a),dy||0,PRAD*Math.sin(a)]};
+T.pos={n:7,drag:true,maxF:1.3,size:()=>E.narrow?[400,560]:[960,560],
+  cam(k){const N=E.narrow,b={x:0,y:-120,s:N?.7:.96,yaw:0,pitch:N?42:38,cy:.6};return k===5?{...b,yaw:-10}:b},
+  build(){const o=this.o={p:[],l:[]};mkWorld();o.floor=put3(mk3('floor',null,true),0,0,0,{r:' rotateX(90deg)'});
+    o.g=mk3('carousel');const stops=VS.map((s,j)=>`${VCOL[j]} ${(360*VCUM[j]/VTOT).toFixed(2)}deg ${(360*(VCUM[j]+s)/VTOT-.8).toFixed(2)}deg,var(--panel) ${(360*(VCUM[j]+s)/VTOT-.8).toFixed(2)}deg ${(360*(VCUM[j]+s)/VTOT).toFixed(2)}deg`).join(',');
+    const wh=document.createElement('div');wh.className='wheel';wh.style.cssText=`width:${2*WR}px;height:${2*WR}px;left:${-WR}px;top:${-WR}px;background:conic-gradient(${stops})`;o.g.appendChild(wh);
+    VS.forEach((s,j)=>{const p=mkBox(38,PH(j),38,{parent:o.g,stack:true});tint(p,VCOL[j],`color-mix(in srgb,${VCOL[j]} 65%,#fff)`);o.p.push(p);
+      const l=document.createElement('div');l.className='p3 flat l3 pill';o.g.appendChild(l);o.l.push(l)});
+    o.ptr=mk3('ptr3',null,true);o.pl=lab3('sm m','the draw stops here');
+    o.blk=mkBox(132,64,26,{front:'',shadow:false});o.blk.classList.add('gone');
+    o.two=[0,1].map(i=>{const b=mkBox(34,34,14,{front:`<span class="bn" style="font-size:15px">${i?'B':'A'}</span>`,shadow:false});tint(b,'var(--xor)');b.classList.add('gone');return b});
+    o.hud=mk('hud','');hide(o.hud);o.meter=mk('hud','');hide(o.meter);
+    cam3(this.cam(0));UCAM.yaw=UCAM.pitch=0},
+  pose(k,fwd){const o=this.o,run=fwd&&!E.snap,spin=run&&k===1,th=k===0?TH0:TH1,draws=k===6&&ST.ps.draws,N=E.narrow;cam3(this.cam(k));
+    // the wheel turns; the names on it turn back by the same angle, so they always face the reader
+    o.g.style.setProperty('--tm',spin?(2.6/speed()).toFixed(2)+'s':'');o.g.style.setProperty('--ease',spin?'cubic-bezier(.15,.55,.15,1)':'');
+    put3(o.g,0,0,0,{r:` rotateY(${th}deg)`});
+    VS.forEach((s,j)=>{const p=o.p[j],cut=k>=5&&j===SLASH,off=(k===3||k===4)&&OFF.includes(j),isP=k>=1&&k<=4&&j===PROP,a=PHI(j)*Math.PI/180,x=PRAD*Math.cos(a),z=PRAD*Math.sin(a);
+      p.classList.toggle('dim',off);const c=cut?'var(--xor)':VCOL[j];tint(p,c,isP?'var(--gold)':`color-mix(in srgb,${c} 65%,#fff)`);
+      put3(p,x,0,z,{r:cut?' scale3d(1,.5,1)':'',d:cut&&run?.7:0});
+      const h=PH(j)*(cut?.5:1),tag=draws?`${draws[j]} wins`:cut?'slashed':off?'offline':isP?'proposer':`${s} coins`;
+      txt(o.l[j],`V${j+1}<small style="${cut?'color:var(--xor)':isP?'color:var(--amb);font-weight:700':''}">${tag}</small>`);
+      put3(o.l[j],x,-h-30,z,{r:` rotateY(${-th}deg)`,c:1,o:1,d:isP&&spin?2.4:cut&&run?.7:0})});
+    put3(o.ptr,0,-34,WR-8,{c:1,o:k>=1?1:0});put3(o.pl,0,-8,WR+46,{c:1,o:k===1&&!N?1:0,d:spin?2.6:0});
+    // the block: built by the proposer, then voted on in the middle
+    const pp=onWheel(PROP,TH1,-PH(PROP)-50),mid=[0,-290,-40],at=k===2?pp:mid;o.blk.classList.toggle('gone',k<2);
+    tint(o.blk,k>=4?'var(--ok)':'var(--accent)',k>=4?'color-mix(in srgb,var(--ok) 70%,#fff)':'color-mix(in srgb,var(--accent) 70%,#fff)');
+    txt(o.blk.front,k>=4?'<span class="bn" style="font-size:16px">Slot 1 · final ✓</span><span class="bs">it cannot be undone</span>':`<span class="bn" style="font-size:16px">Slot 1 · block</span><span class="bs">proposed and signed by V${PROP+1}</span>`);
+    if(run&&k===2)drop3(o.blk,...pp,[pp[0],pp[1]-60,pp[2]],.1);else put3(o.blk,...at,{d:run&&k===3?.05:0});
+    if(run&&k===3)VS.forEach((s,j)=>{if(!OFF.includes(j)&&j!==PROP)pulse3(onWheel(j,TH1,-PH(j)),[0,-300,-40],VCOL[j],.9+j*.1,.8,6)});
+    // two blocks signed for one slot: the proof that slashes the validator
+    const sp=onWheel(SLASH,TH1,-PH(SLASH)*.5-28);o.two.forEach((b,i)=>{b.classList.toggle('gone',k!==5);const q=[sp[0]+(i?22:-22),sp[1],sp[2]];if(run&&k===5)drop3(b,...q,[q[0],q[1]-50,q[2]],i*.15);else put3(b,...q)});
+    // the panels
+    const P=VS[PROP];
+    hudSet(o.hud,[`<b class="t">${VS.length} validators · ${VTOT} coins at stake</b>the height of a pillar is its stake`,
+      `<b class="t">The draw for slot 1</b>SHA-256(“epoch 7, slot 1”) mod ${VTOT} = <b>${PSR}</b><br>V${PROP+1} owns the numbers ${VCUM[PROP]}–${VCUM[PROP]+P-1}: chance ${pct(P/VTOT,0)}`,
+      `<b class="t">V${PROP+1} builds the block</b>no puzzle: a few milliseconds of work`,`<b class="t">Attestations</b>every vote is a signature, weighted by stake`,
+      `<b class="t">Finality</b>two thirds of the stake stand behind it`,`<b class="t">Slashing</b>V${SLASH+1} signed blocks A and B for one slot: half its stake is burned here`,
+      draws?`<b class="t">1,000 slots drawn</b>wins follow the stake`:`<b class="t">Your turn</b>draw 1,000 slots`][k],12,12,{d:spin?2.5:run?.2:0});
+    const fr=VOTED/VTOT,on=k===3||k===4;
+    txt(o.meter,`<b class="t">Votes for the block</b><div class="bar" style="width:230px"><i style="width:${on?fr*100:0}%;background:var(--${k===4?'ok':'accent'})"></i><span class="tick" style="left:${200/3}%"></span></div>${VOTED} of ${VTOT} coins · <b>${pct(fr)}</b> ${k===4?'<b class="cy">≥ ⅔ ✓</b>':'(⅔ needed)'}`);
+    o.meter.style.setProperty('--dl',dly(run&&k===3?.9:0));put(o.meter,N?12:948,N?528:12,{ax:N?0:1,ay:N?1:0,o:on?1:0})},
+  hold:k=>k===1?7:k===3?6:5,tip:()=>'Drag to turn the picture',
   say(k){const p=VS[PROP]/VTOT,d=ST.ps.draws;return[
-    say('Step 0 · Stake instead of electricity',`<b>Proof of work makes cheating expensive by burning energy. Proof of stake does it with a deposit.</b> Eight validators have locked up coins: the height of a bar is its stake, ${VTOT} coins in all.`,'A validator runs ordinary software on an ordinary computer. What it puts at risk is its deposit.'),
-    say('Step 1 · A lottery weighted by stake',`For every time slot one validator is drawn to propose the block. The coloured strip is the lottery: each validator owns a piece as long as its stake. The pointer stops at ${PSR} of ${VTOT}, inside the piece of <b>V${PROP+1}</b>.`,`V${PROP+1} holds ${VS[PROP]} of ${VTOT} coins, so it is drawn in ${pct(p,p*100%1?1:0)} of all slots. The number must be one that no validator can steer; Ethereum mixes random contributions of many validators (RANDAO).`),
+    say('Step 0 · Stake instead of electricity',`<b>Proof of work makes cheating expensive by burning energy. Proof of stake does it with a deposit.</b> Eight validators have locked up coins: the height of a pillar is its stake, ${VTOT} coins in all. They stand on a wheel, each on a slice as wide as its stake.`,'A validator runs ordinary software on an ordinary computer. What it puts at risk is its deposit.'),
+    say('Step 1 · A lottery weighted by stake',`For every time slot one validator is drawn to propose the block. The wheel is the lottery: each validator owns a slice as wide as its stake. The draw is ${PSR} of ${VTOT}, inside the slice of <b>V${PROP+1}</b>, so the wheel stops with V${PROP+1} at the pointer.`,`V${PROP+1} holds ${VS[PROP]} of ${VTOT} coins, so it is drawn in ${pct(p,p*100%1?1:0)} of all slots. The number must be one that no validator can steer; Ethereum mixes random contributions of many validators (RANDAO).`),
     say('Step 2 · The proposer builds the block',`<b>V${PROP+1} collects transactions, builds the block and signs it.</b> No puzzle is solved: making a block costs a few milliseconds.`,'In Ethereum a slot lasts 12 seconds. If the chosen validator is offline, the slot simply stays empty.'),
     say('Step 3 · The others vote',`The other validators check the block and sign a vote for it, an <b>attestation</b>. A vote weighs as much as the stake behind it. V${OFF[0]+1} and V${OFF[1]+1} are offline; the rest add up to ${VOTED} of ${VTOT} coins: <b>${pct(VOTED/VTOT)}</b>.`),
     say('Step 4 · Two thirds make it final',`<b>Once votes worth at least two thirds of all stake stand behind a checkpoint, and then behind its successor, it is final.</b> ${pct(VOTED/VTOT)} is more than 66.7%.`,'Final means more than “many blocks on top”. To undo it, validators holding at least one third of all stake would have to sign contradictory votes, and the protocol would destroy their deposits for it. In Ethereum this takes two epochs of 32 slots: 2 × 32 × 12 s = 12.8 minutes.'),
     say('Step 5 · Cheating burns the deposit',`<b>V${SLASH+1} signs two different blocks for the same slot.</b> The two signatures are proof of the offence, and anybody can put them into a block. The protocol then destroys part of V${SLASH+1}’s stake and removes it from the validators: it is <b>slashed</b>.`,'In proof of work a cheater loses the electricity he spent. In proof of stake he loses the deposit itself, and the more validators cheat together, the larger the cut, up to everything.'),
-    say('Step 6 · Your turn','<b>Draw 1,000 slots</b> and see how often each validator is chosen. The numbers under the bars are the wins.',d?`With ${VS[4]} of ${VTOT} coins V5 should win about ${VS[4]*5} times and won ${d[4]}. V4, with ${VS[3]}, about ${VS[3]*5} times, and won ${d[3]}. Stake buys chances, exactly as hash rate does in proof of work.`:'')][k]},
+    say('Step 6 · Your turn','<b>Draw 1,000 slots</b> and see how often each validator is chosen. The numbers on the pillars are the wins.',d?`With ${VS[4]} of ${VTOT} coins V5 should win about ${VS[4]*5} times and won ${d[4]}. V4, with ${VS[3]}, about ${VS[3]*5} times, and won ${d[3]}. Stake buys chances, exactly as hash rate does in proof of work.`:'')][k]},
   bar(k){return k===6?`<button data-ps="draw" class="pri">Draw 1,000 slots</button><div class="live">${ST.ps.draws?'Every slot is drawn independently, with chances in proportion to stake.':'Nothing drawn yet.'}</div>`:''},
   extra(k){const d=ST.ps.draws;return`<h3>The validators</h3><table class="kv"><tr><th></th><th>Stake</th><th>Chance per slot</th>${d&&k===6?'<th>Wins in 1,000</th>':''}</tr>${VS.map((s,j)=>`<tr class="${k>=1&&k<=4&&j===PROP?'sel':k>=5&&j===SLASH?'bad':''}"><td class="t"><i class="sw" style="background:${VCOL[j]}"></i>V${j+1}</td><td>${s}</td><td>${pct(s/VTOT,1)}</td>${d&&k===6?`<td>${d[j]}</td>`:''}</tr>`).join('')}</table>
     <p style="margin-top:8px">${k===1?`The draw: SHA-256(“epoch 7, slot 1”) mod ${VTOT} = ${PSR}. V${PROP+1} owns the numbers ${VCUM[PROP]} to ${VCUM[PROP]+VS[PROP]-1}.`:k===3||k===4?`Voted: ${VOTED} of ${VTOT} = ${pct(VOTED/VTOT)}. Needed: more than ${Math.ceil(VTOT*2/3)} of ${VTOT}.`:'Toy numbers. In Ethereum a validator needs 32 ETH to start, and since May 2025 one validator may hold up to 2,048 ETH.'}</p>`}};
+
 
 /* ================= the lecture notes under the picture ================= */
 const EX=(t,h)=>`<div class="exb"><b>${t}</b>${h}</div>`,NOX=(t,h)=>`<div class="exb no"><b>${t}</b>${h}</div>`,USE=(t,h)=>`<div class="exb use"><b>${t}</b>${h}</div>`,
