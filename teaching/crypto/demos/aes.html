@@ -12,6 +12,7 @@
   --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
   --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
 }
 @media (prefers-color-scheme:dark){:root{
@@ -405,6 +406,43 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 .mcr{width:36px;background:var(--accent);color:var(--onAccent)}
 .mcd{color:var(--muted)}
 footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* parts of a picture that can be clicked */
+.ovw g[data-goto]{outline:none}
+.ovw g[data-goto]:focus-visible .ob{stroke:var(--accent);stroke-width:2.6}
+#sbIn .c,#sbOut .c,#mcIn .c,#mcO .c,#arkS .c,#arkK .c,#arkO .c{cursor:pointer}
+#sbIn .c:hover,#sbOut .c:hover,#mcIn .c:hover,#mcO .c:hover,#arkS .c:hover,#arkK .c:hover,#arkO .c:hover{box-shadow:0 0 0 2px var(--accent)}
+.ked .kwg{cursor:pointer;outline:none}
+.ked .kwg:hover .wb,.ked .kwg:focus-visible .wb{stroke:var(--accent);stroke-width:2.6}
+.pickline{margin:10px auto 0;max-width:640px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.doc a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -466,6 +504,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline. Test vectors from FIPS-197.</footer>
 
@@ -686,7 +725,7 @@ const ovRest=k=>{const Nr=D.K.Nr;return k===0?'P':k===1?'A0':k<=Nr?'AK1':k===Nr+
 T.ov={n:()=>D.K.Nr+3,render(k){
   const K=D.K,Nr=K.Nr,r=k>=2&&k<=Nr?k-1:null,rest=ovRest(k),s=ovState(k),{bx,bw,bh,wx,tx}=OV;
   const arrow=(d,w,kind)=>`<path class="ow${kind?' k':''}" data-w="${w}" d="${d}" marker-end="url(#${kind?'omk':'om'})"/>`;
-  const box=(id,label,o={})=>`<g${o.go?` data-goto="${o.go}"${o.round!=null?` data-round="${o.round}"`:''}`:''}${o.go?`><title>Open ${label}</title`:''}><rect class="ob${o.cls?' '+o.cls:''}${id===rest?' on':''}" id="ov-${id}" x="${o.x||bx}" y="${OV.y[id]}" width="${o.w||bw}" height="${o.h||bh}" rx="8"/><text class="ot${o.cls==='io'?' io':''}" x="${o.tx||tx}" y="${OV.y[id]+(o.h||bh)/2}"${o.mid?' text-anchor="middle"':''}>${label}</text>${o.key?`<text class="okk" x="${bx+bw-12}" y="${ovc(id)}">${o.key}</text>`:''}</g>`;
+  const box=(id,label,o={})=>`<g${o.go?` data-goto="${o.go}" tabindex="0" role="button"${o.round!=null?` data-round="${o.round}"`:''}`:''}${o.go?`><title>Open ${label}</title`:''}><rect class="ob${o.cls?' '+o.cls:''}${id===rest?' on':''}" id="ov-${id}" x="${o.x||bx}" y="${OV.y[id]}" width="${o.w||bw}" height="${o.h||bh}" rx="8"/><text class="ot${o.cls==='io'?' io':''}" x="${o.tx||tx}" y="${OV.y[id]+(o.h||bh)/2}"${o.mid?' text-anchor="middle"':''}>${label}</text>${o.key?`<text class="okk" x="${bx+bw-12}" y="${ovc(id)}">${o.key}</text>`:''}</g>`;
   let h=`<svg class="ovw" id="ovSvg" viewBox="0 0 ${OV.W} ${OV.H}" role="img" aria-label="AES encryption as a flowchart"><defs>
     <marker id="om" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="om" d="M0,0 L10,5 L0,10 z"/></marker>
     <marker id="omk" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="omk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
@@ -972,7 +1011,7 @@ T.sb={n:()=>17,rounds:()=>range(1,D.K.Nr),render(k){
       <svg class="sbarr" id="sbArr" aria-hidden="true"></svg>
     </div>
     ${cur>=0&&!ST.sbInv?sbLookup(x,cur):''}
-    <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Click any S-box entry to see how it is computed.</p>`;
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Click any S-box entry to see how it is computed. Click a byte of the input or output to go to its step.</p>`;
   requestAnimationFrame(()=>drawSbArrows(cur));
   $('#explain').innerHTML=cur<0?`<div class="step">SubBytes · round ${r}</div>
     <p>Every byte of the state is replaced by S(byte), using one fixed table of 256 entries. The same table is used for all 16 bytes in every round.</p>
@@ -1092,6 +1131,7 @@ T.mc={n:()=>17,rounds:()=>range(1,D.K.Nr-1),render(k){
     ${opx('→','MixColumns')}
     <div id="mcO">${gbox('Output',grid(out,{cls:i=>i===cur?'cur chg':(i<k?'chg':'')}))}</div>
   </div>
+  <p class="hint">Click a byte of the input or output to go to its step.</p>
   <div class="sec"><div class="h3">Column ${c}: output = matrix × column (in GF(2<sup>8</sup>))</div>
     <div class="mx">${mt}<span>×</span>${vin}<span>=</span>${vout}</div>${det}</div>
   <div class="sec play"><div class="h3">Try it yourself: type any column (4 hex bytes)</div>
@@ -1177,6 +1217,7 @@ T.ark={n:()=>17,rounds:()=>range(0,D.K.Nr),render(k){
     ${opx('=')}
     <div id="arkO">${gbox('Output',grid(out,{cls:i=>i===cur?'cur chg':(i<k?'chg':'')}))}</div>
   </div>
+  <p class="hint">Click a byte of the state, the key or the output to go to its step.</p>
   ${cur>=0?`<div class="sec"><div class="h3">Byte ${rcN(cur)}: the state byte and the key byte meet here</div>
     <div class="mcw" id="arkW"><div class="mct"><div class="mcp"><span class="mcb" style="background:var(--accent)">${hx(o.p[cur])}</span></div><small>state</small></div><span class="mcx">⊕</span><div class="mct"><div class="mcp"><span class="mcb" style="background:var(--key)">${hx(rk[cur])}</span></div><small>key</small></div><span class="mcx">=</span><div class="mct"><div class="mcp"><span class="mcr">${hx(o.s[cur])}</span></div><small>output</small></div></div>
     <div class="scroll" id="arkB" style="margin-top:12px">${bitRows([['state',o.p[cur]],['⊕ key',rk[cur]],['= output',o.s[cur],'res']])}</div></div>`:''}`;
@@ -1380,9 +1421,9 @@ function keDiagram(cur,sub){
   for(let c=0;c<nb;c++){const on=c===j&&xorOn;
     s+=`<circle cx="${cx(c)}" cy="${XY}" r="12" class="xo${on?' on':''}"/><path class="xp${on?' on':''}" d="M${cx(c)-7} ${XY}H${cx(c)+7}M${cx(c)} ${XY-7}V${XY+7}"/>`}
   for(let c=0;c<Nk;c++){const n=t0+c,src=(c===j&&xorOn)?' src2':(gIn&&c===Nk-1)?' src':'';
-    s+=`<text class="kcap" x="${cx(c)}" y="${TY-8}">w${n}</text><rect class="wb${n<Nk?' key':''}${src}" x="${bx(c)}" y="${TY}" width="${BW}" height="${BH}" rx="6"/><text class="wt" x="${cx(c)}" y="${TY+BH/2}">${hexs(K.w[n])}</text>`}
+    s+=`<text class="kcap" x="${cx(c)}" y="${TY-8}">w${n}</text><g class="kwg" data-kpk="${n}" tabindex="0" role="button" aria-label="How w${n} is computed"><rect class="wb${n<Nk?' key':''}${src}" x="${bx(c)}" y="${TY}" width="${BW}" height="${BH}" rx="6"/><text class="wt" x="${cx(c)}" y="${TY+BH/2}">${hexs(K.w[n])}</text></g>`}
   for(let c=0;c<nb;c++){const n=b0+c,d=done(n),src=(cur>=0&&n===cur-1&&chainOn)?' src':'';
-    s+=`<rect data-kw="${n}" class="wb${n===cur?' cur':''}${d?'':' emp'}${src}" x="${bx(c)}" y="${BY}" width="${BW}" height="${BH}" rx="6"/><text data-kwt="${n}" class="wt${d?'':' emp'}" x="${cx(c)}" y="${BY+BH/2}">${d?hexs(K.w[n]):'· · · ·'}</text><text class="kcap" x="${cx(c)}" y="${BY+BH+16}">w${n} <tspan class="kr">K${n>>2}</tspan></text>`}
+    s+=`<g class="kwg" data-kpk="${n}" tabindex="0" role="button" aria-label="How w${n} is computed"><rect data-kw="${n}" class="wb${n===cur?' cur':''}${d?'':' emp'}${src}" x="${bx(c)}" y="${BY}" width="${BW}" height="${BH}" rx="6"/><text data-kwt="${n}" class="wt${d?'':' emp'}" x="${cx(c)}" y="${BY+BH/2}">${d?hexs(K.w[n]):'· · · ·'}</text></g><text class="kcap" x="${cx(c)}" y="${BY+BH+16}">w${n} <tspan class="kr">K${n>>2}</tspan></text>`}
   return {svg:s+'</svg>',W,b,t0,b0,nb};
 }
 // g (RotWord, SubWord, Rcon) or the AES-256 SubWord, shown as byte columns
@@ -1420,6 +1461,7 @@ T.ke={n:()=>keSteps().length,render(k){
       if(w===cur)return sub==='xor'?'cur chg':'cur';if(w<Nk)return 'key';return ''}}))}</div>`}
   stage.innerHTML=`<div class="h3">${cur<0?`Block 1 of the key schedule: from the key words w0…w${Nk-1} to w${Nk}…w${Nk+dg.nb-1}`:`Block ${dg.b+1}: words w${dg.b0}…w${dg.b0+dg.nb-1} are made from w${dg.t0}…w${dg.t0+Nk-1}`}</div>
     <div class="ked scroll"><div style="min-width:${Math.round(dg.W*0.62)}px;max-width:${dg.W}px;margin:0 auto">${dg.svg}</div></div>
+    <p class="hint">Click a word in the picture to see how it is computed.</p><p class="pickline" id="kePick">${kePickLine()}</p>
     ${pipe?`<div class="sec kpipe">${pipe}</div>`:''}${last?`<div class="sec kpipe">${last}</div>`:''}
     <div class="sec"><div class="h3">All round keys. Round key K<sub>r</sub> = the four words w<sub>4r</sub> … w<sub>4r+3</sub>, one word per column. Click one to jump to it.</div><div class="kgrid">${g}</div></div>`;
   const rk=cur>=0?`<p>w${cur} becomes <b>column ${cur&3}</b> of round key <b>K${cur>>2}</b>.</p>`:'';
@@ -1589,6 +1631,265 @@ plan(k){return{dur:1400,start(){
     bar.style.height=(q*N/128*100)+'%';lab.textContent=cnt.textContent=Math.round(q*N)};
 }}}};
 
+/* ---------- the longer read under the picture: one article per tab or sub-view ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents; page ranges: the course syllabus
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const AZB6=`${AZB}: pp. 259–272, the AES standard (lecture 6 of the syllabus).`,P4=s=>`${PAAR}, chapter 4: ${s}`,PDEC=P4('section 4.5, “Decryption”.');
+const REFS={
+  ov:[P4('section 4.1, “Introduction”, and section 4.2, “Overview of the AES Algorithm”.'),AZB6],
+  gf:[P4('section 4.3, “Some Mathematics: A Brief Introduction to Galois Fields”, with sections 4.3.3 to 4.3.6 on GF(2<sup>m</sup>): addition, multiplication and inversion.')],
+  'sb/sbox':[P4('section 4.4.1, “Byte Substitution Layer”.'),AZB6],
+  'sb/inv':[PDEC],
+  'sr/sr':[P4('section 4.4.2, “Diffusion Layer”.'),AZB6],
+  'sr/inv':[PDEC],
+  mc:[P4('section 4.4.2, “Diffusion Layer”.'),AZB6],
+  ark:[P4('section 4.4.3, “Key Addition Layer”.'),AZB6],
+  rd:[P4('section 4.4, “Internal Structure of AES”.'),AZB6],
+  ke:[P4('section 4.4.4, “Key Schedule”.'),AZB6],
+  'x/enc':[P4('section 4.2, “Overview of the AES Algorithm”.'),AZB6],
+  'x/dec':[PDEC],
+  df:[`${PAAR}, chapter 3: section 3.1.1, “Confusion and Diffusion”, and chapter 4: section 4.4.2, “Diffusion Layer”.`]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?box('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const GO=(tab,t)=>`<button class="link" data-goto="${tab}">${t}</button>`;
+const TICK=b=>b?'✓':'✗';
+const dPow=(x,e)=>{let r=1;while(e){if(e&1)r=gm(r,x);x=gm(x,x);e>>=1}return r};
+// the inverse of the affine map of the S-box: b_i = b'_(i+2) ⊕ b'_(i+5) ⊕ b'_(i+7) ⊕ d_i with d = 05
+const dInvAff=y=>{let r=0;for(let i=0;i<8;i++)r|=(((y>>((i+2)&7))^(y>>((i+5)&7))^(y>>((i+7)&7))^(5>>i))&1)<<i;return r};
+// S-box properties, computed once on first use (a few ms): largest difference-table entry, nonlinearity, fixed points
+let SBST=null;
+function sbStats(){if(SBST)return SBST;
+  let du=0,wm=0;const c=new Uint16Array(256),f=new Int32Array(256);
+  for(let a=1;a<256;a++){c.fill(0);for(let x=0;x<256;x++)c[SBOX[x]^SBOX[x^a]]++;for(let y=0;y<256;y++)if(c[y]>du)du=c[y]}
+  // fast Walsh transform of every non-zero combination of output bits
+  for(let b=1;b<256;b++){for(let x=0;x<256;x++){let v=b&SBOX[x],p=0;while(v){p^=1;v&=v-1}f[x]=p?-1:1}
+    for(let h=1;h<256;h*=2)for(let i=0;i<256;i+=2*h)for(let j=i;j<i+h;j++){const u=f[j],w=f[j+h];f[j]=u+w;f[j+h]=u-w}
+    for(let a=0;a<256;a++)if(Math.abs(f[a])>wm)wm=Math.abs(f[a])}
+  let fp=0,ofp=0;for(let x=0;x<256;x++){if(SBOX[x]===x)fp++;if(SBOX[x]===(x^255))ofp++}
+  return SBST={du,nl:128-wm/2,fp,ofp};
+}
+// one line under the key expansion picture: how the clicked word was computed
+function kePickLine(){
+  const K=D.K,Nk=K.Nk,n=ST.kePick;if(n==null||n>=K.T)return '';
+  const f=K.info[n],w=hexs(K.w[n]);
+  if(f.kind==='key')return `<b>w${n}</b> = key bytes ${4*n} … ${4*n+3} = <b>${w}</b>`;
+  const a=hexs(f.back);
+  if(f.kind==='plain')return `<b>w${n}</b> = w${n-Nk} ⊕ w${n-1} = ${a} ⊕ ${hexs(f.prev)} = <b>${w}</b>`;
+  if(f.kind==='sub')return `<b>w${n}</b> = w${n-Nk} ⊕ SubWord(w${n-1}) = ${a} ⊕ ${hexs(f.temp)} = <b>${w}</b>`;
+  return `<b>w${n}</b> = w${n-Nk} ⊕ g(w${n-1}) = ${a} ⊕ ${hexs(f.temp)} = <b>${w}</b><br>g(w${n-1}) = SubWord(RotWord(${hexs(f.prev)})) ⊕ Rcon[${n/Nk}] = ${hexs(f.sub)} ⊕ ${hx(f.rc)}000000`;
+}
+
+T.ov.doc=()=>{const Nr=D.K.Nr,a0=findOp('ark',0).s,bits=D.key.length*8;
+  return `<h2>AES as a whole</h2>
+  <p class="lead">AES is a block cipher. It turns a block of 16 bytes (128 bits) into another block of 16 bytes, under a secret key of 16, 24 or 32 bytes. With the same key the cipher can be run backwards, so each ciphertext block decrypts to exactly one plaintext block.</p>
+  <h3>How it works</h3>
+  <p>The 16 bytes are kept in a 4 × 4 table of bytes, the <b>state</b>. One round applies four operations to it: SubBytes changes every byte through a fixed table, ShiftRows moves bytes to other columns, MixColumns combines the four bytes of each column, and AddRoundKey XORs a 16-byte round key into the state.</p>
+  <p>AES-${bits} first adds round key K0, then runs ${Nr} rounds; the last round leaves out MixColumns. So the state passes ${Nr} SubBytes, ${Nr} ShiftRows, ${Nr-1} MixColumns and ${Nr+1} AddRoundKey operations. The ${GO('ke','key expansion')} makes the ${Nr+1} round keys from the key.</p>
+  ${EX(M(`plaintext: ${hexs(D.pt)}<br>key: ${hexs(D.key)}<br>ciphertext: ${hexs(D.ct)}`)+`<br>Round key K0 is the first 16 bytes of the key, so before round 1 the first byte becomes ${M(`${hx(D.pt[0])} ⊕ ${hx(D.key[0])} = ${hx(a0[0])}`)}.`)}
+  <h3>Why it is built this way</h3>
+  <p>AES is a substitution–permutation network. SubBytes is the only non-linear step; it makes the relation between key, plaintext and ciphertext complicated (confusion). ShiftRows and MixColumns are linear; they spread the influence of each byte over the whole block (diffusion). AddRoundKey is the only step that uses the key. All other steps are public and the same for everyone.</p>
+  <p>The last round has no MixColumns. MixColumns is linear, so in the last round it could be moved behind the final AddRoundKey (with a changed round key). Then anyone could undo it from the ciphertext, without the key. It would cost time and add no security.</p>
+  ${NO('AES encrypts one block. If a long message is cut into blocks and each block is encrypted alone with the same key (ECB mode), equal plaintext blocks give equal ciphertext blocks, and patterns of the message stay visible. A mode of operation such as CTR or GCM is needed: see <a href="modes.html">modes.html</a>.')}
+  ${USE('AES is used in TLS (for example AES-GCM in TLS 1.3), in Wi-Fi with WPA2 (CCMP) and in disk encryption. Many processors have instructions that compute one AES round, for example AES-NI on x86. DES, the earlier standard that AES replaced, is in <a href="des.html">des.html</a>.')}
+  ${MORE('ov')}`};
+
+T.gf.doc=()=>{const a=ST.gfA,b=ST.gfB,p=gm(a,b),on=range(0,7).filter(i=>(b>>i)&1),pw=[a];for(let i=1;i<8;i++)pw.push(xt(pw[i-1]));
+  const inv=a?GINV[a]:0;
+  return `<h2>Bytes as elements of GF(2⁸)</h2>
+  <p class="lead">GF(2⁸) is a finite field with 256 elements, one for every byte. In a field you can add, subtract, multiply, and divide by anything except 0, and the result is again an element of the field.</p>
+  <h3>How it works</h3>
+  <p>The byte with bits b₇ … b₀ stands for the polynomial b₇x⁷ + … + b₁x + b₀. Each coefficient is 0 or 1 and is computed modulo 2, so 1 + 1 = 0. Adding two bytes adds the coefficients bit by bit without carries: this is XOR. Subtracting is the same as adding, because every byte is its own negative: a + a = 00.</p>
+  <p>To multiply, multiply the two polynomials and keep the remainder after division by m(x) = x⁸ + x⁴ + x³ + x + 1. The remainder has degree at most 7, so it fits in one byte. In practice a • b is the XOR of the values a · xⁱ for all bits i of b that are 1, and each a · xⁱ comes from the one before by xtime.</p>
+  ${EX(M(`a = ${hx(a)}, b = ${hx(b)}<br>a + b = ${hx(a)} ⊕ ${hx(b)} = ${hx(a^b)}<br>a + a = ${hx(a^a)}<br>bits of b equal to 1: ${on.length?on.join(', '):'none'}<br>a • b = ${on.length?on.map(i=>hx(pw[i])).join(' ⊕ '):'00'} = ${hx(p)}<br>`+(a?`a⁻¹ = ${hx(inv)}, check: ${hx(a)} • ${hx(inv)} = ${hx(gm(a,inv))}`:'a = 00 has no inverse')))}
+  <h3>Why ordinary arithmetic modulo 256 does not work</h3>
+  <p>The integers modulo 256 are not a field: no even number has an inverse there. For example ${M(`02 · 80 = ${(2*0x80).toString(16)} (hex) ≡ ${hx((2*0x80)%256)} (mod 256)`)}, and no number times 02 gives 01 modulo 256. In GF(2⁸) the same bytes give ${M(`02 • 80 = ${hx(gm(2,0x80))}`)}, and 02 has the inverse ${M(hx(GINV[2]))}.</p>
+  <p>m(x) cannot be written as a product of two polynomials of smaller degree: it is <b>irreducible</b>. It plays the role of a prime modulus, and it is the reason every non-zero byte has an inverse. How GF(2<sup>m</sup>) is built from scratch is shown in <a href="fields.html">fields.html</a>.</p>
+  ${NO('XOR with 1b only when a 1 falls out of bit 7. XORing 1b every time, or forgetting it, gives wrong products that still look like normal bytes. In software, code that branches on the top bit, or looks up a table at a secret index, can leak the key through its running time.')}
+  ${USE(`${GO('sb','SubBytes')} starts with the inverse in this field, and ${GO('mc','MixColumns')} multiplies by 02 and 03. AES-GCM authenticates messages with multiplication in a larger binary field, GF(2¹²⁸). Modes of operation are in <a href="modes.html">modes.html</a>.`)}
+  ${MORE('gf')}`};
+
+function docSb(k){
+  const r=ST.round.sb,o=findOp('sb',r),i=k>0?k-1:0,x=o.p[i],v=GINV[x],p=dPow(x,254),y=SBOX[x],st=sbStats(),z=SBOX[SBOX[x]]!==x?x:0;
+  return `<h2>SubBytes and the S-box</h2>
+  <p class="lead">SubBytes replaces each of the 16 bytes of the state by S(byte), where S is one fixed table of 256 bytes, the AES S-box. It is the only step of AES that is not linear.</p>
+  <h3>How the table is made</h3>
+  <p>Each entry comes from two steps. First the byte is replaced by its inverse in GF(2⁸); 00 has no inverse and stays 00. Then an affine map is applied to the 8 bits: a fixed 8 × 8 matrix of bits times the byte, then XOR with the constant 63. In short, S(x) = A · x⁻¹ ⊕ 63.</p>
+  <p>The inverse can also be written as a power: x⁻¹ = x²⁵⁴. The 255 non-zero bytes form a group under multiplication, so x²⁵⁵ = 01 for every non-zero x.</p>
+  ${EX(M(`${rcN(i)} of round ${r}: x = ${hx(x)}<br>`+(x?`x²⁵⁴ = ${hx(p)}, and ${hx(x)} • ${hx(p)} = ${hx(gm(x,p))}, so x⁻¹ = ${hx(v)}<br>S(${hx(x)}) = A · ${hx(v)} ⊕ 63 = ${hx(y)}`:`00 has no inverse and is kept as 00<br>S(00) = A · 00 ⊕ 63 = ${hx(y)}`))+`<br>All 16 bytes: ${M(sp(o.p))} become ${M(sp(o.s))}.`)}
+  <h3>Why it is built this way</h3>
+  <p>If every step of a cipher were linear, each ciphertext bit would be a linear function of plaintext and key bits, and a few known plaintext and ciphertext pairs would give the key by solving linear equations. The inverse in GF(2⁸) is very far from linear. The page measures this on the table itself:</p>
+  <ul class="pts"><li>For every non-zero input difference Δ, each output difference S(x) ⊕ S(x ⊕ Δ) appears for at most <b>${st.du}</b> of the 256 inputs x. So a fixed difference passes the S-box with probability at most ${st.du}/256 = 2<sup>${+Math.log2(st.du/256).toFixed(2)}</sup>.</li>
+  <li>Every XOR of output bits agrees with every XOR of input bits, or with its complement, on at most <b>${256-st.nl}</b> of the 256 inputs. The nonlinearity of S is ${st.nl}.</li></ul>
+  <p>The inverse alone is a very simple formula, x²⁵⁴. The affine map over the bits is of a different kind and hides this formula. The constant 63 moves 00 away from itself: the table has ${st.fp} bytes with S(x) = x, and ${st.ofp} with S(x) = x ⊕ ff.</p>
+  ${NO(`Software usually reads S(x) from a table, with a secret-dependent byte as the index. On a processor with a cache, the time of a read depends on which parts of the table were used before, and cache-timing attacks have recovered AES keys in this way. Constant-time code computes the S-box with logic operations (bitslicing) or uses the AES instructions of the processor.<br>S is not its own inverse: ${M(`S(S(${hx(z)})) = S(${hx(SBOX[z])}) = ${hx(SBOX[SBOX[z]])}`)}, not ${hx(z)}. Decryption needs the inverse table.`)}
+  ${USE(`The same S-box is used in the ${GO('ke','key expansion')} (SubWord). Lightweight ciphers use smaller S-boxes; PRESENT uses one with 4-bit input and output (<a href="present.html">present.html</a>).`)}
+  ${MORE('sb/sbox')}`;
+}
+function docSbInv(k){
+  const r=ST.round.sb,o=findOp('sb',r),i=k>0?k-1:0,y=o.s[i],u=dInvAff(y),x=u?GINV[u]:0,st=sbStats();
+  return `<h2>InvSubBytes and the inverse S-box</h2>
+  <p class="lead">Decryption replaces each byte y by S⁻¹(y): the one byte x with S(x) = y. This is a second fixed table of 256 bytes.</p>
+  <h3>How it works</h3>
+  <p>The two steps of S are undone in the opposite order. First the affine map is undone by another affine map,</p>
+  <p>${M('b<sub>i</sub> = b′<sub>i+2</sub> ⊕ b′<sub>i+5</sub> ⊕ b′<sub>i+7</sub> ⊕ d<sub>i</sub>, indices mod 8, d = 05,')}</p>
+  <p>and then the inverse in GF(2⁸) is taken again, because (x⁻¹)⁻¹ = x.</p>
+  ${EX(M(`y = ${hx(y)} (output byte ${rcN(i)} of SubBytes, round ${r})<br>undo the affine map: ${hx(u)}<br>inverse in GF(2⁸): ${u?hx(x):'00 stays 00'}<br>S⁻¹(${hx(y)}) from the table: ${hx(ISBOX[y])} ${TICK(ISBOX[y]===x)}<br>and S(${hx(x)}) = ${hx(SBOX[x])} ${TICK(SBOX[x]===y)}`))}
+  <h3>Why it works</h3>
+  <p>S is a permutation of the 256 bytes: no two bytes have the same image. So every y has exactly one preimage, and the table can be turned around. The difference table of S⁻¹ is the difference table of S with inputs and outputs swapped, so its largest entry is again ${st.du}; the same holds for the linear properties.</p>
+  ${NO('The inverse affine map is a different map from the forward one. A decryption that reuses the forward map, or the forward table, gives wrong bytes. Code that reads S⁻¹ from a table has the same cache-timing problem as the forward table.')}
+  ${USE('In CTR and GCM mode the cipher is only used in the forward direction, also for decryption. Devices that only use these modes need neither the inverse S-box nor the rest of the inverse cipher. See <a href="modes.html">modes.html</a>.')}
+  ${MORE('sb/inv')}`;
+}
+T.sb.doc=k=>ST.sbInv?docSbInv(k):docSb(k);
+
+const rowHex=(s,rr)=>[0,1,2,3].map(c=>hx(s[rr+4*c])).join(' ');
+function docSr(){
+  const r=ST.round.sr,o=findOp('sr',r),c0=[0,1,2,3].map(SR_SRC);
+  return `<h2>ShiftRows</h2>
+  <p class="lead">ShiftRows rotates row r of the state to the left by r positions. Bytes change places; no value changes.</p>
+  <h3>How it works</h3>
+  <p>The state is filled column by column: byte number i of the block sits in row i mod 4 and column ⌊i/4⌋. So row 1 holds the block bytes 1, 5, 9 and 13. After ShiftRows, column c holds row 0 of column c, row 1 of column c + 1, row 2 of column c + 2 and row 3 of column c + 3, counted mod 4.</p>
+  ${EX(M([0,1,2,3].map(rr=>`row ${rr}: ${rowHex(o.p,rr)} → ${rowHex(o.s,rr)}`).join('<br>'))+`<br>Column 0 after ShiftRows (round ${r}) is made of the block bytes ${c0.join(', ')}: ${M(c0.map(j=>hx(o.p[j])).join(' '))}, one from each of the four columns.`)}
+  <h3>Why it is built this way</h3>
+  <p>MixColumns works inside one column. Without ShiftRows the four columns would never meet: AES would fall apart into four independent ciphers on 32 bits each, and each could be attacked alone. The offsets 0, 1, 2 and 3 are all different, so the four bytes of one column go to four different columns. In the next round, MixColumns makes each of them influence a whole column.</p>
+  ${NO('Do not read the state row by row: the block bytes 0, 1, 2, 3 form the first column, not the first row. ShiftRows on the wrong axis still gives random-looking output, and only a test vector shows the mistake. Also, ShiftRows uses no key and changes no value; alone it gives no security.')}
+  ${USE(`Moving parts of the state is the permutation layer of a substitution–permutation network. PRESENT moves single bits instead of bytes (<a href="present.html">present.html</a>). How fast one changed bit spreads in AES is shown in the ${GO('df','Diffusion')} tab.`)}
+  ${MORE('sr/sr')}`;
+}
+function docSrInv(){
+  const r=ST.round.sr,o=findOp('sr',r),back=ishr(o.s),twice=shr(o.s),sb=findOp('sb',r).p,com=hexs(shr(sub(sb)))===hexs(sub(shr(sb)));
+  return `<h2>InvShiftRows</h2>
+  <p class="lead">InvShiftRows rotates row r to the right by r positions. It puts every byte back where it was before ShiftRows.</p>
+  <h3>How it works</h3>
+  <p>Rotating a row of four bytes right by r undoes a rotation left by r. Row 0 does not move in either direction.</p>
+  ${EX(M([0,1,2,3].map(rr=>`row ${rr}: ${rowHex(o.s,rr)} → ${rowHex(back,rr)}`).join('<br>'))+`<br>The result is the ShiftRows input of round ${r} again: ${TICK(hexs(back)===hexs(o.p))}`)}
+  <h3>Order in decryption</h3>
+  <p>SubBytes changes each byte with the same table, wherever the byte is, and ShiftRows only moves bytes. So the two can be done in either order. The page checks it on the SubBytes input s of round ${r}: ShiftRows(SubBytes(s)) = SubBytes(ShiftRows(s)) ${TICK(com)}. This is why decryption may run InvShiftRows before InvSubBytes, as this page does.</p>
+  ${NO(`ShiftRows is not its own inverse. Applied twice, it moves row 1 by two positions: ${M(`row 1: ${rowHex(o.p,1)} → ${rowHex(twice,1)}`)}. Only rows 0 and 2 come back to their start.`)}
+  ${USE(`Decryption needs the inverse of every step; the ${GO('x','Encrypt / Decrypt')} tab runs all of them when it is set to Decrypt.`)}
+  ${MORE('sr/inv')}`;
+}
+T.sr.doc=k=>ST.srInv?docSrInv(k):docSr(k);
+
+T.mc.doc=k=>{
+  const r=ST.round.mc,o=findOp('mc',r),c=k>0?(k-1)>>2:0,a=[0,1,2,3].map(j=>o.p[4*c+j]),b=mixCol(a,MM);
+  const a2=a.slice();a2[0]^=1;const b2=mixCol(a2,MM),nch=b2.filter((v,j)=>v!==b[j]).length;
+  const d=(c+1)&3,e=[0,1,2,3].map(j=>o.p[4*d+j]),sx=a.map((v,j)=>v^e[j]),l1=mixCol(sx,MM),l2=mixCol(e,MM).map((v,j)=>v^b[j]);
+  return `<h2>MixColumns</h2>
+  <p class="lead">MixColumns replaces each column of four bytes by four new bytes. Every new byte depends on all four old bytes of its column.</p>
+  <h3>How it works</h3>
+  <p>The column is multiplied by a fixed 4 × 4 matrix whose rows are the rotations of (02 03 01 01). Multiplication is in GF(2⁸) and addition is XOR. The same rule written with polynomials: the column a₀, a₁, a₂, a₃ is the polynomial a₃x³ + a₂x² + a₁x + a₀ with bytes as coefficients, and it is multiplied by c(x) = 03x³ + 01x² + 01x + 02 modulo x⁴ + 1.</p>
+  ${EX(`Column ${c} of round ${r}: ${M(`${sp(a)} → ${sp(b)}`)}<br>Change one bit of its first byte: ${M(`${sp(a2)} → ${sp(b2)}`)}. ${nch} of the 4 output bytes change.<br>MixColumns is linear. With column ${d}: ${M(`MC(col ${c} ⊕ col ${d}) = MC(${sp(sx)}) = ${sp(l1)}`)} and ${M(`MC(col ${c}) ⊕ MC(col ${d}) = ${sp(l2)}`)} ${TICK(hexs(l1)===hexs(l2))}`)}
+  <h3>Why it is built this way</h3>
+  <p>The matrix is <b>MDS</b> (maximum distance separable). For any two different input columns, the number of bytes that differ at the input plus the number that differ at the output is at least 5. This number is the <b>branch number</b>; with 4 bytes in and 4 bytes out, 5 is the largest possible. Together with ShiftRows it gives the designers' wide trail argument: every differential or linear trail through four rounds passes through at least 25 active S-boxes.</p>
+  <p>The coefficients 01, 02 and 03 are small: a product is at most one xtime and one more XOR.</p>
+  ${NO('MixColumns is linear, as the example checks, so on its own it adds no security; the non-linearity comes only from SubBytes. The inverse matrix has larger coefficients (0e, 0b, 0d, 09), so in simple software decryption is slower than encryption.')}
+  ${USE(`MDS matrices are used for diffusion in other designs too, for example in the block cipher Twofish. The effect of a whole round is in the ${GO('rd','One round')} tab.`)}
+  ${MORE('mc')}`};
+
+T.ark.doc=k=>{
+  const r=ST.round.ark,o=findOp('ark',r),rk=D.K.rk(r),i=k>0?k-1:0,k0=D.K.rk(0),c0=findOp('ark',0).s,rec=ark(D.pt,c0),wi=4*r+(i>>2);
+  return `<h2>AddRoundKey</h2>
+  <p class="lead">AddRoundKey XORs the 16 bytes of the state with the 16 bytes of a round key. It is the only step where the key enters the cipher.</p>
+  <h3>How it works</h3>
+  <p>Round key K<sub>r</sub> consists of the words w<sub>4r</sub> … w<sub>4r+3</sub> from the key expansion. Word w<sub>4r+c</sub> becomes column c, so byte s<sub>i,c</sub> is XORed with byte i of that word. XOR is its own inverse, so the same operation with the same round key undoes it.</p>
+  ${EX(M(`${rcN(i)}, round ${r}: ${hx(o.p[i])} ⊕ ${hx(rk[i])} = ${hx(o.s[i])}<br>the key byte is byte ${i&3} of word w${wi} = ${hexs(D.K.w[wi])}<br>with the same key byte again: ${hx(o.s[i])} ⊕ ${hx(rk[i])} = ${hx(o.s[i]^rk[i])}`))}
+  <h3>Why it is placed this way</h3>
+  <p>All other steps are public. A step that comes before the first key, or after the last one, could be computed or undone by anyone, so it would add nothing. That is why AES starts with AddRoundKey (K0) before round 1 and ends with AddRoundKey (K${D.K.Nr}). Without the first one, SubBytes, ShiftRows and MixColumns of round 1 would act on the known plaintext, and an attacker could compute them too.</p>
+  ${NO(`XOR with a key is not a cipher on its own: one known plaintext and its ciphertext give the key. If AES were only AddRoundKey with K0, an attacker would compute ${M(`plaintext ⊕ ciphertext = ${hexs(D.pt)} ⊕ ${hexs(c0)} = ${hexs(rec)}`)}, which is K0 ${TICK(hexs(rec)===hexs(k0))}. The rounds in between are what prevents this in AES.`)}
+  ${USE('Adding key material before and after a fixed public permutation is called key whitening. DESX adds it around DES (<a href="des.html">des.html</a>), and the Even–Mansour construction builds a block cipher from one public permutation and two key XORs.')}
+  ${MORE('ark')}`};
+
+T.rd.doc=()=>{
+  const r=ST.round.rd,{L,last}=rdData(r),Nr=D.K.Nr,o1=rdSets({l:0,p:0},last)[4],full=rdSets({l:0,p:0},false)[4],two=new Set();
+  full.forEach(p=>rdSets({l:0,p},false)[4].forEach(q=>two.add(q)));
+  return `<h2>One round</h2>
+  <p class="lead">The round is the part of AES that is repeated. Rounds 1 … ${Nr-1} of AES-${D.key.length*8} are identical except for the round key; round ${Nr} leaves out MixColumns.</p>
+  <h3>How the steps work together</h3>
+  <p>Each step has one job. SubBytes changes values but moves nothing. ShiftRows moves bytes but changes no value. MixColumns combines the bytes inside one column. AddRoundKey brings in the key. Only the combination spreads a change over the block and makes it depend on the key.</p>
+  ${EX(`Byte 0 of the input of round ${r} (value ${M(hx(L[0][0]))}) reaches ${o1.size} byte${o1.size>1?'s':''} of the round output: positions ${[...o1].sort((a,b)=>a-b).join(', ')}.${last?` In a round with MixColumns it would reach ${full.size}.`:''} After two rounds with MixColumns it reaches ${two.size} of 16 bytes.`)}
+  <h3>Why this order</h3>
+  <p>ShiftRows comes before MixColumns, so the four bytes that MixColumns combines come from four different columns of the round input. AddRoundKey comes last, so the S-boxes of the next round act on values that depend on the key. The number of rounds is ${[16,24,32].map(n=>`${n/4+6} for AES-${n*8}`).join(', ')}. The best known attacks on the full number of rounds are only slightly faster than trying every key; attacks that are clearly faster work only on versions with fewer rounds.</p>
+  ${NO('One round is weak. In a round with MixColumns, each output byte depends on only four input bytes and one key byte, and the round can be undone column by column. Attacks on versions of AES with only a few rounds, such as the integral (Square) attack, use exactly this slow spread.')}
+  ${USE('Ciphers built by repeating one simple round many times are called iterated ciphers. DES (<a href="des.html">des.html</a>) and PRESENT (<a href="present.html">present.html</a>) are built the same way, with different rounds.')}
+  ${MORE('rd')}`};
+
+T.ke.doc=k=>{
+  const K=D.K,Nk=K.Nk,st=keSteps()[k],i=st&&st.i>=0?st.i:Nk,f=K.info[i],bits=D.key.length*8;
+  const nG=K.info.filter(x=>x.kind==='rcon').length,nS=K.info.filter(x=>x.kind==='sub').length;
+  // run the schedule backwards, starting from the last Nk words only
+  const W=K.w.map((x,j)=>j>=K.T-Nk?x.slice():null);
+  for(let j=K.T-1;j>=Nk;j--){let t=W[j-1].slice();if(j%Nk===0){t=[t[1],t[2],t[3],t[0]].map(v=>SBOX[v]);t[0]^=RC[j/Nk]}else if(Nk>6&&j%Nk===4)t=t.map(v=>SBOX[v]);W[j-Nk]=W[j].map((v,q)=>v^t[q])}
+  const rec=[].concat(...W.slice(0,Nk));
+  const ex=f.kind==='plain'?`w${i} = w${i-Nk} ⊕ w${i-1} = ${hexs(f.back)} ⊕ ${hexs(f.prev)} = ${hexs(K.w[i])}`
+    :f.kind==='sub'?`w${i} = w${i-Nk} ⊕ SubWord(w${i-1})<br>= ${hexs(f.back)} ⊕ SubWord(${hexs(f.prev)})<br>= ${hexs(f.back)} ⊕ ${hexs(f.temp)} = ${hexs(K.w[i])}`
+    :`RotWord(w${i-1}) = RotWord(${hexs(f.prev)}) = ${hexs(f.rot)}<br>SubWord(${hexs(f.rot)}) = ${hexs(f.sub)}<br>${hexs(f.sub)} ⊕ Rcon[${i/Nk}] = ${hexs(f.sub)} ⊕ ${hx(f.rc)}000000 = ${hexs(f.temp)}<br>w${i} = w${i-Nk} ⊕ ${hexs(f.temp)} = ${hexs(f.back)} ⊕ ${hexs(f.temp)} = ${hexs(K.w[i])}`;
+  return `<h2>Key expansion</h2>
+  <p class="lead">The key expansion, also called the key schedule, turns the ${D.key.length}-byte key into ${K.Nr+1} round keys of 16 bytes: ${K.T} words of 4 bytes, four words per round key.</p>
+  <h3>How it works</h3>
+  <p>With N<sub>k</sub> = ${Nk} key words, word w<sub>i</sub> is made as follows:</p>
+  <ul class="pts"><li>i &lt; ${Nk}: w<sub>i</sub> is word i of the key.</li>
+  <li>i mod ${Nk} = 0: w<sub>i</sub> = w<sub>i−${Nk}</sub> ⊕ SubWord(RotWord(w<sub>i−1</sub>)) ⊕ Rcon[i/${Nk}].</li>
+  ${Nk>6?'<li>i mod 8 = 4: w<sub>i</sub> = w<sub>i−8</sub> ⊕ SubWord(w<sub>i−1</sub>).</li>':''}
+  <li>Otherwise: w<sub>i</sub> = w<sub>i−${Nk}</sub> ⊕ w<sub>i−1</sub>.</li></ul>
+  <p>RotWord moves the first byte of a word to the end, SubWord puts each byte through the S-box, and Rcon is XORed into the first byte only. For AES-${bits}, ${nG} of the ${K.T-Nk} computed words go through RotWord and SubWord${nS?`, and ${nS} more through SubWord alone`:''}; all others are a single XOR.</p>
+  ${EX(M(ex))}
+  <h3>Why it is built this way</h3>
+  <p>SubWord makes the round keys a non-linear function of the key. Rcon makes the blocks of the schedule differ from each other, so that the rounds of AES are not all identical; identical rounds would allow slide attacks. The rest is plain XOR, so the schedule is fast and can be computed word by word during encryption, without storing all round keys.</p>
+  ${NO(`The key schedule can be run backwards: from any ${Nk} consecutive words, all other words follow. The page does it now: starting only from the last ${Nk} words, it gets back the key ${M(hexs(rec))} ${TICK(hexs(rec)===hexs(D.key))}. ${Nk===4?'So for AES-128, whoever learns the last round key, for example by a fault or side-channel attack, has the whole key.':`So whoever learns ${Nk} consecutive words of the round keys, for example by a fault or side-channel attack, has the whole key.`}<br>AES-192 and AES-256 also have known related-key attacks. They need encryptions under several keys with a relation chosen by the attacker, which normal use with random keys does not give.`)}
+  ${USE(`Every block cipher has its own key schedule. DES (<a href="des.html">des.html</a>) and PRESENT (<a href="present.html">present.html</a>) make their round keys in other ways. The round keys are used in ${GO('ark','AddRoundKey')}.`)}
+  ${MORE('ke')}`};
+
+function docXEnc(){
+  const Nr=D.K.Nr,n=D.enc.length-1,again=hexs(encTrace(D.pt,D.K).at(-1).s);
+  return `<h2>The whole encryption</h2>
+  <p class="lead">Here all ${n} operations of AES-${D.key.length*8} run one after the other, from the plaintext to the ciphertext.</p>
+  <h3>How it works</h3>
+  <p>${M(`AddRoundKey(K0)<br>rounds 1 … ${Nr-1}: SubBytes, ShiftRows, MixColumns, AddRoundKey(K<sub>r</sub>)<br>round ${Nr}: SubBytes, ShiftRows, AddRoundKey(K${Nr})`)}</p>
+  ${EX(M(`plaintext: ${hexs(D.pt)}<br>key: ${hexs(D.key)}<br>ciphertext: ${hexs(D.ct)}`)+(D.expect?`<br>Expected from the test vector: ${M(D.expect)} ${TICK(hexs(D.ct)===D.expect)}`:'<br>This is your own input, so there is no published value to compare with.'))}
+  <h3>Why test vectors matter</h3>
+  <p>A wrong AES implementation still produces bytes that look random, so the output alone does not show a mistake. FIPS 197 gives plaintext, key and ciphertext for each key size, and lists the intermediate states round by round. An implementation that matches them in every round is very likely right. The page compares its own result at the last step.</p>
+  ${NO(`AES itself has no randomness. Encrypting the same block again with the same key gives the same result: ${M(again)} ${TICK(again===hexs(D.ct))}. So an eavesdropper sees when a block repeats. Encryption of real messages needs a mode with an IV or a nonce; see <a href="modes.html">modes.html</a>.`)}
+  ${USE('A block cipher is almost never used alone. Modes such as CBC, CTR and GCM turn it into encryption for messages of any length, and GCM also detects changes to the ciphertext.')}
+  ${MORE('x/enc')}`;
+}
+function docXDec(){
+  const Nr=D.K.Nr,d1=D.dec[1].s,e=findOp('sr',Nr).s,rec=D.dec.at(-1).s;
+  return `<h2>The whole decryption</h2>
+  <p class="lead">Decryption applies the inverse of every step, in the reverse order, with the round keys from K${Nr} down to K0.</p>
+  <h3>How it works</h3>
+  <p>${M(`AddRoundKey(K${Nr})<br>rounds 1 … ${Nr-1}: InvShiftRows, InvSubBytes, AddRoundKey(K<sub>${Nr}−r</sub>), InvMixColumns<br>round ${Nr}: InvShiftRows, InvSubBytes, AddRoundKey(K0)`)}</p>
+  <p>Each inverse step is simple: XOR with the same round key, the inverse S-box, rotation to the right, and the inverse matrix with entries 0e, 0b, 0d, 09. The key expansion still runs forward; decryption only reads the round keys in reverse order.</p>
+  ${EX(`After the first step, ciphertext ⊕ K${Nr}, the state is ${M(hexs(d1))}. This is the state after the last ShiftRows of encryption, ${M(hexs(e))} ${TICK(hexs(d1)===hexs(e))}: decryption walks back through the same states.<br>At the end: ${M(hexs(rec))}, the plaintext ${TICK(hexs(rec)===hexs(D.pt))}.`)}
+  <h3>The equivalent inverse cipher</h3>
+  <p>SubBytes and ShiftRows can be swapped, and InvMixColumns is linear, so it can be moved past an AddRoundKey if the round key also goes through InvMixColumns. With these two facts the decryption steps can be put in the same order as in encryption. FIPS 197 describes this as the equivalent inverse cipher; fast implementations often use it.</p>
+  ${NO('Common mistakes: using the round keys in the forward order, or applying InvMixColumns right after the first AddRoundKey, where encryption had no MixColumns. Both give a wrong plaintext that looks like random bytes.')}
+  ${USE('In CTR and GCM mode the receiver also uses the forward cipher, so the inverse cipher is not needed at all. CBC decryption does use it. See <a href="modes.html">modes.html</a>.')}
+  ${MORE('x/dec')}`;
+}
+T.x.doc=k=>ST.mode==='enc'?docXEnc(k):docXDec(k);
+
+T.df.doc=k=>{
+  const {i:fi,b:fb}=ST.flip,pt2=D.pt.slice();pt2[fi]^=1<<fb;
+  const t2=encTrace(pt2,D.K),Nr=D.K.Nr,st=(ops,r)=>ops.filter(x=>x.r===r).at(-1).s;
+  const pc=v=>{let n=0;while(v){n+=v&1;v>>=1}return n},cnt=[],nb=[];
+  for(let r=0;r<=Nr;r++){const a=st(D.enc,r),b=st(t2,r),d=a.map((v,j)=>v^b[j]);cnt.push(d.reduce((s,v)=>s+pc(v),0));nb.push(d.filter(Boolean).length)}
+  const full=nb.indexOf(16),sd=Math.sqrt(32);
+  return `<h2>Diffusion and the avalanche effect</h2>
+  <p class="lead">A good block cipher reacts to a small change of the input with a large change of the output: about half of the output bits flip, at places that cannot be predicted. This is called the avalanche effect.</p>
+  <h3>What to expect</h3>
+  <p>For two unrelated random blocks of 128 bits, the number of different bits follows a binomial distribution with mean 64 and standard deviation √32 ≈ ${sd.toFixed(2)}. So counts between about ${Math.round(64-2*sd)} and ${Math.round(64+2*sd)} are normal, and after a few rounds AES should give counts in this range.</p>
+  ${EX(`You flipped bit ${fb} of byte ${fi}. Different bits so far: ${M(cnt.slice(0,k+1).map((n,r)=>`${r===0?'start':'R'+r}: ${n}`).join(', '))}.${full>=0?` All 16 bytes first differ after ${full===0?'the start':'round '+full}.`:''} After the last round: ${cnt[Nr]} of 128 bits (${(cnt[Nr]/1.28).toFixed(1)} %).`)}
+  <h3>Why it matters</h3>
+  <p>Claude Shannon described two properties of a good cipher in 1949: <b>confusion</b>, a complicated relation between key and ciphertext, and <b>diffusion</b>, every input bit influencing many output bits. In AES, SubBytes gives confusion, and ShiftRows with MixColumns give diffusion. If a change stayed local, an attacker could study one part of the block at a time.</p>
+  ${NO(`Avalanche is necessary but not sufficient. A cipher can pass this test and still be weak: a random-looking linear map also flips about half the bits, and linear algebra breaks it. With few rounds the spread is incomplete: here, after round 1 only ${nb[1]} of 16 bytes differ. Such a pattern already tells reduced-round AES apart from a random permutation.`)}
+  ${USE('Hash functions such as SHA-256 need the same property. For comparison, the older cipher DES is in <a href="des.html">des.html</a>.')}
+  ${MORE('df')}`};
+
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
    plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
@@ -1604,7 +1905,10 @@ function controls(k){
   $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
   $('#fWrap').hidden=!t.focus;
+  // the article is rewritten only when it changes, so a selection or reading position in it survives a redraw
+  const dc=$('#doc'),dh=t.doc?t.doc(k):'';dc.hidden=!dh;if(dh!==DOCH){dc.innerHTML=dh;DOCH=dh}
 }
+let DOCH=null;
 // static picture of the current step; any running animation or pending play step is dropped
 function show(){
   if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
@@ -1677,6 +1981,12 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-rdsel]')){ST.rdSel=null;show();return}
   const rb=e.target.closest('[data-rdsb],[data-rdmc],[data-rdark]');if(rb){const r=ST.round.rd,d=rb.dataset;
     if(d.rdsb!=null)goStep('sb',r,+d.rdsb+1);else if(d.rdmc!=null)goStep('mc',r,4*d.rdmc+1);else goStep('ark',r,+d.rdark+1);return}
+  // a word of the key expansion picture: show its formula; a word not computed yet is first computed (its last step)
+  const kw=e.target.closest('[data-kpk]');if(kw){const n=+kw.dataset.kpk,s=keSteps(),st=s[ST.step.ke||0];setPlaying(false);ST.kePick=n;
+    if(!(n<D.K.Nk||n<st.i||(n===st.i&&st.sub==='xor')))ST.step.ke=s.map(x=>x.i).lastIndexOf(n);show();return}
+  // a byte of the SubBytes, MixColumns or AddRoundKey grids: go to the step of that byte
+  const gj=e.target.closest('#sbIn [data-i],#sbOut [data-i],#mcIn [data-i],#mcO [data-i],#arkS [data-i],#arkK [data-i],#arkO [data-i]');
+  if(gj){setPlaying(false);ST.step[ST.tab]=+gj.dataset.i+1;show();return}
   const kr=e.target.closest('[data-kr]');if(kr){const w=4*kr.dataset.kr,st=keSteps().findIndex(x=>x.i===w);setPlaying(false);ST.step.ke=st<0?0:st;show();return}
   const fm=e.target.closest('[data-fmt]');if(fm){ST.fmt=fm.dataset.fmt;show();return}
   const sm=e.target.closest('[data-srm]');if(sm){setPlaying(false);ST.srInv=sm.dataset.srm==='1';ST.step.sr=0;ST.srSel=null;ST.built='';show();return}
@@ -1696,6 +2006,8 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  const act=e.target.closest&&e.target.closest('svg [data-goto],svg [data-kpk]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
   if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
