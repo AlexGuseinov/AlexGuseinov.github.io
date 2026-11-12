@@ -12,6 +12,7 @@
   --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
   --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
 }
 @media (prefers-color-scheme:dark){:root{
@@ -458,6 +459,40 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 .cx{font:700 18px var(--mono);text-align:center;padding:10px;border-radius:8px;background:var(--accentBg);margin-top:10px}
 .cx small{display:block;font:13px var(--sans);color:var(--muted);margin-top:4px}
 .bit.dim{opacity:.45}
+/* parts of a picture that can be clicked */
+#lfOut .bit,#scK .bit,#bmT tr[data-r]{cursor:pointer;outline:none}
+#lfOut .bit:hover,#scK .bit:hover,#lfOut .bit:focus-visible,#scK .bit:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#bmT tr[data-r]:hover td,#bmT tr[data-r]:focus-visible td{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.pickline{margin:12px auto 0;max-width:640px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px;overflow-wrap:anywhere}
+.pickline b{color:var(--ink)}
+.pickline .hint{font:13px var(--sans)}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.doc a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -475,7 +510,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 <section class="wrap"><div class="card" id="inbar" style="margin-bottom:12px"></div></section>
 
 <main class="wrap layout">
-  <div class="card stage" id="stageCard"><div id="stage"></div><svg id="fx" aria-hidden="true"></svg></div>
+  <div class="card stage" id="stageCard"><div id="stage"></div><p class="pickline" id="pick"></p><svg id="fx" aria-hidden="true"></svg></div>
   <aside class="panel">
     <div class="card c-ctrl" id="ctrl">
       <div class="row" id="ctrlTop">
@@ -496,6 +531,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline.</footer>
 
@@ -549,7 +585,7 @@ const setErr=m=>{const e=$('#err');if(e)e.textContent=m||''};
 function lfBar(extra){bar(`<label class="fld sm"><span class="flh"><b>Length n</b></span><select id="lfN">${[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(v=>`<option${v===LF.n?' selected':''}>${v}</option>`).join('')}</select></label>
   <div class="fld"><span class="flh"><b>Feedback polynomial</b> <span>click the taps p in the picture to change it</span></span><span class="poly" id="lfPoly">P(x) = ${polyStr(LF.n,LF.p)}</span></div>
   <div class="ex">Examples: ${LF_EX.map((e,i)=>`<button data-lfex="${i}">${e.name}</button>`).join('')}</div>${extra||''}`)}
-function bitsRow(b,o={}){return `<div class="bits"${o.id?` id="${o.id}"`:''}>${b.map((v,i)=>{const sh=!o.shown||o.shown(i);return `<div class="bit${sh?(v?' one':''):' emp'}${o.cls?' '+(o.cls(i)||''):''}${o.gap&&i&&i%o.gap===0?' gap':''}" data-i="${i}">${sh?v:'·'}${o.lab?`<small>${o.lab(i)}</small>`:''}</div>`}).join('')}</div>`}
+function bitsRow(b,o={}){return `<div class="bits"${o.id?` id="${o.id}"`:''}>${b.map((v,i)=>{const sh=!o.shown||o.shown(i);return `<div class="bit${sh?(v?' one':''):' emp'}${o.cls?' '+(o.cls(i)||''):''}${o.gap&&i&&i%o.gap===0?' gap':''}" data-i="${i}"${o.btn?' tabindex="0" role="button"':''}>${sh?v:'·'}${o.lab?`<small>${o.lab(i)}</small>`:''}</div>`}).join('')}</div>`}
 function bitRows(rows){
   let h='<table class="bt">';
   for(const [l,b,cls] of rows)h+=`<tr class="${cls||''}"><th>${l}</th>${[...bin(b)].map(x=>`<td>${x}</td>`).join('')}<td class="hx">${hx(b)}</td></tr>`;
@@ -640,7 +676,7 @@ T.lf={n:()=>1+lfCount(),render(k){
   const fbEq=[...Array(n).keys()].filter(j=>LF.p[j]).reverse().map(sI).join(' ⊕ ')||'0';
   stage.innerHTML=`<div class="h3">${n} bits FF${sub(n-1)} … FF${sub(0)}. Red switches = taps (pⱼ = 1). Click a switch to change the taps${k===0?', or a bit to change the start state':''}.</div>
     <div class="reg${n>8?' scroll':''}"><div style="${n>8?'min-width:640px':''}">${regSVG(s)}</div></div>
-    <div class="rowlab"><b>Output bits</b> s₀ s₁ s₂ …: the keystream</div>${bitsRow(R.out,{id:'lfOut',shown:i=>i<k,lab:i=>i,cls:()=>'ks'})}`;
+    <div class="rowlab"><b>Output bits</b> s₀ s₁ s₂ …: the keystream</div>${bitsRow(R.out,{id:'lfOut',shown:i=>i<k,lab:i=>i,cls:()=>'ks',btn:1})}`;
   const cur=k>0?lfNext(R.st[k-1]):null,tapsTxt=k>0?[...Array(n).keys()].filter(j=>LF.p[j]).reverse().map(j=>`FF${sub(j)}`).join(' ⊕ '):'';
   const tapVals=k>0?[...Array(n).keys()].filter(j=>LF.p[j]).reverse().map(j=>R.st[k-1][n-1-j]).join(' ⊕ '):'';
   let ex;
@@ -688,7 +724,7 @@ T.sc={n:()=>1+SC.p.length,render(k){
   const inp=scIn(),ks=scKs(),out=scOut(),j=k-1,B=toBits(inp),K=toBits(ks),O=toBits(out),cur=i=>(i>>3)===j?' cur':'';
   const byteLab=b=>`<div class="bits" style="font-size:12px;color:var(--muted)">${b.map(v=>`<div style="width:${8*27-3}px;text-align:center">${chLab(v)} · ${hx(v)}</div>`).join('')}</div>`;
   stage.innerHTML=`<div class="rowlab"><b>${e?'Plaintext':'Ciphertext'}</b> bits</div>${byteLab(inp)}${bitsRow(B,{id:'scIn',gap:8,cls:cur})}
-    <div class="rowlab"><b class="k">Keystream</b> from the LFSR (P(x) = ${polyStr(LF.n,LF.p)}, start state ${LF.seed.join('')})</div>${bitsRow(K,{id:'scK',gap:8,cls:i=>'ks'+cur(i)})}
+    <div class="rowlab"><b class="k">Keystream</b> from the LFSR (P(x) = ${polyStr(LF.n,LF.p)}, start state ${LF.seed.join('')})</div>${bitsRow(K,{id:'scK',gap:8,cls:i=>'ks'+cur(i),btn:1})}
     <div class="rowlab"><b>${e?'Ciphertext':'Plaintext'}</b> = ${e?'plaintext':'ciphertext'} ⊕ keystream</div>${bitsRow(O,{id:'scOut',gap:8,shown:i=>(i>>3)<k,cls:cur})}${byteLab(out.map((v,i)=>i<k?v:32)).replace(/␣ · 20/g,'')}
     ${j>=0?`<div class="sec"><div class="h3">Byte ${k}, bit by bit</div><div class="scroll">${bitRows([[e?'plaintext':'ciphertext',inp[j]],['⊕ keystream',ks[j]],[e?'= ciphertext':'= plaintext',out[j],'res']])}</div></div>`:''}`;
   $('#explain').innerHTML=j<0?`<div class="step">LFSR as a stream cipher</div><p>The LFSR makes the keystream, bit by bit. Each message bit is XORed with one keystream bit, just like the <b>Vernam</b> cipher, but the key is now only the start state (and the taps), not a random string as long as the message.</p>
@@ -735,7 +771,7 @@ T.bm={n:()=>1+bmN(),render(k){
   let h=`<div class="rowlab"><b>Keystream bits</b> the attacker knows (plaintext ⊕ ciphertext): ${N} = 2n bits</div>${bitsRow(s.slice(0,N),{id:'bmS',lab:i=>i,cls:i=>'ks'+(i===k-1?' cur':'')+(i>=k?' dim':'')})}`;
   h+=`<div class="cx" id="bmC">C(x) = ${polyC(trimP(C))}<small>LFSR length L = ${Lk}${Lk?` · s${sub('N')} = ${trimP(C).map((v,i)=>v&&i?`s<sub>N−${i}</sub>`:'').filter(Boolean).join(' ⊕ ')||'0'}`:''}</small></div>`;
   h+=`<div class="sec"><div class="h3">One row per bit: the current LFSR predicts the bit; if it is wrong (d = 1), C(x) is corrected</div><div class="scroll"><table class="bmt" id="bmT"><tr><th>N</th><th>bit s<sub>N</sub></th><th>predicted</th><th>d</th><th>C(x) after</th><th>L</th></tr>
-    ${rows.slice(0,k).map((r,i)=>`<tr data-r="${i}" class="${i===k-1?'on':''}"><td>${r.N}</td><td>${r.s}</td><td>${r.pred}</td><td class="${r.d?'d1':'d0'}">${r.d}</td><td>${polyC(trimP(r.C))}</td><td>${r.L}</td></tr>`).join('')}</table></div></div>`;
+    ${rows.slice(0,k).map((r,i)=>`<tr data-r="${i}" tabindex="0" role="button" class="${i===k-1?'on':''}"><td>${r.N}</td><td>${r.s}</td><td>${r.pred}</td><td class="${r.d?'d1':'d0'}">${r.d}</td><td>${polyC(trimP(r.C))}</td><td>${r.L}</td></tr>`).join('')}</table></div></div>`;
   if(done){const rc=realC(),ok=polyC(trimP(C))===polyC(rc),c=trimP(C),pred=s.slice(0,N);for(let x=N;x<N+16;x++){let v=0;for(let i=1;i<c.length;i++)v^=c[i]&pred[x-i];pred.push(v)}
     const okP=pred.slice(N).join('')===s.slice(N,N+16).join('');
     h+=`<div class="sec" id="bmP"><div class="h3">Result</div><p>Found: <b class="mono">C(x) = ${polyC(c)}</b>. The real LFSR: <span class="mono">${polyC(rc)}</span> ${ok?'✓ the same':'(different, but it makes the same bits)'}.</p>
@@ -763,6 +799,128 @@ plan(k){const N=bmN(),r=bm(lfRun(N).out.slice(0,N))[k-1];
 },
 focus(){follow($('#bmT tr.on')||$('#bmT'))}};
 
+/* ---------- the longer read under the picture: one article per tab ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const sN=i=>`s${sub(i)}`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents; page ranges: the course syllabus
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB3='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook: pp. 331–351, stream ciphers (lecture 3 of the syllabus).';
+const REFS={
+  lf:[`${PAAR}, chapter 2: section 2.3.1, “Linear Feedback Shift Registers (LFSRs)”.`,AZB3],
+  sc:[`${PAAR}, chapter 2: section 2.1.2, “Encryption and Decryption with Stream Ciphers”, and section 2.2.3, “Towards Practical Stream Ciphers”.`,AZB3],
+  bm:[`${PAAR}, chapter 2: section 2.3.2, “Known-Plaintext Attack Against Single LFSRs”.`,AZB3]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?box('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const tapsOf=()=>[...Array(LF.n).keys()].filter(j=>LF.p[j]);
+let DOCH='';                                    // last article written, so a re-draw does not reset a selection
+
+T.lf.doc=()=>{
+  const n=LF.n,o=lfRun(Math.max(2*n,16)).out,per=lfPeriod(),max=(1<<n)-1,tp=tapsOf(),td_=tp.slice().reverse(),z='0'.repeat(n),zero=!LF.seed.includes(1);
+  const rec=td_.length?td_.map(sI).join(' ⊕ '):'0';
+  const ex1=td_.length?`${sN(n)} = ${td_.map(sN).join(' ⊕ ')} = ${td_.map(j=>o[j]).join(' ⊕ ')} = <b>${o[n]}</b>`:`${sN(n)} = 0 (no taps)`;
+  // only for small maximal registers: count the ones in one full period
+  const ones=per===max&&n<=10?lfRun(per).out.filter(Boolean).length:null;
+  const perTxt=zero?`Your start state is ${z}. The XOR of zeros is 0, so the register stays at ${z} and every output bit is 0.`
+   :per==null?`With your taps the start state never comes back. p₀ = 0, so the bit in FF₀ never feeds back: it is lost, and two states that differ only in FF₀ lead to the same next state.`
+   :per===max?`Your register comes back to its start state after <b>${per}</b> clocks. That is 2${sup(n)} − 1: every state except ${z} appears once in a period, so P(x) = ${polyStr(n,LF.p)} is primitive.`
+   :`Your register comes back to its start state after <b>${per}</b> clock${per>1?'s':''}, fewer than 2${sup(n)} − 1 = ${max}. So P(x) = ${polyStr(n,LF.p)} is not primitive.`;
+  return`<h2>The linear feedback shift register</h2>
+  <p class="lead">An LFSR is a row of n bit cells (flip-flops) that shifts by one place at every clock. The bit that comes in is the XOR of a few chosen cells, the taps. With n = ${n} cells it can make a sequence of up to 2${sup(n)} − 1 = ${max} bits before the sequence repeats.</p>
+  <h3>The feedback polynomial</h3>
+  <p>The taps are written as a polynomial whose coefficients are bits: P(x) = xⁿ + p<sub>n−1</sub>xⁿ⁻¹ + … + p₁x + p₀. The coefficient pⱼ is 1 when cell FFⱼ is a tap, and 0 when it is not. The leading xⁿ stands for the new bit.</p>
+  <p>The same taps give a rule for the output bits: each new bit is the XOR of earlier bits at fixed distances. A tap pⱼ = 1 adds the bit ${sI('j')} to the sum for ${sI('n')}.</p>
+  ${EX(M(`P(x) = ${polyStr(n,LF.p)}<br>taps: ${tp.length?tp.map(j=>`p${sub(j)}`).join(', ')+' = 1':'none'}<br>rule: ${sI(n)} = ${rec}`))}
+  <p>XOR is addition of bits modulo 2 and AND is multiplication, so the rule is arithmetic in the field GF(2), and P(x) is a polynomial over GF(2). The <a href="fields.html">fields demo</a> builds GF(2) and its polynomials.</p>
+  <h3>Worked example with your register</h3>
+  <p>The first ${n} output bits are the start state itself, read from FF₀ to FF${sub(n-1)}, because the bit in FF₀ leaves first. From ${sN(n)} on, every bit comes from the rule.</p>
+  ${EX(M(`start state FF${sub(n-1)} … FF₀ = ${LF.seed.join('')}<br>${sN(0)} … ${sN(n-1)} = ${o.slice(0,n).join('')}<br>${ex1}<br>first ${o.length} bits: ${o.join('')}`))}
+  <h3>The period</h3>
+  <p>The register has 2${sup(n)} = ${max+1} possible states, and the next state depends only on the current one. So the states, and with them the output bits, must repeat. The state ${z} only leads to itself, so a sequence that does not start there can use at most the other 2${sup(n)} − 1 = ${max} states.</p>
+  <p>This maximum is reached exactly when P(x) is <b>primitive</b>: P(x) cannot be factored over GF(2), and the powers of x modulo P(x) run through all 2ⁿ − 1 nonzero remainders. Then every start state except ${z} gives the full period. Other polynomials give shorter periods, and for some of them the period also depends on the start state.</p>
+  <p>${perTxt}</p>
+  <h3>Why it is built this way</h3>
+  <p>In hardware an LFSR costs one flip-flop per bit and a few XOR gates, and it gives one new bit at every clock. Your ${tp.length} tap${tp.length===1?'':'s'} need${tp.length===1?'s':''} ${Math.max(tp.length-1,0)} two-input XOR gate${tp.length===2?'':'s'}. A sequence of maximal length is also balanced: one period of 2ⁿ − 1 bits holds 2ⁿ⁻¹ ones and 2ⁿ⁻¹ − 1 zeros, here ${(max+1)/2} ones and ${(max+1)/2-1} zeros.${ones!=null?` Counted in your sequence: ${ones} ones in one period.`:''}</p>
+  ${NO(`<b>The all-zero state.</b> From ${z} the feedback is always 0, so the register outputs only zeros, and a cipher built on it leaves the message unchanged. The start state must not be zero.<br><b>A long period is not security.</b> With n = ${n} the period can be ${max} bits, yet ${2*n} output bits are enough to rebuild the whole register: see <button class="link" data-goto="bm">tab 3</button>.`)}
+  ${USE(`LFSRs are building blocks of many hardware stream ciphers. A5/1, the GSM phone cipher, clocks three LFSRs irregularly: see the <a href="a51.html">A5/1 demo</a>. E0 in Bluetooth combines four LFSRs. On its own an LFSR is linear and easy to break, so these designs add a non-linear part.`)}
+  ${MORE('lf')}`;
+};
+
+T.sc.doc=()=>{
+  const e=enc(),inp=scIn(),ks=scKs(),out=scOut(),L=inp.length,n=LF.n,per=lfPeriod(),max=(1<<n)-1,bits=8*L,a=e?'plaintext':'ciphertext',b=e?'ciphertext':'plaintext',bmL=`<button class="link" data-goto="bm">Berlekamp–Massey</button>`;
+  const exm=L?EX(M(`${a.padEnd(10).replace(/ /g,'&nbsp;')} ${hexs(inp)}<br>keystream&nbsp; ${hexs(ks)}<br>${b.padEnd(10).replace(/ /g,'&nbsp;')} ${hexs(out)}<br><br>byte 1: ${bin(inp[0])} ⊕ ${bin(ks[0])} = ${bin(out[0])}`))
+    :'<p class="fine">Type a message in the bar to see this example with your own bytes.</p>';
+  return`<h2>An LFSR as a stream cipher</h2>
+  <p class="lead">A stream cipher encrypts bit by bit: cᵢ = mᵢ ⊕ sᵢ, where m is the message, s is the keystream and c is the ciphertext. Here the keystream is the output of the LFSR, so the secret key is its start state.</p>
+  <h3>How it works</h3>
+  <ol class="pts"><li>Sender and receiver load the same start state (the key) into the same LFSR.</li><li>Both clock it and get the same keystream bits s₀, s₁, s₂, …</li><li>The sender XORs the message with the keystream. The receiver XORs the ciphertext with the same keystream: (m ⊕ s) ⊕ s = m, because s ⊕ s = 0.</li></ol>
+  <p>So encryption and decryption are the same operation. Bit t of byte j (both counted from 0, bits from the left) uses keystream bit s<sub>8j+t</sub>.</p>
+  <h3>Worked example with your message</h3>
+  <p>P(x) = ${polyStr(n,LF.p)}, start state ${LF.seed.join('')}.${L?` The ${a} has ${L} byte${L>1?'s':''}, so ${bits} keystream bits are used.`:''}</p>
+  ${exm}
+  ${per&&L&&per<bits?`<p>The period of this register is ${per}, shorter than the ${bits} bits of the message, so the keystream repeats inside it: s<sub>i+${per}</sub> = sᵢ. An attacker who sees the repetition learns m<sub>i</sub> ⊕ m<sub>i+${per}</sub>.</p>`:''}
+  <h3>Why it is built this way</h3>
+  <p>The model is the one-time pad, where the keystream is truly random and as long as the message. That is secure, but the key is as long as the message. A stream cipher replaces it with a short key and a generator that stretches the key into a long keystream. XOR costs one gate per bit, and the LFSR one flip-flop per key bit, so this is very cheap in hardware. A flipped bit in the ciphertext flips only the same bit of the plaintext: errors do not spread.</p>
+  ${NO(`<b>Known plaintext.</b> If the attacker knows a piece of the message, she gets the keystream there: sᵢ = mᵢ ⊕ cᵢ.${L?` Your message has ${bits} bits. ${bits>=2*n?`That is at least 2n = ${2*n}, so knowing it is enough to rebuild the register with ${bmL}.`:`A known piece of 2n = ${2*n} bits would be enough to rebuild the register with ${bmL}.`}`:''}<br>
+  <b>The same key twice.</b> Two messages encrypted from the same start state use the same keystream, and c ⊕ c′ = m ⊕ m′: the keystream cancels out. Real stream ciphers mix a fresh public value (an IV or nonce) into the start state for every message.<br>
+  <b>Bit flipping.</b> Without a separate integrity check, an attacker who flips ciphertext bit i flips plaintext bit i, without knowing the key.<br>
+  <b>A small key.</b> With n = ${n} the key has ${n} bits: at most ${max} nonzero start states to try.`)}
+  ${USE(`In GSM, A5/1 makes its keystream from three LFSRs of 19, 22 and 23 bits (64 bits in total), clocked irregularly: see the <a href="a51.html">A5/1 demo</a>. E0 in Bluetooth combines four LFSRs with a non-linear combiner that has memory. A block cipher can also make a keystream: the CTR and OFB modes encrypt a counter or the previous output block and XOR the result with the message, see the <a href="modes.html">modes demo</a>.`)}
+  ${MORE('sc')}`;
+};
+
+T.bm.doc=()=>{
+  const n=LF.n,N=bmN(),s=lfRun(N).out,rows=bm(s),c=trimP(rows[N-1].C),L=rows[N-1].L,rc=realC(),per=lfPeriod(),same=polyC(c)===polyC(rc);
+  const ch=rows.filter(r=>r.L!==r.Lp),nd=rows.filter(r=>r.d).length;
+  const rule=c.map((v,i)=>v&&i?`s<sub>N−${i}</sub>`:'').filter(Boolean).join(' ⊕ ')||'0';
+  const eq=`${sN(n)} = ${[...Array(n).keys()].map(j=>`p${sub(j)}·${sN(j)}`).join(' ⊕ ')}<br>${s[n]} = ${[...Array(n).keys()].map(j=>`p${sub(j)}·${s[j]}`).join(' ⊕ ')}`;
+  return`<h2>Berlekamp–Massey and linear complexity</h2>
+  <p class="lead">The <b>linear complexity</b> of a bit sequence is the length L of the shortest LFSR that makes it. The Berlekamp–Massey algorithm reads the bits one by one and returns that shortest LFSR.</p>
+  <h3>The connection polynomial</h3>
+  <p>The algorithm writes a register as C(x) = 1 + c₁x + … + c<sub>L</sub>x<sup>L</sup>, which means s<sub>N</sub> = c₁s<sub>N−1</sub> ⊕ … ⊕ c<sub>L</sub>s<sub>N−L</sub>. It is the feedback polynomial read backwards: C(x) = xⁿ·P(1/x), so cᵢ = p<sub>n−i</sub>.</p>
+  ${EX(M(`P(x) = ${polyStr(n,LF.p)}<br>C(x) = ${polyC(rc)}`))}
+  <h3>How it works</h3>
+  <p>It keeps the current C(x), its length L, and a copy B(x) of C(x) from before the last time L grew. For each new bit s<sub>N</sub>:</p>
+  <ol class="pts"><li>Predict the bit with the current register: c₁s<sub>N−1</sub> ⊕ … ⊕ c<sub>L</sub>s<sub>N−L</sub>.</li>
+  <li>The discrepancy d is the real bit XOR the prediction. If d = 0, the register already works and nothing changes.</li>
+  <li>If d = 1, add x<sup>m</sup>·B(x) to C(x), where m is the number of bits since L last grew. This fixes the prediction for bit N and keeps all earlier predictions right.</li>
+  <li>If also 2L ≤ N, the register was too short: the new length is N + 1 − L.</li></ol>
+  <p>Each bit costs at most about N XORs, so N bits cost about N² bit operations.</p>
+  <h3>Worked example with your keystream</h3>
+  ${EX(M(`${sN(0)} … ${sN(N-1)} = ${s.join('')}<br>d = 1 at ${nd} of ${N} bits<br>L grew at ${ch.length?ch.map(r=>`N = ${r.N} (${r.Lp} → ${r.L})`).join(', '):'no bit'}<br>result: C(x) = ${polyC(c)}, L = ${L}<br>rule: s<sub>N</sub> = ${rule}`))}
+  <p>${same?`C(x) is the connection polynomial of the real register, so the attacker now knows the taps. The last ${L} bits she has are the current state, so she can make every later bit.`
+    :`The real register has C(x) = ${polyC(rc)}. The register found is shorter, L = ${L}, and it makes the same sequence: once at least 2L bits are known, the shortest LFSR is unique, so it also predicts every later bit.`}</p>
+  <h3>Why 2n bits are enough</h3>
+  <p>The attack also works with plain linear algebra. The n taps p₀ … p<sub>n−1</sub> are unknown bits. Each window of n + 1 consecutive output bits gives one linear equation for them. The first one, with your bits:</p>
+  ${EX(M(eq))}
+  <p>The bits ${sN(0)} … ${sN(N-1)} give n = ${n} such equations, and Gaussian elimination over GF(2) solves them when they are independent. Berlekamp–Massey does the same job with fewer operations, does not need to know n, and also gives the answer when the equations are dependent.</p>
+  ${NO(`<b>A long period does not protect the register.</b> ${per?`Here the period is ${per} bits`:`Here the start state never comes back`}, but ${N} bits were enough. For a maximal LFSR with n = 64 the period is 2⁶⁴ − 1, and 128 bits would still be enough.<br><b>Non-linear designs</b> raise the linear complexity, but Berlekamp–Massey works on any bit sequence. A keystream must have a high linear complexity: for a random sequence of N bits it is close to N/2.`)}
+  ${USE(`Elwyn Berlekamp designed the algorithm to decode BCH error-correcting codes. James Massey showed in 1969 that it finds the shortest LFSR for a sequence. In cryptography it measures the linear complexity of keystream generators. Designs such as <a href="a51.html">A5/1</a> clock several LFSRs irregularly or combine them non-linearly to make that complexity large.`)}
+  ${MORE('bm')}`;
+};
+
+// one line under the picture: how the clicked bit or row was computed
+function pickTxt(k){
+  const p=ST.pick&&ST.pick.t===ST.tab?ST.pick:null,n=LF.n;
+  if(ST.tab==='lf'){
+    if(p&&p.i<k){const o=lfRun(lfCount()).out,i=p.i,tp=tapsOf().reverse();if(i<o.length)
+      return i<n?`<b>${sN(i)} = ${o[i]}</b>: the bit in FF${sub(i)} of the start state, out at clock ${i+1}`
+        :`<b>${sN(i)}</b> = ${tp.map(j=>sN(i-n+j)).join(' ⊕ ')||'0'} = ${tp.map(j=>o[i-n+j]).join(' ⊕ ')||'0'} = <b>${o[i]}</b>: feedback of clock ${i-n+1}, out at clock ${i+1}`}
+    return'<span class="hint">Click an output bit to see which bits were XORed to make it.</span>'}
+  if(ST.tab==='sc'){
+    if(p&&(p.i>>3)<k){const B=toBits(scIn()),K=toBits(scKs()),O=toBits(scOut()),i=p.i;if(i<K.length)
+      return`keystream <b>${sN(i)} = ${K[i]}</b> · ${enc()?'plaintext':'ciphertext'} bit ${B[i]} ⊕ ${K[i]} = <b>${O[i]}</b> (byte ${(i>>3)+1}, bit ${(i&7)+1} from the left)`}
+    return'<span class="hint">Click a keystream bit to jump to its byte.</span>'}
+  if(ST.tab==='bm'){
+    if(p&&p.r<k){const s=lfRun(bmN()).out,r=bm(s)[p.r],N=r.N,ti=[];for(let i=1;i<=r.Lp;i++)if(r.Cp[i])ti.push(i);
+      // no term: the empty register predicts 0; one term: its value is already the result
+      const pr=!ti.length?'0 (the register is still empty)':ti.map(i=>sN(N-i)).join(' ⊕ ')+(ti.length>1?' = '+ti.map(i=>s[N-i]).join(' ⊕ '):'')+' = '+r.pred;
+      return`N = ${N}, L = ${r.Lp}: predicted = ${pr} · d = ${sN(N)} ⊕ ${r.pred} = ${r.s} ⊕ ${r.pred} = <b>${r.d}</b>`}
+    return k?'<span class="hint">Click a row of the table to see how its prediction and d were computed.</span>':''}
+  return'';
+}
+
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
    plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
@@ -778,6 +936,8 @@ function controls(k){
   $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
   $('#fWrap').hidden=!t.focus;
+  const h=t.doc?t.doc(k):'',dc=$('#doc');dc.hidden=!h;if(h!==DOCH){dc.innerHTML=h;DOCH=h}
+  $('#pick').innerHTML=pickTxt(k);
 }
 // static picture of the current step; any running animation or pending play step is dropped
 function show(){
@@ -858,10 +1018,16 @@ document.addEventListener('click',e=>{
   const ex=e.target.closest('[data-lfex]');if(ex){lfLoad(LF_EX[+ex.dataset.lfex]);return}
   const tp=e.target.closest('[data-tap]');if(tp){LF.p[+tp.dataset.tap]^=1;changed();return}
   const sd=e.target.closest('[data-seed]');if(sd&&ST.tab==='lf'){LF.seed[+sd.dataset.seed]^=1;changed();return}
+  // an output bit not yet made jumps to the clock that makes it; the line under the picture says how
+  const ob=e.target.closest('#lfOut .bit');if(ob){const i=+ob.dataset.i;ST.pick={t:'lf',i};if(i>=(ST.step.lf||0))ST.step.lf=i+1;show();return}
+  const kb=e.target.closest('#scK .bit');if(kb){const i=+kb.dataset.i;ST.pick={t:'sc',i};ST.step.sc=(i>>3)+1;show();return}
+  const br=e.target.closest('#bmT tr[data-r]');if(br){ST.pick={t:'bm',r:+br.dataset.r};show();return}
   const g=e.target.closest('[data-goto]');if(g)setTab(g.dataset.goto);
 });
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  const act=e.target.closest&&e.target.closest('#stage [role=button]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.click();e.preventDefault();return}
   if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
