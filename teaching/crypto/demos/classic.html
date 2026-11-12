@@ -12,6 +12,7 @@
   --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
   --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
 }
 @media (prefers-color-scheme:dark){:root{
@@ -501,6 +502,45 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 .kwg .p{border-top:1.5px solid var(--line2)}
 .kwl{font-size:12.5px;margin-top:8px}
 .kmsg{font:16px/1.6 var(--sans);margin:4px 0 0;padding:10px 12px;border-radius:8px;background:var(--okBg)}
+/* parts of a picture that can be clicked */
+#czIn .ch:not(.nl),#afIn .ch:not(.nl),#vgIn .ch:not(.nl),#vnIn .ch,#afTab td,#vgTab td{cursor:pointer}
+#kzB .kbar,#czW g[data-o]{cursor:pointer;outline:none}
+#czIn .ch:not(.nl):hover,#afIn .ch:not(.nl):hover,#vgIn .ch:not(.nl):hover,#vnIn .ch:hover,
+#czIn .ch:focus-visible,#afIn .ch:focus-visible,#vgIn .ch:focus-visible,#vnIn .ch:focus-visible{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+#czW g[data-o]:hover circle,#czW g[data-o]:focus-visible circle{stroke:var(--accent);stroke-width:3}
+#kzB .kbar:hover i,#kzB .kbar:focus-visible i{outline:2px solid var(--ink);outline-offset:1px}
+.pickline{margin:10px auto 0;max-width:600px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.doc a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.exb p{margin:6px 0 0;font-size:15px}
+.exb .bt{margin:4px 0}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -541,6 +581,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline.</footer>
 
@@ -662,7 +703,7 @@ function wheel(rot,hiO,hiI){
   let s=`<svg class="wheel" id="czW" viewBox="0 0 400 400" role="img" aria-label="Caesar wheel"><circle class="ring" cx="200" cy="200" r="${WH.RO+21}"/><circle class="ring" cx="200" cy="200" r="${(WH.RO+WH.RI)/2+2}"/><circle class="ring" cx="200" cy="200" r="${WH.RI-19}"/>`;
   if(hiO!=null){const [x1,y1]=wpos(hiO,WH.RO-16),[x2,y2]=wpos(hiO,WH.RI+13);s+=`<line class="spoke" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`}
   for(let i=0;i<26;i++){const [x,y]=wpos(i,WH.RO),[nx,ny]=wpos(i,WH.RN),on=i===hiO?' on':'';
-    s+=`<text class="nm" x="${nx.toFixed(1)}" y="${ny.toFixed(1)}">${i}</text><g data-o="${i}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><circle class="ro${on}" r="15"/><text class="lt${on}">${AZ[i]}</text></g>`}
+    s+=`<text class="nm" x="${nx.toFixed(1)}" y="${ny.toFixed(1)}">${i}</text><g data-o="${i}" tabindex="0" role="button" aria-label="${AZ[i]}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><circle class="ro${on}" r="15"/><text class="lt${on}">${AZ[i]}</text></g>`}
   for(let j=0;j<26;j++){const [x,y]=innerXY(j,rot),on=j===hiI?' on':'';
     s+=`<g data-n="${j}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><circle class="ri${on}" r="12.5"/><text class="lt${on}" style="font-size:13px">${AZ[j]}</text></g>`}
   return s+`<text class="kc" x="200" y="184">k = ${CZ.k}</text><text class="ks" x="200" y="212">outer: plaintext</text><text class="ks" x="200" y="228">inner: ciphertext</text></svg>`;
@@ -962,10 +1003,11 @@ T.kz={n:()=>{const A=kzA();return kzOK(A)?5+A.m:1},render(k){
       ${k>=2?`<tr class="cnt"><td colspan="4">how many distances</td>${F.map((f,i)=>`<td class="${f===m?'mcol':''}">${cnt[i]}</td>`).join('')}</tr>`:''}</table></div></div>`}
   if(ok&&k>=2){const top=Math.max(1,...cnt);
     h+=`<div class="sec"><div class="h3">Key length: the number that divides many distances, and whose columns look like English (index of coincidence, IC)</div>
-      <div class="kbars" id="kzB">${F.map((f,i)=>`<div class="kbar${f===m?' on':''}" data-n="${cnt[i]}"><span>${cnt[i]}</span><i style="height:${cnt[i]/top*100}%"></i></div>`).join('')}</div>
+      <div class="kbars" id="kzB">${F.map((f,i)=>`<div class="kbar${f===m?' on':''}" data-n="${cnt[i]}" data-f="${f}" tabindex="0" role="button" aria-label="key length ${f}"><span>${cnt[i]}</span><i style="height:${cnt[i]/top*100}%"></i></div>`).join('')}</div>
       <div class="kbl">${F.map(f=>`<span${f===m?' class="on"':''}>${f}</span>`).join('')}</div>
       <div class="kbl ic">${F.map((f,i)=>`<span${f===m?' class="on"':''}>${ics[i].toFixed(3).slice(1)}</span>`).join('')}</div>
-      <p style="text-align:center;margin:8px 0 0">→ best candidate: <b>m = ${m}</b></p></div>`}
+      <p style="text-align:center;margin:8px 0 0">→ best candidate: <b>m = ${m}</b></p>
+      <p class="hint">Click a bar to see its count and its index of coincidence.</p><p class="pickline" id="pick">${pickText()}</p></div>`}
   if(ok&&k>=3)h+=`<div class="sec"><div class="h3">The letters in ${m} columns: letter 1, ${m+1}, ${2*m+1}, … in column 1, and so on. Each column is a Caesar cipher.</div><div id="kzC">${cols.map((c,ci)=>`<div class="kcol" data-c="${ci}"><b class="kk${k>=4+ci?' on':''}">${k>=4+ci?AZ[c.best]:'?'}</b><span class="kln" style="color:${gcol(ci)}">column ${ci+1}</span><span class="kls">${c.col.map((ch,x)=>`<span data-i="${ci+x*m}">${ch}</span>`).join('')}</span></div>`).join('')}</div></div>`;
   if(ok&&k>=4){const ci=done?m-1:cur,c=cols[ci],s=c.best;h+=`<div class="sec" id="kzFq"><div class="h3">Column ${ci+1}: decrypt it with every shift and compare the letter counts with English. Best shift: <b>${s} = ${AZ[s]}</b></div>${kzFreq(c,s)}</div>`}
   if(ok&&cur>=0){const solved=cur+1;
@@ -1036,6 +1078,202 @@ function kzFreq(c,s){
     <p style="font-size:12.5px;color:var(--muted);text-align:center;margin:4px 0 0">Bars: the column's letters (filled) and English (dashed). Below: χ² for every shift; the lowest one wins.</p>`;
 }
 
+/* ---------- the longer read under the picture: one article per tab ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents; page ranges: the course syllabus
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const REFS={
+  cz:[`${PAAR}, chapter 1: section 1.4.1, “Modular Arithmetic”, and section 1.4.3, “Shift Cipher (or Caesar Cipher)”. Section 1.2.2 is “Simple Symmetric Encryption: The Substitution Cipher”.`,`${AZB}: pp. 83–106, classical ciphers (lecture 2 of the syllabus).`],
+  af:[`${PAAR}, chapter 1: section 1.4.2, “Integer Rings”, and section 1.4.4, “Affine Cipher”. The inverse is computed in chapter 6, section 6.3.2, “Extended Euclidean Algorithm”.`,`${AZB}: pp. 83–106, classical ciphers (lecture 2 of the syllabus).`],
+  vg:[`${AZB}: pp. 83–106, classical ciphers (lecture 2 of the syllabus).`],
+  vn:[`${PAAR}, chapter 2: section 2.1.2, “Encryption and Decryption with Stream Ciphers”, and section 2.2.2, “The One-Time Pad”.`,`${AZB}: pp. 331–351, stream ciphers (lecture 3 of the syllabus).`],
+  kz:[`${AZB}: pp. 83–106, classical ciphers (lecture 2 of the syllabus).`]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?box('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const gcd=(a,b)=>{while(b){[a,b]=[b,a%b]}return a};
+const GO=(id,t)=>`<button class="link" data-goto="${id}">${t}</button>`;
+// the letter the open step works on; before the first letter step, the first letter of the message
+const docAt=(L,k,off)=>k>=off&&k-off<L.length?L[k-off]:L[0];
+// the most common letter of a text and how often it appears (ties: the first in the alphabet)
+function topLetter(s){const f=Array(26).fill(0);for(const ch of s)if(isL(ch))f[num(ch)]++;const n=Math.max(...f);return{ch:AZ[f.indexOf(n)],n}}
+// a · s + b · t = gcd(a, b), with the divisions that lead there
+function xgcd(a,b){const rows=[];let r0=a,r1=b,s0=1,s1=0,t0=0,t1=1;while(r1){const q=Math.floor(r0/r1),r=r0-q*r1;rows.push([r0,q,r1,r]);[r0,r1]=[r1,r];[s0,s1]=[s1,s0-q*s1];[t0,t1]=[t1,t0-q*t1]}return{g:r0,s:s0,t:t0,rows}}
+const NOLET='The message has no letters A–Z yet, so nothing is encrypted.';
+
+T.cz.doc=k=>{
+  const e=enc(),P=e?czIn():czOut(),C=e?czOut():czIn(),L=letterIdx(P),key=CZ.k,j=docAt(L,k,2);
+  let ex=NOLET,fr='';
+  if(j!=null){const p=num(P[j]),s=p+key,c=s%26;
+    ex=M(`${P[j]} = ${p}<br>${p} + ${key} = ${s}${s>25?`, and ${s} − 26 = ${c}`:''}<br>${c} = <b>${C[j]}</b>`)
+      +`<p>Decryption goes back: (${c} − ${key}) mod 26 = ${m26(c-key)} = ${P[j]}.</p><p>The whole message: ${M(esc(P))} → ${M(esc(C))}</p>`;
+    const t=topLetter(C),g=m26(num(t.ch)-4);
+    fr=`<p>Here the most common ciphertext letter is <b>${t.ch}</b> (${t.n} of ${L.length} letters). If ${t.ch} stands for E, the most common letter of English, then k = (${num(t.ch)} − 4) mod 26 = ${g}. The real key is k = ${key}${g===key?', so the guess is right.':'. In a short message the most common letter is often not E, so this guess can fail; in a long English text it usually works.'}</p>`}
+  return `<h2>Caesar cipher</h2>
+   <p class="lead">The Caesar cipher replaces every letter by the letter k places further on in the alphabet. The key is one number k from 0 to 25.</p>
+   <h3>How it works</h3>
+   <p>Every letter becomes a number: A = 0, B = 1, …, Z = 25. Encryption adds the key, and decryption subtracts it. Both keep only the remainder after division by 26:</p>
+   ${M('c = (p + k) mod 26 &nbsp;&nbsp;&nbsp; p = (c − k) mod 26')}
+   <p>A sum of 26 or more starts again at A. That is why the picture is a wheel and not a line. Arithmetic modulo 26 is explained on the <a href="fields.html">numbers and fields</a> page.</p>
+   <p>With k = ${key} the cipher is one fixed table. The top line is the plaintext alphabet, the line under it is the ciphertext alphabet:</p>
+   <div class="scroll">${M(AZ.split('').join(' ')+'<br>'+AZ.split('').map((_,i)=>chr(i+key)).join(' '))}</div>
+   <h3>Worked example with your message</h3>
+   ${EX(ex)}
+   <h3>Why it is built this way</h3>
+   <p>The method is fixed and known to everybody; only k is secret. Every cipher in this course separates a public algorithm from a secret key. Auguste Kerckhoffs wrote this down as a rule in 1883: a cipher must stay secure even when the enemy knows everything about it except the key.</p>
+   <p>The Caesar cipher follows the rule, but its key is far too small: there are 26 values of k. Two of them are special. k = 0 leaves the text as it is. k = 13 undoes itself, because 13 + 13 = 26 ≡ 0 (mod 26): encrypting twice with k = 13 gives the message back. This is ROT13.</p>
+   <h3>What goes wrong</h3>
+   ${NO(`A shift only renames the letters. It does not change how often each letter appears.${fr}`)}
+   ${USE(`Nobody uses the Caesar cipher for secrecy today. ROT13 still hides spoilers and puzzle answers on web forums. The idea behind it stays: the key is added to the message. Change the shift from letter to letter and you get the ${GO('vg','Vigenère cipher')}. Add a random bit to every bit and you get the ${GO('vn','Vernam cipher')}.`)}
+   ${MORE('cz')}`;
+};
+
+T.af.doc=k=>{
+  const e=enc(),P=e?afIn():afOut(),C=e?afOut():afIn(),L=letterIdx(P),a=AF.a,b=AF.b,ai=inv26(a),j=docAt(L,k,1);
+  const good=range(1,25).filter(x=>gcd(x,26)===1),E=xgcd(26,a);
+  // a negative number is written with a real minus sign, and in brackets after a multiplication dot
+  const sg=x=>x<0?'−'+(-x):''+x,pn=x=>x<0?`(${sg(x)})`:''+x;
+  const eu=M(E.rows.map(r=>`${r[0]} = ${r[1]} · ${r[2]} + ${r[3]}`).join('<br>')+`<br>so 1 = ${pn(E.s)} · 26 + ${pn(E.t)} · ${a}<br>and ${a}⁻¹ ≡ ${sg(E.t)}${E.t!==ai?` ≡ ${ai}`:''} (mod 26)`);
+  let ex=NOLET;
+  if(j!=null){const x=num(P[j]),ax=a*x,r=ax%26,s=r+b,y=s%26,d=m26(y-b);
+    ex=M(`${P[j]} = ${x}<br>${a} · ${x} = ${ax} = ${Math.floor(ax/26)} · 26 + ${r}<br>${r} + ${b} = ${s}${s>25?` ≡ ${y}`:''} = <b>${C[j]}</b>`)
+      +`<p>Back again: ${y} − ${b} = ${y-b}${y-b<0?` ≡ ${d}`:''}, then ${ai} · ${d} = ${ai*d} ≡ ${m26(ai*d)} = ${P[j]}.</p>`}
+  // the letters that a = 13 and a = 2 can reach, with the reader's b
+  const img=a2=>[...new Set(range(0,25).map(x=>chr(a2*x+b)))],i13=img(13),i2=img(2);
+  // a known-plaintext attack: the first pair of letters whose difference has an inverse modulo 26
+  let kp='';
+  pairs:for(let u=0;u<L.length;u++)for(let w=u+1;w<L.length;w++){
+    const p1=num(P[L[u]]),p2=num(P[L[w]]),dd=m26(p1-p2);if(gcd(dd,26)!==1)continue;
+    const c1=num(C[L[u]]),c2=num(C[L[w]]),dc=m26(c1-c2),di=inv26(dd),A2=m26(dc*di),B2=m26(c1-A2*p1);
+    kp=`<p style="margin:0">An attacker who knows two plaintext letters and their ciphertext letters can solve for the key. Here ${P[L[u]]} → ${C[L[u]]} and ${P[L[w]]} → ${C[L[w]]} give two equations:</p>`
+      +M(`${c1} ≡ a · ${p1} + b (mod 26)<br>${c2} ≡ a · ${p2} + b (mod 26)<br>subtract: ${sg(c1-c2)} ≡ a · ${pn(p1-p2)}${c1-c2===dc&&p1-p2===dd?'':`, that is ${dc} ≡ a · ${dd}`}<br>a ≡ ${dc} · ${di} ≡ ${A2}, because ${di} is the inverse of ${dd}<br>b ≡ ${c1} − ${A2} · ${p1} ≡ ${B2}`)
+      +`<p>The key in use is a = ${a}, b = ${b}.</p>`;
+    break pairs}
+  if(!kp)kp='Two known letters whose numbers differ by a value with an inverse modulo 26 give a and b at once. Your message has no such pair; with a longer one the page shows the calculation here.';
+  return `<h2>Affine cipher</h2>
+   <p class="lead">The affine cipher multiplies the number of each letter by a and then adds b, modulo 26. The key is the pair (a, b).</p>
+   <h3>How it works</h3>
+   ${M('c = (a · p + b) mod 26 &nbsp;&nbsp;&nbsp; p = a⁻¹ · (c − b) mod 26')}
+   <p>Decryption undoes the two steps in reverse order: first subtract b, then multiply by a⁻¹. The inverse a⁻¹ is the number that gives 1 when it is multiplied by a, modulo 26. Here a = ${a} and a⁻¹ = ${ai}, because ${a} · ${ai} = ${a*ai} ≡ 1 (mod 26).</p>
+   <h3>Which values of a work</h3>
+   <p>a has an inverse modulo 26 exactly when gcd(a, 26) = 1, that is, when a and 26 have no common factor. Since 26 = 2 · 13, a must be odd and must not be 13. Of the numbers 1 to 25, ${good.length} pass: ${good.join(', ')}. This count is Euler's φ(26) = ${good.length}. With 26 values of b the cipher has ${good.length} · 26 = ${good.length*26} keys.</p>
+   <p>The extended Euclidean algorithm finds the inverse. It divides with remainder until the remainder is 0, and then reads the divisions backwards:</p>
+   ${EX(eu)}
+   <p>The <a href="fields.html">numbers and fields</a> page explains rings such as ℤ₂₆ and why only some of their elements have inverses.</p>
+   <h3>Worked example with your message</h3>
+   ${EX(ex)}
+   <h3>Why a must have an inverse</h3>
+   <p>Multiplication by a must send different letters to different letters; otherwise the receiver cannot decrypt. With a = 13 and your b = ${b}, the 26 letters land on only ${i13.length} ciphertext letters: ${i13.join(', ')}. With a = 2 they land on ${i2.length}. Many plaintext letters then share one ciphertext letter, and nobody can tell which one was sent.</p>
+   <h3>What goes wrong</h3>
+   <p>Like Caesar, the affine cipher always turns one plaintext letter into the same ciphertext letter, so letter counts break it. A known piece of plaintext breaks it even faster.</p>
+   ${NO(kp)}
+   ${USE(`Maps of the form a · x + b also appear in modern ciphers, over other number systems. The <a href="aes.html">AES</a> S-box first takes an inverse in the field GF(2⁸) and then applies an affine map to the 8 bits. Inverses modulo a number are also the core of <a href="rsa.html">RSA</a>: the private exponent d is the inverse of e modulo φ(n), found with the same extended Euclidean algorithm.`)}
+   ${MORE('af')}`;
+};
+
+T.vg.doc=k=>{
+  const e=enc(),P=e?vgIn():vgOut(),C=e?vgOut():vgIn(),L=letterIdx(P),key=VG.key,m=key.length,ks=keyStream(P,key),j=docAt(L,k,1);
+  const pl=L.map(i=>P[i]).join(''),cl=L.map(i=>C[i]).join(''),kl=L.map(i=>ks[i]).join('');
+  // the real period: a key such as ABAB repeats after 2 letters
+  let per=m;for(let p=1;p<m;p++)if(m%p===0&&[...key].every((ch,i)=>ch===key[i%p])){per=p;break}
+  let ex=NOLET,fl='';
+  if(j!=null){const t=L.indexOf(j),p=num(P[j]),q=num(ks[j]),s=p+q;
+    ex=`<p style="margin:0">${P[j]} is letter ${t+1} of the message (only letters count), so it uses key letter ${t%m+1} of ${m}: <b class="k">${ks[j]}</b>.</p>`
+      +M(`${P[j]} = ${p}, ${ks[j]} = ${q}<br>${p} + ${q} = ${s}${s>25?`, and ${s} − 26 = ${s%26}`:''}<br>${s%26} = <b>${C[j]}</b>`)
+      +`<p>All letters, with the key written under the plaintext again and again:</p><div class="scroll">${M(`${pl}<br><span class="k">${kl}</span><br>${cl}`)}</div>`;
+    const tp=topLetter(pl),tc=topLetter(cl);
+    fl=`In your message the most common plaintext letter, ${tp.ch}, appears ${tp.n} time${tp.n>1?'s':''}; the most common ciphertext letter, ${tc.ch}, appears ${tc.n} time${tc.n>1?'s':''}.${tc.n<tp.n?' The key has spread the counts out.':' A message this short does not always show the effect; a long text does.'}`}
+  const grp=M(range(0,m-1).map(c=>{const ix=[];for(let x=c;x<pl.length;x+=m)ix.push(x);
+    return `${key[c]} (shift ${num(key[c])}): ${ix.length?ix.map(x=>pl[x]).join('')+' → '+ix.map(x=>cl[x]).join(''):'no letters'}`}).join('<br>'));
+  const za=[...kl].filter(x=>x==='A').length;
+  return `<h2>Vigenère cipher</h2>
+   <p class="lead">The Vigenère cipher is a Caesar cipher whose shift changes from letter to letter. A key word of m letters gives m shifts, which are used in turn and then repeated.</p>
+   <h3>How it works</h3>
+   ${M('cᵢ = (pᵢ + k<sub>i mod m</sub>) mod 26 &nbsp;&nbsp;&nbsp; pᵢ = (cᵢ − k<sub>i mod m</sub>) mod 26')}
+   <p>Here i counts only the letters, starting at 0, and k<sub>0</sub>, k<sub>1</sub>, … are the letters of the key word as numbers. Your key word ${key} has m = ${m} letter${m>1?'s':''}. Spaces and punctuation are copied and do not use up a key letter. The table in the picture (the tabula recta) lists all 26 Caesar alphabets, one per row, so each letter needs one look-up.</p>
+   <h3>Worked example with your message</h3>
+   ${EX(ex)}
+   <h3>Why it is built this way</h3>
+   <p>One plaintext letter can now become up to m different ciphertext letters, one for each key letter. This spreads the letter counts and hides the frequencies that break the Caesar and affine ciphers. ${fl}</p>
+   <h3>What goes wrong</h3>
+   ${NO(`<p style="margin:0">The key repeats. Letters 1, ${1+m}, ${1+2*m}, … all use the first key letter, so the ciphertext falls into ${m} group${m>1?'s':''}, and each group is a Caesar cipher:</p>${grp}
+     ${per<m?`<p>Your key ${key} is ${key.slice(0,per)} written ${m/per} times, so the real period is ${per}, not ${m}.${per===1?' This is a Caesar cipher.':''}</p>`:''}
+     ${za?`<p>The key letter A is a shift of 0: the ${za} letter${za>1?'s':''} under it ${za>1?'are':'is'} not changed at all.</p>`:''}
+     <p>${GO('kz','Kasiski')}'s method finds m from repeated pieces of ciphertext; then each group falls to letter counting.</p>`)}
+   <p>If the key is random, as long as the message and never used again, nothing repeats. That is the one-time pad on letters; the ${GO('vn','Vernam')} tab shows it on bits.</p>
+   ${USE(`Vigenère adds a key stream to the message, letter by letter. A stream cipher does the same with bits: a short key drives a generator that produces a long key stream, and the stream is XORed with the message. The key stream must never repeat within a message, for the reason Kasiski found. See the <a href="lfsr.html">LFSR</a> and <a href="a51.html">A5/1</a> pages.`)}
+   ${MORE('vg')}`;
+};
+
+// a second message for the one-time pad example; it is cut to the length of the reader's message
+const ALT='RETREAT AT ONCE, NOT NOW';
+T.vn.doc=k=>{
+  const P=VN.p,K=VN.key,C=vernam(P,K),n=P.length,j=k>=1&&k<=n?k-1:0,txt=b=>b.map(showByte).join('');
+  let ex='The message is empty, so there is nothing to encrypt.',ps='',mal='';
+  if(n){const w=bin(K[j]).split('1').length-1;
+    ex=`<p style="margin:0">Byte ${j+1}${printable(P[j])?`, the character '${showByte(P[j])}'`:''}:</p>${bitRows([['plaintext',P[j]],['⊕ key',K[j]],['= ciphertext',C[j],'res']])}
+      <p>The key byte ${hx(K[j])} has ${w} one-bit${w===1?'':'s'}, so exactly ${w} bit${w===1?'':'s'} of the plaintext byte ${w===1?'is':'are'} flipped. XOR with the same key byte flips ${w===1?'it':'them'} back.</p>`;
+    const as=(ALT+' '+ALT).slice(0,n),K2=vernam(C,[...te.encode(as)]);
+    ps=EX(`The ciphertext ${M(hexs(C))}<br>with your key ${M(hexs(K))} gives “${txt(P)}”<br>with the key ${M(hexs(K2))} gives “${esc(as)}”`);
+    const c0=C[0]^0x20,p0=P[0]^0x20;
+    mal=`<p style="margin:0">An attacker who changes ciphertext bits changes the same plaintext bits, without knowing the key. Flip bit 0x20 of the first ciphertext byte: ${hx(C[0])} → ${hx(c0)}. The receiver computes ${hx(c0)} ⊕ ${hx(K[0])} = ${hx(p0)}${printable(p0)&&printable(P[0])?`, the character '${showByte(p0)}' instead of '${showByte(P[0])}'`:''}. The one-time pad hides the message, but it does not protect it against changes.</p>`}
+  return `<h2>Vernam cipher and the one-time pad</h2>
+   <p class="lead">The Vernam cipher combines every bit of the message with one bit of the key by XOR. With a key that is truly random, as long as the message and used only once, it is the one-time pad.</p>
+   <h3>How it works</h3>
+   <p>XOR (⊕) compares two bits: the result is 1 when they differ and 0 when they are equal.</p>
+   ${M('0 ⊕ 0 = 0 &nbsp;&nbsp; 0 ⊕ 1 = 1 &nbsp;&nbsp; 1 ⊕ 0 = 1 &nbsp;&nbsp; 1 ⊕ 1 = 0')}
+   <p>XOR is addition modulo 2. So the Vernam cipher is the Vigenère idea with an alphabet of two letters, 0 and 1, and a key as long as the message. Because k ⊕ k = 0, XOR with the same key twice gives the message back: encryption and decryption are the same operation. The <a href="fields.html">numbers and fields</a> page treats bits with XOR as the field GF(2).</p>
+   <h3>Worked example with your message</h3>
+   ${EX(ex)}
+   <h3>Why the one-time pad is perfectly secret</h3>
+   <p>For a given ciphertext byte c and any candidate plaintext byte p, exactly one key byte fits: k = c ⊕ p. So every message of the same length is possible, and with a uniformly random key every one is equally likely. The ciphertext gives no information about which message was sent. Shannon called this perfect secrecy.</p>
+   ${ps}
+   <p>Shannon also showed the price: perfect secrecy needs at least as many possible keys as possible messages. A key shorter than the message cannot give it.</p>
+   <h3>What goes wrong</h3>
+   ${NO(mal+'<p>A key used twice is the other classic mistake: the side card shows how the key cancels out.</p>')}
+   ${USE(`Real systems cannot deliver a random key as long as all their data. A stream cipher replaces it by a key stream computed from a short key, for example with shift registers (<a href="lfsr.html">LFSR</a>, <a href="a51.html">A5/1</a>) or with a block cipher in counter mode (<a href="modes.html">CTR</a>). The XOR step is the same as here. Perfect secrecy is lost, and security now rests on the key stream being impossible to predict. Because of the bit-flipping problem, modern encryption also adds an authentication tag, as GCM does (<a href="modes.html">modes of operation</a>).`)}
+   ${MORE('vn')}`;
+};
+
+T.kz.doc=k=>{
+  const A=kzA(),{t,reps,F,cnt,ics,m,cols,key}=A,ok=kzOK(A);
+  let ex=`<p>This ciphertext has ${t.length} letters${t.length<40?', too few for the method':' and no piece of 3 letters that appears twice'}. Choose an example above to see the method work.</p>`,care='Short ciphertexts have few repeats, and long keys give short columns. This page tries key lengths 2 to 16 only.';
+  if(ok){const r=reps[0],d=r.d,fac=[];{let x=d;for(let p=2;x>1;p++)while(x%p===0){fac.push(p);x/=p}}
+    const divs=F.filter(f=>d%f===0),im=F.indexOf(m),c=cols[0],f=Array(26).fill(0);c.col.forEach(ch=>f[num(ch)]++);
+    const nn=c.col.length,sm=f.reduce((a,v)=>a+v*(v-1),0),ic=nn>1?sm/(nn*(nn-1)):0,s=c.best,srt=c.chi.slice().sort((x,y)=>x-y),s2=c.chi.findIndex((v,x)=>x!==s&&v===srt[1]);
+    ex=EX(`<p style="margin:0">The longest repeat is ${M(r.seq)}, at letters ${r.i+1} and ${r.j+1}. The distance is ${r.j+1} − ${r.i+1} = ${d}${fac.length>1?` = ${fac.join(' · ')}`:''}. Of the lengths 2 to 16 that the page tries, ${divs.length?`${divs.join(', ')} divide${divs.length===1?'s':''} ${d}`:`none divides ${d}`}.</p>
+      <p>m = ${m} divides ${cnt[im]} of the ${reps.length} distances. Split into ${m} columns, column 1 has ${nn} letters and Σ f(f − 1) = ${sm}, so its IC = ${sm} / (${nn} · ${nn-1}) = ${ic.toFixed(3)}. The average over all ${m} columns is ${ics[im].toFixed(3)}.</p>
+      <p>Column 1, tried with all 26 shifts: χ² is smallest at shift ${s} = ${AZ[s]} (χ² = ${c.chi[s].toFixed(1)}). The next best is shift ${s2} = ${AZ[s2]} (χ² = ${srt[1].toFixed(1)}). So the first key letter is <b class="k">${AZ[s]}</b>, and all ${m} columns together give the key <b class="k">${key}</b>${KZ.known?(KZ.known===key?', the key that was used.':`; the key that was used is ${KZ.known}.`):'.'}</p>`);
+    const off=reps.length-cnt[im],i2=F.indexOf(2*m),lo=Math.floor(t.length/m),hi=Math.ceil(t.length/m);
+    care=`<p style="margin:0">${off?`${off} of the ${reps.length} repeats here have a distance that ${m} does not divide. If m = ${m} is right, they are chance repeats.`:`All ${reps.length} distances here are multiples of ${m}.`}</p>
+      ${i2>=0?`<p>m = ${2*m} scores too: ${cnt[i2]} distances and IC ${ics[i2].toFixed(3)}. A multiple of the key length also splits the text into columns that each use one key letter. That is why the page takes the smallest length that passes.</p>`:''}
+      <p>Short columns give unreliable letter counts. With ${lo===hi?lo:`${lo} or ${hi}`} letters per column, one key letter can come out wrong; the decrypted text then shows where. This page tries key lengths 2 to 16 only.</p>`}
+  return `<h2>Kasiski examination</h2>
+   <p class="lead">The Kasiski examination breaks the Vigenère cipher from the ciphertext alone. It first finds the length m of the key word, and then breaks the text as m separate Caesar ciphers.</p>
+   <h3>How it works</h3>
+   <ol class="pts"><li>Find pieces of three or more letters that appear more than once in the ciphertext.</li>
+     <li>Measure the distance between the two places of each piece.</li>
+     <li>Find a number that divides many of the distances. It is a candidate for the key length m.</li>
+     <li>Check the candidate with the index of coincidence of its columns.</li>
+     <li>Write the ciphertext in m columns and break each column by comparing its letter counts with English.</li></ol>
+   <h3>Worked example on this ciphertext</h3>
+   ${ex}
+   <h3>Why the distances point to the key length</h3>
+   <p>Letter number i is encrypted with key letter i mod m. Two equal pieces of plaintext give equal pieces of ciphertext only when they also start at the same position of the key word. That happens when the distance between them is a multiple of m. Equal pieces of ciphertext can also appear by chance, but long ones rarely do.</p>
+   <h3>Why the index of coincidence checks it</h3>
+   <p>The index of coincidence (IC) is the chance that two letters picked at random from a text are equal:</p>
+   ${M('IC = Σ f(f − 1) / (n(n − 1))')}
+   <p>Here f is the count of one letter and n is the number of letters. A shift renames the letters but keeps their counts, so a column encrypted with one key letter keeps the IC of English. A column that mixes several key letters has flatter counts, and its IC moves toward that of random letters.</p>
+   <h3>Why χ² finds the key letter</h3>
+   <p>χ² (chi-squared) measures how far observed counts are from expected ones: χ² = Σ (count − expected)² / expected. The expected count of a letter is its English frequency times the length of the column. Only the right shift turns the column into English-like counts, so it gives the smallest χ².</p>
+   <h3>What goes wrong</h3>
+   ${NO(care)}
+   ${USE(`A repeating key stream leaks its period. Modern key-stream generators are built with very long periods, and one key stream must never be used for two messages. The <a href="lfsr.html">LFSR</a> page shows how the period of a shift register is found. A key that never repeats and is truly random gives the one-time pad (${GO('vn','Vernam')}), where this attack has nothing to find.`)}
+   ${MORE('kz')}`;
+};
+
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
    plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
@@ -1051,6 +1289,28 @@ function controls(k){
   $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
   $('#fWrap').hidden=!t.focus;
+  docFill(k);addPick();
+}
+// the article is written only when it changed, so a selection or the reading position in it is kept
+let DOCLAST=null;
+function docFill(k){const t=T[ST.tab],h=t.doc?t.doc(k):'',dc=$('#doc');dc.hidden=!h;if(h!==DOCLAST){dc.innerHTML=h;DOCLAST=h}}
+// under the picture: which parts can be clicked, and what the last click showed
+const HINT={cz:'Click a letter of the top row to jump to its step, or a letter on the outer ring to see how it is encrypted.',af:'Click a letter of the top row to jump to its step, or a column of the table to see its calculation.',vg:'Click a letter of the top row to jump to its step, or a cell of the table to see how it is made.',vn:'Click a byte of the top row to jump to its step.'};
+const ROWSEL='#czIn .ch,#afIn .ch,#vgIn .ch,#vnIn .ch';
+// the line is added after the picture is drawn, at its end, so nothing that an animation measured moves
+function addPick(){
+  $$(ROWSEL).forEach(x=>{if(!x.classList.contains('nl')){x.tabIndex=0;x.setAttribute('role','button')}});
+  const h=HINT[ST.tab];if(!h||$('#pick')||$('#hintL')||!$(ROWSEL))return;
+  stage.insertAdjacentHTML('beforeend',`<p class="hint" id="hintL">${h}</p>${ST.tab==='vn'?'':`<p class="pickline" id="pick">${pickText()}</p>`}`);
+}
+function pickText(){const p=ST.pick;if(!p||p.tab!==ST.tab)return '';const v=p.v;
+  if(p.tab==='cz'){const s=(v+CZ.k)%26;return `outer <b>${AZ[v]}</b> = ${v} → (${v} + ${CZ.k}) mod 26 = ${s} = inner <b>${AZ[s]}</b>`}
+  if(p.tab==='af'){const a=AF.a,b=AF.b,ai=inv26(a);return enc()
+    ?`<b>${AZ[v]}</b> = ${v} → ${a} · ${v} = ${a*v} ≡ ${m26(a*v)} → ${m26(a*v)} + ${b} = ${m26(a*v)+b} ≡ ${m26(a*v+b)} = <b>${AZ[m26(a*v+b)]}</b>`
+    :`<b>${AZ[v]}</b> = ${v} → ${v} − ${b} ≡ ${m26(v-b)} → ${ai} · ${m26(v-b)} = ${ai*m26(v-b)} ≡ ${m26(ai*(v-b))} = <b>${AZ[m26(ai*(v-b))]}</b>`}
+  if(p.tab==='vg'){const [r,c]=v;return `row <b class="k">${AZ[r]}</b> = ${r}, column <b>${AZ[c]}</b> = ${c} → (${c} + ${r}) mod 26 = ${(r+c)%26} = <b>${AZ[(r+c)%26]}</b>`}
+  if(p.tab==='kz'){const A=kzA(),i=A.F.indexOf(v);return i<0?'':`key length <b>${v}</b>: ${A.cnt[i]} of ${A.reps.length} distances are multiples of ${v} · IC of ${v} columns = <b>${A.ics[i].toFixed(3)}</b>`}
+  return '';
 }
 // static picture of the current step; any running animation or pending play step is dropped
 function show(){
@@ -1157,9 +1417,23 @@ $('#inbar').addEventListener('click',e=>{
   if(e.target.closest('[data-vnnew]')){const n=enc()?VN.p.length:VN.key.length,c=enc()?null:vernam(VN.p,VN.key);VN.key=randKey(n);if(c)VN.p=vernam(c,VN.key);ST.built='';show();return}
   if(e.target.closest('[data-vnex]')){VN.p=[...te.encode('HELLO')];VN.key=fromHex('3f9a07c2e1');ST.step.vn=0;ST.built='';show()}
 });
+// a tab link inside the article: the new tab opens at the top (checked before the article is replaced)
+document.addEventListener('click',e=>{if(e.target.closest('#doc [data-goto]'))window.scrollTo({top:$('#tabs').offsetTop-8,behavior:RM.matches?'auto':'smooth'})},true);
 document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]');if(g)setTab(g.dataset.goto)});
+// the picture: a letter of the top row jumps to its step; a wheel letter, a table cell or a bar explains itself in the line under the picture
+document.addEventListener('click',e=>{
+  const rc=e.target.closest(ROWSEL);
+  if(rc){const i=+rc.dataset.i,tab=ST.tab;let s;
+    if(tab==='vn')s=i+1;else{const x=letterIdx(tab==='cz'?czIn():tab==='af'?afIn():vgIn()).indexOf(i);if(x<0)return;s=x+(tab==='cz'?2:1)}
+    setPlaying(false);ST.step[tab]=s;show();return}
+  const o=e.target.closest('#czW [data-o]'),c=e.target.closest('#afTab td[data-c]'),v=e.target.closest('#vgTab td[data-rc]'),b=e.target.closest('#kzB .kbar[data-f]');
+  const p=o?{tab:'cz',v:+o.dataset.o}:c?{tab:'af',v:+c.dataset.c}:v?{tab:'vg',v:v.dataset.rc.split(',').map(Number)}:b?{tab:'kz',v:+b.dataset.f}:null;
+  if(!p)return;ST.pick=p;const pl=$('#pick');if(pl)pl.innerHTML=pickText();
+});
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  const act=e.target.closest&&e.target.closest('#stage [tabindex]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
   if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
