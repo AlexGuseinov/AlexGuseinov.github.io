@@ -493,6 +493,7 @@ button.nv:hover{outline:1.5px solid var(--accent)}
 .rw{display:grid;grid-template-columns:minmax(0,392px) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:800px){.rw{grid-template-columns:minmax(0,1fr)}}
 .ring{width:100%;max-width:392px;height:auto;display:block;margin:0 auto}
+#ringS{max-width:470px}
 .rd{fill:var(--ink);opacity:.75}.rd.nc{fill:var(--xor);opacity:.8}
 .rt2{font:600 10px var(--mono);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
 .ch2{stroke:var(--accent);stroke-width:1.5;fill:none;opacity:.6}
@@ -651,9 +652,45 @@ button.nv:hover{outline:1.5px solid var(--accent)}
 .pbx{display:inline-block;height:13px;width:calc(var(--w)*1.1);max-width:110px;border-radius:0 3px 3px 0;background:var(--s1)}
 .gq{font:600 13.5px var(--mono)}
 @media (max-width:1240px){.rw{grid-template-columns:minmax(0,1fr)}}
+/* ---------- depth: shadows, gloss, card edges, a dial lying on a table ---------- */
+:root{--dsh:rgba(40,34,20,.32);--dial:#f6f4ee;--dial2:#d8d4c7}
+@media (prefers-color-scheme:dark){:root{--dsh:rgba(0,0,0,.6);--dial:#27272c;--dial2:#16161a}}
+.sh3{fill:url(#g3sh)}
+.prs circle{fill:color-mix(in srgb,var(--c) 9%,var(--panel))}
+.prs .gl3,.pt .gl3,.gl3{fill:url(#g3gl);stroke:none;pointer-events:none}
+.kc rect.ke,.kc.big rect.ke{fill:color-mix(in srgb,var(--c) 55%,var(--panel));stroke:none}
+.dsh{fill:url(#g3sh)}.ded{fill:var(--dial2)}.dtp{fill:url(#g3dial);stroke:var(--line2);stroke-width:1}
+.er{border:1px solid var(--line);box-shadow:0 3px 0 -1px color-mix(in srgb,var(--ink) 12%,transparent),0 10px 16px -12px rgba(0,0,0,.35)}
+.er.off{box-shadow:none}
+.res{box-shadow:0 6px 14px -12px rgba(0,0,0,.4)}
+/* ---------- the lecture notes under the picture ---------- */
+.doc{padding:22px 26px 26px;min-width:0}
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}#stageCard{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:5}}
+.doc h2{font:700 24px/1.25 "STIX Two Text",Cambria,Georgia,"Times New Roman",serif;margin:0 0 8px}
+.doc h3{font-size:16.5px;font-weight:700;margin:26px 0 6px}
+.doc p,.doc .pts{max-width:74ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fm{max-width:74ch;font-size:13px}
+.doc .mn{font:13px var(--mono)}
+.xb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:74ch;overflow-wrap:anywhere}
+.xb>b:first-child{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.xb.no{border-color:var(--xor);background:var(--xorBg)}.xb.no>b:first-child{color:var(--xor)}
+.xb.use{border-color:var(--ok);background:var(--okBg)}.xb.use>b:first-child{color:var(--ok)}
+.xb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.xb.bk>b:first-child{color:#7d55c7}
+@media (prefers-color-scheme:dark){.xb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.xb.bk>b:first-child{color:#b49aec}}
+.xb ul{margin:4px 0 0;padding-left:20px}.xb li{margin:0 0 4px}
+.dtb{border-collapse:collapse;font-size:14.5px;margin:8px 0 12px;max-width:100%}
+.dtb th,.dtb td{padding:6px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.dtb th{font-size:13px;color:var(--muted);font-weight:600}
+.dtb td.dn,.dtb th.dn{text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap}
+.dtb td.dm{font-family:var(--mono);font-size:13px}
+.dtb tr.hit td{background:var(--okBg);font-weight:600}.dtb tr.cur td{background:var(--ambBg,color-mix(in srgb,#b8690f 14%,var(--panel)))}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
-<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="g3sh"><stop offset="0" stop-color="var(--dsh)"/><stop offset="1" stop-color="var(--dsh)" stop-opacity="0"/></radialGradient><radialGradient id="g3gl" cx=".34" cy=".3" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".62"/><stop offset=".45" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".16"/></radialGradient><radialGradient id="g3dial" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="var(--panel)"/><stop offset="1" stop-color="var(--dial)"/></radialGradient></defs></svg><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
 <header class="wrap">
   <h1>Discrete log, step by step</h1>
   <p class="sub">Public keys from a different hard problem: Diffie–Hellman, how groups work, how discrete logs are attacked, and ElGamal</p>
@@ -704,6 +741,7 @@ button.nv:hover{outline:1.5px solid var(--accent)}
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc"></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: all numbers are computed in this browser. Never use these secrets for real data.</footer>
 
@@ -967,13 +1005,13 @@ const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
 
 
 const CLICK=[];
-const person=(x,y,n,c)=>`<g class="prs ${c}" transform="translate(${x} ${y})"><circle r="32"/><text y="7">${n[0]}</text><text class="pn" y="52">${n}</text></g>`;
+const person=(x,y,n,c)=>`<g class="prs ${c}" transform="translate(${x} ${y})"><ellipse class="sh3" cy="38" rx="31" ry="7"/><circle r="32"/><circle class="gl3" r="32"/><text y="7">${n[0]}</text><text class="pn" y="52">${n}</text></g>`;
 /* ---------- the idea: mixing paint ---------- */
 const CY=[242,194,48],CA=[217,52,74],CB=[31,143,191];
 const mixC=(...c)=>`rgb(${[0,1,2].map(i=>Math.round(c.reduce((s,x)=>s+x[i],0)/c.length)).join(',')})`;
 const CMA=mixC(CY,CA),CMB=mixC(CY,CB),CF=mixC(CY,CA,CB);
 const PW=880,PH=350,YP=68,YR=206,PX={Ax:92,Bx:788,Ex:440,Ey:286};
-const paint=(x,y,c,lab,id='',cls='')=>`<g id="${id}" class="pt ${cls}" transform="translate(${x} ${y})"><circle r="23" style="fill:${c}"/>${lab?`<text y="42">${lab}</text>`:''}</g>`;
+const paint=(x,y,c,lab,id='',cls='')=>`<g id="${id}" class="pt ${cls}" transform="translate(${x} ${y})"><ellipse class="sh3" cy="27" rx="21" ry="5"/><circle r="23" style="fill:${c}"/><circle class="gl3" r="23"/>${lab?`<text y="42">${lab}</text>`:''}</g>`;
 const POS={a:[PX.Ax-22,YR],am:[PX.Ax+62,YR],ar:[PX.Ax+146,YR],af:[PX.Ax+230,YR],b:[PX.Bx+22,YR],bm:[PX.Bx-62,YR],br:[PX.Bx-146,YR],bf:[PX.Bx-230,YR],e1:[PX.Ex-104,PX.Ey],e2:[PX.Ex+104,PX.Ey],c:[PX.Ex,YP]};
 function ovScene(k){
   const P=(id,c,lab)=>paint(...POS[id],c,lab,'p-'+id);
@@ -1006,7 +1044,7 @@ plan(k){
   if(k===5)return null;
   return{dur:1800,start(){
     const svg=$('#ovS');if(!svg)return null;const M=svgMap(svg),s=M.s,show={1:['p-a','p-b'],3:['p-ar','p-br','p-e1','p-e2'],4:['p-af','p-bf']}[k].map(i=>$('#'+i)),ms=[];hide(show);
-    const dot=c=>`<circle r="${20*s}" style="fill:${c};stroke:var(--panel);stroke-width:2"/>`;
+    const dot=c=>`<circle r="${20*s}" style="fill:${c};stroke:var(--panel);stroke-width:2"/><circle class="gl3" r="${20*s}"/>`;
     mv.forEach(([a,b,c],i)=>{const n=fxNode(dot(c));ms.push({node:n,pts:[M(...POS[a]),M(...POS[b])],a:.05*i,b:.9,end:.92})});
     if(k===3)[['am','e1',CMA],['bm','e2',CMB]].forEach(([a,b,c])=>{const n=fxNode(dot(c));ms.push({node:n,pts:[M(...POS[a]),M(...POS[b])],a:.15,b:.9,end:.92})});
     return both(mover(ms),cues(show.map(e=>[.91,()=>{e.style.opacity=1}])));
@@ -1020,12 +1058,16 @@ function grpData(){
   const p=ST.gp,f=factorize(p-1n),n=Number(p-1n),ords=[];for(let i=1n;i<p;i++)ords.push(orderOf(i,p,f));
   return{p,f,n,ords,roots:ords.filter(o=>o===p-1n).length};
 }
+// the ring lies like a dial on a table: drawn at half height, the near side larger, 1 in front of the reader
+const RK=.5,ringE=(i,n,R,cx,cy)=>{const a=2*Math.PI*i/n+Math.PI/2;return[cx+R*Math.cos(a),cy+R*RK*Math.sin(a),Math.sin(a)]};
+const dial3=(cx,cy,R)=>`<ellipse class="dsh" cx="${cx}" cy="${(cy+R*RK+10).toFixed(1)}" rx="${(R*1.06).toFixed(1)}" ry="${(R*RK*.5).toFixed(1)}"/><ellipse class="ded" cx="${cx}" cy="${cy+10}" rx="${R}" ry="${(R*RK).toFixed(1)}"/><ellipse class="dtp" cx="${cx}" cy="${cy}" rx="${R}" ry="${(R*RK).toFixed(1)}"/>`;
 function grpRing(k,d){
-  const p=Number(d.p),o=orbit(ST.gg,d.p),sh=Math.min(k,o.length-1),R=166,c=190;let h='';
-  for(let i=1;i<p;i++){const[a,b]=ringP(i-1,p-1,R,c),[t,u]=ringP(i-1,p-1,R+14,c);h+=`<circle class="rd" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="2.8"/>`;if(p<=47||(i-1)%5===0)h+=`<text class="rt2" x="${t.toFixed(1)}" y="${u.toFixed(1)}">${i}</text>`}
-  for(let i=0;i<sh;i++){const[a,b]=ringP(Number(o[i])-1,p-1,R,c),[e,f]=ringP(Number(o[i+1])-1,p-1,R,c);h+=`<path class="ch2${i===sh-1?' now':''}" id="gc${i}" d="M${a.toFixed(1)} ${b.toFixed(1)}L${e.toFixed(1)} ${f.toFixed(1)}"/>`}
-  const[px,py]=ringP(Number(o[sh])-1,p-1,R,c);h+=`<circle class="rdc" id="gdc" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="8"/>`;
-  return`<svg class="ring" id="ringS" viewBox="0 0 380 380" role="img" aria-label="Powers of g on a ring of the numbers from 1 to p minus 1">${h}</svg>`;
+  const p=Number(d.p),o=orbit(ST.gg,d.p),sh=Math.min(k,o.length-1),R=150,cx=200,cy=122,P=(i,r=R)=>ringE(i,p-1,r,cx,cy);let h=dial3(cx,cy,R+18);
+  for(let i=1;i<p;i++){const[a,b,z]=P(i-1),[t,u,w]=P(i-1,R+34);h+=`<circle class="rd" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="${(2.7*(1+.25*z)).toFixed(2)}"/>`;
+    if(p<=47||(i-1)%5===0)h+=`<text class="rt2" x="${t.toFixed(1)}" y="${u.toFixed(1)}" style="font-size:${(10.5*(1+.15*w)).toFixed(1)}px">${i}</text>`}
+  for(let i=0;i<sh;i++){const[a,b]=P(Number(o[i])-1),[e,f]=P(Number(o[i+1])-1);h+=`<path class="ch2${i===sh-1?' now':''}" id="gc${i}" d="M${a.toFixed(1)} ${b.toFixed(1)}L${e.toFixed(1)} ${f.toFixed(1)}"/>`}
+  const[px,py,pz]=P(Number(o[sh])-1);h+=`<ellipse class="sh3" cx="${px.toFixed(1)}" cy="${(py+7).toFixed(1)}" rx="9" ry="3"/><circle class="rdc" id="gdc" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${(8*(1+.2*pz)).toFixed(1)}"/>`;
+  return`<svg class="ring" id="ringS" viewBox="0 0 400 262" role="img" aria-label="Powers of g on a ring of the numbers from 1 to p minus 1, drawn like a dial lying on a table">${h}</svg>`;
 }
 function grpCells(d){
   return`<div class="gcell" style="--c:${Math.ceil(Math.sqrt(d.n))}">${d.ords.map((o,i)=>{const v=i+1,pr=o===d.p-1n,sel=BigInt(v)===ST.gg;return`<button data-gg="${v}" class="${pr?'pr ':''}${sel?'sel':''}" title="${v} has order ${o}"><b>${v}</b><small>${o}</small></button>`}).join('')}</div>`;
@@ -1052,7 +1094,7 @@ CLICK.push(e=>{const a=e.target.closest('[data-gp]');if(a){setPlaying(false);sto
   const b=e.target.closest('[data-gg]');if(b){setPlaying(false);stopAnim(false);ST.gg=BigInt(b.dataset.gg);ST.step.grp=0;show();return true}});
 /* ---------- Diffie–Hellman with real numbers ---------- */
 const DW=900,DH=430,CX={l:150,r:750,e:450},RY={pub:40,sec:112,pu:192,rx:272,sh:352};
-const card=(x,y,w,t,v,c,id,on=true)=>`<g class="kc ${c}${on?'':' off'}" id="${id}" transform="translate(${x} ${y})"><rect x="${-w/2}" y="-30" width="${w}" height="60" rx="9"/><text class="kt" y="-9">${t}</text><text class="kv" y="15">${v}</text></g>`;
+const card=(x,y,w,t,v,c,id,on=true)=>`<g class="kc ${c}${on?'':' off'}" id="${id}" transform="translate(${x} ${y})"><rect class="ke" x="${-w/2}" y="-25" width="${w}" height="60" rx="9"/><rect x="${-w/2}" y="-30" width="${w}" height="60" rx="9"/><text class="kt" y="-9">${t}</text><text class="kv" y="15">${v}</text></g>`;
 function dhScene(k){
   const K=D;let h=`<svg class="ch" id="dhS" viewBox="0 0 ${DW} ${DH}" role="img" aria-label="Alice and Bob exchange public values while Eve watches, and both compute the same secret">`;
   h+=card(CX.e,RY.pub,300,'public: everyone knows these',`p = ${fmtN(K.p,10)}, g = ${fmtN(K.g,6)}`,'pub','d-pub',k>=1);
@@ -1127,14 +1169,14 @@ function bsData(){
   return{x,h,gs,hit,res:hit.i*BM+hit.j};
 }
 function bsView(k){
-  const d=bsData(),R=170,c=190,n=100;let h='';
-  const P=(i,r=R)=>ringP(i,n,r,c);
-  for(let i=0;i<n;i++){const[a,b]=P(i);h+=`<circle class="rd" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="2.2"/>`;if(i%10===0){const[t,u]=P(i,R+14);h+=`<text class="rt2" x="${t.toFixed(1)}" y="${u.toFixed(1)}">${i}</text>`}}
-  if(k>=1)for(let j=0;j<Number(BM);j++){const[a,b]=P(j);h+=`<circle class="bab" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="5.5"/>`}
+  const d=bsData(),R=154,cx=200,cy=122,n=100;let h=dial3(cx,cy,R+18);
+  const P=(i,r=R)=>ringE(i,n,r,cx,cy),dep=i=>1+.25*P(i)[2];
+  for(let i=0;i<n;i++){const[a,b,z]=P(i);h+=`<circle class="rd" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="${(2.1*(1+.25*z)).toFixed(2)}"/>`;if(i%10===0){const[t,u,w]=P(i,R+34);h+=`<text class="rt2" x="${t.toFixed(1)}" y="${u.toFixed(1)}" style="font-size:${(10.5*(1+.15*w)).toFixed(1)}px">${i}</text>`}}
+  if(k>=1)for(let j=0;j<Number(BM);j++){const[a,b]=P(j);h+=`<circle class="bab" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="${(5.5*dep(j)).toFixed(1)}"/>`}
   const sh=Math.max(0,Math.min(k-1,d.gs.length-1));
-  for(let i=0;i<=sh;i++){const s=d.gs[i],[a,b]=P(Number(s.pos));if(i&&k>=2){const[u,v]=P(Number(d.gs[i-1].pos));h+=`<path class="gia${i===sh?' now':''}" id="gj${i}" d="M${u.toFixed(1)} ${v.toFixed(1)}L${a.toFixed(1)} ${b.toFixed(1)}"/>`}h+=`<circle class="gst" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="6.5"/>`}
+  for(let i=0;i<=sh;i++){const s=d.gs[i],[a,b]=P(Number(s.pos));if(i&&k>=2){const[u,v]=P(Number(d.gs[i-1].pos));h+=`<path class="gia${i===sh?' now':''}" id="gj${i}" d="M${u.toFixed(1)} ${v.toFixed(1)}L${a.toFixed(1)} ${b.toFixed(1)}"/>`}h+=`<circle class="gst" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="${(6.5*dep(Number(s.pos))).toFixed(1)}"/>`}
   const done=k>=d.gs.length+1;
-  return subs(`<span class="flh">Secret exponent x =</span>`,seg('bx',ST.bx.toString(),[37n,58n,93n,5n].map(v=>[v.toString(),v.toString()])))+`<div class="rw"><svg class="ring" id="ringS" viewBox="0 0 380 380" role="img" aria-label="Baby steps cover a short arc; giant steps jump around the ring until they land on it">${h}</svg><div><div class="h3">Find x with 2ˣ ≡ ${d.h} (mod 101)</div><div class="pics-s">The ring is drawn by exponent, which only we can see. The attacker sees only the values.</div><div class="leg"><span><i class="lb"></i>baby steps: stored in a table</span><span><i class="lg"></i>giant steps: h, h·g⁻¹¹, h·g⁻²²…</span></div>
+  return subs(`<span class="flh">Secret exponent x =</span>`,seg('bx',ST.bx.toString(),[37n,58n,93n,5n].map(v=>[v.toString(),v.toString()])))+`<div class="rw"><svg class="ring" id="ringS" viewBox="0 0 400 262" role="img" aria-label="Baby steps cover a short arc; giant steps jump around the ring until they land on it">${h}</svg><div><div class="h3">Find x with 2ˣ ≡ ${d.h} (mod 101)</div><div class="pics-s">The ring is drawn by exponent, which only we can see. The attacker sees only the values.</div><div class="leg"><span><i class="lb"></i>baby steps: stored in a table</span><span><i class="lg"></i>giant steps: h, h·g⁻¹¹, h·g⁻²²…</span></div>
    ${done?`<div class="res r-ok"><span class="rl">Found</span><span class="rv">x = ${d.hit.i} · 11 + ${d.hit.j} = ${d.res} after ${11+d.gs.length} steps, not 100</span></div>`:''}</div></div>`;
 }
 const bsN=()=>bsData().gs.length+2;
@@ -1312,6 +1354,152 @@ T.eg={n:()=>EGN[ST.egV],render(k){
 plan(k){return{dur:800,start(){const r=$('#er'+k);if(!r)return null;r.style.opacity=0;return p=>{r.style.opacity=p}}}}};
 CLICK.push(e=>{const v=e.target.closest('[data-egv]');if(v){setPlaying(false);stopAnim(false);ST.egV=v.dataset.egv;ST.step.eg=0;show();return true}
   if(e.target.closest('[data-egr]')){setPlaying(false);stopAnim(false);ST.egR++;show();return true}});
+/* ---------- the lecture notes under the picture: worked examples with the numbers of the page, and where to read more ---------- */
+const XB=(t,h,c)=>`<div class="xb ${c||''}"><b>${t}</b>${h}</div>`,MORE=items=>XB('Read more',`<ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul>`,'bk'),
+  LKD=(u,t)=>`<a href="${u}" target="_blank" rel="noopener">${t}</a>`,
+  TBD=(head,rows)=>`<div class="scroll"><table class="dtb"><tr>${head.map(h=>`<th${/^#/.test(h)?' class="dn"':''}>${h.replace(/^#/,'')}</th>`).join('')}</tr>${rows.map(r=>`<tr${r.cls?` class="${r.cls}"`:''}>${r.map((c,i)=>`<td${/^#/.test(head[i])?' class="dn"':/^~/.test(String(c))?' class="dm"':''}>${String(c).replace(/^~/,'')}</td>`).join('')}</tr>`).join('')}</table></div>`;
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const NF=v=>fmtN(v,18),small=()=>D.p<(1n<<40n);
+// square and multiply for g^e mod p, one row per bit of e
+function sqmul(g,e,p){const bits=e.toString(2),rows=[];let r=1n;for(const b of bits){r=r*r%p;const sq=r;if(b==='1')r=r*g%p;rows.push([b,sq,r])}return{bits,rows,r}}
+const phi=n=>{let r=n;for(const[q]of factorize(n))r=r/q*(q-1n);return r};
+const DOC={};
+
+DOC.ov=()=>{const{p,g,a,b,A,B,s}=D,sm=sqmul(g,a,p),L=sm.rows.length,sh=L<=14?sm.rows:[...sm.rows.slice(0,6),null,...sm.rows.slice(-3)];return`<h2>Agreeing on a key in public</h2>
+<p class="lead">Two people who have never met can agree on a secret number while everybody listens. The trick is a function that is easy to compute and very hard to undo.</p>
+<h3>The one-way function</h3>
+<p>Fix a large prime p and a number g. Computing <span class="mn">y = gˣ mod p</span> is fast even for numbers with hundreds of digits. Going back, finding x from y, is the <b>discrete logarithm problem</b>, and for well-chosen p nobody knows a fast way.</p>
+<h3>Worked example: computing gᵃ mod p by square and multiply</h3>
+<p>Read the bits of a = ${NF(a)} from the left. For every bit, square the running value; if the bit is 1, also multiply by g. Here with g = ${NF(g)} and p = ${NF(p)}:</p>
+${TBD(['#Bit','#After squaring','#After the bit'],sh.map(r=>r?[r[0],NF(r[1]),NF(r[2])]:['…','…','…']))}
+<p>${L} bits of a cost ${L} squarings and ${sm.bits.split('').filter(x=>x==='1').length} multiplications. The result is A = ${NF(sm.r)}${sm.r===A?', the value in the picture':''}. For a 2048-bit p and a 256-bit exponent that is a few hundred multiplications, a fraction of a millisecond. Undoing it is tab 5.</p>
+<h3>Worked example: the whole exchange with the numbers above</h3>
+${TBD(['Who','Computes','Value'],[['public','p, g',`~${NF(p)}, ${NF(g)}`],['Alice','A = gᵃ mod p',`~${NF(A)}`],['Bob','B = gᵇ mod p',`~${NF(B)}`],['Alice','s = Bᵃ mod p',`~${NF(modpow(B,a,p))}`],['Bob','s = Aᵇ mod p',`~${NF(modpow(A,b,p))}`]])}
+<p>Both get ${NF(s)}, because (gᵇ)ᵃ = gᵃᵇ = (gᵃ)ᵇ. Eve has seen p, g, A and B, and nothing else.</p>
+${XB('The paint picture, and where it stops',`Mixing paint is like raising to a power: easy to do, and the order does not matter. Separating a mixture is like the discrete logarithm. The picture breaks down in one place: real paints can be analysed chemically, while for gˣ mod p no such analysis is known.`)}
+<h3>A short history</h3>
+<p>Whitfield Diffie and Martin Hellman published the exchange in 1976 in <cite>New Directions in Cryptography</cite>, the paper that opened public-key cryptography. Ralph Merkle had found a weaker scheme with similar goals. At the British GCHQ, Malcolm Williamson had found the same exchange around 1974; it stayed secret until 1997.</p>
+${MORE([`${PAAR}, chapter 6, “Introduction to Public-Key Cryptography”, and section 8.1, “Diffie–Hellman Key Exchange”. Square and multiply is section 7.4, “Encryption and Decryption: Fast Exponentiation”.`,
+ `${AZB}: pp. 414–426, cryptosystems based on the discrete logarithm (lecture 9 of the syllabus).`,
+ 'W. Diffie, M. E. Hellman, “New Directions in Cryptography”, <cite>IEEE Transactions on Information Theory</cite> 22(6), 1976, pp. 644–654.',
+ '<a href="fields.html">Numbers, groups, rings and fields</a> on this site: GF(p) and why multiplication mod a prime has inverses.'])}`};
+
+DOC.grp=()=>{const p=ST.gp,n=p-1n,f=factorize(n),g=ST.gg,d=grpData(),cnt=new Map();d.ords.forEach(o=>cnt.set(o,(cnt.get(o)||0)+1));
+  const divs=[...cnt.keys()].sort((x,y)=>x<y?-1:1),tests=[...f.keys()].map(q=>{const e=n/q,v=modpow(g,e,p);return[q,e,v]}),gen=tests.every(t=>t[2]!==1n),gi=modinv(g,p);return`<h2>Groups, orders and generators</h2>
+<p class="lead">The numbers 1 to p − 1 with multiplication mod p form a <b>group</b>, written ℤ<sub>p</sub><sup>*</sup>. Diffie–Hellman lives in such a group, or in a part of it.</p>
+<h3>What makes it a group</h3>
+<ul class="pts"><li><b>Closed:</b> the product of two elements, reduced mod p, is again between 1 and p − 1, because p is prime.</li>
+<li><b>Associative:</b> (a·b)·c = a·(b·c).</li><li><b>Neutral element:</b> 1.</li>
+<li><b>Inverses:</b> every a has an a⁻¹ with a·a⁻¹ ≡ 1. Here: ${g}⁻¹ ≡ ${gi} (mod ${p}), because ${g} · ${gi} = ${g*gi} = ${(g*gi)/p} · ${p} + 1. The extended Euclidean algorithm finds it.</li></ul>
+<h3>Order, generators and Lagrange’s theorem</h3>
+<p>The <b>order</b> of g is the smallest k ≥ 1 with gᵏ ≡ 1. Lagrange’s theorem says that it always divides the size of the group, p − 1 = ${n} = ${fact(f)}. An element of order p − 1 is a <b>generator</b> (a primitive root): its powers run through the whole group, and the group is called <b>cyclic</b>.</p>
+<h3>Worked example: all orders in ℤ<sub>${p}</sub><sup>*</sup></h3>
+${TBD(['#Order d','#Elements of order d','#φ(d)'],divs.map(dd=>{const r=[dd.toString(),cnt.get(dd),phi(dd).toString()];if(dd===n)r.cls='hit';return r}))}
+<p>Every divisor d of ${n} occurs, and exactly φ(d) elements have order d (φ is Euler’s function). So there are φ(${n}) = ${phi(n)} generators: the green cells of the picture.</p>
+<h3>Worked example: is g = ${g} a generator? A test that needs no walk</h3>
+<p>g is a generator exactly when g<sup>(p−1)/q</sup> ≢ 1 for every prime q dividing p − 1. Only ${tests.length} powers are needed, not ${n}:</p>
+${TBD(['#Prime q','#(p − 1)/q','#g^((p−1)/q) mod p','Verdict'],tests.map(([q,e,v])=>[q.toString(),e.toString(),v.toString(),v===1n?'= 1: the order divides '+e:'≠ 1']))}
+<p>${gen?`No power is 1, so ${g} has order ${n}: a generator.`:`One power is 1, so ${g} is not a generator; its order is ${orderOf(g,p,f)}.`} This is how real software checks a generator, with p − 1 known in factored form.</p>
+<h3>Subgroups</h3>
+<p>The powers of any element form a <b>subgroup</b>. In a cyclic group there is exactly one subgroup for each divisor d of p − 1, and it contains the d elements x with x<sup>d</sup> ≡ 1. Diffie–Hellman is usually run in a subgroup of large <b>prime</b> order q: then every element except 1 generates it, and tab 6 explains why small subgroups are dangerous.</p>
+${XB('Beyond numbers mod p','The discrete logarithm problem makes sense in every cyclic group. The most important other group is the group of points on an elliptic curve: the same protocols work there with much smaller numbers, because the attacks of tab 5 that use the structure of numbers do not apply.','use')}
+${MORE([`${PAAR}, section 8.2: 8.2.1 “Groups”, 8.2.2 “Cyclic Groups”, 8.2.3 “Subgroups”; section 8.3.2, “The Generalized Discrete Logarithm Problem”; chapter 9 for elliptic curves.`,
+ `${AZB}: pp. 414–426.`,'<a href="fields.html">Numbers, groups, rings and fields</a> on this site, the tabs “Group” and “GF(p)”.'])}`};
+
+DOC.dh=()=>{const{p,g,a,b,A,B,s}=D;return`<h2>Diffie–Hellman key exchange</h2>
+<p class="lead">The protocol in full, with the numbers of the input bar, then the questions that matter in practice: how large, which group, and what it does not protect against.</p>
+<h3>The protocol</h3>
+${TBD(['Step','Alice','On the wire','Bob'],[['Agree on public values','p, g','~'+`p = ${NF(p)}, g = ${NF(g)}`,'p, g'],['Pick a secret','a = '+NF(a),'',`b = ${NF(b)}`],['Send a public value','A = gᵃ mod p','~'+`A = ${NF(A)} →<br>← B = ${NF(B)}`,'B = gᵇ mod p'],['Compute the shared secret','s = Bᵃ mod p = '+NF(modpow(B,a,p)),'','s = Aᵇ mod p = '+NF(modpow(A,b,p))]])}
+<p>The two results agree because (gᵇ)ᵃ = gᵇᵃ = gᵃᵇ = (gᵃ)ᵇ. In practice s is not used directly: a key derivation function (a hash) turns it into an AES key.</p>
+<h3>What Eve would have to solve</h3>
+<ul class="pts"><li><b>Computational Diffie–Hellman (CDH):</b> from g, gᵃ and gᵇ compute gᵃᵇ.</li>
+<li><b>Discrete logarithm (DLP):</b> from g and gᵃ compute a. Whoever solves the DLP solves CDH; the other direction is not proven, but no better way into CDH is known.</li></ul>
+<h3>How large</h3>
+${TBD(['#Security level','#Prime p for DH (and RSA modulus)','#Elliptic curve group'],[['80 bits','1024 bits','160 bits'],['112 bits','2048 bits','224 bits'],['128 bits','3072 bits','256 bits'],['192 bits','7680 bits','384 bits'],['256 bits','15360 bits','512 bits']])}
+<p class="fine">Comparable strengths as given by NIST SP 800-57, Part 1. 80 bits is no longer allowed.</p>
+<h3>In practice</h3>
+<ul class="pts"><li><b>Named groups.</b> Nobody picks p and g by hand any more. TLS 1.3 offers fixed groups: the elliptic curves X25519 and P-256, and the prime-field groups ffdhe2048 to ffdhe8192 of RFC 7919. The last preset of the input bar is ffdhe2048.</li>
+<li><b>Ephemeral keys and forward secrecy.</b> A fresh a and b for every connection means that stealing a server’s long-term key later does not reveal old traffic.</li>
+<li><b>Check what you receive.</b> A public value of 1, p − 1, or an element of a small subgroup leaks bits of the secret or forces a known key; it must be rejected.</li></ul>
+${XB('Logjam, 2015','Many servers still accepted 512-bit “export” Diffie–Hellman, and most used the same few primes. Researchers did the expensive part of the number field sieve once per prime and then broke individual connections in about a minute. The fixes: at least 2048 bits, and no export groups.','no')}
+${MORE([`${PAAR}: section 8.1, “Diffie–Hellman Key Exchange”, and section 8.4, “Security of the Diffie–Hellman Key Exchange”.`,`${AZB}: pp. 414–426.`,
+ 'RFC 7919, “Negotiated Finite Field Diffie-Hellman Ephemeral Parameters for TLS”, 2016: the groups ffdhe2048 and up.','D. Adrian et al., “Imperfect Forward Secrecy: How Diffie-Hellman Fails in Practice”, ACM CCS 2015 (Logjam).'])}`};
+
+DOC.mm=()=>{const{p,g,a,b,A,B}=D,m=mmData();return`<h2>The man in the middle</h2>
+<p class="lead">Diffie–Hellman protects against an eavesdropper. Against somebody who can change messages it protects nothing, because nothing in it says who sent A and B.</p>
+<h3>Worked example with the numbers of the picture</h3>
+${TBD(['Step','Value'],[['Eve picks her own secret e',NF(m.e)],['and sends E = gᵉ mod p to both sides',NF(m.E)],['Alice computes Eᵃ, thinking it is shared with Bob',NF(m.s1)],['Eve computes Aᵉ: the same number',`${NF(modpow(A,m.e,p))} ${m.okA?'✓':''}`],['Bob computes Eᵇ, thinking it is shared with Alice',NF(m.s2)],['Eve computes Bᵉ: the same number',`${NF(modpow(B,m.e,p))} ${m.okB?'✓':''}`]])}
+<p>Now there are two keys, one with each side, and Eve holds both. She decrypts what Alice sends, reads it, may change it, and encrypts it again for Bob. Neither side sees anything unusual: each completed a correct Diffie–Hellman exchange, only with the wrong person.</p>
+<h3>The fix: authenticate the public values</h3>
+<ul class="pts"><li><b>Signatures.</b> Each side signs its public value (or the whole handshake) with a long-term key. Eve cannot sign E in Bob’s name. This is how TLS 1.3 works: the server signs the handshake transcript, and its public key comes in a certificate.</li>
+<li><b>Certificates and a PKI.</b> They answer the next question, “is this really Bob’s signing key?”, by a chain of signatures up to a root that the browser already trusts.</li>
+<li><b>Comparing fingerprints.</b> Messengers such as Signal let two people compare a short code computed from their keys; SSH remembers a server’s key from the first connection.</li></ul>
+${XB('The general lesson','Key exchange gives secrecy; authentication has to come from somewhere else. Every real protocol combines the two.','use')}
+${MORE([`${PAAR}, chapter 14: section 14.4.1, “Man-in-the-Middle Attack”, section 14.4.2, “Certificates”, and section 14.5, “Public-Key Infrastructures (PKIs) and CAs”. Digital signatures are chapter 10.`,`${AZB}: pp. 555–576 (cryptographic protocols) and pp. 580–599 (authentication protocols), lectures 13 and 14.`])}`};
+
+DOC.dl=()=>{const d=bsData(),babs=[];let e=1n;for(let j=0n;j<BM;j++){babs.push([j,e]);e=e*BG%BP}
+  const hitY=d.gs.at(-1).y;return`<h2>How a discrete logarithm is attacked</h2>
+<p class="lead">Three generic methods work in every group, and their cost depends only on its size n. For numbers mod p there is a fourth, much faster method, and it decides the key sizes.</p>
+<h3>1 · Trying every exponent</h3>
+<p>Compute g, g², g³, … until the value equals h. On average n/2 multiplications: hopeless for n ≈ 2²⁵⁶, and a lower bound that the other methods beat.</p>
+<h3>2 · Baby-step giant-step (Shanks, 1971)</h3>
+<p>Write the unknown as x = i·m + j with m ≈ √n. Store the <b>baby steps</b> gʲ for j = 0 … m − 1 in a table. Then take <b>giant steps</b> h·g<sup>−m·i</sup> for i = 0, 1, 2, … until one of them is in the table: then h·g<sup>−m·i</sup> = gʲ, so x = i·m + j.</p>
+<h3>Worked example: 2ˣ ≡ ${d.h} (mod 101), the picture’s x</h3>
+<p>The group has n = 100 elements and m = 11. The baby steps:</p>
+${TBD(['#j',...babs.map(([j])=>'#'+j)],[['#2ʲ mod 101',...babs.map(([j,v])=>{return v===hitY?`<b>${v}</b>`:v.toString()})]])}
+<p>The giant steps, each one multiplied by g⁻¹¹ ≡ ${modpow(modinv(BG,BP),BM,BP)} (mod 101):</p>
+${TBD(['#i','#h · g^(−11·i) mod 101','In the table?'],d.gs.map(r=>{const hit=d.hit&&r.i===d.hit.i,row=[r.i.toString(),r.y.toString(),hit?`yes: j = ${d.hit.j}`:'no'];if(hit)row.cls='hit';return row}))}
+<p>So x = ${d.hit.i} · 11 + ${d.hit.j} = <b>${d.res}</b>, found with ${11+d.gs.length} group operations instead of up to 100. In general about 2√n operations, and √n table entries of memory.</p>
+<h3>3 · Pollard’s rho (1978)</h3>
+<p>A walk through the group where each point decides the next one, while the walker keeps track of every point as gᵘ·hᵛ. A finite group forces the walk into a loop; when two walkers, one twice as fast, meet at the same point, gᵘ¹hᵛ¹ = gᵘ²hᵛ², and with h = gˣ that is one linear equation for x mod n. About √(πn/2) steps and almost no memory: the method used for the record computations on elliptic curves.</p>
+${TBD(['#Group size n','#Brute force (n/2)','#Baby-step giant-step or rho (≈ √n)'],[['2⁴⁰','2³⁹','2²⁰: instant'],['2⁸⁰','2⁷⁹','2⁴⁰: hours on a PC'],['2¹⁶⁰','2¹⁵⁹','2⁸⁰: out of reach today'],['2²⁵⁶','2²⁵⁵','2¹²⁸: out of reach']])}
+<p>That is why a group used for cryptography needs a prime-order part of at least 2²⁵⁶ elements for 128-bit security.</p>
+<h3>4 · Index calculus: only for numbers mod p</h3>
+<p>Numbers mod p can be factored into small primes, and that structure can be used: collect many relations among the logarithms of small primes, solve a large linear system, then express h through them. The best version, the number field sieve, runs in <b>subexponential</b> time. This is why a prime field needs a 2048-bit or 3072-bit p, while an elliptic curve, where no such structure is known, is safe at 256 bits. The record for a prime field is a 795-bit p, solved in 2019.</p>
+${XB('And quantum computers','Shor’s algorithm computes discrete logarithms in polynomial time, in prime fields and on elliptic curves alike. A large quantum computer would break Diffie–Hellman and ElGamal completely; this is the reason for the post-quantum standards of 2024.','no')}
+${MORE([`${PAAR}, section 8.3.3, “Attacks Against the Discrete Logarithm Problem” (brute force, baby-step giant-step, Pollard’s rho, Pohlig–Hellman, index calculus); chapter 12 for post-quantum cryptography.`,
+ 'J. M. Pollard, “Monte Carlo Methods for Index Computation (mod p)”, <cite>Mathematics of Computation</cite> 32(143), 1978, pp. 918–924.',`${AZB}: pp. 414–426.`])}`};
+
+DOC.ph=()=>{const p=61n,g=2n,x=37n,h=modpow(g,x,p),f=factorize(p-1n),r=pohlig(g,h,p,f),n=p-1n;
+  const rows=r.parts.map(q=>{const gi=modpow(g,n/q.qe,p),hi=modpow(h,n/q.qe,p);return[`${q.q}${q.e>1?sup_(q.e):''} = ${q.qe}`,`${g}^(60/${q.qe}) = ${gi}`,`${h}^(60/${q.qe}) = ${hi}`,`x ≡ ${q.x} (mod ${q.qe})`]});return`<h2>Pohlig–Hellman: when p − 1 has small factors</h2>
+<p class="lead">The size of p is not enough. If p − 1 splits into small primes, the discrete logarithm splits into small problems, one per prime power, and the Chinese remainder theorem puts the answers together.</p>
+<h3>The idea</h3>
+<p>Let p − 1 = q₁<sup>e₁</sup> · q₂<sup>e₂</sup> ⋯. Raising both sides of gˣ = h to the power (p − 1)/qᵉ moves the problem into the small subgroup of order qᵉ, where x only matters modulo qᵉ. Solve each small problem, by brute force or by baby-step giant-step, and combine. The cost is about the sum of √q over the prime factors, so it is set by the <b>largest prime factor</b> of p − 1, not by p.</p>
+<h3>Worked example: 2ˣ ≡ ${h} (mod 61)</h3>
+<p>Here p − 1 = 60 = ${fact(f)}, and 2 is a generator. For each prime power qᵉ take g<sub>i</sub> = g<sup>60/qᵉ</sup> and h<sub>i</sub> = h<sup>60/qᵉ</sup>, and solve g<sub>i</sub><sup>x</sup> = h<sub>i</sub> in a group of only qᵉ elements:</p>
+${TBD(['qᵉ','gᵢ','hᵢ','Small answer'],rows)}
+<p>Now the Chinese remainder theorem: the number below 60 that leaves these three remainders is <b>x = ${r.x}</b>. Check: 2<sup>${r.x}</sup> mod 61 = ${modpow(g,r.x,p)} ${modpow(g,r.x,p)===h?'✓':''}. Three searches in groups of 4, 3 and 5 elements replaced one in a group of 60.</p>
+<p>The picture does the same with a 63-bit prime: p − 1 = ${fact(SMF)}, so the biggest search is in a group of ${[...SMF.keys()].reduce((m,q)=>q>m?q:m,0n)} elements, although p itself has 63 bits.</p>
+<h3>The defence</h3>
+<ul class="pts"><li><b>Safe primes:</b> p = 2q + 1 with q prime. Then the only subgroups have 1, 2, q and 2q elements, and the attack gains one bit. The groups of RFC 7919 are safe primes.</li>
+<li><b>A prime-order subgroup:</b> work in a subgroup of large prime order q (at least 256 bits) and check that received values lie in it.</li>
+<li>Elliptic curves for cryptography are chosen so that the number of points is a large prime or a large prime times a small cofactor.</li></ul>
+${MORE([`${PAAR}: section 8.2.3, “Subgroups”, and section 8.3.3, “Attacks Against the Discrete Logarithm Problem”, where Pohlig–Hellman is one of the attacks.`,
+ 'S. Pohlig, M. Hellman, “An Improved Algorithm for Computing Logarithms over GF(p) and Its Cryptographic Significance”, <cite>IEEE Transactions on Information Theory</cite> 24(1), 1978, pp. 106–110.',
+ '<a href="rsa.html">RSA, step by step</a> on this site uses the Chinese remainder theorem too, for faster decryption.'])}`};
+
+DOC.eg=()=>{const{p,g,b:x,B:y,m}=D,K=egKey(),c=egEnc(m,y,K.k,g,p),sK=modpow(c.c1,x,p),si=modinv(sK,p),m2=(m*3n)%p||1n,c2=egEnc(m2,y,K.k,g,p),rec=c2.c2*modinv(c.c2,p)%p*m%p,t=2n,mal={c1:c.c1,c2:c.c2*t%p};return`<h2>ElGamal encryption</h2>
+<p class="lead">ElGamal (1985) turns Diffie–Hellman into public-key encryption: the receiver’s public key is one half of a Diffie–Hellman exchange, and the sender supplies the other half fresh for every message.</p>
+<h3>The scheme</h3>
+${TBD(['','Computation'],[['Key generation (Bob)','private x, public y = gˣ mod p'],['Encryption (Alice)','fresh random k; c₁ = gᵏ mod p, c₂ = m · yᵏ mod p; send (c₁, c₂)'],['Decryption (Bob)','s = c₁ˣ mod p, then m = c₂ · s⁻¹ mod p']])}
+<p>Why it works: c₁ˣ = gᵏˣ = yᵏ, so Bob recomputes the mask that Alice multiplied in.</p>
+<h3>Worked example with the numbers of the input bar</h3>
+${TBD(['Value','Here'],[['p, g',`~${NF(p)}, ${NF(g)}`],['Bob’s private x (the b of the bar)','~'+NF(x)],['Bob’s public y = gˣ','~'+NF(y)],['the message m','~'+NF(m)],['Alice’s one-time k','~'+NF(K.k)],['c₁ = gᵏ mod p','~'+NF(c.c1)],['c₂ = m · yᵏ mod p','~'+NF(c.c2)],['Bob: s = c₁ˣ mod p','~'+NF(sK)],['s⁻¹ mod p','~'+NF(si)],['c₂ · s⁻¹ mod p','~'+`${NF(c.c2*si%p)} ${c.c2*si%p===m?'✓ the message':''}`]])}
+<h3>Properties to know</h3>
+<ul class="pts"><li><b>Probabilistic.</b> A new k gives a new ciphertext for the same message, so equal messages cannot be recognised.</li>
+<li><b>Twice as long.</b> A ciphertext is two group elements.</li>
+<li><b>Malleable.</b> Multiplying c₂ by t gives a valid ciphertext of t·m: from (c₁, c₂) anybody makes (c₁, ${t}·c₂), which decrypts to ${NF(egDec(mal,x,p))} = ${t} · ${NF(m)} mod p. ElGamal alone is therefore not secure against an active attacker.</li></ul>
+${XB('Never reuse k',`With the same k, the masks are the same, so c₂ / c₂′ = m / m′. Whoever knows one message gets the other: here a second message encrypted with the same k is recovered as ${NF(rec)}${rec===m2?' ✓':''}, without any key.`,'no')}
+${XB('The message must lie in the right group','If p − 1 has the factor 2 and m is not a square mod p, the ciphertext reveals that bit of m (the “Outside the group” view). Messages are therefore encoded into the subgroup, or ElGamal is used only to transport a random key.','no')}
+<h3>Where it is used</h3>
+<p>OpenPGP has carried ElGamal encryption keys since the 1990s, and the ElGamal <em>signature</em> led to DSA. Today the same idea runs on elliptic curves inside hybrid schemes: a Diffie–Hellman step produces a key, and a symmetric cipher encrypts the data.</p>
+${MORE([`${PAAR}, section 8.5, “The Elgamal Encryption Scheme”: 8.5.1 from Diffie–Hellman to ElGamal, 8.5.2 the protocol, 8.5.3 computational aspects, 8.5.4 security. ElGamal signatures are section 10.3.`,
+ 'T. ElGamal, “A Public Key Cryptosystem and a Signature Scheme Based on Discrete Logarithms”, <cite>IEEE Transactions on Information Theory</cite> 31(4), 1985, pp. 469–472.',`${AZB}: pp. 414–426 (lecture 9) and pp. 522–551 (signatures, lecture 10).`])}`};
+
+let DOCK='';
+function renderDoc(){const key=[ST.tab,D.v,ST.gp,ST.gg,ST.bx,ST.rs,ST.egR].join('|');if(key===DOCK)return;DOCK=key;const f=DOC[ST.tab];$('#doc').innerHTML=f?f():'';$('#doc').hidden=!f}
+const drawStep0=drawStep;drawStep=(t,k)=>{drawStep0(t,k);renderDoc()};
+
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
    plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
