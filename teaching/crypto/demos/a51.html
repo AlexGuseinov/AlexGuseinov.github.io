@@ -13,6 +13,7 @@
   --xor:#d4433a;--ok:#2b7a4b;--okBg:#e3f2e8;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#46464d;
@@ -87,6 +88,37 @@ pre.x .k{color:var(--faint)}
 .out{font:15px var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;word-break:break-all;min-height:44px}
 .outtext{font:17px var(--sans)}
 footer{margin-top:22px;font-size:13px;color:var(--muted);text-align:center;line-height:1.7}
+/* parts of the picture that can be clicked */
+.st[data-maj]{cursor:pointer;outline:none}
+.st[data-maj]:hover,.st[data-maj]:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.ks span[data-ks]{cursor:pointer}
+.ks span[data-ks]:hover{outline:2px solid var(--accent);outline-offset:-1px;border-radius:3px}
+.pickline{margin-top:8px;font:13.5px/1.7 var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.pickline button{font-size:12.5px;padding:2px 8px;margin-left:6px}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:color-mix(in srgb,var(--xor) 9%,var(--panel))}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.m{font:13.5px/1.7 var(--mono)}
+.tw{overflow-x:auto;max-width:100%}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 @media (max-width:700px){.grid{grid-template-columns:24px repeat(23,minmax(0,1fr)) 46px;gap:2px}.cell{height:24px;font-size:11px}.st{font-size:10px}.wrap{padding:18px 12px}}
 </style>
 </head>
@@ -151,10 +183,13 @@ footer{margin-top:22px;font-size:13px;color:var(--muted);text-align:center;line-
   </div>
   <div class="explain" id="explain"></div>
   <div class="comp" id="comp"></div>
-  <div class="small" style="margin-top:8px">Keyboard: → step, ← back, Space play or pause. Click any cell to see which key bits (k) and frame bits (f) it is made of.</div>
+  <div class="small" style="margin-top:8px">Keyboard: → step, ← back, Space play or pause. Click any cell to see which key bits (k) and frame bits (f) it is made of, and its role. Click “moved” or “stays” to see the majority vote of this step.</div>
+  <div class="pickline" id="pickM"></div>
 </section>
 
-<section>
+<section class="doc" id="doc" hidden></section>
+
+<section id="sKS">
   <h2>3. Keystream for this frame</h2>
   <p class="lead">228 bits: the first 114 encrypt one direction (A→B), the next 114 the other direction (B→A). Bits appear as the steps above produce them.</p>
   <div class="kslbl">A→B (steps 187–300)</div>
@@ -163,6 +198,8 @@ footer{margin-top:22px;font-size:13px;color:var(--muted);text-align:center;line-
   <div class="kslbl">B→A (steps 301–414)</div>
   <div class="ks" id="ksBA"></div>
   <div class="small" id="hexBA"></div>
+  <div class="small" style="margin-top:8px">Click a keystream bit to see which three register bits were XORed to make it.</div>
+  <div class="pickline" id="pickK"></div>
   <div class="badge" id="badge"></div>
 </section>
 
@@ -296,6 +333,7 @@ const A5 = (() => {
   const FN_MAX = 4194303;
 
   let kb, fn, T, KS, t = 0, sel = [2, 0], timer = null;
+  let pickM = null, pickK = null, lastDoc = null;
 
   const bitsToBytes = bits => { const o = new Uint8Array(Math.ceil(bits.length / 8)); bits.forEach((v, i) => { if (v) o[i >> 3] |= 1 << (7 - (i & 7)); }); return o; };
   const bytesToBits = bytes => { const b = []; for (const x of bytes) for (let i = 7; i >= 0; i--) b.push((x >> i) & 1); return b; };
@@ -374,7 +412,7 @@ const A5 = (() => {
         if (sel[0] === ri && sel[1] === j) cl += ' sel';
         h += `<div class="${cl}" data-r="${ri}" data-j="${j}" title="R${ri + 1}[${j}]">${A5.bit(s.R[ri], j)}</div>`;
       }
-      h += moved === null ? '<div></div>' : `<div class="st ${moved ? 'mv' : 'sy'}">${moved ? 'moved' : 'stays'}</div>`;
+      h += moved === null ? '<div></div>' : `<div class="st ${moved ? 'mv' : 'sy'}" data-maj="${ri}" tabindex="0" role="button" title="Show the majority vote">${moved ? 'moved' : 'stays'}</div>`;
       h += '</div>';
     }
     $('grid').innerHTML = h;
@@ -430,6 +468,13 @@ const A5 = (() => {
     const nk = tm.filter(x => x[0] === 'k').length, nf = tm.length - nk;
     let h = `<b>R${r + 1}[${j}] = ${A5.bit(s.R[r], j)}</b> · `;
     h += tm.length ? `made of ${tm.length} input bit${tm.length > 1 ? 's' : ''} (${nk} key, ${nf} frame):<div class="terms">${tm.join(' ⊕ ')}</div>` : 'empty: no input bit has reached this cell yet.';
+    // the role of the cell comes from the engine's constants, so it stays right if they change
+    const role = [];
+    if (j === 0) role.push('cell 0, receives the feedback bit (and the input bit while loading)');
+    if (A5.TAPS[r].includes(j)) role.push('feedback cell, XORed into the new cell 0');
+    if (A5.CLK[r] === j) role.push('clocking cell, votes in the majority');
+    if (A5.TOP[r] === j) role.push('output cell, XORed into the keystream bit z');
+    h += `<div class="small" style="margin-top:4px">Role: ${role.length ? role.join('; ') : 'storage only: the bit moves one cell up when R' + (r + 1) + ' moves'}.</div>`;
     if (tm.length) h += `<div class="small" style="margin-top:6px">${s.phase === 'key' || s.phase === 'frame' ? 'While loading, all three registers move at every step, so this expression is the same for every key and frame number.' : '<b>This holds only for this key and frame number.</b> Which registers moved depended on the majority votes, and those depend on the key. Another key gives other expressions, so A5/1 as a whole is not linear.'}</div>`;
     if (s.z !== undefined) {
       const zm = s.M[0][18] ^ s.M[1][21] ^ s.M[2][22];
@@ -438,19 +483,19 @@ const A5 = (() => {
     $('comp').innerHTML = h;
   }
 
-  function ksRow(bits, start) {
+  function ksRow(bits, start, dir) {
     let h = '';
     for (let i = 0; i < 114; i++) {
       const idx = start + 1 + i;
       const shown = idx <= t;
-      h += `<span class="${idx === t ? 'cur' : shown ? 'used' : ''}">${shown ? bits[i] : '·'}</span>`;
+      h += `<span class="${idx === t ? 'cur' : shown ? 'used' : ''}"${shown ? ` data-ks="${dir}:${i}"` : ''}>${shown ? bits[i] : '·'}</span>`;
       if (i % 8 === 7) h += ' ';
     }
     return h;
   }
   function renderKS() {
-    $('ksAB').innerHTML = ksRow(KS.ab, 186);
-    $('ksBA').innerHTML = ksRow(KS.ba, 300);
+    $('ksAB').innerHTML = ksRow(KS.ab, 186, 'ab');
+    $('ksBA').innerHTML = ksRow(KS.ba, 300, 'ba');
     $('hexAB').textContent = t >= 300 ? 'Hex: ' + hex(bitsToBytes(KS.ab), true) : 'Hex appears when all 114 bits are produced.';
     $('hexBA').textContent = t >= 414 ? 'Hex: ' + hex(bitsToBytes(KS.ba), true) : 'Hex appears when all 114 bits are produced.';
     const isRef = hex(Uint8Array.from(kb.reduce((a, b, i) => { a[i >> 3] |= b << (i & 7); return a; }, new Array(8).fill(0)))) === REF_KEY && fn === REF_FN;
@@ -459,7 +504,141 @@ const A5 = (() => {
     $('badge').textContent = msg;
   }
 
-  function render() { renderInputBits(); renderPhases(); renderGrid(); renderExplain(); renderComp(); renderKS(); }
+  // ---- One line under the picture for a clicked part ----
+  const RN = j => 'R' + (j + 1);
+  function renderPick() {
+    let h = '';
+    const s = T[t];
+    if (pickM !== null && s.moved) {
+      if (!s.maj) h = `Step ${t}: loading. The majority rule is not used yet, so R1, R2 and R3 all move.`;
+      else {
+        const c = s.maj.c, m = s.maj.m, r = pickM;
+        const mv = [0, 1, 2].filter(j => s.maj.moved[j]).map(RN);
+        h = `Step ${t}: majority(${A5.CLK.map((p, j) => RN(j) + '[' + p + ']').join(', ')}) = majority(${c.join(', ')}) = <b>${m}</b> → ${mv.join(' and ')} move. ${RN(r)}: ${c[r]} ${c[r] === m ? '= majority, so it moves' : '≠ majority, so it stays'}.`;
+      }
+    }
+    $('pickM').innerHTML = h;
+    h = '';
+    if (pickK) {
+      const start = pickK.d === 'ab' ? 186 : 300, step = start + 1 + pickK.i;
+      if (step <= t) {
+        const u = T[step], top = A5.TOP.map((p, j) => A5.bit(u.R[j], p));
+        h = `${pickK.d === 'ab' ? 'A→B' : 'B→A'} bit ${pickK.i + 1} (step ${step}): ${A5.TOP.map((p, j) => RN(j) + '[' + p + ']').join(' ⊕ ')} = ${top.join(' ⊕ ')} = <b>${u.z}</b>, read after the registers moved.<button data-goto="${step}">Show step ${step}</button>`;
+      }
+    }
+    $('pickK').innerHTML = h;
+  }
+
+  // ---- The longer read under the picture: one article per phase, filled with the current values ----
+  const box = (ti, b, c = '') => `<div class="exb ${c}"><b>${ti}</b><div>${b}</div></div>`;
+  const EX = b => box('Example', b), NO = b => box('Careful', b, 'no'), USE = b => box('In cryptography', b, 'use');
+  const M = s => `<span class="m">${s}</span>`;
+  // reading references per tab or sub-view: filled in after the books' tables of contents were checked
+  // section numbers: the book's table of contents; page ranges: the course syllabus
+  const A51REF = ['Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024), chapter 2: section 2.3, “Shift Register-Based Stream Ciphers”, with section 2.3.1, “Linear Feedback Shift Registers (LFSRs)”.',
+    'Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook: pp. 331–351, stream ciphers (lecture 3 of the syllabus).'];
+  const REFS = { 'a51/key': A51REF, 'a51/frame': A51REF, 'a51/warm': A51REF, 'a51/ks': A51REF };
+  const MORE = id => REFS[id] && REFS[id].length ? box('Read more', '<ul>' + REFS[id].map(x => '<li>' + x + '</li>').join('') + '</ul>', 'bk') : '';
+  const SUM = A5.LEN.reduce((a, b) => a + b, 0);
+  const rhex = (s, j) => s.R[j].toString(16).toUpperCase().padStart(Math.ceil(A5.LEN[j] / 4), '0');
+  const nTerms = (m, c) => A5.terms(m).filter(x => x[0] === c).length;
+  // how many of the 8 patterns of three clocking bits let one register move: counted, not typed
+  const MOVE8 = [0, 1, 2, 3, 4, 5, 6, 7].filter(p => { const a = p & 1, b = (p >> 1) & 1, c = (p >> 2) & 1; return a === (a + b + c >= 2 ? 1 : 0); }).length;
+  const regTable = () => `<div class="tw"><table class="cmp3"><tr><th>Register</th><th>Length</th><th>Feedback cells</th><th>Clocking cell</th><th>Output cell</th></tr>${A5.LEN.map((n, j) => `<tr><td>${RN(j)}</td><td>${n} bits (cells 0 to ${n - 1})</td><td>${A5.TAPS[j].join(', ')}</td><td>${A5.CLK[j]}</td><td>${A5.TOP[j]}</td></tr>`).join('')}</table></div>`;
+  function movesSoFar() { const n = [0, 0, 0]; let k = 0; for (let i = 87; i <= t; i++) { k++; T[i].moved.forEach((m, j) => { if (m) n[j]++; }); } return { n, k }; }
+  function majEx(s) {
+    const mj = s.maj, st = [0, 1, 2].filter(j => !mj.moved[j]).map(RN);
+    const mv = [0, 1, 2].filter(j => mj.moved[j]).map(RN).join(', ').replace(/, ([^,]*)$/, ' and $1');
+    const ms = movesSoFar();
+    return `<p>Before step ${t} the clocking cells hold ${A5.CLK.map((p, j) => M(RN(j) + '[' + p + '] = ' + mj.c[j])).join(', ')}. ${mj.c.filter(x => x === mj.m).length} of them are ${mj.m}, so the majority is ${M('m = ' + mj.m)}. ${mv} have clocking bit ${mj.m} and move${st.length ? '; ' + st[0] + ' has ' + (1 - mj.m) + ' and stays' : '. All three agree, so all three move'}.</p><p>Since the majority rule started, after ${ms.k} step${ms.k > 1 ? 's' : ''}: ${ms.n.map((x, j) => RN(j) + ' moved ' + (x === 1 ? 'once' : x + ' times')).join(', ')}.</p>`;
+  }
+
+  function docKey() {
+    const s = T[t];
+    const b0 = kb.slice(0, 8).reduce((a, b, i) => a | (b << i), 0);
+    let now;
+    if (t === 0) now = 'The picture shows the start: all cells are 0. Press Step to load k1.';
+    else {
+      const top = A5.TOP.map((p, j) => nTerms(s.M[j][p], 'k'));
+      now = `After ${t} key step${t > 1 ? 's' : ''} (the last one loaded ${M('k' + t + ' = ' + kb[t - 1])}) the registers hold ${[0, 1, 2].map(j => M(RN(j) + ' = ' + rhex(s, j))).join(', ')} in hex. The output cells are XORs of ${top.map((x, j) => x + ' key bit' + (x === 1 ? '' : 's') + ' (' + RN(j) + '[' + A5.TOP[j] + '])').join(', ')}.`;
+    }
+    return `<h2>A5/1: three registers and a majority vote</h2>
+<p class="lead">A5/1 is the stream cipher that GSM uses to encrypt calls on the radio link between the phone and the base station. From a 64-bit session key Kc and a 22-bit frame number it makes 228 keystream bits per frame. The message bits are XORed with them.</p>
+<h3>The three registers</h3>
+<p>The state is three linear feedback shift registers (LFSRs): R1, R2 and R3. An LFSR is a row of bit cells. When it moves, every bit goes one cell up, the top bit falls out, and cell 0 receives the XOR of a few fixed cells, the feedback cells. Together the three registers hold ${SUM} bits.</p>
+${regTable()}
+<p class="fine">The table is read from this page's cipher code. In the picture the feedback cells are blue and the clocking cells are orange. Click a cell to see its role.</p>
+<h3>Loading the key</h3>
+<p>The registers start at zero. For each key bit k1 … k64 in turn, all three registers move once, and then the key bit is XORed into cell 0 of each register. The majority rule is switched off during loading. The key is read byte by byte, and inside each byte the least significant bit comes first.</p>
+${EX(`<p>The first key byte is ${M(b0.toString(16).toUpperCase().padStart(2, '0'))} = ${M(b0.toString(2).padStart(8, '0'))} in binary. Read from the least significant bit, ${M('k1 … k8 = ' + kb.slice(0, 8).join(' '))}.</p><p>${now}</p>`)}
+<h3>Why every key bit goes into all three registers</h3>
+<p>Each register then depends on the whole key, not on a part of it. Because all registers move at every loading step, the state after loading is a linear function of the key: every cell is the XOR of a fixed set of key bits, the same set for every key. Clicking a cell shows this set. The non-linear part of A5/1 comes later, from the majority rule.</p>
+${NO(`<p>The key has only 64 bits. With enough computing power all 2<sup>64</sup> keys can be tried, and modern ciphers use keys of at least 128 bits. The state is also only ${SUM} bits, and in practice A5/1 is attacked through its short state rather than by trying keys.</p>`)}
+${USE(`<p>In GSM the session key Kc is not typed by anyone. The SIM card and the network compute it during authentication from the subscriber's secret key and a random challenge sent by the network. A new Kc is made at each authentication.</p>`)}
+${MORE('a51/key')}`;
+  }
+
+  function docFrame() {
+    const s = T[t], end = T[86];
+    const fb = A5.frameBits(fn);
+    const nx = (fn + 1) % (FN_MAX + 1), KS2 = A5.keystream(kb, nx);
+    const diff = KS.ab.filter((b, i) => b !== KS2.ab[i]).length;
+    const top = A5.TOP.map((p, j) => [nTerms(end.M[j][p], 'k'), nTerms(end.M[j][p], 'f')]);
+    return `<h2>Loading the frame number</h2>
+<p class="lead">One session key Kc encrypts many frames. The frame number Fn makes the keystream of every frame different, without a new key.</p>
+<h3>How it is loaded</h3>
+<p>Fn has 22 bits. They are loaded exactly like the key bits: for each bit f1 … f22, least significant bit first, all three registers move once and the bit is XORed into cell 0 of each register. Fn is not secret: both sides know it.</p>
+${EX(`<p>Fn = ${M(String(fn))} = ${M(fn.toString(2).padStart(22, '0'))} in binary, so ${M('f1 … f8 = ' + fb.slice(0, 8).join(' '))}.${s.phase === 'frame' ? ` The step in the picture loads ${M('f' + (s.pi + 1) + ' = ' + s.inBit)}.` : ''}</p><p>After all 22 frame bits the registers hold ${[0, 1, 2].map(j => M(RN(j) + ' = ' + rhex(end, j))).join(', ')}. Output cell ${RN(0)}[${A5.TOP[0]}] is then the XOR of ${top[0][0]} key bit${top[0][0] === 1 ? '' : 's'} and ${top[0][1]} frame bit${top[0][1] === 1 ? '' : 's'}.</p><p>With the same key and the next frame number ${M(String(nx))}, ${diff} of the 114 A→B keystream bits are different.</p>`)}
+<h3>Why the frame number is mixed in this way</h3>
+<p>Loading is still linear: the state is (a part that depends only on the key) XOR (a part that depends only on Fn). So the states of two frames differ by a value that anyone can compute from the two frame numbers. If the keystream came straight from this state, frames would be related in a simple way. The 100 warm-up steps with the majority rule that come next break this link.</p>
+${NO(`<p>The frame number plays the role of a nonce: a value used once per key. If two frames were encrypted with the same key and the same frame number, they would get the same keystream, and the XOR of the two ciphertexts would equal the XOR of the two plaintexts.</p>`)}
+${USE(`<p>In GSM, Fn is derived from the frame counter of the radio channel, which the phone and the base station both follow. So no extra message is needed to agree on it.</p>`)}
+${MORE('a51/frame')}`;
+  }
+
+  function docWarm() {
+    const s = T[t];
+    return `<h2>The majority rule and the 100 warm-up steps</h2>
+<p class="lead">After loading, the registers no longer move together. At every step a vote of three bits, one from each register, decides which registers move.</p>
+<h3>How the vote works</h3>
+<ul class="pts"><li>The clocking bits are ${A5.CLK.map((p, j) => M(RN(j) + '[' + p + ']')).join(', ')}.</li><li>The majority m is the value that at least two of them have.</li><li>A register moves if its clocking bit equals m. The other register stays and keeps all its bits.</li></ul>
+<p>So at every step two or three registers move. For one register, ${MOVE8} of the 8 possible patterns of the three clocking bits make it move.</p>
+${EX(majEx(s))}
+<h3>The 100 warm-up steps</h3>
+<p>During the warm-up the output bit is computed but thrown away. Right after loading, every cell is a fixed XOR of key and frame bits. After many votes, which bits sit in which cell depends on the earlier votes, and these depend on the key. The cell expressions shown when you click a cell grow and change from key to key.</p>
+<h3>Why plain LFSRs are not enough</h3>
+<p>A single LFSR is linear: from a short piece of its output, linear algebra gives its whole state (<a href="lfsr.html">see the LFSR demo</a>). XORing three LFSRs that all move at every step does not help: the result is again a linear sequence, made by an LFSR of at most ${SUM} cells, so about ${2 * SUM} output bits are enough to find it. The majority rule makes the movement depend on the state itself, so the output is no longer a fixed linear function of the key.</p>
+${NO(`<p>Each vote looks at only three of the ${SUM} state bits, and a register that stays keeps its bits unchanged. Attacks use this: once the clocking bits are guessed, the movement of the registers is fixed, and the remaining unknowns satisfy linear equations.</p>`)}
+${USE(`<p>Moving LFSRs irregularly is a classical way to break their linearity. Other designs built on the same idea are the stop-and-go generator and the shrinking generator.</p>`)}
+${MORE('a51/warm')}`;
+  }
+
+  function docKS() {
+    const s = T[t], dir = s.phase === 'ab' ? 'A→B' : 'B→A';
+    const top = A5.TOP.map((p, j) => A5.bit(s.R[j], p));
+    const outs = A5.TOP.map((p, j) => RN(j) + '[' + p + ']').join(' ⊕ ');
+    return `<h2>The keystream bits</h2>
+<p class="lead">After the warm-up, every step gives one keystream bit z. It is the XOR of the output cell of each register, read after the registers have moved.</p>
+<h3>How a bit is made</h3>
+<p>${M('z = ' + outs)}. The registers keep moving by the majority rule at every step. The first 114 bits encrypt the burst from A to B, the next 114 the burst from B to A. Then the cipher starts again from zero for the next frame number.</p>
+${EX(majEx(s) + `<p>After the move, ${M(outs + ' = ' + top.join(' ⊕ ') + ' = ' + s.z)}. This is bit ${s.pi + 1} of the ${dir} keystream.</p>`)}
+<h3>Why the output is a plain XOR</h3>
+<p>The XOR makes every output bit depend on all three registers. The output function itself is linear; all the non-linearity comes from the irregular movement. That keeps the cipher small in hardware, and it is also why attacks concentrate on the clocking.</p>
+${NO(`<p>A5/1 is considered broken. Its key and its state are only 64 bits, and the registers are short. Published attacks recover the state from a modest amount of known keystream, and time-memory trade-off attacks, which use large tables computed in advance, make this practical. In GSM, error-correcting coding is applied before encryption, so the encrypted bits contain known redundancy that attacks can use in place of known plaintext.</p>`)}
+${USE(`<p>A5/1 protects GSM voice and signalling on the radio link only: the network decrypts at the base station, so it is not end-to-end encryption. A weaker variant, A5/2, was also used, and the later A5/3 is built on the block cipher KASUMI. For the weakness of a single LFSR, <a href="lfsr.html">see the LFSR demo</a>.</p>`)}
+${MORE('a51/ks')}`;
+  }
+
+  function renderDoc() {
+    const pi = phaseOf(t);
+    const h = t <= 64 ? docKey() : pi === 1 ? docFrame() : pi === 2 ? docWarm() : docKS();
+    const el = $('doc');
+    el.hidden = !h;
+    // rewrite only when the text changed, so a selection or reading position survives
+    if (h !== lastDoc) { el.innerHTML = h; lastDoc = h; }
+  }
+
+  function render() { renderInputBits(); renderPhases(); renderGrid(); renderExplain(); renderComp(); renderKS(); renderPick(); renderDoc(); }
 
   function go(n) { t = Math.max(0, Math.min(414, n)); render(); }
   function stop() { if (timer) { clearTimeout(timer); timer = null; $('bPlay').textContent = 'Play'; } }
@@ -475,11 +654,23 @@ const A5 = (() => {
   $('bEnd').onclick = () => { stop(); go(414); };
   $('bPlay').onclick = play;
   $('phases').onclick = e => { const el = e.target.closest('.ph'); if (el) { stop(); go(STARTS[+el.dataset.i]); } };
-  $('grid').onclick = e => { const el = e.target.closest('.cell'); if (el) { sel = [+el.dataset.r, +el.dataset.j]; renderGrid(); renderComp(); } };
+  $('grid').onclick = e => {
+    const st = e.target.closest('.st[data-maj]');
+    if (st) { pickM = +st.dataset.maj; renderPick(); return; }
+    const el = e.target.closest('.cell'); if (el) { sel = [+el.dataset.r, +el.dataset.j]; renderGrid(); renderComp(); }
+  };
+  $('sKS').addEventListener('click', e => {
+    const g = e.target.closest('[data-goto]');
+    if (g) { stop(); go(+g.dataset.goto); return; }
+    const b = e.target.closest('[data-ks]');
+    if (b) { const [d, i] = b.dataset.ks.split(':'); pickK = { d, i: +i }; renderPick(); }
+  });
 
   document.addEventListener('keydown', e => {
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    // parts of the picture that act as buttons answer Enter and Space like real buttons
+    if ((e.key === 'Enter' || e.key === ' ') && tag !== 'BUTTON' && e.target.getAttribute('role') === 'button') { e.preventDefault(); e.target.click(); return; }
     if (e.key === ' ' && tag === 'BUTTON') return;
     if (e.key === 'ArrowRight') { e.preventDefault(); stop(); go(t + 1); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); stop(); go(t - 1); }
