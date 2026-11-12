@@ -11,6 +11,7 @@
   --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;
   --g0:#3b74d6;--g1:#e8892c;--g2:#2f9e6a;--g3:#d24b4b;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --cs:44px;--rowc:#1d5fa6;--rowBg:#dde9f8;--colc:#c2570c;--colBg:#fcebdc;
 }
@@ -602,6 +603,45 @@ button.nv:hover{outline:1.5px solid var(--accent)}
 #extra a,#explain a{color:var(--accent)}
 .nvs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:8px}
 .wd .ch{min-width:640px}
+/* parts of a picture that can be clicked */
+#ovS [data-goto],#kgS [data-kv],#edS [data-ev]{cursor:pointer;outline:none}
+#ovS [data-goto]:hover,#ovS [data-goto]:focus-visible{filter:drop-shadow(0 0 4px var(--accent))}
+#kgS [data-kv]:hover rect,#kgS [data-kv]:focus-visible rect,#edS g[data-ev]:hover rect,#edS g[data-ev]:focus-visible rect{stroke-width:4}
+#edS circle[data-ev]:hover{stroke:var(--ink)}
+.trap [data-goto]{cursor:pointer;outline:1.5px solid transparent;outline-offset:-1.5px;transition:outline-color .2s}
+.trap [data-goto]:hover,.trap [data-goto]:focus-visible{outline-color:var(--accent)}
+.bts i[data-smk]{cursor:pointer}
+.bts i[data-smk]:hover{outline:2px solid var(--line2);outline-offset:1px}
+.er[data-ak]{cursor:pointer;outline:none}
+.er[data-ak]:hover,.er[data-ak]:focus-visible{background:color-mix(in srgb,var(--ink) 9%,transparent)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+.hint.l{text-align:left;margin:-6px 0 10px}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.mth{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -655,6 +695,7 @@ button.nv:hover{outline:1.5px solid var(--accent)}
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: all numbers are computed in this browser. Never use the demo keys for real data.</footer>
 
@@ -893,11 +934,13 @@ function ovScene(k){
     <path class="chn" d="M${PA[0]+40} ${PA[1]} H${PB[0]-40}"/><text class="chl" x="${OW/2}" y="${PA[1]-10}">open network: everyone can read it</text>
     <path class="chn e" d="M${PE[0]} ${PA[1]} V${PE[1]-36}"/>`;
   h+=person(...PA,'Alice','a')+person(...PB,'Bob','b')+person(...PE,'Eve','e');
-  if(k>=1){h+=at(PB[0]-74,PB[1]-46,iLock(true,'pub'),'oLk')+at(PB[0],PB[1]+84,iKey('pri'),'oKy')+`<text class="sm pri" x="${PB[0]}" y="${PB[1]+108}">private key: stays with Bob</text>`}
+  // the parts that a later tab explains open that tab when clicked
+  const go=(tab,lab,s)=>`<g data-goto="${tab}" tabindex="0" role="button" aria-label="${lab}">${s}</g>`;
+  if(k>=1){h+=go('kg','Open the key generation tab',at(PB[0]-74,PB[1]-46,iLock(true,'pub'),'oLk')+at(PB[0],PB[1]+84,iKey('pri'),'oKy')+`<text class="sm pri" x="${PB[0]}" y="${PB[1]+108}">private key: stays with Bob</text>`)}
   if(k>=2){h+=at(PA[0]+74,PA[1]-46,iLock(true,'pub'),'oLa')+at(PE[0]+62,PE[1],iLock(true,'pub'),'oLe')+`<text class="sm" x="${PE[0]+84}" y="${PE[1]+4}" style="text-anchor:start">Eve has the padlock too</text>`}
-  if(k===3)h+=at(PA[0]+84,PA[1]+50,iBox(true),'oBa');
-  if(k>=4)h+=at(PB[0]-84,PB[1]+50,iBox(k<5,k>=5?'hi Bob':''),'oBb');
-  if(k>=4)h+=at(PE[0]-62,PE[1],iBox(true))+`<text class="sm" x="${PE[0]-92}" y="${PE[1]+4}" style="text-anchor:end">a locked box: useless</text>`;
+  if(k===3)h+=go('ed','Open the encrypt and decrypt tab',at(PA[0]+84,PA[1]+50,iBox(true),'oBa'));
+  if(k>=4)h+=go('ed','Open the encrypt and decrypt tab',at(PB[0]-84,PB[1]+50,iBox(k<5,k>=5?'hi Bob':''),'oBb'));
+  if(k>=4)h+=go('fa','Open the factoring tab',at(PE[0]-62,PE[1],iBox(true))+`<text class="sm" x="${PE[0]-92}" y="${PE[1]+4}" style="text-anchor:end">a locked box: useless</text>`);
   return h+'</svg>';
 }
 function meshS(n,kind){
@@ -914,11 +957,11 @@ function meshDraw(){
 }
 QZ.ov={q:'100 people, and every pair wants to talk in private. How many secret keys does symmetric encryption need?',o:['100','4950','10000'],a:1,why:'One key per pair: 100 · 99 / 2 = 4950. With public keys, each person needs just one key pair, so 100 pairs in total.'};
 T.ov={n:()=>6,render(k){
-  stage.innerHTML=wide(ovScene(k))+`<div class="sec"><div class="pich"><div><div class="h3">How many keys do n people need?</div><div class="pics-s">Move the slider. Each line on the left is one secret key that two people must agree on in advance.</div></div>
+  stage.innerHTML=wide(ovScene(k))+(k?`<p class="hint">Click Bob’s padlock and key, or a box, to open the tab that explains it.</p>`:'')+`<div class="sec"><div class="pich"><div><div class="h3">How many keys do n people need?</div><div class="pics-s">Move the slider. Each line on the left is one secret key that two people must agree on in advance.</div></div>
     <label class="inl">n = <b id="mV"></b> <input type="range" id="mR" min="2" max="40" value="${ST.meshN}"></label></div>
     <div class="m2"><div class="mc2 bad"><div class="mct">Symmetric: one shared key per pair</div><div id="mS"></div><div class="mn"><b id="mSn"></b> secret keys</div></div>
     <div class="mc2 good"><div class="mct">Public key: one key pair per person</div><div id="mP"></div><div class="mn"><b id="mPn"></b> key pairs</div></div></div></div>
-    <div class="sec"><div class="h3">The idea behind RSA: a one-way street</div><div class="trap"><div><span class="st ok">easy</span><span class="tm">${fmtN(D.p)} × ${fmtN(D.q)} = ${fmtN(D.n)}</span></div><div><span class="st bad">hard</span><span class="tm">${fmtN(D.n)} = ? × ?</span></div></div></div>`;
+    <div class="sec"><div class="h3">The idea behind RSA: a one-way street</div><div class="trap"><div data-goto="kg" tabindex="0" role="button"><span class="st ok">easy</span><span class="tm">${fmtN(D.p)} × ${fmtN(D.q)} = ${fmtN(D.n)}</span></div><div data-goto="fa" tabindex="0" role="button"><span class="st bad">hard</span><span class="tm">${fmtN(D.n)} = ? × ?</span></div></div><p class="hint">Click a card: the easy direction is key generation, the hard one is factoring.</p></div>`;
   meshDraw();
   $('#explain').innerHTML=[say('The problem','Alice wants to send Bob a secret. They have never met, and everything they send can be read by Eve.','With AES they would first need a shared key. But how do they share it without Eve seeing it?','Press <b>Step</b>.'),
     say('Step 1 · Bob makes two keys','A <b>public key</b> works like an open padlock: anyone can close it. A <b>private key</b> is the only thing that opens it.'),
@@ -1004,7 +1047,8 @@ const kcBox=(id,t,v,cls,o={})=>{const[x,y]=KPOS[id],w=o.w||156,h=o.h||68;
 const kW=(id,pts,cls='')=>`<path class="kw ${cls}" id="kw-${id}" d="M${pts.map(p=>p.join(' ')).join(' L')}" marker-end="url(#ka)"/>`;
 const KEDGE={pn:[[170,64],[250,64]],qn:[[170,160],[250,84]],pf:[[170,84],[250,156]],qf:[[170,176],[250,176]],fd:[[408,186],[480,222]],ed:[[408,282],[480,244]],nP:[[408,64],[716,84]],eP:[[408,276],[440,276],[640,120],[716,104]],dS:[[640,232],[716,232]]};
 function kgScene(k){
-  const on=(t,x)=>k>=t?x:x.replace('class="kc ','class="kc off ');
+  // a box that is already shown can be clicked to see how its value was computed
+  const on=(t,x)=>k>=t?x.replace('<g class="kc ','<g data-kv tabindex="0" role="button" class="kc '):x.replace('class="kc ','class="kc off ');
   let h=`<svg class="ch" id="kgS" viewBox="0 0 ${KW} ${KH}" role="img" aria-label="RSA key generation from two primes to the public and private keys"><defs><marker id="ka" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="kam" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
   for(const[id,p]of Object.entries(KEDGE)){const t={pn:2,qn:2,pf:3,qf:3,fd:5,ed:5,nP:6,eP:6,dS:6}[id];if(k>=t)h+=kW(id,p,id==='eP'||id==='nP'?'pub':id==='dS'?'pri':'')}
   h+=on(1,kcBox('p','prime p',fmtN(D.p),'sec'))+on(1,kcBox('q','prime q',fmtN(D.q),'sec'))+on(2,kcBox('n','n = p · q',fmtN(D.n),'pub'))+on(3,kcBox('f','φ(n) = (p−1)(q−1)',fmtN(D.phi),'sec'))+on(4,kcBox('e','e, coprime to φ(n)',fmtN(D.e),'pub'))+on(5,kcBox('d','d = e⁻¹ mod φ(n)',fmtN(D.d),'sec'));
@@ -1048,7 +1092,7 @@ CLICK.push(e=>{const b=e.target.closest('[data-hb]');if(b&&!(ST.kg&&ST.kg.run)){
   if(e.target.closest('[data-hunt]')){ST.kg={bits:HB.v,run:true,tested:0,small:0,mr:0,found:[],log:[],t0:performance.now()};e.target.disabled=true;huntStep();return true}});
 const HB={v:1024};
 T.kg={n:()=>7,render(k){
-  stage.innerHTML=wide(kgScene(k))+huntView();
+  stage.innerHTML=wide(kgScene(k))+(k?`<p class="hint">Click a box to see how its value was computed.</p>`+pickBox():'')+huntView();
   if(!ST.kg)$$('[data-hb]').forEach(x=>x.classList.toggle('on',+x.dataset.hb===HB.v));
   $('#explain').innerHTML=[say('Making a key pair','Bob does this once. Everything follows from two secret primes.','Press <b>Step</b>.'),
     say('Step 1 · two primes',`Bob picks p and q at random and tells nobody. Below you can watch a browser do it for real numbers.`),
@@ -1086,10 +1130,11 @@ function edScene(k){
   const[mx,my]=ePt(D.m),[cx,cy]=ePt(D.c);
   if(k>=2)h+=`<path class="eju e" id="eJ1" d="M${mx.toFixed(1)} ${my.toFixed(1)} Q${EC[0]} ${EC[1]} ${cx.toFixed(1)} ${cy.toFixed(1)}" marker-end="url(#ea)"/>`;
   if(k>=4)h+=`<path class="eju d" id="eJ2" d="M${cx.toFixed(1)} ${cy.toFixed(1)} Q${EC[0]+40} ${EC[1]+40} ${mx.toFixed(1)} ${my.toFixed(1)}" marker-end="url(#ea)"/>`;
-  h+=`<circle class="ept m" id="ePm" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="9"/>`;
-  if(k>=2)h+=`<circle class="ept c" id="ePc" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="9"/>`;
-  const cd=(x,y,t,v,c,on)=>`<g class="ecd ${c}${on?'':' off'}" transform="translate(${x} ${y})"><rect x="-96" y="-34" width="192" height="68" rx="9"/><text class="kt" y="-11">${t}</text><text class="kv" y="15">${v}</text></g>`;
-  h+=cd(120,86,'Message m',fmtN(D.m),'msg',true)+cd(120,342,'Public key: anyone',`(${fmtN(D.n,8)}, ${fmtN(D.e,6)})`,'pub',k>=2)+cd(780,86,'Ciphertext c',fmtN(D.c),'cip',k>=2)+cd(780,342,'Private key: only Bob',`d = ${fmtN(D.d,10)}`,'pri',k>=4);
+  h+=`<circle class="ept m" id="ePm" data-ev="m" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="9"/>`;
+  if(k>=2)h+=`<circle class="ept c" id="ePc" data-ev="c" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="9"/>`;
+  // a card that is shown can be clicked to see how its value was computed
+  const cd=(x,y,t,v,c,on,ev)=>`<g class="ecd ${c}${on?'':' off'}"${on?` data-ev="${ev}" tabindex="0" role="button"`:''} transform="translate(${x} ${y})"><rect x="-96" y="-34" width="192" height="68" rx="9"/><text class="kt" y="-11">${t}</text><text class="kv" y="15">${v}</text></g>`;
+  h+=cd(120,86,'Message m',fmtN(D.m),'msg',true,'m')+cd(120,342,'Public key: anyone',`(${fmtN(D.n,8)}, ${fmtN(D.e,6)})`,'pub',k>=2,'pub')+cd(780,86,'Ciphertext c',fmtN(D.c),'cip',k>=2,'c')+cd(780,342,'Private key: only Bob',`d = ${fmtN(D.d,10)}`,'pri',k>=4,'pri');
   return h+'</svg>';
 }
 const expDigits=(b,e)=>{const l=Math.log10(Number(b<(1n<<1000n)?b:(1n<<1000n)));return Math.floor(Number(e)*l)+1};
@@ -1100,7 +1145,7 @@ function proofHtml(){
 QZ.ed={q:'Alice wants to send a secret to Bob. Which key does she use?',o:['Her own private key','Bob’s public key','Bob’s private key'],a:1,why:'Anyone may use Bob’s public key to encrypt, and only Bob’s private key can undo it. Alice does not even need a key pair of her own.'};
 T.ed={n:()=>6,render(k){
   const txt=D.mF==='text',b=fromHex((D.m.toString(16).length%2?'0':'')+D.m.toString(16));
-  stage.innerHTML=wide(edScene(k))+pickBox()+`<div class="nvs"><span class="flh">Numbers</span>${nv(D.m,'m')}${k>=2?nv(D.c,'c'):''}${k>=4?nv(modpow(D.c,D.d,D.n),'decrypted'):''}</div>`+
+  stage.innerHTML=wide(edScene(k))+`<p class="hint">Click a point or a card to see how its value was computed.</p>`+pickBox()+`<div class="nvs"><span class="flh">Numbers</span>${nv(D.m,'m')}${k>=2?nv(D.c,'c'):''}${k>=4?nv(modpow(D.c,D.d,D.n),'decrypted'):''}</div>`+
     (k>=5?proofHtml():'');
   const big=D.m>1n&&D.e<100000n?expDigits(D.m,D.e):0;
   $('#explain').innerHTML=[say('RSA in two lines',`Encryption and decryption are the same operation with different exponents. Each one is a jump between two points on this ring.`,D.n<=121n?'The thin lines show where every number goes under the public key: a full shuffle.':'','Press <b>Step</b>.'),
@@ -1148,7 +1193,7 @@ function smBody(k){
   const R=smRun(),i=k-1,cur=R.steps[i],upto=k?R.steps.slice(0,k).reduce((s,x)=>s+x.o.length,0)-1:-1,last=cur?cur.o.at(-1):{r:1n,k:0n},naive=R.E-1n,fast=R.S+R.Mc;
   const lg=v=>bitLen(v),mx=Math.max(lg(naive),lg(BigInt(fast)),1);
   return subs(`<span class="flh">Exponent</span>`,seg('sme',ST.smE,[['e','e: public'],['d','d: private']]),`<span class="flh">computing ${fmtN(D.m,10)}<sup>${ST.smE}</sup> mod ${fmtN(D.n,10)}</span>`)+
-  `<div class="h3">The exponent in binary, read from the left${R.cut?`: first ${SMAX} of its ${R.bits.length} bits`:''}</div><div class="bts" id="bts">${[...R.bits.slice(0,R.show)].map((b,j)=>`<i class="${j<i?'dn ':''}${j===i?'cur ':''}${b==='1'?'b1':''}">${b}</i>`).join('')}${R.cut?'<em>…</em>':''}</div>
+  `<div class="h3">The exponent in binary, read from the left${R.cut?`: first ${SMAX} of its ${R.bits.length} bits`:''}</div><div class="bts" id="bts">${[...R.bits.slice(0,R.show)].map((b,j)=>`<i class="${j<i?'dn ':''}${j===i?'cur ':''}${b==='1'?'b1':''}" data-smk="${j+1}" tabindex="0" role="button" title="Go to bit ${j+1}">${b}</i>`).join('')}${R.cut?'<em>…</em>':''}</div><p class="hint l">Click a bit to jump to its step.</p>
   <div class="reg"><div><span>so far</span><b id="smK">${k?`m${fmtExp(last.k)}`:'1'}</b></div><div><span>value mod n</span><b id="smR">${fmtN(last.r)}</b></div></div>
   <div class="sec"><div class="pich"><div class="h3">The operations in order</div><span class="leg"><span><i class="ls"></i>S: square</span><span><i class="lm"></i>M: multiply</span></span></div>${trace(R.ops,upto)}</div>
   <div class="sec"><div class="h3">How much work?</div><div class="cnt"><div><span>Multiply m by itself</span><i style="width:${Math.max(3,100*lg(naive)/mx)}%" class="bad"></i><b>${fmtN(naive)}</b></div><div><span>Square and multiply</span><i style="width:${Math.max(3,100*lg(BigInt(fast))/mx)}%"></i><b>${fast}</b></div></div><div class="pics-s">Bar lengths are on a log scale.</div></div>
@@ -1271,7 +1316,7 @@ const N2=HP*HQ,PH2=(HP-1n)*(HQ-1n),E2=65537n,D2=modinv(E2,PH2),NB=256;
 const encT=(s,e=E2)=>modpow(B2I(txtB(s)),e,N2);
 const decT=c=>{const b=I2B(modpow(c,D2,N2),NB);return toText(b.slice(b.findIndex(x=>x)))};
 const ATK=[['guess','Guess the message'],['mall','Change the message'],['small','Small e'],['gcd','Shared prime']];
-const row=(k,i,l,v)=>`<div class="er${k<i?' off':''}" id="er${i}"><div class="el">${l}</div><div class="ev">${v}</div></div>`;
+const row=(k,i,l,v)=>`<div class="er${k<i?' off':''}" id="er${i}" data-ak="${i}" tabindex="0" role="button"><div class="el">${l}</div><div class="ev">${v}</div></div>`;
 const AT={};
 AT.guess={n:4,render(k){
   const vote=ST.vote||(ST.vote=rndB(1)[0]&1?'YES':'NO'),c=encT(vote),a=encT('YES'),b=encT('NO');
@@ -1296,7 +1341,7 @@ AT.gcd={n:4,render(k){
 QZ.atk={q:'Plain RSA encrypts the same message twice. What does Eve see?',o:['The same ciphertext both times','Two different ciphertexts','An error'],a:0,why:'With no randomness, m<sup>e</sup> mod n is a fixed function. That is why real RSA always adds random padding.'};
 T.atk={n:()=>AT[ST.atk].n,render(k){
   const a=AT[ST.atk].render(k);
-  stage.innerHTML=subs(seg('atk',ST.atk,ATK))+`<div class="eqs">${a.body}</div>`+pickBox();
+  stage.innerHTML=subs(seg('atk',ST.atk,ATK))+`<div class="eqs">${a.body}</div><p class="hint">Click a row to jump to its step.</p>`+pickBox();
   $('#explain').innerHTML=a.say;$('#extra').innerHTML=a.why+`<p><button class="link" data-goto="oa">How padding fixes this →</button></p>`+quiz('atk');
 },
 plan(k){return{dur:800,start(){const r=$('#er'+k);if(!r)return null;r.style.opacity=0;return p=>{r.style.opacity=p}}}}};
@@ -1353,6 +1398,242 @@ plan(k){
   }};
 },
 focus(){follow($('#oaS'))}};
+/* ---------- the longer read under the picture: one article per tab or sub-view ---------- */
+const dbox=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const DEX=b=>dbox('Example',b),DNO=b=>dbox('Careful',b,'no'),DUSE=b=>dbox('In cryptography',b,'use');
+const DM=s=>`<span class="mth">${s}</span>`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents; page ranges: the course syllabus
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const AZB7=`${AZB}: pp. 357–359, public-key cryptography (lecture 7 of the syllabus).`,AZB8=`${AZB}: pp. 360–369, the RSA cryptosystem (lecture 8 of the syllabus).`;
+const ATKREF=[`${PAAR}, chapter 7: section 7.9, “Attacks”, and section 7.7, “RSA in Practice: Padding”.`,AZB8];
+const REFS={
+  ov:[`${PAAR}, chapter 6: section 6.1, “Symmetric vs. Asymmetric Cryptography”, and section 6.2, “Practical Aspects of Public-Key Cryptography”.`,AZB7],
+  'mod/phi':[`${PAAR}, chapter 6: section 6.3.3, “Euler’s Phi Function”.`],
+  'mod/pow':[`${PAAR}, chapter 6: section 6.3.4, “Fermat’s Little Theorem and Euler’s Theorem”.`],
+  'mod/euc':[`${PAAR}, chapter 6: section 6.3.1, “Euclidean Algorithm”, and section 6.3.2, “Extended Euclidean Algorithm”.`],
+  kg:[`${PAAR}, chapter 7: section 7.3, “Key Generation and Proof of Correctness”, and section 7.6, “Finding Large Primes”.`,AZB8],
+  ed:[`${PAAR}, chapter 7: section 7.2, “Encryption and Decryption”, and section 7.3, “Key Generation and Proof of Correctness”.`,AZB8],
+  'sm/e':[`${PAAR}, chapter 7: section 7.4, “Encryption and Decryption: Fast Exponentiation”, and section 7.5.1, “Fast Encryption with Short Public Exponents”.`],
+  'sm/d':[`${PAAR}, chapter 7: section 7.5.2, “Fast Decryption with the Chinese Remainder Theorem”, and section 7.10, “Implementation in Software and Hardware”.`],
+  fa:[`${PAAR}, chapter 7: section 7.9, “Attacks”. Key sizes are in chapter 6, section 6.2.4, “Key Lengths and Security Levels”.`,AZB8],
+  'atk/guess':ATKREF,'atk/mall':ATKREF,'atk/small':ATKREF,'atk/gcd':ATKREF,
+  oa:[`${PAAR}, chapter 7: section 7.7, “RSA in Practice: Padding”, and section 7.8, “Key Encapsulation”.`]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?dbox('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const escH=s=>s.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const msgBytes=v=>fromHex((v.toString(16).length%2?'0':'')+v.toString(16));
+const hexList=b=>b.length<=16?b.map(hx).join(' '):`${b.slice(0,8).map(hx).join(' ')} … ${b.slice(-4).map(hx).join(' ')} (${b.length} bytes)`;
+// one line under a picture: how a value of the current key was computed
+function howLine(id){
+  const f=fmtN,{p,q,n,phi,e,d,m,c}=D,s=n<(1n<<40n),b=msgBytes(m);
+  const L={p:()=>`p = ${f(p)}: a random prime of ${bitLen(p)} bits, known only to Bob`,
+    q:()=>`q = ${f(q)}: a second random prime of ${bitLen(q)} bits, also secret`,
+    n:()=>`n = p · q = ${f(p)} · ${f(q)} = ${f(n)}`,
+    f:()=>`φ(n) = (p − 1)(q − 1) = ${f(p-1n)} · ${f(q-1n)} = ${f(phi)}`,
+    e:()=>`gcd(e, φ(n)) = gcd(${f(e)}, ${f(phi)}) = ${gcd(e,phi)}, so e has an inverse modulo φ(n)`,
+    d:()=>`d = e⁻¹ mod φ(n), and indeed e · d = ${f(e)} · ${f(d)} = ${f(e*d)} = ${f((e*d-1n)/phi)} · ${f(phi)} + 1`,
+    P:()=>`public key (n, e) = (${f(n)}, ${f(e)}): n from step 2, e from step 4`,
+    S:()=>`private key d = ${f(d)}: from step 5`,
+    m:()=>D.mF==='text'&&printable(b)?`m = the bytes ${hexList(b)} of “${escH(toText(b))}”, read as one number = ${f(m)}`:`m = ${f(m)}, a number below n = ${f(n)}`,
+    c:()=>`c = m<sup>e</sup> mod n${s?` = ${m}<sup>${e}</sup> mod ${n}`:''} = ${f(c)}`,
+    pub:()=>`n = p · q = ${f(p)} · ${f(q)} = ${f(n)}, and e = ${f(e)} with gcd(e, φ(n)) = ${gcd(e,phi)}`,
+    pri:()=>`d = e⁻¹ mod φ(n) = ${f(e)}⁻¹ mod ${f(phi)} = ${f(d)}, since e · d mod φ(n) = ${e*d%phi}`};
+  return L[id]?`<b>How it was computed</b> <code>${L[id]()}</code>`:'';
+}
+
+T.ov.doc=()=>{const N=ST.meshN;
+  return`<h2>Public-key encryption</h2>
+  <p class="lead">A public-key cipher uses two different keys. The <b>public key</b> encrypts and may be given to anyone. The <b>private key</b> decrypts and never leaves its owner.</p>
+  <h3>The problem it solves</h3>
+  <p>A symmetric cipher such as <a href="aes.html">AES</a> uses one key for both directions, so the two sides must agree on that key before they can talk in secret. Each pair of people needs its own key. With N people that is N(N − 1)/2 keys, and each of them must first travel over some safe channel.</p>
+  ${DEX(`With the slider at ${N} people: ${N} · ${N-1} / 2 = ${(N*(N-1)/2).toLocaleString('en-US')} shared secret keys. With public keys: ${N} key pairs, and nothing secret has to travel.`)}
+  <h3>How it works</h3>
+  <p>The two keys are linked by mathematics, but the private key cannot be computed from the public key in any practical time. Such a link is called a <b>trapdoor one-way function</b>: a function that is easy to compute and hard to invert, unless one knows an extra secret, the trapdoor.</p>
+  <p>In RSA the public key is a pair of numbers (n, e) and the private key is a number d. Encryption raises the message to the power e, decryption raises the result to the power d, both modulo n. The trapdoor is the factorisation n = p · q.</p>
+  ${DEX(`The key on this page now: public key (n, e) = (${fmtN(D.n)}, ${fmtN(D.e)}), private key d = ${fmtN(D.d)}. The multiplication ${fmtN(D.p)} · ${fmtN(D.q)} = ${fmtN(D.n)} is one step. Going back from n to p and q is the hard direction.`)}
+  <h3>Why two keys</h3>
+  <p>Locking and unlocking are separated. Everyone can lock, but locking gives no power to unlock. So the padlock can travel over an open network in plain view, and a copy of it is of no use to Eve.</p>
+  ${DNO(`The public key must be the right one. If Eve replaces Bob’s public key with her own on the way to Alice, Alice locks her message with Eve’s padlock. Eve opens it, reads it, and locks it again with Bob’s real padlock. Neither side notices. This is a <b>man-in-the-middle attack</b>. In practice a <b>certificate</b>, a public key signed by someone both sides trust, ties the key to Bob’s name.`)}
+  ${DUSE(`Public-key encryption is slow, so it protects only a short random key, and a symmetric cipher encrypts the data with that key. This is called <b>hybrid encryption</b>. The same key pair, used the other way round, gives <b>digital signatures</b>. The other large public-key family rests on the discrete logarithm instead of factoring: see <a href="dlog.html">Diffie–Hellman and ElGamal</a>.`)}
+  <h3>History</h3>
+  <p>Whitfield Diffie and Martin Hellman published the idea of public-key cryptography in 1976. In 1977 Ron Rivest, Adi Shamir and Leonard Adleman found the first practical public-key cipher, and RSA is made of their initials. Clifford Cocks at the British GCHQ had found the same scheme in 1973, but this stayed secret until 1997.</p>
+  ${MORE('ov')}`};
+
+const MODDOC={
+phi(){const{p,q,n,phi}=D,s=n-phi+1n,lam=phi/gcd(p-1n,q-1n);
+  return`<h2>Euler’s φ function</h2>
+  <p class="lead">φ(n), read “phi of n”, is the number of integers from 1 to n that have no common factor with n except 1. Such numbers are called <b>coprime</b> to n.</p>
+  <h3>How to count them</h3>
+  <ul class="pts"><li>For a prime p, every number from 1 to p − 1 is coprime to p, so φ(p) = p − 1.</li><li>For n = p · q with two different primes, a number shares a factor with n only if it is a multiple of p or of q. Up to n there are q multiples of p and p multiples of q, and n itself is in both lists. So φ(n) = n − q − p + 1 = (p − 1)(q − 1).</li></ul>
+  ${DEX(`The key on this page: p = ${fmtN(p)}, q = ${fmtN(q)}, n = ${fmtN(n)}.<br>${DM(`n − p − q + 1 = ${fmtN(n-p-q+1n)}<br>(p − 1)(q − 1) = ${fmtN(p-1n)} · ${fmtN(q-1n)} = ${fmtN(phi)}`)}`)}
+  <h3>Why RSA needs it</h3>
+  <p>The numbers coprime to n form a group under multiplication modulo n, written ℤ<sub>n</sub>*. It has exactly φ(n) elements. The next sub-tab shows that every element raised to the power φ(n) gives 1, and the private exponent d is built on that fact. For groups and ℤ<sub>n</sub>* in general, see <a href="fields.html">numbers, groups, rings and fields</a>.</p>
+  ${DNO(`φ(n) is as secret as p and q. From n and φ(n) anyone gets p + q = n − φ(n) + 1, and p and q are then the two solutions of x² − (p + q)·x + n = 0. Here p + q = ${fmtN(s)}. So computing φ(n) is exactly as hard as factoring n.`)}
+  ${DUSE(`PKCS #1 (RFC 8017) defines d modulo λ(n) = lcm(p − 1, q − 1) instead of φ(n). Here λ(n) = ${fmtN(lam)}, which divides φ(n) = ${fmtN(phi)}. Because of that, a d computed modulo φ(n), as on this page, also works.`)}
+  ${MORE('mod/phi')}`},
+pow(){const x=ST.x,r=ordOf(x,MN).length-1,s=D.n<(1n<<64n);
+  return`<h2>Euler’s theorem</h2>
+  <p class="lead">If x and n have no common factor, then x<sup>φ(n)</sup> ≡ 1 (mod n).</p>
+  <h3>Why the powers come back to 1</h3>
+  <p>Multiplying by x modulo n never leaves the set ℤ<sub>n</sub>* of numbers coprime to n, and this set is finite. So the list x, x², x³, … must repeat. Each step can be undone, because x has an inverse, so the first value that repeats is 1. The number of steps until 1 is called the <b>order</b> of x.</p>
+  <p>The order always divides the number of elements of the group, φ(n). This is Lagrange’s theorem from group theory. So x<sup>φ(n)</sup> is a whole number of full cycles, and it lands on 1.</p>
+  ${DEX(`In the picture x = ${x} and n = ${MN}. The order of ${x} is ${r}, and ${r} · ${60/r} = 60 = φ(${MN}).<br>${DM(`${x}<sup>60</sup> mod ${MN} = ${modpow(x,60n,MN)}<br>${x}<sup>61</sup> mod ${MN} = ${modpow(x,61n,MN)}`)}`+(s?`<br>With the key on this page: ${DM(`2<sup>φ(n)</sup> mod n = 2<sup>${D.phi}</sup> mod ${D.n} = ${modpow(2n,D.phi,D.n)}`)}`:''))}
+  <h3>Why RSA works</h3>
+  <p>If e · d = 1 + k · φ(n), then m<sup>ed</sup> = m · (m<sup>φ(n)</sup>)<sup>k</sup> ≡ m · 1<sup>k</sup> = m (mod n). Raising to e and then to d returns the message. When m shares a factor with n, the same identity still holds separately modulo p and modulo q, and the Chinese remainder theorem joins the two.</p>
+  ${DNO(`The theorem needs gcd(x, n) = 1. Take x = 7, a factor of ${MN}: 7<sup>60</sup> mod ${MN} = ${modpow(7n,60n,MN)}, not 1. Every power of 7 is a multiple of 7, so no power of 7 is ever 1 modulo ${MN}.`)}
+  ${DUSE(`For a prime n = p, φ(p) = p − 1 and the theorem becomes <b>Fermat’s little theorem</b>: x<sup>p−1</sup> ≡ 1 (mod p). Primality tests such as Miller–Rabin, used in key generation, are built on it. Diffie–Hellman uses the same fact in the group ℤ<sub>p</sub>*: see <a href="dlog.html">the discrete logarithm page</a>. Lagrange’s theorem is on <a href="fields.html">the groups and fields page</a>.`)}
+  ${MORE('mod/pow')}`},
+euc(){const{a,b,big}=euclidRows(),R=egcd(a,b),g=R.at(-2),dd=((g.t%a)+a)%a,RK=egcd(D.phi,D.e).length-2,r3=D.phi%3n;
+  return`<h2>The modular inverse</h2>
+  <p class="lead">The inverse of b modulo a is the number d with b · d ≡ 1 (mod a). It exists exactly when gcd(a, b) = 1.</p>
+  <h3>How the extended Euclidean algorithm finds it</h3>
+  <p>The Euclidean algorithm divides with remainder: a = q · b + r. Then it divides the old divisor by the remainder, and so on, until the remainder is 0. The last remainder that is not 0 is gcd(a, b).</p>
+  <p>The extended version keeps a second number t in each row, with the rule r ≡ t · b (mod a). The first two rows are a ≡ 0 · b and b ≡ 1 · b. Each new row is the row two above minus q times the row above, for r and for t alike, so the rule stays true. When r reaches 1, the row says 1 ≡ t · b, so t is the inverse.</p>
+  ${DEX(`The table${big?', with the textbook numbers because this key is large':''}: a = φ(n) = ${a}, b = e = ${b}. After ${R.length-2} divisions the last remainder before 0 is ${g.r}, with t = ${String(g.t).replace('-','−')}.<br>${DM(`d = ${String(g.t).replace('-','−')} mod ${a} = ${dd}<br>${b} · ${dd} = ${b*dd} = ${(b*dd-1n)/a} · ${a} + 1`)}`)}
+  <h3>Why it is fast</h3>
+  <p>The remainders at least halve every two rows, so the number of rows grows with the number of digits, not with the size of the numbers. For the key on this page, φ(n) has ${dig(D.phi)} digits, and the inverse of e = ${fmtN(D.e)} takes ${RK} divisions.</p>
+  ${DNO(`Not every e works. If e shares a factor with φ(n), the algorithm ends with a remainder greater than 1, and no inverse exists. For example, e = 3 fails whenever 3 divides φ(n). Here φ(n) mod 3 = ${r3}, so e = 3 ${r3===0n?'would fail for this key: the algorithm would stop at remainder 3':'would have an inverse for this key'}.`)}
+  ${DUSE(`Key generation computes d this way. The same algorithm gives q<sup>−1</sup> mod p for fast decryption with the Chinese remainder theorem (see <button class="link" data-goto="sm">square and multiply</button>), and the inverses in every prime field GF(p): see <a href="fields.html">the fields page</a>.`)}
+  ${MORE('mod/euc')}`}};
+T.mod.doc=()=>MODDOC[ST.modV]();
+
+T.kg.doc=()=>{const{p,q,n,phi,e,d}=D,eb=e.toString(2),w1=[...eb].filter(x=>x==='1').length,pb=bitLen(p)>=64?bitLen(p):1024,dif=p>q?p-q:q-p;
+  return`<h2>Key generation</h2>
+  <p class="lead">Bob makes his key pair once, from two secret primes. Everything else follows by arithmetic.</p>
+  <h3>The recipe</h3>
+  <ol class="pts"><li>Pick two large random primes p and q of the same size, p ≠ q.</li><li>Compute n = p · q. Its length in bits is the key size.</li><li>Compute φ(n) = (p − 1)(q − 1).</li><li>Choose e with gcd(e, φ(n)) = 1.</li><li>Compute d = e<sup>−1</sup> mod φ(n) with the extended Euclidean algorithm.</li><li>Publish (n, e). Keep d, and keep p, q and φ(n) secret as well.</li></ol>
+  ${DEX(DM(`p = ${fmtN(p)}, q = ${fmtN(q)}<br>n = ${fmtN(n)} (${D.bits} bits)<br>φ(n) = ${fmtN(phi)}<br>e = ${fmtN(e)}, gcd(e, φ(n)) = ${gcd(e,phi)}<br>d = ${fmtN(d)}<br>e · d mod φ(n) = ${e*d%phi}`))}
+  <h3>Finding the primes</h3>
+  <p>No formula produces large primes. Bob takes random odd numbers of the right size and tests each one. Near a number N, about one number in ln N is prime: this is the prime number theorem. For a ${pb}-bit prime${pb===bitLen(p)?', like p here':''}, that is one number in about ${Math.round(pb*Math.LN2)}, or one odd number in about ${Math.round(pb*Math.LN2/2)}. A test such as Miller–Rabin decides whether a number is prime without factoring it.</p>
+  <h3>Why these choices</h3>
+  <ul class="pts"><li><b>e is small.</b> The usual e = 65537 = 2<sup>16</sup> + 1 has only two 1 bits, which keeps encryption fast (see <button class="link" data-goto="sm">square and multiply</button>). The e of this key has ${eb.length} bits, ${w1} of them 1.</li><li><b>d is large.</b> d is computed, not chosen, and it is about as long as n: here ${bitLen(d)} bits, against ${D.bits} bits for n.</li><li><b>p and q have the same size.</b> A small prime factor would be found first by the methods on the <button class="link" data-goto="fa">factoring</button> tab.</li></ul>
+  ${DNO(`Three classic mistakes. <b>Primes too close together:</b> if p − q is small, n is close to a square, and Fermat’s method finds p and q by searching just above √n. Here the difference is ${fmtN(dif)}. <b>A small d:</b> choosing d small to make decryption fast is dangerous. Wiener showed in 1990 that a d below about n<sup>1/4</sup> can be read off from the public key. <b>Weak randomness:</b> two devices with the same random state can produce the same prime: see the <button class="link" data-goto="atk" data-atk="gcd">shared prime attack</button>.`)}
+  ${DUSE(`Usual key sizes today are 2048 and 3072 bits, with e = 65537. PKCS #1 (RFC 8017) stores the private key together with p, q, d mod (p − 1), d mod (q − 1) and q<sup>−1</sup> mod p, so that decryption can use the Chinese remainder theorem.`)}
+  ${MORE('kg')}`};
+
+T.ed.doc=()=>{const{n,e,d,m,c,p,q,phi}=D,s=n<(1n<<40n),b=msgBytes(m),txt=D.mF==='text'&&printable(b),fx=(1n+gcd(e-1n,p-1n))*(1n+gcd(e-1n,q-1n));
+  return`<h2>Encryption and decryption</h2>
+  <p class="lead">RSA encryption raises the message to the power e modulo n. Decryption raises the ciphertext to the power d modulo n. Both are the same operation, modular exponentiation, with different exponents.</p>
+  <h3>From text to a number</h3>
+  <p>RSA works on whole numbers from 0 to n − 1. Text is first turned into bytes, and the bytes are read as the digits of one number in base 256.</p>
+  ${DEX(txt?`“${escH(toText(b))}” is the bytes ${hexList(b)}. Read in base 256, that is m = ${fmtN(m)}.`:`The message is the number m = ${fmtN(m)}, below n = ${fmtN(n)}. As bytes it is ${hexList(b)}.`)}
+  <h3>The two formulas</h3>
+  ${DEX(DM(`c = m<sup>e</sup> mod n${s?` = ${m}<sup>${e}</sup> mod ${n}`:''} = ${fmtN(c)}<br>m = c<sup>d</sup> mod n${s?` = ${c}<sup>${d}</sup> mod ${n} = ${modpow(c,d,n)}`:` = ${fmtN(m)}`}`))}
+  <h3>Why decryption undoes encryption</h3>
+  <p>d was chosen so that e · d = 1 + k · φ(n) for a whole number k. Then c<sup>d</sup> = m<sup>ed</sup> = m · (m<sup>φ(n)</sup>)<sup>k</sup>, and Euler’s theorem turns m<sup>φ(n)</sup> into 1 (see <button class="link" data-goto="mod">modular maths</button>). Here e · d = ${fmtN(e*d)} = 1 + ${fmtN((e*d-1n)/phi)} · φ(n).</p>
+  <p>Encryption is a <b>permutation</b> of the numbers 0 … n − 1: different messages give different ciphertexts, and d sends each one back. For small keys the picture draws this shuffle as thin lines.</p>
+  ${DNO(`Textbook RSA has weak spots. 0 and 1 are encrypted to themselves, and so is n − 1, because e is odd. In total ${fmtN(fx)} of the ${fmtN(n)} messages do not move under this key, by the formula (1 + gcd(e − 1, p − 1)) · (1 + gcd(e − 1, q − 1)). Worse, there is no randomness: equal messages give equal ciphertexts, and anyone can multiply ciphertexts. See the <button class="link" data-goto="atk">attacks</button>.`)}
+  ${DUSE(`In practice RSA encryption carries only a short random key, and always with padding such as <button class="link" data-goto="oa">OAEP</button>. The same formulas with the keys swapped give signatures: Bob computes s = h<sup>d</sup> mod n for a hash h of the message, and anyone checks that s<sup>e</sup> mod n = h. The other public-key family is on <a href="dlog.html">the discrete logarithm page</a>.`)}
+  ${MORE('ed')}`};
+
+const SMDOC={
+e(){const E=D.e,bits=E.toString(2),L=bits.length,ones=[...bits].filter(x=>x==='1').length,pre=[];let v=0n;for(let i=0;i<Math.min(L,10);i++){v=2n*v+BigInt(bits[i]);pre.push(fmtN(v))}
+  const big=D.m>1n&&E<100000n?expDigits(D.m,E):0;
+  return`<h2>Square and multiply</h2>
+  <p class="lead">Square and multiply computes m<sup>e</sup> mod n with about one squaring per bit of e, instead of e − 1 multiplications.</p>
+  <h3>How it works</h3>
+  <p>Write the exponent in binary and read it from the left. Keep a running result r, which starts at 1. For each bit, square r: this doubles the exponent reached so far. If the bit is 1, also multiply r by m: this adds one to the exponent. Reduce modulo n after every operation, so that no number grows beyond twice the length of n.</p>
+  ${DEX(`e = ${fmtN(E)} is ${L>40?bits.slice(0,40)+'…':bits} in binary: ${L} bits, ${ones} of them 1. The exponent reached after each bit: ${pre.join(', ')}${L>10?', …':''}. The page counts ${L} squarings and ${ones} multiplications, ${L+ones} operations in all, against ${fmtN(E-1n)} for multiplying m by itself.`)}
+  <h3>Why it is built this way</h3>
+  <p>The work grows with the number of bits of the exponent, not with its value. A 2048-bit exponent needs about 2048 squarings and, on average, about 1024 multiplications. Repeated multiplication would need about 2<sup>2048</sup> of them.</p>
+  ${DNO(`Do not compute m<sup>e</sup> first and reduce at the end. ${big?`For this message and e, m<sup>e</sup> would have ${big.toLocaleString('en-US')} digits.`:'For real key sizes the number would not fit in any computer.'} Reducing after every step keeps every number shorter than n².`)}
+  ${DUSE(`Every RSA operation and every Diffie–Hellman operation (<a href="dlog.html">the discrete logarithm page</a>) is a modular exponentiation done this way, or with a refinement that reads several bits at once (a sliding window). On elliptic curves the same idea is called double and add.`)}
+  ${MORE('sm/e')}`},
+d(){const{p,q,d,c,n}=D,dp=d%(p-1n),dq=d%(q-1n),qi=modinv(q,p),s=n<(1n<<40n),bits=d.toString(2),ones=[...bits].filter(x=>x==='1').length;
+  let ex='';if(s){const mp=modpow(c%p,dp,p),mq=modpow(c%q,dq,q),h=((mp-mq)*qi%p+p)%p;
+    ex=`<br>m<sub>p</sub> = c<sup>d<sub>p</sub></sup> mod p = ${c%p}<sup>${dp}</sup> mod ${p} = ${mp}<br>m<sub>q</sub> = c<sup>d<sub>q</sub></sup> mod q = ${c%q}<sup>${dq}</sup> mod ${q} = ${mq}<br>m = m<sub>q</sub> + q · ((m<sub>p</sub> − m<sub>q</sub>) · q<sub>inv</sub> mod p) = ${mq} + ${q} · ${h} = ${mq+q*h}`}
+  return`<h2>Decryption with the private exponent</h2>
+  <p class="lead">Decryption is the same square and multiply, but the exponent d is secret and long: here ${bits.length} bits, ${ones} of them 1.</p>
+  <h3>Faster with the Chinese remainder theorem</h3>
+  <p>Bob knows p and q, so he can compute modulo p and modulo q separately and join the two results. By Fermat’s little theorem, the exponent can be reduced modulo p − 1 and modulo q − 1. Each half works with numbers half as long and an exponent half as long. The cost of an exponentiation grows roughly with the cube of the length, so each half costs about one eighth, and both together about one quarter of the plain way.</p>
+  ${DEX(DM(`d<sub>p</sub> = d mod (p − 1) = ${fmtN(dp)}<br>d<sub>q</sub> = d mod (q − 1) = ${fmtN(dq)}<br>q<sub>inv</sub> = q<sup>−1</sup> mod p = ${fmtN(qi)}${ex}`))}
+  ${DNO(`<b>Timing and power.</b> A 1 bit costs one more multiplication than a 0 bit. Paul Kocher showed in 1996 that the time taken by many decryptions can reveal d, and a power trace shows it even more directly. Real code uses constant-time methods and <b>blinding</b>: it decrypts c · r<sup>e</sup> for a fresh random r and multiplies the result by r<sup>−1</sup> mod n, so the timing has nothing to do with c.<br><b>Faults in the CRT.</b> If one of the two halves is computed wrongly, for example after a voltage glitch, the wrong result is still right modulo the other prime, and a single gcd with n reveals that prime. Boneh, DeMillo and Lipton described this in 1997. Implementations check the result before they release it.`)}
+  ${DUSE(`PKCS #1 (RFC 8017) stores d<sub>p</sub>, d<sub>q</sub> and q<sub>inv</sub> in the private key for exactly this purpose, and common RSA libraries decrypt and sign with the CRT.`)}
+  ${MORE('sm/d')}`}};
+T.sm.doc=()=>SMDOC[ST.smE]();
+
+T.fa.doc=()=>{const{p,q,n}=D,sp=p<q?p:q,sb=bitLen(sp);
+  return`<h2>Factoring</h2>
+  <p class="lead">Factoring n means finding p and q from n = p · q. Whoever can do it computes φ(n) and d exactly as Bob did, so the security of RSA rests on factoring being hard.</p>
+  <h3>Methods, from slow to fast</h3>
+  <ul class="pts"><li><b>Trial division</b> divides n by 3, 5, 7, … until one divides evenly. The smaller prime is at most √n, so the work is up to about √n / 2 divisions.</li><li><b>Pollard’s rho</b> follows a pseudo-random sequence modulo n. By the birthday paradox, two values that agree modulo p appear after about √p steps, and a gcd with n then reveals p.</li><li><b>Sieve methods</b>, the quadratic sieve and the general number field sieve, collect many numbers that split into small primes and combine them. Their running time is <b>subexponential</b>: it grows more slowly than any fixed power of n, which is why they hold all the records.</li></ul>
+  ${DEX(`The key on this page: n has ${D.bits} bits, √n ≈ ${fmtN(iroot(n,2))}, and the smaller prime has ${sb} bits. Trial division needs about ${fmtN(sp/2n)} divisions to reach it, between 2<sup>${Math.max(0,sb-2)}</sup> and 2<sup>${sb-1}</sup>. Pollard’s rho needs about √p ≈ 2<sup>${Math.round(sb/2)}</sup> steps.`)}
+  <h3>Why it matters how hard it is</h3>
+  <p>Breaking RSA is believed to be as hard as factoring, but this has not been proven: no one has shown that decrypting without d requires the factors. For properly made keys, all known attacks on the key itself go through factoring.</p>
+  ${DNO(`Special structure helps the attacker. If p − 1 has only small prime factors, Pollard’s p − 1 method finds p quickly. If p and q are close, Fermat’s method does. Random primes of the right size avoid both with overwhelming probability. A large quantum computer running Shor’s algorithm (1994) would factor n in polynomial time.`)}
+  ${DUSE(`NIST SP 800-57 links the size of n to a security strength, as in the table above. The discrete logarithm modulo a prime is attacked by close relatives of the same sieve methods, which is why Diffie–Hellman needs moduli of similar size: see <a href="dlog.html">the discrete logarithm page</a>.`)}
+  ${MORE('fa')}`};
+
+const ATKDOC={
+guess(){const{n,e,m,c}=D,s=n<(1n<<40n),c2=modpow(m,e,n);
+  return`<h2>Guess and check</h2>
+  <p class="lead">Textbook RSA is <b>deterministic</b>: the same message under the same key always gives the same ciphertext. An attacker who can list the possible messages encrypts each one and compares.</p>
+  <h3>How it works</h3>
+  <p>The attacker needs only the public key. For each candidate message x she computes x<sup>e</sup> mod n and checks whether it equals the ciphertext she saw. There is no factoring and no private key involved.</p>
+  ${DEX(`With the key on this page, m = ${fmtN(m)} encrypts to c = ${fmtN(c)}. Encrypting it once more gives ${fmtN(c2)}: ${c2===c?'the same number':'a different number'}.${s?` Since n is only ${fmtN(n)}, an attacker could even encrypt all ${fmtN(n)} possible messages once and keep a table.`:''}`)}
+  <h3>Why this rules out textbook RSA</h3>
+  <p>A modern cipher must be <b>IND-CPA</b> secure: shown the encryption of one of two messages that the attacker chose herself, she cannot tell which one it is. Every deterministic public-key scheme fails at once, because the attacker can encrypt both messages herself. Symmetric modes solve the same problem with an IV or a nonce (see <a href="modes.html">the modes page</a>). RSA solves it with random padding.</p>
+  ${DNO(`A fixed prefix or suffix added to the message does not help: the attacker adds it to her guesses too. Only fresh randomness in every encryption does. Small message spaces such as votes, PINs and amounts are exactly where this matters.`)}
+  ${DUSE(`<button class="link" data-goto="oa">OAEP</button> puts 32 fresh random bytes into every encryption, so encrypting the same message twice gives two unrelated ciphertexts.`)}
+  ${MORE('atk/guess')}`},
+mall(){const{n,e,d,m,c}=D,s=n<(1n<<40n),t2=modpow(2n,e,n),c2=c*t2%n;
+  return`<h2>Changing the message: malleability</h2>
+  <p class="lead">A cipher is <b>malleable</b> if an attacker can turn a ciphertext into another valid ciphertext whose message is related to the first in a known way. Textbook RSA is malleable through multiplication.</p>
+  <h3>How it works</h3>
+  <p>For any two numbers, a<sup>e</sup> · b<sup>e</sup> = (a · b)<sup>e</sup>, and this stays true modulo n. So multiplying c = m<sup>e</sup> by s<sup>e</sup> gives an encryption of m · s mod n. The attacker never sees m. She needs only e and n.</p>
+  ${DEX(DM(`c = ${fmtN(c)}<br>2<sup>e</sup> mod n = ${fmtN(t2)}<br>c′ = c · 2<sup>e</sup> mod n = ${fmtN(c2)}<br>${s?`c′<sup>d</sup> mod n = ${modpow(c2,d,n)} = 2 · ${m} mod ${n}`:`c′ decrypts to 2 · m mod n = ${fmtN(2n*m%n)}`}`))}
+  <h3>An attack built on it</h3>
+  <p>Malleability turns any decryption service into a weapon. Suppose Bob decrypts anything except the one ciphertext c. Eve sends c′ = c · s<sup>e</sup>, gets back m · s, and multiplies by s<sup>−1</sup> mod n. This is a <b>chosen-ciphertext attack</b>. Security against it is called IND-CCA2.</p>
+  ${DNO(`Signatures suffer too. From textbook signatures on a and on b, anyone can form a valid signature on a · b. That is why a signature is always computed on a padded hash of the message, never on the message itself.`)}
+  ${DUSE(`<button class="link" data-goto="oa">OAEP</button> makes the decrypted block carry a check. A multiplied ciphertext decrypts to a block that fails the check, and Bob rejects it.`)}
+  ${MORE('atk/mall')}`},
+small(){const{n,e,m}=D,th=e<1000000n?iroot(n,Number(e)):1n,b3=Math.floor((8*NB-1)/3);
+  return`<h2>Small exponent, short message</h2>
+  <p class="lead">If m<sup>e</sup> is smaller than n, the reduction modulo n never happens, and c = m<sup>e</sup> as an ordinary number. Then an ordinary e-th root gives m back.</p>
+  <h3>How it works</h3>
+  <p>The e-th root of an ordinary whole number is easy to compute, for example with Newton’s method or a binary search. There is no modular arithmetic and no key in it. With e = 3 and a ${8*NB}-bit n, every message of at most ${b3} bits, about ${Math.floor(b3/8)} bytes, falls this way.</p>
+  ${DEX(`The key on this page has e = ${fmtN(e)}. Then m<sup>e</sup> &lt; n exactly when m ≤ ⌊n<sup>1/e</sup>⌋ = ${fmtN(th)}${th<2n?', so only m = 0 and m = 1 are affected':''}. The message m = ${fmtN(m)} is ${m<=th?'<b>below</b> that bound: its ciphertext is a plain power, and this attack recovers it':'above that bound, so its power wraps around n'}.`)}
+  <h3>The same message to several people</h3>
+  <p>Long messages are not safe either when e is small. If one message is sent with e = 3 to three receivers with moduli n₁, n₂, n₃, the Chinese remainder theorem joins the three ciphertexts into m<sup>3</sup> modulo n₁n₂n₃. That product is larger than m<sup>3</sup>, so the ordinary cube root works again. This is Håstad’s broadcast attack.</p>
+  ${DNO(`Both attacks need the message without padding, or with padding that is the same every time. A small e alone is not the flaw.`)}
+  ${DUSE(`Padding fills the block up to the length of n with random bytes, so m<sup>e</sup> always wraps around n many times, and different receivers get different blocks. The usual choice today is e = 65537.`)}
+  ${MORE('atk/small')}`},
+gcd(){const g=gcd(D.n,N2);
+  return`<h2>Shared prime factors</h2>
+  <p class="lead">If two RSA moduli share one prime, the Euclidean algorithm finds it in a fraction of a second, and both keys are broken. No factoring is needed.</p>
+  <h3>How it works</h3>
+  <p>gcd(n₁, n₂) needs only divisions, and the number of divisions grows with the number of digits. If n₁ = p · q₁ and n₂ = p · q₂, the gcd is p. Then q₁ = n₁ / p and q₂ = n₂ / p, and φ and d follow for both keys.</p>
+  ${DEX(`The two moduli in the picture have ${bitLen(N2)} and ${bitLen(HP*HR)} bits. Their gcd is the ${bitLen(HP)}-bit prime ${fmtN(HP)}. The key in the input bar against n₁: gcd(n, n₁) = ${fmtN(g)}, ${g===1n?'so they share no prime':g===N2?'because it is the same modulus':'so they share a prime, and both are broken'}.`)}
+  <h3>Why it happens</h3>
+  <p>Key generation needs good random numbers. A device that makes its key right after its first boot may not yet have collected enough randomness, and two such devices can start from the same state. They pick the same first prime, and if a little randomness arrives before the second prime, the second primes differ. Comparing every pair among millions of keys one by one would be slow, but a <b>batch gcd</b>, built from product and remainder trees, finds every shared factor in one run.</p>
+  ${DNO(`The keys look perfectly normal. Each n has the right length and passes every test on its own. The flaw shows only when keys are compared.`)}
+  ${DUSE(`In 2012 two research groups found such keys on the internet: Heninger and others, and independently Lenstra and others. The fix is in the device: seed the random generator properly before making keys. For IoT devices this is a real design requirement.`)}
+  ${MORE('atk/gcd')}`}};
+T.atk.doc=()=>ATKDOC[ST.atk]();
+
+T.oa.doc=()=>{const d=oaData(),k=NB,h=32,ml=txtB(OM).length,ps=k-ml-2*h-2,kc=Math.ceil(D.bits/8),mc=kc-2*h-2;
+  return`<h2>OAEP: optimal asymmetric encryption padding</h2>
+  <p class="lead">OAEP turns the message into a random-looking block exactly as long as n before RSA is applied. A fresh random seed makes every encryption different, and a built-in check makes changed ciphertexts fail.</p>
+  <h3>How it works</h3>
+  <ol class="pts"><li>Build the data block DB = Hash(label) ‖ zeros ‖ 01 ‖ message. The label is usually empty.</li><li>Pick a random seed as long as the hash output.</li><li>XOR DB with MGF1(seed). MGF1 makes a mask of any length by hashing the seed together with a counter.</li><li>XOR the seed with MGF1(masked DB).</li><li>The encoded message is EM = 00 ‖ masked seed ‖ masked DB, and c = EM<sup>e</sup> mod n.</li></ol>
+  ${DEX(`Here with SHA-256 (32-byte hash) and a ${k}-byte modulus: the message “${OM}” has ${ml} bytes, so DB has ${h} + ${ps} + 1 + ${ml} = ${k-h-1} bytes, and EM has 1 + ${h} + ${k-h-1} = ${k} bytes. The seed of this encryption starts with ${hexs(d.seed.slice(0,8))}…, and c = ${fmtN(d.c)}.`)}
+  <p>The longest message that fits is k − 2 · 32 − 2 = ${k-2*h-2} bytes for this modulus. For the key in the input bar (${kc} bytes) that is ${mc>0?`${mc} bytes`:'nothing: that key is too short for OAEP with SHA-256'}.</p>
+  <h3>Why it is built this way</h3>
+  <p>The two XOR steps form a small Feistel network: to recover any part of the seed or of DB, one needs all of EM. Mihir Bellare and Phillip Rogaway proposed OAEP in 1994. RSA-OAEP has a security proof against chosen-ciphertext attacks in the random oracle model, a model in which the hash function is treated as a perfect random function.</p>
+  ${DNO(`Decryption must fail in the same way and in the same time, whatever went wrong: a first byte that is not 00, a wrong hash, a missing 01. Bleichenbacher’s attack of 1998 used the error messages of the older PKCS #1 v1.5 padding to decrypt ciphertexts. Manger showed in 2001 that an OAEP implementation which reveals whether the first byte was 00 can be attacked in a similar way.`)}
+  ${DUSE(`OAEP is specified in PKCS #1 (RFC 8017) as RSAES-OAEP. Signatures use a related randomised padding, PSS. TLS 1.3 no longer encrypts keys with RSA at all: RSA appears there only in signatures, and the key is agreed with Diffie–Hellman (see <a href="dlog.html">the discrete logarithm page</a>).`)}
+  ${MORE('oa')}`};
+
+// the card is rebuilt only when the tab, sub-view or numbers change, and written only when its text changes,
+// so that a selection or the reading position is kept while stepping
+let DOCK='',DOCH='';
+function fillDoc(){
+  const t=T[ST.tab],sv={mod:ST.modV,sm:ST.smE,atk:ST.atk}[ST.tab]||'',ck=[ST.tab,sv,D.v,ST.meshN,ST.x,ST.seed].join('|');
+  if(ck===DOCK)return;DOCK=ck;
+  const h=t.doc?t.doc():'',dc=$('#doc');dc.hidden=!h;if(h!==DOCH){DOCH=h;dc.innerHTML=h}
+}
+
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
    plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
@@ -1385,6 +1666,7 @@ function controls(k){
   $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
   $('#fWrap').hidden=!t.focus;
+  fillDoc();
 }
 // static picture of the current step; any running animation or pending play step is dropped
 function show(){
@@ -1457,12 +1739,17 @@ document.addEventListener('click',e=>{
   const m=e.target.closest('[data-modv]');if(m){setPlaying(false);stopAnim(false);ST.modV=m.dataset.modv;ST.step.mod=0;show();return}
   const x=e.target.closest('[data-x]');if(x){setPlaying(false);stopAnim(false);ST.x=BigInt(x.dataset.x);ST.step.mod=0;show();return}
   const f=e.target.closest('[data-full]');if(f){showFull(f);return}
+  const hv=e.target.closest('[data-kv],[data-ev]');if(hv){const p=$('#pick');if(p)p.innerHTML=howLine(hv.dataset.ev||hv.id.slice(2));return}
+  const sk=e.target.closest('[data-smk],[data-ak]');if(sk){setPlaying(false);stopAnim(false);ST.step[sk.dataset.smk?'sm':'atk']=+(sk.dataset.smk||sk.dataset.ak);show();return}
   const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
   for(const h of CLICK)if(h(e))return;
 });
-document.addEventListener('input',e=>{if(e.target.id==='mR'){ST.meshN=+e.target.value;meshDraw()}});
+document.addEventListener('input',e=>{if(e.target.id==='mR'){ST.meshN=+e.target.value;meshDraw();fillDoc()}});
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  // clickable parts of a picture answer to Enter and Space like buttons
+  const act=e.target.closest&&e.target.closest('svg [data-goto],.trap [data-goto],[data-kv],[data-ev],[data-smk],[data-ak]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
   if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
