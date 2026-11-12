@@ -1,0 +1,1325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blockchain, step by step</title>
+<meta name="description" content="An interactive 3D lecture on blockchains: hash pointers, transactions and signatures, Merkle trees, proof of work, forks, the 51% attack, proof of stake, and where blockchains are used today.">
+<meta property="og:title" content="Blockchain, step by step">
+<meta property="og:description" content="An interactive 3D lecture: blocks and hash pointers, transactions, Merkle trees, proof of work, forks, the 51% attack and proof of stake.">
+<meta property="og:type" content="article">
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
+  --blk:#efede6;--node:#b9b6aa;--gold:#c79a1e;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
+  --blk:#34343b;--node:#5b5b64;--gold:#e3bd52;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:12px;min-width:0}
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.stage{order:1}#explain{order:2}#extra{order:3}.doc{order:4}}
+.layout.read{grid-template-columns:minmax(0,1fr)}
+.layout.read .stage,.layout.read .panel{display:none}
+.layout.read .doc{grid-column:1;grid-row:1}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+[hidden]{display:none!important}
+select,input[type=text],input[type=number]{font:14px var(--mono);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:120px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:10px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .25s}
+
+/* the 3D picture */
+#view{position:relative;width:100%;aspect-ratio:16/9;max-height:min(66vh,640px);min-height:280px;border-radius:8px;overflow:hidden;
+  background:radial-gradient(120% 95% at 50% 12%,color-mix(in srgb,var(--accent) 7%,var(--panel)) 0%,var(--panel) 62%)}
+#view canvas{display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab;outline:none}
+#view canvas.drag{cursor:grabbing}
+#view canvas.pick{cursor:pointer}
+#bView{position:absolute;right:8px;top:8px;font-size:12.5px;padding:4px 9px;opacity:.85}
+#tip{position:absolute;left:10px;bottom:8px;font-size:12.5px;color:var(--faint);pointer-events:none}
+#cap{position:absolute;left:10px;top:9px;font:600 12.5px var(--sans);color:var(--muted);pointer-events:none;max-width:70%}
+#nogl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--muted);font-size:14.5px}
+@media (max-width:560px){#view{aspect-ratio:1/1}.stage{padding:8px}}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:10px}
+.ctl .prog{margin-left:auto}
+.ctl #bStep{min-width:92px}
+.inbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.inbar input[type=text]{width:min(100%,300px)}
+.live{font:13px/1.5 var(--mono);color:var(--muted);flex-basis:100%;min-height:20px;overflow-wrap:anywhere}
+.live b{color:var(--ink)}
+
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#explain h2{font-size:18px;line-height:1.3;margin:0 0 6px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.note{display:block;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.warn{display:block;padding:8px 10px;border-radius:7px;background:var(--xorBg);font-size:14px;border-left:3px solid var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.ca{color:var(--accent);font-weight:600}.cm{color:var(--amb);font-weight:600}.ck{color:var(--key);font-weight:600}
+code,.mn{font:13px var(--mono)}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+.scroll{overflow-x:auto;max-width:100%}
+
+/* small tables of live values */
+table.kv{border-collapse:collapse;width:100%;font-size:13px}
+table.kv th,table.kv td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.kv th{color:var(--muted);font-weight:600;font-size:12px;white-space:nowrap}
+table.kv td{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
+table.kv td.t{font-family:var(--sans)}
+table.kv tr.bad td{background:var(--xorBg)}
+table.kv tr.sel td{background:var(--ambBg)}
+table.kv tr.good td{background:var(--okBg)}
+table.kv tr.dim td{color:var(--faint)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+.lg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);margin-top:8px}
+
+/* one question per tab */
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+
+/* the lecture notes under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:24px 0 6px}
+.doc p,.doc .pts{max-width:74ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc .fm{max-width:74ch;font-size:13px}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:74ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:var(--key);background:var(--keyBg)}.exb.bk>b{color:var(--key)}
+table.cmp{border-collapse:collapse;font-size:14.5px;margin:8px 0 10px;max-width:100%}
+table.cmp th,table.cmp td{padding:7px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp td:first-child{color:var(--muted);font-weight:600}
+table.cmp td.n,table.cmp th.n{text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap}
+table.cmp.fx td:first-child{white-space:nowrap}
+.refs{padding-left:22px;font-size:14px;max-width:80ch}
+.refs li{margin:0 0 6px}
+.tl{list-style:none;padding:0;margin:8px 0 12px;max-width:74ch;font-size:15px}
+.tl li{display:grid;grid-template-columns:92px minmax(0,1fr);gap:4px 12px;padding:5px 0;border-bottom:1px solid var(--line)}
+.tl li b{color:var(--muted);font-weight:600;font-size:13.5px;padding-top:1px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:10px 0 14px}
+.use{border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+.use h4{margin:0 0 4px;font-size:15.5px}
+.use p{font-size:14.5px;margin:0 0 6px;max-width:none}
+.use .st{font:600 12px var(--sans);padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
+.st.on{background:var(--okBg);color:var(--ok)}.st.grow{background:var(--accentBg);color:var(--accent)}.st.mix{background:var(--ambBg);color:var(--amb)}.st.fail{background:var(--xorBg);color:var(--xor)}
+@media (max-width:560px){.doc{padding:16px 16px 18px}.tl li{grid-template-columns:72px minmax(0,1fr)}}
+@keyframes come{from{opacity:0;transform:translateY(4px)}}
+.nw{animation:come .35s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Blockchain, step by step</h1>
+  <p class="sub">How a chain of hashes lets strangers agree on one ledger: blocks, signatures, Merkle trees, proof of work, forks, the 51% attack and proof of stake, in 3D</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="why" class="on">1 · Why</button>
+    <button data-tab="chain">2 · Blocks</button>
+    <button data-tab="tx">3 · Transactions</button>
+    <button data-tab="merkle">4 · Merkle tree</button>
+    <button data-tab="pow">5 · Proof of work</button>
+    <button data-tab="net">6 · Network and forks</button>
+    <button data-tab="attack">7 · 51% attack</button>
+    <button data-tab="pos">8 · Proof of stake</button>
+    <button data-tab="today">9 · Today</button>
+  </nav>
+</header>
+
+<main class="wrap layout" id="layout">
+  <div class="card stage" id="stage">
+    <div id="view">
+      <div id="cap"></div>
+      <button id="bView" title="Turn the picture back to its starting view">⟲ View</button>
+      <div id="tip">Drag to turn the picture</div>
+      <div id="nogl" hidden>The 3D picture needs WebGL, which this browser has switched off. The steps, the numbers and the notes below still work.</div>
+    </div>
+    <div class="ctl" id="ctrl">
+      <button id="bReset" title="Back to the start">⟲</button>
+      <button id="bBack" title="One step back (← key)">◀ Back</button>
+      <button id="bStep" class="pri" title="One step forward (→ key)">Step ▶</button>
+      <button id="bPlay" title="Play / pause (space)">▶ Play</button>
+      <label class="inl">Speed <input type="range" id="spd" min="0.5" max="2" step="0.25" value="1"></label>
+      <span class="prog" id="prog"></span>
+    </div>
+    <div class="pbar"><i id="pfill"></i></div>
+    <div class="inbar" id="bar" hidden></div>
+  </div>
+  <aside class="panel">
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc"></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Drag the picture to turn it. Every hash, signature and probability on this page is computed in your browser; the toy chain uses the real Bitcoin header format and SHA-256. 3D drawn with <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> (MIT licence).</footer>
+
+<script type="module">
+let THREE=null;
+try{THREE=await import('../../../assets/vendor/three-0.180.0/three.module.min.js')}catch(e){THREE=null}
+
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
+const fmt=n=>Number(n).toLocaleString('en-US');
+const pct=(x,d=1)=>(100*x).toFixed(d)+'%';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const enc=s=>new TextEncoder().encode(s);
+const hex=u=>{let s='';for(const b of u)s+=b.toString(16).padStart(2,'0');return s};
+const unhex=s=>new Uint8Array(s.match(/../g).map(h=>parseInt(h,16)));
+const rev=u=>Uint8Array.from(u).reverse();
+const cat=(...a)=>{const o=new Uint8Array(a.reduce((s,x)=>s+x.length,0));let p=0;for(const x of a){o.set(x,p);p+=x.length}return o};
+const eq=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+const sh=(h,n=7)=>h.slice(0,n)+'…';
+const big=u=>BigInt('0x'+hex(u));
+const hx64=n=>n.toString(16).padStart(64,'0');
+// a small random generator with a seed, so that every scripted picture is the same on every visit
+const rng=seed=>()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+
+/* ---------- SHA-256 (FIPS 180-4). The constants are computed the way the standard defines them:
+   the first 32 bits of the fractional parts of the cube roots (square roots for H0) of the first primes ---------- */
+const PR=[];for(let n=2;PR.length<64;n++)if(PR.every(p=>n%p))PR.push(n);
+const frac32=x=>((x-Math.floor(x))*4294967296)|0;
+const K256=Int32Array.from(PR,p=>frac32(Math.cbrt(p))),H256=Int32Array.from(PR.slice(0,8),p=>frac32(Math.sqrt(p)));
+const W256=new Int32Array(64);
+function sha256(m){
+  const l=m.length,n=((l+72)>>6)<<6,b=new Uint8Array(n);b.set(m);b[l]=0x80;
+  const dv=new DataView(b.buffer);dv.setUint32(n-4,(l<<3)>>>0);dv.setUint32(n-8,Math.floor(l/0x20000000));
+  let h0=H256[0],h1=H256[1],h2=H256[2],h3=H256[3],h4=H256[4],h5=H256[5],h6=H256[6],h7=H256[7];const w=W256;
+  for(let o=0;o<n;o+=64){
+    for(let i=0;i<16;i++)w[i]=dv.getInt32(o+i*4);
+    for(let i=16;i<64;i++){const x=w[i-15],y=w[i-2];
+      w[i]=(w[i-16]+((x>>>7|x<<25)^(x>>>18|x<<14)^(x>>>3))+w[i-7]+((y>>>17|y<<15)^(y>>>19|y<<13)^(y>>>10)))|0}
+    let a=h0,bb=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
+    for(let i=0;i<64;i++){
+      const t1=(h+((e>>>6|e<<26)^(e>>>11|e<<21)^(e>>>25|e<<7))+((e&f)^(~e&g))+K256[i]+w[i])|0;
+      const t2=(((a>>>2|a<<30)^(a>>>13|a<<19)^(a>>>22|a<<10))+((a&bb)^(a&c)^(bb&c)))|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=bb;bb=a;a=(t1+t2)|0}
+    h0=(h0+a)|0;h1=(h1+bb)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;h5=(h5+f)|0;h6=(h6+g)|0;h7=(h7+h)|0}
+  const out=new Uint8Array(32),ov=new DataView(out.buffer);
+  [h0,h1,h2,h3,h4,h5,h6,h7].forEach((v,i)=>ov.setInt32(i*4,v));return out}
+const sha256d=m=>sha256(sha256(m));
+// A hash the way Bitcoin prints it: the 32 bytes in reverse order, so that a small number starts with zeros
+const hid=u=>hex(rev(u));
+// number of zero bits at the start of the printed hash
+const lz=h=>{let n=0;for(let i=31;i>=0;i--){if(h[i]===0){n+=8;continue}return n+Math.clz32(h[i])-24}return n};
+// where a hash falls between 0 and 2^256, as a fraction
+const frac=h=>{let v=0;for(let i=31;i>=25;i--)v=v*256+h[i];return v/72057594037927936};
+
+/* ---------- blocks: the real 80-byte Bitcoin header ---------- */
+// the compact "bits" field for the target 2^(256-d), i.e. d zero bits in front
+const bitsFor=d=>{const e=256-d;let sz=(e>>3)+1,m=1<<(16+(e&7));if(m&0x800000){m>>=8;sz++}return(sz<<24|m)>>>0};
+function header(b){const u=new Uint8Array(80),v=new DataView(u.buffer);
+  v.setUint32(0,b.ver,true);u.set(b.prev,4);u.set(b.root,36);v.setUint32(68,b.time,true);v.setUint32(72,b.bits,true);v.setUint32(76,b.nonce>>>0,true);return u}
+const txid=s=>sha256d(enc(s));
+// every level of the Merkle tree, leaves first; an odd level repeats its last hash, as Bitcoin does
+function merkle(ids){let lv=ids.slice();const all=[lv];while(lv.length>1){const nx=[];for(let i=0;i<lv.length;i+=2)nx.push(sha256d(cat(lv[i],lv[i+1]||lv[i])));all.push(lv=nx)}return all}
+const merkleRoot=ids=>merkle(ids).at(-1)[0];
+function seal(b){b.root=merkleRoot(b.txs.map(txid));b.hash=sha256d(header(b));b.lz=lz(b.hash);return b}
+function mine(b,d,from=0,max=5e6){b.root=merkleRoot(b.txs.map(txid));const u=header(b),v=new DataView(u.buffer);
+  for(let n=from;n<from+max;n++){v.setUint32(76,n,true);const h=sha256d(u);if(lz(h)>=d){b.nonce=n;b.hash=h;b.lz=lz(h);return n}}
+  return -1}
+const T0=1762905600;   // 12 November 2026, 00:00 UTC
+function mkChain(spec,d){let prev=new Uint8Array(32);
+  return spec.map((txs,i)=>{const b={i,ver:1,prev,txs:[...txs],time:T0+i*600,bits:bitsFor(d),nonce:0};mine(b,d);prev=b.hash;return b})}
+const cloneChain=c=>c.map(b=>({...b,txs:[...b.txs],prev:b.prev.slice(),hash:b.hash.slice(),root:b.root.slice()}));
+// which blocks still hold: the work is done, and the stored previous hash is the hash of the block before
+function judge(c,d){let all=true;return c.map((b,i)=>{const pow=b.lz>=d,link=i===0||eq(b.prev,c[i-1].hash);all=all&&pow&&link;return{pow,link,ok:all}})}
+
+/* ---------- ECDSA on secp256k1, with big integers ---------- */
+const EC={p:2n**256n-2n**32n-977n,n:0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n,
+  G:[0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n,0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n]};
+const md=(a,m)=>((a%m)+m)%m;
+function minv(a,m){let r0=md(a,m),r1=m,s0=1n,s1=0n;while(r1){const q=r0/r1;[r0,r1]=[r1,r0-q*r1];[s0,s1]=[s1,s0-q*s1]}return md(s0,m)}
+function ecAdd(P,Q){if(!P)return Q;if(!Q)return P;const p=EC.p,[x1,y1]=P,[x2,y2]=Q;let l;
+  if(x1===x2){if((y1+y2)%p===0n)return null;l=3n*x1*x1*minv(2n*y1,p)%p}else l=md((y2-y1)*minv(x2-x1,p),p);
+  const x3=md(l*l-x1-x2,p);return[x3,md(l*(x1-x3)-y1,p)]}
+function ecMul(k,P){let R=null;for(;k>0n;k>>=1n){if(k&1n)R=ecAdd(R,P);P=ecAdd(P,P)}return R}
+const ecKey=seed=>{const d=md(big(sha256(enc(seed))),EC.n-1n)+1n;return{d,Q:ecMul(d,EC.G)}};
+// the nonce k is derived from the key and the message, in the spirit of RFC 6979: secret, and never the same for two messages
+function ecSign(z,d){const k=md(big(sha256(unhex(hx64(d)+hx64(z)))),EC.n-1n)+1n,R=ecMul(k,EC.G),r=R[0]%EC.n,s=minv(k,EC.n)*md(z+r*d,EC.n)%EC.n;return{r,s,k}}
+function ecVerify(z,sg,Q){if(sg.r<=0n||sg.s<=0n||sg.r>=EC.n||sg.s>=EC.n)return false;const w=minv(sg.s,EC.n),X=ecAdd(ecMul(z*w%EC.n,EC.G),ecMul(sg.r*w%EC.n,Q));return!!X&&X[0]%EC.n===sg.r}
+// a toy address: the first 20 bytes of SHA-256 of the public key (Bitcoin uses RIPEMD-160 of SHA-256)
+const addrOf=Q=>hex(sha256(unhex((Q[1]&1n?'03':'02')+hx64(Q[0])))).slice(0,40);
+
+/* ---------- double spending: the chance that an attacker with a share q of the hash rate catches up after z confirmations ---------- */
+// Nakamoto 2008, section 11 (the attacker's progress is taken as Poisson)
+function nakamoto(q,z){const p=1-q;if(q>=p)return 1;const lam=z*q/p;let s=1,po=Math.exp(-lam);for(let k=0;k<=z;k++){if(k)po*=lam/k;s-=po*(1-Math.pow(q/p,z-k))}return s}
+// the same race counted exactly, block by block (negative binomial; Rosenfeld 2014)
+function exactDS(q,z){const p=1-q;if(q>=p)return 1;let s=1,c=1;for(let k=0;k<z;k++){if(k)c=c*(k+z-1)/k;s-=c*Math.pow(p,z)*Math.pow(q,k)*(1-Math.pow(q/p,z-k))}return s}
+function raceMC(q,z,trials,rnd){let win=0;for(let t=0;t<trials;t++){let a=0,h=0;while(h<z){if(rnd()<q)a++;else h++}let gap=h-a;while(gap>0&&gap<80){gap+=rnd()<q?-1:1}if(gap<=0)win++}return win/trials}
+
+/* ---------- colours of the current theme ---------- */
+let C={};
+function readTheme(){const cs=getComputedStyle(document.documentElement),g=n=>cs.getPropertyValue(n).trim();
+  C={bg:g('--bg'),panel:g('--panel'),ink:g('--ink'),muted:g('--muted'),faint:g('--faint'),line:g('--line'),line2:g('--line2'),
+    accent:g('--accent'),accentBg:g('--accentBg'),on:g('--onAccent'),ok:g('--ok'),okBg:g('--okBg'),bad:g('--xor'),badBg:g('--xorBg'),
+    amb:g('--amb'),ambBg:g('--ambBg'),key:g('--key'),keyBg:g('--keyBg'),blk:g('--blk'),node:g('--node'),gold:g('--gold')}}
+readTheme();
+const MONO='ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',SANS='system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+const RM=matchMedia('(prefers-reduced-motion: reduce)'),NARROW=matchMedia('(max-width:1000px)');
+const speed=()=>+$('#spd').value;
+
+/* ---------- the 3D engine: one renderer, one group per tab, and tweens that always end in a still picture ---------- */
+const E={ok:false,t:0,live:new Set(),fx:new Set(),picks:[],snap:false,raf:0,last:0,fresh:true,narrow:false,drag:null,aniso:1,
+  cam:{cur:null,from:null,to:null,t0:0,d:1,uy:0,up:0,uy0:0,up0:0}};
+let renderer,scene,camera,floor,sun,root=null;
+const GEO=new Map(),COL=new Map(),UP=THREE?new THREE.Vector3(0,1,0):null;
+const col=s=>{let c=COL.get(s);if(!c){c=new THREE.Color(s);COL.set(s,c)}return c};
+const geo=(k,f)=>{let g=GEO.get(k);if(!g){g=f();g.userData.shared=true;GEO.set(k,g)}return g};
+const V=(a)=>new THREE.Vector3(a[0],a[1],a[2]);
+
+function initGL(){
+  if(!THREE)return false;
+  try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true})}catch(e){return false}
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  $('#view').prepend(renderer.domElement);
+  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(30,16/9,.5,400);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x9a9a9a,2.0));
+  sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(-9,18,14);sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);const sc=sun.shadow.camera;sc.left=-26;sc.right=26;sc.top=26;sc.bottom=-26;sc.near=1;sc.far=80;sun.shadow.bias=-.0006;sun.shadow.radius=5;
+  scene.add(sun,sun.target);
+  floor=new THREE.Mesh(new THREE.PlaneGeometry(160,160),new THREE.ShadowMaterial({opacity:.17}));
+  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;floor.renderOrder=-1;floor.material.depthWrite=false;scene.add(floor);
+  E.aniso=renderer.capabilities.getMaxAnisotropy();
+  new ResizeObserver(resize).observe($('#view'));
+  return true}
+function resize(){const v=$('#view'),w=v.clientWidth,h=v.clientHeight;if(!w||!h||!E.ok)return;
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  const nar=w<560;if(nar!==E.narrow){E.narrow=nar;if(root)repose()}
+  kick()}
+
+/* registration, opacity and tweens */
+function reg(o,cm){const u=o.userData,ms=new Set(),shs=[];o.traverse(n=>{if(n.material)ms.add(n.material);if(n.castShadow)shs.push(n)});
+  u.mats=[...ms];u.cm=cm||null;u.sh=shs;u.op=1;u.goal={};u.tw=null;return o}
+function setOp(o,v){const u=o.userData;u.op=v;o.visible=v>.004;for(const m of u.mats)m.opacity=(m.userData.base??1)*v;for(const s of u.sh)s.castShadow=v>.5}
+function snapshot(o){const u=o.userData;return{p:o.position.clone(),s:o.scale.clone(),o:u.op,c:u.cm?u.cm[0].color.clone():null,ry:o.rotation.y,rz:o.rotation.z}}
+function blend(o,f,g,e){const u=o.userData;
+  if(g.p)o.position.set(f.p.x+(g.p[0]-f.p.x)*e,f.p.y+(g.p[1]-f.p.y)*e,f.p.z+(g.p[2]-f.p.z)*e);
+  if(g.s!=null)o.scale.setScalar(f.s.x+(g.s-f.s.x)*e);
+  if(g.sv)o.scale.set(f.s.x+(g.sv[0]-f.s.x)*e,f.s.y+(g.sv[1]-f.s.y)*e,f.s.z+(g.sv[2]-f.s.z)*e);
+  if(g.o!=null)setOp(o,f.o+(g.o-f.o)*e);
+  if(g.c&&u.cm){const t=col(g.c);for(const m of u.cm)m.color.copy(f.c).lerp(t,e)}
+  if(g.ry!=null)o.rotation.y=f.ry+(g.ry-f.ry)*e;
+  if(g.rz!=null)o.rotation.z=f.rz+(g.rz-f.rz)*e}
+// Tell an object where it should end up. Fields that are not named keep their last goal
+function aim(o,t,opt){const u=o.userData;Object.assign(u.goal,t);
+  if(E.snap||!E.ok){blend(o,snapshot(o),u.goal,1);u.tw=null;E.live.delete(o);return o}
+  u.tw={t0:E.t+((opt&&opt.delay)||0)/speed(),d:((opt&&opt.dur)||.75)/speed(),f:snapshot(o)};E.live.add(o);kick();return o}
+function fx(fn){if(E.snap||!E.ok)return;E.fx.add(fn);kick()}
+// a list of timed actions: [seconds, function]
+function timeline(items){let t=0,i=0;items=items.slice().sort((a,b)=>a[0]-b[0]);fx(dt=>{t+=dt*speed();while(i<items.length&&items[i][0]<=t)items[i++][1]();return i<items.length})}
+
+function camTo(v){const c=E.cam;c.last=v;const to={x:v.c[0],y:v.c[1],z:v.c[2],w:v.w,h:v.h,yaw:v.yaw||0,pitch:v.pitch||0};
+  if(E.snap||!c.cur||!E.ok){c.cur=to;c.to=null;c.uy=c.up=0;return}
+  c.from={...c.cur};c.to=to;c.t0=E.t;c.d=1/speed();c.uy0=c.uy;c.up0=c.up;kick()}
+function placeCam(){const c=E.cam.cur;if(!c)return;const f=Math.tan(camera.fov*Math.PI/360),d=Math.max(c.h/2/f,c.w/2/(f*camera.aspect))*1.04,
+  yaw=clamp(c.yaw+E.cam.uy,-1.35,1.35),pit=clamp(c.pitch+E.cam.up,-.12,1.25);
+  camera.position.set(c.x+d*Math.sin(yaw)*Math.cos(pit),c.y+d*Math.sin(pit),c.z+d*Math.cos(yaw)*Math.cos(pit));camera.lookAt(c.x,c.y,c.z)}
+function frame(dt){
+  E.t+=dt;let busy=false;
+  for(const o of E.live){const u=o.userData,tw=u.tw;if(!tw){E.live.delete(o);continue}
+    const p=(E.t-tw.t0)/tw.d;if(p<=0){busy=true;continue}
+    if(p>=1){blend(o,tw.f,u.goal,1);u.tw=null;E.live.delete(o);continue}
+    blend(o,tw.f,u.goal,ease(p));busy=true}
+  for(const f of E.fx){if(f(dt)===false)E.fx.delete(f);else busy=true}
+  const c=E.cam;if(c.to){const p=Math.min(1,(E.t-c.t0)/c.d),e=ease(p);for(const k in c.to)c.cur[k]=c.from[k]+(c.to[k]-c.from[k])*e;
+    if(c.uy0!=null){c.uy=c.uy0*(1-e);c.up=c.up0*(1-e)}if(p>=1)c.to=null;else busy=true}
+  placeCam();renderer.render(scene,camera);
+  return busy||!!E.drag||E.live.size>0}
+function loop(now){E.raf=0;const dt=E.fresh?1/60:Math.min(.05,(now-E.last)/1000);E.fresh=false;E.last=now;if(frame(dt))E.raf=requestAnimationFrame(loop);else E.fresh=true}
+function kick(){if(E.ok&&!E.raf)E.raf=requestAnimationFrame(loop)}
+function stopFx(){E.fx.clear();if(E.tmp)for(const m of [...E.tmp.children]){E.tmp.remove(m);if(m.material)m.material.dispose()}}
+function clearRoot(){E.live.clear();stopFx();E.picks=[];E.tmp=null;if(!root)return;
+  root.traverse(n=>{if(n.geometry&&!n.isSprite&&!n.geometry.userData.shared)n.geometry.dispose();
+    if(n.material){if(n.material.map)n.material.map.dispose();n.material.dispose()}});
+  scene.remove(root);root=null}
+
+/* ---------- parts of a picture ---------- */
+const solid=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:col(c).clone(),roughness:.6,metalness:.04,transparent:true},o||{}));
+const flat=(c,o)=>new THREE.MeshBasicMaterial(Object.assign({color:col(c).clone(),transparent:true},o||{}));
+function mkTex(w,h){const cv=document.createElement('canvas');cv.width=w;cv.height=h;const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=E.aniso;return t}
+function rr(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+function slabGeo(w,h,d,r){return geo(`slab ${w} ${h} ${d} ${r}`,()=>{const s=new THREE.Shape(),x=-w/2,y=-h/2;
+  s.moveTo(x+r,y);s.lineTo(x+w-r,y);s.quadraticCurveTo(x+w,y,x+w,y+r);s.lineTo(x+w,y+h-r);s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  s.lineTo(x+r,y+h);s.quadraticCurveTo(x,y+h,x,y+h-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);
+  const b=Math.min(.06,d/4),g=new THREE.ExtrudeGeometry(s,{depth:d-2*b,bevelEnabled:true,bevelThickness:b,bevelSize:b,bevelSegments:3,curveSegments:8});g.translate(0,0,-(d-2*b)/2);return g})}
+// a standing slab with a picture on its front; draw(ctx,W,H,data) paints the picture
+function mkSlab(w,h,d,cw,ch,draw,c){const g=new THREE.Group(),body=new THREE.Mesh(slabGeo(w,h,d,Math.min(.22,w/6,h/6)),solid(c||C.blk));body.castShadow=true;
+  const tex=mkTex(cw,ch),face=new THREE.Mesh(geo(`pl ${w} ${h}`,()=>new THREE.PlaneGeometry(w,h)),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+  face.position.z=d/2+.012;face.renderOrder=2;g.add(body,face);reg(g,[body.material]);
+  g.userData.tex=tex;g.userData.draw=draw;g.userData.size=[w,h,d];return g}
+function paint(g,data){const u=g.userData,cv=u.tex.image,x=cv.getContext('2d');x.clearRect(0,0,cv.width,cv.height);u.draw(x,cv.width,cv.height,data);u.data=data;u.tex.needsUpdate=true;kick()}
+
+/* a block of the chain: 3.0 wide, 3.8 high */
+const BW=3,BH=3.8,BD=.62,PITCH=4.7,ROW={prev:.71,tx:0,nonce:-.71,hash:-1.43};
+function drawBlock(x,W,H,b){
+  const band={ok:C.ok,bad:C.bad,plain:C.accent,dim:C.faint,amb:C.amb,gold:C.gold}[b.st||'plain'];
+  rr(x,20,20,W-40,96,22);x.fillStyle=band;x.fill();
+  x.fillStyle=C.on;x.textBaseline='middle';x.font='700 54px '+SANS;x.fillText(b.title,44,70);
+  if(b.mark){x.textAlign='right';x.fillText(b.mark,W-44,70);x.textAlign='left'}
+  let y=140;
+  for(const r of b.rows){
+    if(r.hl){rr(x,20,y-4,W-40,108,16);x.fillStyle=r.hl===true?C.ambBg:r.hl;x.fill()}
+    x.fillStyle=C.muted;x.font='600 27px '+SANS;x.fillText(r.k,40,y+20);
+    x.fillStyle=r.c||C.ink;x.font=(r.b?'700 ':'500 ')+(r.sans?'38px '+SANS:'44px '+MONO);x.fillText(r.v,40,y+68,W-76);
+    y+=114}}
+function mkBlock(){return mkSlab(BW,BH,BD,480,608,drawBlock)}
+// what a block of a toy chain shows on its front
+function blockFace(b,j,o){o=o||{};const bad=!j.ok,why=!j.pow?'pow':!j.link?'link':'';
+  return{title:b.i===0&&!o.name?'Genesis':(o.name||'Block '+b.i),st:o.st||(bad?'bad':'ok'),mark:o.mark??(bad?'✗':'✓'),rows:[
+    {k:'previous hash',v:b.i===0?'0000000…':sh(hid(b.prev)),c:j.link?C.ink:C.bad,hl:o.hl==='prev'},
+    {k:'transactions',v:b.txs[0]+(b.txs.length>1?'  +'+(b.txs.length-1):''),sans:true,c:o.txc||C.ink,hl:o.hl==='tx'},
+    {k:'nonce',v:o.nonce??fmt(b.nonce),hl:o.hl==='nonce'},
+    {k:'hash of this block',v:o.hash??sh(hid(b.hash)),b:true,c:j.pow?(bad?C.ink:C.ok):C.bad,hl:o.hl==='hash'}]}}
+
+/* a small tile with a word or a number on it */
+function drawTile(x,W,H,t){if(!t)return;const lines=String(t.text).split('\n'),n=lines.length;x.textAlign='center';x.textBaseline='middle';x.fillStyle=t.fg||C.ink;
+  lines.forEach((l,i)=>{const fs=t.fs||(n===1?H*.46:H*.3);x.font=(t.bold===false?'500 ':'700 ')+fs+'px '+((t.mono&&(n===1||i>0||t.mono0))?MONO:SANS);
+    x.fillText(l,W/2,H*(i+.5)/n+(n>1?(i?-H*.03:H*.04):0),W-16)})}
+function mkTile(w,h,d,c){return mkSlab(w,h,d,Math.round(w*300),Math.round(h*300),drawTile,c)}
+// state of a tile: its body colour and the colour of its text
+const TS=()=>({plain:[C.blk,C.ink],dim:[C.blk,C.faint],accent:[C.accent,C.on],amb:[C.amb,C.on],ok:[C.ok,C.on],bad:[C.bad,C.on],key:[C.key,C.on],gold:[C.gold,C.on],node:[C.node,C.ink]});
+function tile(g,text,state,opt,more){const s=TS()[state||'plain'];paint(g,Object.assign({text,fg:s[1]},more||{}));return aim(g,Object.assign({c:s[0]},opt||{}))}
+
+/* text that always faces the reader */
+function mkLabel(text,o){o=Object.assign({size:.42,color:C.ink,bg:null,bold:true,mono:false},o||{});
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:mkTex(8,8),transparent:true,depthWrite:false}));sp.renderOrder=3;if(o.left)sp.center.set(0,.5);sp.userData.lab=o;reg(sp);setLabel(sp,text);return sp}
+function setLabel(sp,text,color){const L=sp.userData.lab;if(color)L.color=color;const key=text+'|'+L.color;if(L.key===key)return sp;L.key=key;
+  const tex=sp.material.map,cv=tex.image,x=cv.getContext('2d'),fs=56,font=(L.bold?'600 ':'400 ')+fs+'px '+(L.mono?MONO:SANS),lines=String(text).split('\n');
+  x.font=font;const pad=L.bg?22:6,w=Math.ceil(Math.max(...lines.map(l=>x.measureText(l).width)))+2*pad,h=Math.ceil(lines.length*fs*1.22)+2*(L.bg?12:4);
+  tex.dispose();cv.width=w;cv.height=h;const y=cv.getContext('2d');
+  if(L.bg){rr(y,0,0,w,h,18);y.fillStyle=L.bg;y.fill()}
+  y.font=font;y.textAlign='center';y.textBaseline='middle';y.fillStyle=L.color;lines.forEach((l,i)=>y.fillText(l,w/2,(L.bg?12:4)+fs*1.22*(i+.5)));
+  tex.needsUpdate=true;sp.scale.set(L.size*w/fs,L.size*h/fs,1);kick();return sp}
+
+/* balls, rods, coins, arrows */
+function mkBall(r,c,basic){const m=new THREE.Mesh(geo('ball',()=>new THREE.SphereGeometry(1,28,18)),basic?flat(c):solid(c));m.scale.setScalar(r);m.castShadow=!basic;return reg(m,[m.material])}
+function mkRod(a,b,r,c){const A=V(a),B=V(b),m=new THREE.Mesh(geo('rod',()=>new THREE.CylinderGeometry(1,1,1,8)),flat(c||C.line2));
+  m.scale.set(r||.035,A.distanceTo(B),r||.035);m.position.copy(A).add(B).multiplyScalar(.5);m.quaternion.setFromUnitVectors(UP,B.clone().sub(A).normalize());return reg(m,[m.material])}
+function mkDisc(r,h,c){const m=new THREE.Mesh(geo('disc',()=>new THREE.CylinderGeometry(1,1,1,48)),solid(c));m.scale.set(r,h,r);m.castShadow=true;return reg(m,[m.material])}
+function mkBox(w,h,d,c){const m=new THREE.Mesh(geo('box',()=>new THREE.BoxGeometry(1,1,1)),solid(c));m.scale.set(w,h,d);m.castShadow=true;return reg(m,[m.material])}
+// a curved pointer from a to b that ends in an arrow head
+function mkArrow(pts,c,r){const cv=new THREE.CatmullRomCurve3(pts.map(V),false,'catmullrom',.5),mat=flat(c||C.accent),g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(cv,40,r||.07,10,false),mat));
+  const head=new THREE.Mesh(new THREE.ConeGeometry((r||.07)*3,(r||.07)*7,14),mat),end=V(pts.at(-1)),dir=cv.getTangent(1).normalize();
+  head.position.copy(end).addScaledVector(dir,(r||.07)*3);head.quaternion.setFromUnitVectors(UP,dir);g.add(head);return reg(g,[mat])}
+// a ball that runs from a to b and disappears
+function pulse(a,b,c,delay,dur,r){if(E.snap||!E.ok)return;const m=mkBall(r||.15,c,true);m.position.set(a[0],a[1],a[2]);setOp(m,0);E.tmp.add(m);let t=-(delay||0);const A=V(a),B=V(b);
+  fx(dt=>{t+=dt*speed();if(t<0)return true;const p=Math.min(1,t/(dur||.5));m.position.lerpVectors(A,B,ease(p));setOp(m,p<.12?p/.12:p>.86?(1-p)/.14:1);
+    if(p>=1){E.tmp.remove(m);m.material.dispose();return false}return true})}
+const add=(...os)=>{for(const o of os)root.add(o);return os[0]};
+
+/* ---------- what the reader has chosen ---------- */
+const ST={tab:'why',step:{},q:{},playing:false,playT:null,
+  sb:null,sel:1,msg:'',            // blocks: the chain the reader may break
+  pick:5,                          // Merkle tree: the transaction to prove
+  pw:{d:16,run:false,tries:0,secs:0,found:null,rate:0,stamp:0},
+  at:{q:.3,z:3,race:null,mc:null,seed:1},
+  ps:{draws:null}};
+const T={};
+
+/* ================= a ring of nodes: used by "Why" and by "Network and forks" ================= */
+const RN=12,RR=6.2,NY=.5;
+const ringP=i=>{const a=Math.PI/2-i*2*Math.PI/RN;return[RR*Math.cos(a),NY,RR*Math.sin(a)]};
+const EDGES=[];for(let i=0;i<RN;i++){EDGES.push([i,(i+1)%RN]);if(i%2===0)EDGES.push([i,(i+5)%RN])}
+const NB=Array.from({length:RN},()=>[]);for(const[a,b]of EDGES){NB[a].push(b);NB[b].push(a)}
+function bfs(s){const d=Array(RN).fill(99);d[s]=0;const q=[s];while(q.length){const u=q.shift();for(const v of NB[u])if(d[v]>d[u]+1){d[v]=d[u]+1;q.push(v)}}return d}
+// news spreads from one or more nodes; every node keeps what reached it first
+function spread(srcs){const ds=srcs.map(bfs),own=[],dist=[];for(let i=0;i<RN;i++){let b=0;for(let j=1;j<srcs.length;j++)if(ds[j][i]<ds[b][i])b=j;own[i]=b;dist[i]=ds[b][i]}return{own,dist}}
+function gossip(sp,cols,hop){for(const[u,v]of EDGES)for(const[a,b]of[[u,v],[v,u]])if(sp.own[a]===sp.own[b]&&sp.dist[b]===sp.dist[a]+1)pulse(ringP(a),ringP(b),cols[sp.own[a]],sp.dist[a]*hop,hop,.14)}
+function buildRing(o){
+  o.nodes=[];o.links=[];
+  for(let i=0;i<RN;i++){const n=mkBall(.45,C.node);n.position.set(...ringP(i));o.nodes.push(add(n))}
+  for(const[a,b]of EDGES)o.links.push(add(mkRod(ringP(a),ringP(b),.03,C.line2)));
+  floor.position.y=0}
+const RCAM=(x)=>Object.assign({c:[0,.2,1],w:E.narrow?14.2:15,h:E.narrow?10.5:8.6,pitch:.5,yaw:0},x||{});
+const HOP=.34;
+
+/* ================= 1 · Why ================= */
+{const A=10,B=2,CA=6;
+T.why={n:7,
+  build(){const o=this.o={};buildRing(o);
+    o.star=[];for(let i=0;i<RN;i++)o.star.push(add(mkRod(ringP(i),[0,NY,0],.03,C.line2)));
+    o.bank=add(mkTile(2.9,1.8,1.7));o.bank.position.set(0,.95,0);
+    o.names=[[A,'Alice'],[B,'Bob'],[CA,'Carol']].map(([i,t])=>{const l=mkLabel(t,{size:.5});const p=ringP(i);l.position.set(...(p[2]>0?[p[0],.14,p[2]+1.25]:[p[0],1.95,p[2]]));return add(l)});
+    o.coin=[0,1,2].map(()=>{const c=mkDisc(.36,.12,C.gold);return add(c)});
+    o.mini=[0,1,2,3].map(i=>{const m=mkTile(1.25,1.25,.32);m.position.set(-2.55+i*1.7,1.2,0);return add(m)});
+    o.mrod=[0,1,2].map(i=>add(mkRod([-2.55+i*1.7+.66,1.2,0],[-2.55+(i+1)*1.7-.66,1.2,0],.05,C.accent)))},
+  pose(k,fwd){const o=this.o,up=i=>{const p=ringP(i);return[p[0],1.3,p[2]]};
+    camTo(RCAM({yaw:k<2?-.3:0}));
+    const sp=spread([B,CA]);
+    o.nodes.forEach((n,i)=>{let c=C.node,op=1,d=0;
+      if(k<=1)op=[A,B,CA].includes(i)?1:.3;
+      if(k===4)c=C.accent;
+      if(k===5){c=sp.own[i]?C.key:C.amb;d=sp.dist[i]*HOP}
+      if(k===6)c=C.ok;
+      aim(n,{c,o:op,s:.45},{delay:fwd?d:0,dur:k===5?.3:.75})});
+    o.links.forEach(l=>aim(l,{o:k>=4?1:0}));
+    o.star.forEach(l=>aim(l,{o:k===2||k===3?1:0,c:k===3?C.bad:C.line2}));
+    tile(o.bank,'Bank\nledger',k===3?'bad':'plain',{o:k===2||k===3?1:0});
+    aim(o.coin[0],{p:up(A),o:k<=1?1:0});
+    aim(o.coin[1],{p:k>=1?up(B):up(A),o:k===1?1:0});
+    aim(o.coin[2],{p:k>=1?up(CA):up(A),o:k===1?1:0});
+    o.names.forEach(l=>aim(l,{o:1}));
+    o.mini.forEach((m,i)=>tile(m,String(i+1),'accent',{o:k===6?1:0},{}));
+    o.mrod.forEach(r=>aim(r,{o:k===6?1:0}));
+    if(k===5&&fwd)gossip(sp,[C.amb,C.key],HOP)},
+  say(k){return[
+    say('Step 0 · The starting point','<b>Alice has a digital coin.</b> A banknote is a thing: when Alice hands it over, she no longer has it. A digital coin is a file, a string of bits.','The grey dots are other computers on the internet. Nobody is in charge of them.'),
+    say('Step 1 · Double spending','<b>A file can be copied.</b> Alice sends the coin to Bob, and the same coin to Carol. She also keeps a copy. Now three people hold “the” coin.','A signature does not help here: both payments are really signed by Alice. The problem is not who paid, it is <b>that she paid twice</b>.'),
+    say('Step 2 · The classical answer','<b>A bank keeps the ledger.</b> The coins are gone; what exists is one list of balances at the bank. Every payment goes through the centre, which puts the payments in order and refuses the second one.','This is how cards and bank transfers work.'),
+    say('Step 3 · The price of a centre','<b>Everybody has to trust the centre.</b> It can refuse or freeze a payment, change a record, be hacked, or simply be offline. One point decides, so one point can fail.'),
+    say('Step 4 · Nakamoto’s idea, 2008','<b>Give every computer the whole ledger.</b> The bank is gone. Each node keeps a full copy and talks only to a few neighbours. There is nothing in the middle to attack or to trust.'),
+    say('Step 5 · A new problem: the order','Alice pays Bob <span class="cm">(orange)</span> and, at the same moment, pays Carol with the same coin <span class="ck">(purple)</span>. Each message spreads from neighbour to neighbour.',`Every node accepts the payment it hears first: ${this.split()[0]} nodes say “Bob has the coin”, ${this.split()[1]} say “Carol has it”. Without a centre, <b>who decides which came first?</b>`),
+    say('Step 6 · The answer: a blockchain','The ledger is cut into <b>blocks</b>. Each block names the block before it by its hash, so the order is fixed and old blocks cannot be changed quietly. A <b>consensus rule</b> (proof of work or proof of stake) decides who may write the next block.','All nodes follow the same rule, so all copies of the ledger come out the same. The next tabs build this, one part at a time.')][k]},
+  split(){const sp=spread([B,CA]);const c=sp.own.filter(x=>x===1).length;return[RN-c,c]},
+  extra(k){return`<h3>The four parts of a blockchain</h3>
+    <table class="kv"><tr><th>Part</th><th>What it gives</th><th>Tab</th></tr>
+    <tr><td class="t">Hash function</td><td class="t">blocks that cannot be changed quietly</td><td class="t">2, 4</td></tr>
+    <tr><td class="t">Digital signature</td><td class="t">only the owner can spend a coin</td><td class="t">3</td></tr>
+    <tr><td class="t">Peer-to-peer network</td><td class="t">no centre; everyone has a copy</td><td class="t">6</td></tr>
+    <tr><td class="t">Consensus rule</td><td class="t">one order of blocks for everyone</td><td class="t">5, 7, 8</td></tr></table>
+    <p style="margin-top:8px">The first two are in every cryptography textbook. The new idea of 2008 was to combine them with a consensus rule that works among strangers.</p>`}}}
+
+/* ================= 6 · Network and forks ================= */
+{const M1=2,FA=1,FB=7,M3=0;
+const TP={3:[-3.4,1.4,0],4:[-1.7,1.4,0],5:[0,1.4,0],'6a':[1.7,2.2,0],'6b':[1.7,.74,0],7:[3.4,2.2,0]};
+T.net={n:8,
+  build(){const o=this.o={};buildRing(o);o.t={};
+    for(const id in TP){const m=mkTile(1.3,1.3,.32);m.position.set(...TP[id]);o.t[id]=add(m)}
+    const rod=(a,b)=>add(mkRod([TP[a][0]+.69,TP[a][1],0],[TP[b][0]-.69,TP[b][1],0],.05,C.line2));
+    o.r={34:rod(3,4),45:rod(4,5),'56a':rod(5,'6a'),'56b':rod(5,'6b'),'6a7':rod('6a',7)};
+    o.tag=add(mkLabel('your payment',{size:.36,color:C.muted}));o.tag.position.set(1.7,3.25,0)},
+  pose(k,fwd){const o=this.o;
+    camTo(k===7?{c:[.2,1.5,0],w:E.narrow?10.4:11.8,h:5,pitch:.22,yaw:-.25}:RCAM());
+    const one=spread([M1]),two=spread([FA,FB]),win=spread([M3]);
+    o.nodes.forEach((n,i)=>{let c=C.node,s=.45,d=0;
+      if(k===1&&i===M1){c=C.accent;s=.62}
+      if(k===2){c=C.accent;d=one.dist[i]*HOP;if(i===M1)s=.62}
+      if(k===3){if(i===FA){c=C.accent;s=.62}if(i===FB){c=C.amb;s=.62}}
+      if(k===4||k===5){c=two.own[i]?C.amb:C.accent;if(k===4)d=two.dist[i]*HOP;if(i===FA||i===FB)s=.62;if(k===5&&i===M3)s=.72}
+      if(k===6){c=C.accent;d=win.dist[i]*HOP;if(i===M3)s=.72}
+      aim(n,{c,s,o:1},{delay:fwd?d:0,dur:d||k===2||k===4||k===6?.3:.75})});
+    o.links.forEach(l=>aim(l,{o:1}));
+    const tv={3:1,4:1,5:k>=1,'6a':k>=3,'6b':k>=3,7:k>=5};
+    const st={3:'plain',4:'plain',5:k===1||k===2?'accent':'plain','6a':k===7?'ok':'accent','6b':k>=6?'dim':'amb',7:k===7?'ok':'accent'};
+    for(const id in TP)tile(o.t[id],id==='6b'&&k>=6?'6b\nstale':String(id),st[id],{o:tv[id]?(id==='6b'&&k>=6?.55:1):0});
+    aim(o.r[34],{o:1});aim(o.r[45],{o:k>=1?1:0});aim(o.r['56a'],{o:k>=3?1:0});aim(o.r['56b'],{o:k>=3?(k>=6?.35:1):0});aim(o.r['6a7'],{o:k>=5?1:0});
+    aim(o.tag,{o:k===7?1:0});
+    if(fwd){if(k===2)gossip(one,[C.accent],HOP);if(k===4)gossip(two,[C.accent,C.amb],HOP);if(k===6)gossip(win,[C.accent],HOP)}},
+  parts(){const two=spread([FA,FB]),b=two.own.filter(x=>x===1).length;return[RN-b,b]},
+  say(k){const[pa,pb]=this.parts();return[
+    say('Step 0 · A network without a centre',`<b>${RN} nodes, each connected to a few others.</b> Every node stores the whole chain (the tiles in the middle: blocks 3 and 4) and checks everything it receives.`,'Bitcoin has many thousands of such nodes. A new node downloads the chain from its neighbours and verifies every block itself.'),
+    say('Step 1 · A miner finds a block','<b>One node solves the puzzle for block 5.</b> For the moment it is the only one that knows the new block.'),
+    say('Step 2 · Gossip','<b>The block spreads from neighbour to neighbour.</b> Each node first checks it (the hash is below the target, every signature is valid, no coin is spent twice) and only then passes it on. A bad block dies at the first honest node.','On the real network a block reaches most nodes within a few seconds.'),
+    say('Step 3 · Two blocks at the same moment','<b>Two miners far apart both find a block 6</b> before either has heard of the other’s: <span class="ca">6a</span> and <span class="cm">6b</span>. Both are valid, and both point at block 5.','The chain has become a tree with two tips. This is a <b>fork</b>, and it happens by chance, without any attacker.'),
+    say('Step 4 · The network splits',`Each node keeps the block 6 it heard first: <span class="ca">${pa} nodes follow 6a</span>, <span class="cm">${pb} follow 6b</span>. Each also keeps the other block in case it wins later.`,'Miners work on top of the tip they know. For a moment there are two versions of the ledger.'),
+    say('Step 5 · The next block breaks the tie','<b>A miner on the blue side finds block 7 on top of 6a.</b> The branch through 6a now holds more work than the branch through 6b.'),
+    say('Step 6 · The longest chain wins','Block 7 spreads. Nodes on the orange side see a chain with more work and <b>switch to it</b>. Block 6b is dropped: it is <b>stale</b>.','Its transactions go back into the waiting pool and get into a later block. The miner of 6b loses the reward. The rule is short: <b>follow the valid chain with the most work</b>.'),
+    say('Step 7 · Confirmations','<b>A payment is never final at once.</b> Your payment sits in block 6a, and block 7 is on top: it has 2 confirmations. A payment in 6b would have looked confirmed too, and was then undone.','Every new block makes it harder to undo. For large sums people wait about 6 blocks, roughly one hour. Tab 7 computes why.')][k]},
+  extra(k){const[pa,pb]=this.parts();return`<h3>What the colours mean</h3>
+    <div class="lg"><span><i class="sw" style="background:var(--node)"></i>knows nothing new</span><span><i class="sw" style="background:var(--accent)"></i>has the blue block</span><span><i class="sw" style="background:var(--amb)"></i>has the orange block</span></div>
+    <table class="kv" style="margin-top:10px"><tr><th>In this picture</th><th></th></tr>
+    <tr><td class="t">Nodes</td><td>${RN}</td></tr><tr><td class="t">Connections</td><td>${EDGES.length}</td></tr>
+    <tr><td class="t">Longest path of a message</td><td>${Math.max(...Array.from({length:RN},(_,i)=>Math.max(...bfs(i))))} hops</td></tr>
+    <tr><td class="t">Split at the fork</td><td>${pa} blue, ${pb} orange</td></tr></table>
+    <p style="margin-top:8px">The hop counts are computed from the drawn connections. Each node has ${NB[0].length} or ${NB[1].length} neighbours.</p>`}}}
+
+/* ================= 2 · Blocks and hash pointers ================= */
+const D=12;   // the toy chain asks for 12 zero bits: three hex zeros in front of every block hash
+const SPEC=[['Coinbase → Alice 50'],['Alice → Bob 6','Alice → Carol 4','Bob → Dave 1'],['Bob → Eve 2','Carol → Alice 1'],['Dave → Alice 3','Eve → Bob 1','Alice → Carol 5'],['Carol → Dave 2','Bob → Alice 1']];
+const CH=mkChain(SPEC,D);ST.sb=cloneChain(CH);
+const TAM=cloneChain(CH);TAM[1].txs[0]='Alice → Bob 60';seal(TAM[1]);
+const FIX=cloneChain(TAM),FIXT=[0];for(let i=1;i<5;i++){if(i>1)FIX[i].prev=FIX[i-1].hash;FIXT[i]=mine(FIX[i],D)+1}
+const OKJ={pow:true,link:true,ok:true};
+const BX=i=>(i-2)*PITCH;
+// the picture of step k: which chain, how each block is judged, what is visible
+function chainState(k){
+  if(k===7){const c=ST.sb,j=judge(c,D);return{c,j,vis:[1,1,1,1,1],link:[0,...c.slice(1).map((b,i)=>j[i+1].link?(j[i+1].ok?'ok':'dim'):'bad')],hl:{[ST.sel]:'sel'}}}
+  if(k<=3)return{c:CH,j:CH.map(()=>OKJ),vis:CH.map((b,i)=>k>=3||i===1||(k===2&&i===2)),link:[0,k>=3?'ok':0,k>=2?'ok':0,k>=3?'ok':0,k>=3?'ok':0],hl:k===0?{}:k===1?{1:'hash'}:k===2?{1:'hash',2:'prev'}:{}};
+  if(k===4){const c=CH.map((b,i)=>i===1?TAM[1]:b);return{c,j:c.map((b,i)=>i===1?{pow:TAM[1].lz>=D,link:true,ok:false}:OKJ),vis:[1,1,1,1,1],link:[0,'ok','ok','ok','ok'],hl:{1:'tx'}}}
+  if(k===5){const j=judge(TAM,D);return{c:TAM,j,vis:[1,1,1,1,1],link:[0,'ok','bad','dim','dim'],hl:{2:'prev'}}}
+  return{c:FIX,j:FIX.map(()=>OKJ),vis:[1,1,1,1,1],link:[0,'ok','ok','ok','ok'],hl:{}}}
+const LC=()=>({ok:C.accent,bad:C.bad,dim:C.line2});
+T.chain={n:8,
+  build(){const o=this.o={};o.b=[];o.l=[null];o.x=[null];floor.position.y=-BH/2-.02;
+    for(let i=0;i<5;i++){const b=mkBlock();b.position.set(BX(i),0,0);o.b.push(add(b));E.picks.push({o:b,on:()=>(ST.step.chain||0)===7,fn:()=>{ST.sel=i;ST.msg='';show(false)}})}
+    for(let i=1;i<5;i++){const x1=BX(i)-BW/2,x0=BX(i-1)+BW/2,z=.2;
+      o.l.push(add(mkArrow([[x1-.04,ROW.prev,z],[x1-.5,ROW.prev,z],[(x0+x1)/2,(ROW.prev+ROW.hash)/2,z],[x0+.8,ROW.hash,z],[x0+.46,ROW.hash,z]],C.accent,.07)));
+      const x=mkLabel('✗',{size:.62,color:C.bad});x.position.set((x0+x1)/2,(ROW.prev+ROW.hash)/2+.02,.5);o.x.push(add(x))}
+},
+  tip:k=>k===7?'Drag to turn · click a block to choose it':'',hold:k=>k===6?8:5,
+  face(s,i){const b=s.c[i],h=s.hl[i];return blockFace(b,s.j[i],{hl:h==='sel'?null:h,st:h==='sel'&&s.j[i].ok?'plain':undefined,txc:b.txs[0]!==CH[i].txs[0]?C.bad:C.ink})},
+  cam(k){const n=E.narrow;return[
+    {c:[BX(1),0,0],w:4.6,h:4.8,yaw:.42,pitch:.1},{c:[BX(1),0,0],w:4.6,h:4.8,yaw:.2,pitch:.06},
+    {c:[(BX(1)+BX(2))/2,0,0],w:9,h:4.9,yaw:.22,pitch:.08},
+    n?{c:[.9,0,0],w:15.5,h:8.4,yaw:.85,pitch:.14}:{c:[0,-.1,0],w:23,h:5.4,yaw:.16,pitch:.1},
+    {c:[BX(1),0,0],w:n?4.8:7,h:4.9,yaw:-.3,pitch:.08},
+    n?{c:[BX(2)-1.6,0,0],w:9.6,h:5,yaw:.3,pitch:.1}:{c:[0,-.1,0],w:23,h:5.4,yaw:.16,pitch:.1},
+    n?{c:[.9,0,0],w:15.5,h:8.4,yaw:.85,pitch:.14}:{c:[0,-.1,0],w:23,h:5.4,yaw:.16,pitch:.1},
+    n?{c:[BX(ST.sel),0,0],w:9.4,h:5,yaw:.3,pitch:.1}:{c:[0,-.1,0],w:23,h:5.4,yaw:.1,pitch:.12}][k]},
+  pose(k,fwd){const o=this.o,s=chainState(k),lc=LC();camTo(this.cam(k));
+    const still=()=>{for(let i=0;i<5;i++){paint(o.b[i],this.face(s,i));aim(o.b[i],{o:s.vis[i]?1:0,p:[BX(i),k===7&&i===ST.sel?.18:0,0]},{delay:fwd&&k===3?Math.abs(i-1.5)*.12:0})}
+      for(let i=1;i<5;i++){aim(o.l[i],{o:s.link[i]?(s.link[i]==='dim'?.5:1):0,c:lc[s.link[i]||'ok']});aim(o.x[i],{o:s.link[i]==='bad'?1:0})}};
+    if(k===6&&fwd&&!E.snap){   // the repair, block by block
+      const t=chainState(5);for(let i=0;i<5;i++){paint(o.b[i],this.face(t,i));aim(o.b[i],{o:1,p:[BX(i),0,0]})}
+      const cur=cloneChain(TAM),items=[];
+      for(let i=1;i<5;i++){const t0=(i-1)*1.25;
+        items.push([t0,()=>{if(i>1){cur[i].prev=FIX[i-1].hash;aim(o.l[i],{o:1,c:lc.ok});aim(o.x[i],{o:0})}spin(o.b[i],cur[i],.9)}]);
+        items.push([t0+.95,()=>{cur[i]=FIX[i];paint(o.b[i],blockFace(FIX[i],OKJ,{txc:i===1?C.bad:C.ink}))}])}
+      timeline(items)}
+    else still()},
+  say(k){const b=CH[1],h1=hid(b.hash),t1=hid(TAM[1].hash),tot=FIXT.reduce((a,x)=>a+x,0);return[
+    say('Step 0 · One block',`<b>A block is a batch of transactions with a small header.</b> This is block 1 of a toy chain. It holds ${b.txs.length} transactions (the first one is printed on it).`,'In Bitcoin the header is always 80 bytes: a version number, the hash of the previous block, one hash that stands for all the transactions (tab 4), the time, the target and a nonce (tab 5).'),
+    say('Step 1 · The hash is the block’s name',`Hash the 80 header bytes with SHA-256, twice. The result is this block’s identity:${fm(h1)}`,'Nobody chooses this value. Change a single bit of the header and about half of the 256 output bits change, so a block and its hash cannot be separated.'),
+    say('Step 2 · The next block stores that hash',`Block 2 has a field <b>previous hash</b>, and it holds exactly ${sh(h1,10)} This is a <b>hash pointer</b>: it says which block comes before, and at the same time fixes what that block must contain.`),
+    say('Step 3 · A chain','<b>Every block points back at the one before it</b>, down to the first block, the genesis block, whose previous hash is all zeros.','The hash of the newest block therefore depends on every byte of every block before it. Whoever knows the last hash can check the whole history.'),
+    say('Step 4 · Somebody edits an old payment',`In block 1, “Alice → Bob 6” becomes “Alice → Bob <b class="cn">60</b>”. The transaction hash in the header changes, so the block hash changes:${fm('before  '+sh(h1,24)+'<br>after   '+sh(t1,24))}`,`The new hash does not start with three zeros any more. The work that was put into this block (tab 5) is lost.`),
+    say('Step 5 · Every later block is cut off',`Block 2 still stores the old hash ${sh(h1,10)} No block with that hash exists now, so the pointer leads nowhere, and blocks 2, 3 and 4 no longer stand on anything.`,'One changed digit in an old block is visible from the tip of the chain. That is why a node only has to remember the newest hash to notice any change.'),
+    say('Step 6 · To repair it, redo all the work',`The forger finds a new nonce for block 1 (<b>${fmt(FIXT[1])}</b> tries here), writes the new hash into block 2, which changes block 2’s own hash, finds a new nonce for block 2, and so on: <b>${fmt(tot)}</b> tries for four blocks.`,'In Bitcoin every one of these blocks costs the whole network about ten minutes of work, and meanwhile the honest chain keeps growing. Tab 7 shows that race.'),
+    say('Step 7 · Your turn','<b>Break the chain yourself.</b> Click a block, change its first transaction below and watch what turns red. “Mine this block” copies in the previous hash and searches a new nonce.',ST.msg||'Try to repair the chain after a change in block 1: you will have to mine four blocks, in order.')][k]},
+  bar(k){if(k!==7)return'';const b=ST.sb[ST.sel];
+    return`<label class="fld"><span class="flh">Block</span><select data-sb="sel">${ST.sb.map((x,i)=>`<option value="${i}"${i===ST.sel?' selected':''}>${i?'Block '+i:'Genesis'}</option>`).join('')}</select></label>
+    <label class="fld" style="flex:1 1 220px"><span class="flh">Its first transaction</span><input type="text" data-sb="tx" value="${esc(b.txs[0])}" maxlength="28" spellcheck="false"></label>
+    <button data-sb="mine" class="pri">Mine this block</button><button data-sb="all">Mine all broken blocks</button><button data-sb="reset">Start again</button>`},
+  extra(k){const s=chainState(k);
+    return`<h3>The chain, value by value</h3><div class="scroll"><table class="kv"><tr><th>#</th><th>previous hash</th><th>nonce</th><th>hash</th><th></th></tr>${
+      s.c.map((b,i)=>s.vis[i]?`<tr class="${!s.j[i].ok?'bad':k===7&&i===ST.sel?'sel':''}"><td>${i}</td><td style="${s.j[i].link?'':'color:var(--xor)'}">${i?sh(hid(b.prev),9):'000000000…'}</td><td>${fmt(b.nonce)}</td><td style="${s.j[i].pow?'':'color:var(--xor)'}">${sh(hid(b.hash),9)}</td><td class="t">${s.j[i].ok?Y:N}</td></tr>`:'').join('')}</table></div>
+      <p style="margin-top:8px">Rule of this toy chain: a block hash must start with ${D} zero bits, that is ${D/4} hex zeros. Bitcoin asks for about 80 zero bits.</p>
+      ${k===1?`<p>Avalanche: the same header with nonce + 1 hashes to${fm(sh(hid(sha256d(header({...CH[1],nonce:CH[1].nonce+1}))),40))}</p>`:''}`}};
+function spin(g,b,dur){let t=0,acc=1;const r=rng(b.i*97+13);fx(dt=>{t+=dt*speed();acc+=dt;if(t>=dur)return false;
+  if(acc>.06){acc=0;paint(g,blockFace(b,{pow:false,link:true,ok:false},{st:'amb',mark:'…',nonce:fmt(Math.floor(r()*9000)),hash:Math.floor(r()*0xfffffff).toString(16).padStart(7,'0')+'…',txc:b.txs[0]!==CH[b.i].txs[0]?C.bad:C.ink}))}return true})}
+
+/* ================= 3 · Transactions and signatures ================= */
+let TXD=null;
+function txData(){if(TXD)return TXD;const al=ecKey('alice'),bo=ecKey('bob');
+  const mk=a=>`inputs: coin 5.0 of Alice, coin 3.0 of Alice | outputs: ${a} to ${addrOf(bo.Q).slice(0,16)}, 1.9 to ${addrOf(al.Q).slice(0,16)}`;
+  const m1=mk('6.0'),m2=mk('60.0'),z1=big(sha256d(enc(m1))),z2=big(sha256d(enc(m2))),sg=ecSign(z1,al.d);
+  return TXD={al,bo,m1,m2,z1,z2,sg,ok1:ecVerify(z1,sg,al.Q),ok2:ecVerify(z2,sg,al.Q)}}
+function drawTx(x,W,H,d){
+  const band={ok:C.ok,bad:C.bad,plain:C.accent,dim:C.faint}[d.st||'plain'],u=W/864;
+  rr(x,16*u,16*u,W-32*u,84*u,20*u);x.fillStyle=band;x.fill();
+  x.fillStyle=C.on;x.textBaseline='middle';x.font=`700 ${46*u}px ${SANS}`;x.fillText(d.title,38*u,60*u);
+  if(d.mark){x.textAlign='right';x.fillText(d.mark,W-38*u,60*u);x.textAlign='left'}
+  const colm=(x0,head,rows)=>{x.fillStyle=C.muted;x.font=`600 ${26*u}px ${SANS}`;x.fillText(head,x0,140*u);
+    rows.forEach((r,i)=>{x.fillStyle=r[2]||C.ink;x.font=`600 ${40*u}px ${MONO}`;x.fillText(r[0],x0,(196+i*58)*u);x.font=`500 ${32*u}px ${SANS}`;x.fillStyle=r[2]||C.muted;x.fillText(r[1],x0+(r[0].length*24+18)*u,(196+i*58)*u)})};
+  colm(38*u,'INPUTS (coins that are used up)',d.ins);colm(W/2+14*u,'OUTPUTS (new coins)',d.outs);
+  x.strokeStyle=C.line2;x.lineWidth=2*u;x.beginPath();x.moveTo(W/2-10*u,118*u);x.lineTo(W/2-10*u,(d.sig===undefined?H-30*u:392*u));x.stroke();
+  if(d.sig!==undefined){x.fillStyle=C.muted;x.font=`600 ${26*u}px ${SANS}`;x.fillText('SIGNATURE of Alice over the hash of the lines above',38*u,430*u);
+    x.fillStyle=d.sig?(d.sigc||(d.st==='bad'?C.bad:C.ink)):C.faint;x.font=`500 ${36*u}px ${d.sig?MONO:SANS}`;x.fillText(d.sig||'not signed yet',38*u,490*u,W-76*u)}}
+{const PA=[-6.3,0,1.2],PB=[6.3,0,1.2],PM=[5.7,0,-4.2],SL=[0,2.45,-.6],S2=[-3.9,1.0,3.4],
+  HOME={c5:[-6.9,.24,1.6],c3:[-5.6,.24,.75]},TRAY={c5:[-1.95,.12,1.15],c3:[-.6,.12,1.15],o6:[.95,.12,1.15],o19:[2.3,.12,1.15],fee:[3.15,.12,1.15]},
+  END={o6:[PB[0],.24,PB[2]],o19:[PA[0]-.7,.24,PA[2]-.3],fee:[PM[0],.24,PM[2]]},NODES=[[-6.8,.42,-4.3],[-5.4,.42,-4.9],[-4,.42,-4.3]];
+const coin=(v,r)=>{const g=new THREE.Group(),d=mkDisc(r,.2,C.gold),l=mkLabel(v,{size:.42});l.position.y=.62;g.add(d,l);reg(g,[d.material]);return g};
+T.tx={n:7,
+  build(){const o=this.o={};floor.position.y=0;
+    o.plat=[PA,PB,PM].map(p=>{const d=mkDisc(p===PM?1.3:1.9,.14,C.blk);d.position.set(p[0],.07,p[2]);return add(d)});
+    o.lab=[[PA,'Alice',2.35],[PB,'Bob',2.35],[PM,'Miner',1.75]].map(([p,t,dz])=>{const l=mkLabel(t,{size:.5});l.position.set(p[0],.5,p[2]+dz);return add(l)});
+    o.c={c5:coin('5.0',.8),c3:coin('3.0',.62),o6:coin('6.0',.86),o19:coin('1.9',.5),fee:coin('0.1',.26)};for(const k in o.c)add(o.c[k]);
+    o.slab=add(mkSlab(5.6,3.63,.3,864,560,drawTx));o.slab.position.set(...SL);
+    o.slab2=add(mkSlab(2.6,1.685,.22,864,560,drawTx));o.slab2.position.set(...S2);o.slab2.rotation.y=.12;
+    o.rod2=add(mkRod([TRAY.c5[0],.3,TRAY.c5[2]],[S2[0]+1.1,.45,S2[2]-.12],.045,C.bad));
+    o.nodes=NODES.map(p=>{const n=mkBall(.42,C.node);n.position.set(...p);return add(n)});
+    o.nlab=add(mkLabel('nodes check it',{size:.38,color:C.muted}));o.nlab.position.set(-5.4,1.4,-4.9);
+    txData()},
+  face(k){const d=txData(),sg=sh(hx64(d.sg.r),10)+' '+sh(hx64(d.sg.s),10),t=k===4;
+    return{title:k>=5?'Transaction · in a block':'Transaction',st:k===3||k>=5?'ok':k===4?'bad':'plain',mark:k===3?'valid ✓':k===4?'invalid ✗':k>=5?'✓':'',
+      ins:[['5.0','from Alice'],['3.0','from Alice']],outs:[[t?'60.0':'6.0','to Bob',t?C.bad:null],['1.9','back to Alice'],['0.1','fee, not written',C.faint]],sig:k>=2?sg:''}},
+  pose(k,fwd){const o=this.o,c=o.c;
+    camTo({c:[0,1.55,-.4],w:E.narrow?16.6:17.6,h:E.narrow?11:8.4,pitch:.36,yaw:0});
+    o.plat.forEach(p=>aim(p,{o:1}));o.lab.forEach(l=>aim(l,{o:1}));
+    const spent=k>=5;
+    aim(c.c5,{p:k>=1?TRAY.c5:HOME.c5,o:spent?.42:1,c:spent?C.node:C.gold});
+    aim(c.c3,{p:k>=1?TRAY.c3:HOME.c3,o:spent?.42:1,c:spent?C.node:C.gold});
+    for(const id of['o6','o19','fee'])aim(c[id],{p:k>=5?END[id]:TRAY[id],o:k===0?0:k>=5?1:.5,c:C.gold},{delay:fwd&&k===5?.15:0,dur:k===5?1:.75});
+    paint(o.slab,this.face(k));aim(o.slab,{o:k>=1?1:0});
+    paint(o.slab2,{title:'Second spend',st:'bad',mark:'rejected ✗',ins:[['5.0','from Alice',C.bad]],outs:[['5.0','to Carol']],sig:'signed by Alice: valid',sigc:C.ink});
+    aim(o.slab2,{o:k===6?1:0});aim(o.rod2,{o:k===6?1:0});
+    const nc=k===3||k===5?C.ok:k===4||k===6?C.bad:C.node;
+    o.nodes.forEach((n,i)=>aim(n,{c:nc,o:k>=3?1:0,s:.42},{delay:fwd&&(k===3||k===4||k===6)?.45+i*.08:0}));aim(o.nlab,{o:k>=3?1:0});
+    if(fwd&&(k===3||k===4))NODES.forEach((p,i)=>pulse([SL[0],SL[1],SL[2]],p,k===3?C.ok:C.bad,i*.08,.5));
+    if(fwd&&k===6)NODES.forEach((p,i)=>pulse(S2,p,C.bad,i*.08,.6))},
+  say(k){const d=txData();return[
+    say('Step 0 · Coins are unspent outputs','<b>Alice owns two coins: 5.0 and 3.0.</b> Nowhere is there a number called “Alice’s balance”. The ledger only lists coins, and each coin names the public key that may spend it. Her wallet adds them up: 8.0.','Bitcoin calls such a coin an unspent transaction output, a UTXO.'),
+    say('Step 1 · A transaction','Alice wants to pay Bob 6.0. <b>A transaction uses up whole coins and creates new ones.</b> She puts in both coins (8.0) and writes two outputs: 6.0 for Bob and 1.9 back to herself as change.','The missing 0.1 is not written anywhere. Whatever the inputs hold more than the outputs is the <b>fee</b> for the miner.'),
+    say('Step 2 · Alice signs',`She hashes the transaction and signs the hash with her private key (ECDSA on the curve secp256k1):${fm('r = '+sh(hx64(d.sg.r),20)+'<br>s = '+sh(hx64(d.sg.s),20))}`,'The signature proves that the owner of the two input coins agreed to exactly these outputs.'),
+    say('Step 3 · Every node verifies',`Anybody can check the signature with Alice’s <b>public</b> key: ${d.ok1?Y+' it is valid.':N}`,'A node accepts the transaction only if (1) every signature is valid, (2) every input coin exists and has not been spent, and (3) the outputs do not add up to more than the inputs.'),
+    say('Step 4 · Change one digit',`Somebody on the way turns 6.0 into <b class="cn">60.0</b>. The hash of the transaction is now different, and the old signature does not fit it: ${d.ok2?Y:N+' invalid.'}`,'Without Alice’s private key nobody can make a new signature. A signed transaction cannot be altered, only dropped.'),
+    say('Step 5 · In a block','A miner puts the transaction into a block. <b>The two input coins are spent for ever</b> (grey). Three new coins exist: 6.0 for Bob, 1.9 for Alice, and the 0.1 fee goes to the miner.','Bob can now spend his 6.0 by signing with his own key.'),
+    say('Step 6 · A second spend of the same coin','Alice signs another transaction that gives the same 5.0 coin to Carol. <b>The signature is perfectly valid</b>, but every node sees that this coin is already spent, and rejects it.','Signatures answer “who?”. They cannot answer “which came first?”. For that the nodes need one agreed order of transactions, and that is what the chain of blocks provides.')][k]},
+  extra(k){const d=txData(),v=k===4;return`<h3>The real numbers of this picture</h3>
+    <table class="kv"><tr><th>Alice’s private key d</th></tr><tr><td>${sh(hx64(d.al.d),30)} <span style="font-family:var(--sans);color:var(--muted)">(secret)</span></td></tr>
+    <tr><th>Public key Q = d · G, its x</th></tr><tr><td>${sh(hx64(d.al.Q[0]),30)}</td></tr>
+    <tr><th>Her address: a hash of Q</th></tr><tr><td>${addrOf(d.al.Q)}</td></tr>
+    <tr><th>Hash of the transaction z${v?' (after the change)':''}</th></tr><tr><td>${sh(hx64(v?d.z2:d.z1),30)}</td></tr>
+    ${k>=2?`<tr><th>Signature</th></tr><tr><td>r = ${sh(hx64(d.sg.r),26)}<br>s = ${sh(hx64(d.sg.s),26)}</td></tr>`:''}
+    ${k>=3?`<tr><th>Check with Q</th></tr><tr class="${v?'bad':'good'}"><td class="t">${v?N+' the point u₁·G + u₂·Q has another x than r':Y+' the x of u₁·G + u₂·Q equals r'}</td></tr>`:''}</table>
+    <p style="margin-top:8px">${k<2?'All values are 256-bit numbers; the page shows their beginning.':'Signing: r = x of k·G, s = k⁻¹(z + r·d) mod n. Checking: u₁ = z·s⁻¹, u₂ = r·s⁻¹.'}</p>`}}}
+
+/* ================= 4 · Merkle tree ================= */
+const MT=['Alice → Bob 6','Alice → Carol 4','Bob → Dave 1','Carol → Eve 2','Dave → Alice 3','Eve → Bob 1','Bob → Carol 2','Eve → Dave 5'];
+const MT2=MT.map((t,i)=>i===2?'Bob → Dave 100':t),LV=merkle(MT.map(txid)),LV2=merkle(MT2.map(txid));
+const MNAME=[i=>'T'+(i+1),i=>'H'+(2*i+1)+(2*i+2),i=>i?'H5-8':'H1-4',()=>'root'];
+const MP=(L,j)=>[((j*2**L+(j+1)*2**L-1)/2-3.5)*1.95,.6+L*1.8,-L*1.15];
+// the proof for leaf p: at each level the neighbour hash, and on which side it stands
+function mproof(p){const st=[];let h=LV[0][p];for(let L=0;L<3;L++){const j=p>>L,sib=j^1,left=sib<j,s=LV[L][sib];h=sha256d(left?cat(s,h):cat(h,s));st.push({L,sib,left,h})}return{st,root:h,ok:eq(h,LV[3][0])}}
+T.merkle={n:7,
+  build(){const o=this.o={};floor.position.y=0;o.n=[];o.r=[];
+    for(let L=0;L<4;L++){o.n.push([]);for(let j=0;j<8>>L;j++){const t=mkTile(1.72,1.02,.28);t.position.set(...MP(L,j));o.n[L].push(add(t));
+      if(L===0)E.picks.push({o:t,on:()=>{const k=ST.step.merkle||0;return k===3||k===4},fn:()=>{ST.pick=j;show(false)}})}}
+    for(let L=0;L<3;L++){o.r.push([]);for(let j=0;j<8>>L;j++){const a=MP(L,j),b=MP(L+1,j>>1);o.r[L].push(add(mkRod([a[0],a[1]+.53,a[2]],[b[0],b[1]-.53,b[2]],.04,C.line2)))}}
+    const top=MP(3,0);o.head=add(mkTile(4.3,1.05,.28));o.head.position.set(top[0],top[1]+1.75,top[2]-.6);
+    o.hr=add(mkRod([top[0],top[1]+.53,top[2]],[top[0],top[1]+1.2,top[2]-.6],.04,C.line2));
+    o.hx=add(mkLabel('✗',{size:.6,color:C.bad}));o.hx.position.set(top[0]+.45,top[1]+.9,top[2]-.2)},
+  tip:k=>k===3||k===4?'Drag to turn · click a transaction to prove it':'',
+  pose(k,fwd){const o=this.o,p=ST.pick;
+    camTo({c:[0,3.45,-1.7],w:E.narrow?15.4:16.6,h:E.narrow?10.8:10.2,pitch:.17,yaw:.26});
+    for(let L=0;L<4;L++)for(let j=0;j<8>>L;j++){let st='plain',op=k>=L||k>=2?1:0,lv=LV;if(L===3&&k<2)op=0;if(L===2&&k<2)op=0;
+      if(k===2&&L===3)st='accent';
+      if(k===3||k===4){const onPath=j===p>>L,sib=L<3&&j===(p>>L^1);st=L===3?'ok':onPath?'amb':sib?'accent':'dim'}
+      if(k===5){lv=LV2;if(j===2>>L)st='bad'}
+      if(k===6){st=L===3?'accent':'dim';if(L<3)op=.3}
+      tile(o.n[L][j],MNAME[L](j)+'\n'+hex(rev(lv[L][j])).slice(0,6),st,{o:op},{mono:true});
+      if(o.n[L][j].userData.tw&&fwd&&(k===1||k===2))o.n[L][j].userData.tw.t0+=(L===3?.5:L===2?.2:0)/speed()}
+    for(let L=0;L<3;L++)for(let j=0;j<8>>L;j++){const vis=k>L||k>=2,on=(k===3||k===4)&&(j===p>>L||j===(p>>L^1));
+      aim(o.r[L][j],{o:vis?(k===6?.25:(k===3||k===4)&&!on?.3:1):0,c:k===5&&j===2>>L?C.bad:on?C.amb:C.line2})}
+    tile(o.head,'Block header\nMerkle root '+hex(rev(LV[3][0])).slice(0,6),k===6?'accent':'plain',{o:k>=2?1:0},{mono:true});
+    aim(o.hr,{o:k>=2?1:0,c:k===5?C.bad:C.line2});aim(o.hx,{o:k===5?1:0})},
+  say(k){const p=ST.pick,pr=mproof(p),nm=MNAME[0](p);return[
+    say('Step 0 · The problem','<b>A block holds many transactions, but its header has room for one hash.</b> Here are eight transactions, T1 to T8, each with its own hash. A real Bitcoin block holds a few thousand.','We need one 32-byte value that depends on all of them, and that still lets us check a single transaction quickly.'),
+    say('Step 1 · Hash them in pairs',`Put two neighbouring hashes side by side and hash again: H12 = H(H(T1) ‖ H(T2)). Eight hashes become four.`),
+    say('Step 2 · Up to the root','Do the same again: four become two, two become one. This last hash is the <b>Merkle root</b>, and it is what the block header stores.','Every transaction has had its influence on the root. The header, and through it the block hash, now commits to all eight.'),
+    say(`Step 3 · Prove that ${nm} is in the block`,`A phone knows only the header. To be convinced about <b class="cm">${nm}</b> it needs just <b class="ca">three hashes</b>, the neighbours on the way up. It hashes upwards and compares with the root in the header: ${pr.ok?Y+' the same.':N}`,'Click another transaction in the picture to see its proof.'),
+    say('Step 4 · How small the proof is',`The proof needs one hash per level: log₂ of the number of transactions. For 8 transactions that is 3 hashes, for 4,096 it is 12, for a million it is 20.`,'The phone never downloads the other transactions. It only needs to trust that the header is part of the chain with the most work.'),
+    say('Step 5 · Change one transaction','T3 becomes “Bob → Dave <b class="cn">100</b>”. Its hash changes, then H34, then H1-4, then the root. <b>The root no longer equals the one in the header</b>, so the block hash would change too, and we are back in tab 2.','The tree does not hide a change. It only makes checking cheap.'),
+    say('Step 6 · Light clients','A full node stores every transaction. A <b>light client</b> stores only the chain of 80-byte headers and asks full nodes for Merkle proofs. Nakamoto called this simplified payment verification.',`At one block every ten minutes the headers grow by ${fmt(6*24*365)} × 80 bytes ≈ ${(6*24*365*80/1e6).toFixed(1)} MB a year.`)][k]},
+  extra(k){const p=ST.pick,pr=mproof(p),h6=u=>hex(rev(u)).slice(0,10)+'…';
+    if(k===5)return`<h3>What changed</h3><table class="kv"><tr><th>Node</th><th>before</th><th>after</th></tr>${[0,1,2,3].map(L=>`<tr class="bad"><td class="t">${MNAME[L](2>>L)}</td><td>${h6(LV[L][2>>L])}</td><td>${h6(LV2[L][2>>L])}</td></tr>`).join('')}</table><p style="margin-top:8px">Four hashes changed; the other eleven nodes of the tree are untouched.</p>`;
+    if(k<3)return`<h3>How a node is computed</h3>${fm('H(T1) = '+h6(LV[0][0])+'<br>H(T2) = '+h6(LV[0][1])+'<br>H12 = SHA-256d(H(T1) ‖ H(T2))<br>    = '+h6(LV[1][0]))}<p>All hashes are SHA-256 applied twice, as in Bitcoin, and printed in Bitcoin’s byte order. The picture shows the first six hex digits.</p>`;
+    return`<h3>The proof for ${MNAME[0](p)}, computed</h3><table class="kv"><tr><th>Step</th><th>Value</th></tr>
+      <tr class="sel"><td class="t">H(${MNAME[0](p)})</td><td>${h6(LV[0][p])}</td></tr>
+      ${pr.st.map(s=>{const nm=s.L?MNAME[s.L](s.sib):'H('+MNAME[0](s.sib)+')';return`<tr><td class="t">${s.left?'<b class="ca">'+nm+'</b> ‖ it':'it ‖ <b class="ca">'+nm+'</b>'} → ${MNAME[s.L+1]((p>>s.L)>>1)}</td><td>${h6(s.h)}</td></tr>`}).join('')}
+      <tr class="${pr.ok?'good':'bad'}"><td class="t">Root in the header</td><td>${h6(LV[3][0])} ${pr.ok?Y:N}</td></tr></table>
+      <table class="kv" style="margin-top:10px"><tr><th>Transactions</th><th>Hashes in a proof</th><th>Bytes</th></tr>${[8,1024,4096,1048576].map(n=>`<tr><td>${fmt(n)}</td><td>${Math.log2(n)}</td><td>${Math.log2(n)*32}</td></tr>`).join('')}</table>`}};
+
+/* ================= 5 · Proof of work ================= */
+const PD=6;   // the scripted search asks for 6 zero bits: the target is 1/64 of the line
+const PWB={i:5,ver:1,prev:CH[4].hash,txs:['Coinbase → Miner 3.125','Dave → Eve 1','Alice → Bob 2'],bits:bitsFor(PD),nonce:0,time:T0+3000};
+const PWT=[];   // every try of the scripted search: nonce, hash, where it falls
+{for(let t=0;t<2000;t++){PWB.time=T0+3000+t;const n=mine(PWB,PD);if(n>=44&&n<=72)break}
+ const u=header(PWB),v=new DataView(u.buffer);for(let n=0;n<=PWB.nonce;n++){v.setUint32(76,n,true);const h=sha256d(u);PWT.push({n,h,f:frac(h),z:lz(h)})}}
+// three miners with 50, 30 and 20 percent of the hash rate search for the same block
+const MIN=[{n:'A',w:.5},{n:'B',w:.3},{n:'C',w:.2}],PWR=[];
+{for(let seed=1;seed<400;seed++){const r=rng(seed),hs=MIN.map((m,j)=>{const b={...PWB,txs:['Coinbase → Miner '+m.n+' 3.125',...PWB.txs.slice(1)],time:PWB.time+60};b.root=merkleRoot(b.txs.map(txid));return{u:header(b),n:0}});
+  PWR.length=0;let hit=false;while(PWR.length<78&&!hit){const x=r(),j=x<.5?0:x<.8?1:2,m=hs[j];new DataView(m.u.buffer).setUint32(76,m.n,true);const h=sha256d(m.u);hit=lz(h)>=PD;PWR.push({m:j,n:m.n++,h,f:frac(h),hit})}
+  if(hit&&PWR.length>=36)break}}
+{const LL=11.2,LX=-LL/2,LY=-1.9,BY=2.35,NB_=80,MX=[-1.5,0,1.5],MCOL=()=>[C.accent,C.amb,C.key];
+const zoneW=d=>Math.max(LL/2**d,.07),bx=(f,i)=>[LX+f*LL,LY+.19,((i*7)%5-2)*.085];
+T.pow={n:7,
+  build(){const o=this.o={};floor.position.y=LY-.08;
+    o.blk=add(mkBlock());o.blk.position.set(0,BY,0);
+    o.line=add(mkBox(LL,.14,.62,C.line2));o.line.position.set(0,LY,0);
+    o.zone=add(mkBox(1,.2,.7,C.ok));
+    o.l0=add(mkLabel('0',{size:.4,color:C.muted}));o.l0.position.set(LX-.1,LY,1.05);
+    o.l1=add(mkLabel('2²⁵⁶',{size:.4,color:C.muted}));o.l1.position.set(LX+LL,LY,1.05);
+    o.lt=add(mkLabel('target',{size:.4,color:C.ok,left:true}));
+    o.cap=add(mkLabel('every hash lands somewhere on this line',{size:.36,color:C.muted}));o.cap.position.set(0,LY,1.05);
+    o.balls=[];for(let i=0;i<NB_;i++){const b=mkBall(.12,C.node);b.position.set(0,BY-BH/2,.36);setOp(b,0);o.balls.push(add(b))}
+    o.min=MIN.map((m,j)=>{const b=mkBox(1,.62,.62,MCOL()[j]);b.position.set(MX[j],-.62,.2);return add(b)});
+    o.minl=MIN.map((m,j)=>{const l=mkLabel(`${m.n} · ${m.w*100}%`,{size:.34});l.position.set(MX[j],-.02,.2);return add(l)})},
+  // which balls lie on the line at step k
+  balls(k){const mc=MCOL();
+    if(k===1)return PWT.slice(0,5).map(t=>({f:t.f,c:C.node}));
+    if(k===2||k===3)return PWT.map((t,i)=>({f:t.f,c:t.z>=PD?C.ok:C.node,big:t.z>=PD,o:k===3&&t.z<PD?.3:1}));
+    if(k===4)return PWT.map(t=>({f:t.f,c:t.z>=PD?(t.z>=10?C.ok:C.amb):C.node,big:t.z>=PD}));
+    if(k===5)return PWR.map(t=>({f:t.f,c:mc[t.m],big:t.hit,m:t.m}));
+    return k===6?ST.pw.dots||[]:[]},
+  drop(i,s){const b=this.o.balls[i],p=bx(s.f,i);b.position.set(0,BY-BH/2+.1,.36);setOp(b,0);aim(b,{p,c:s.c,s:s.big?.2:.12,o:1},{dur:.35})},
+  hold:k=>k===2?6:k===5?8:5,
+  face(k){const last=PWT.at(-1),t=k===0?PWT[0]:k===1?PWT[4]:last,won=PWR.at(-1);
+    if(k===5)return blockFace({...PWB,txs:['Coinbase → Miner '+MIN[won.m].n+' 3.125'],nonce:won.n,hash:won.h},OKJ,{name:'Block 5'});
+    if(k===6){const p=ST.pw,f=p.found;return blockFace({...PWB,nonce:f?f.nonce:p.tries?p.tries-1:0,hash:f?f.hash:(p.last||PWT[0].h)},{pow:!!f,link:true,ok:!!f},{name:'Block 5',st:f?'ok':'amb',mark:f?'✓':p.run?'…':'?',hl:'nonce'})}
+    const good=k===2||k===3;return blockFace({...PWB,nonce:t.n,hash:t.h},{pow:good,link:true,ok:good},{name:'Block 5',st:good?'ok':k===4?'bad':'amb',mark:good?'✓':k===4?'✗':'?',hl:k<=2?'nonce':k===3?'hash':null})},
+  pose(k,fwd){const o=this.o,d=k===4?10:k===6?ST.pw.d:PD,zw=zoneW(d),bs=this.balls(k);
+    camTo(k===3?{c:[0,BY-.1,0],w:E.narrow?5.4:7.5,h:4.7,yaw:.25,pitch:.08}:{c:[0,.95,0],w:E.narrow?12.2:12.8,h:E.narrow?8.8:7.9,yaw:.12,pitch:.16});
+    paint(o.blk,this.face(k));aim(o.blk,{o:1});aim(o.line,{o:1});aim(o.l0,{o:1});aim(o.l1,{o:1});aim(o.cap,{o:k===0?1:0});
+    aim(o.zone,{sv:[zw,.2,.7],p:[LX+zw/2,LY,0],o:1});aim(o.lt,{p:[LX-.05,LY+.95,0],o:1});
+    o.balls.forEach((b,i)=>{const s=bs[i];if(!s){aim(b,{o:0});return}const p=bx(s.f,i),fresh=b.userData.op<.02;
+      if(fresh){b.position.set(...(k===5?[MX[s.m],-.62,.2]:[0,BY-BH/2+.1,.36]));if(!E.snap)setOp(b,0)}
+      const dl=!fwd?0:k===1?i*.3:k===2?(i<5?0:(i-5)*.045):k===5?i*.06:0;
+      aim(b,{p,c:s.c,s:s.big?.2:.12,o:s.o??1},{delay:fresh?dl:0,dur:fresh?.55:.6})});
+    o.min.forEach((m,j)=>aim(m,{o:k===5?1:0,sv:[k===5&&PWR.at(-1).m===j?1.25:1,.62,.62]}));o.minl.forEach(l=>aim(l,{o:k===5?1:0}))},
+  say(k){const last=PWT.at(-1),tries=PWT.length,won=PWR.at(-1),cnt=MIN.map((m,j)=>PWR.filter(t=>t.m===j).length);return[
+    say('Step 0 · A puzzle with no shortcut',`<b>A block counts only if its hash is below a target.</b> Think of the hash as a number between 0 and 2²⁵⁶. The green piece at the left end is the target: here the first ${PD} bits must be zero, which is 1/${2**PD} of the line.`,'A hash function gives no hint where its output will fall. The only method is to try.'),
+    say('Step 1 · Try, try, try',`The miner sets the <b>nonce</b> field to 0, hashes the header, and looks where the hash falls. Too far right. Nonce 1, 2, 3, 4: five tries, five misses.`,'Each try is like one ticket in a lottery, and each has the same chance: 1 in '+2**PD+'.'),
+    say('Step 2 · A hit',`With nonce <b>${fmt(last.n)}</b> the hash finally lands in the green zone:${fm(sh(hid(last.h),30))}That took <b>${tries} tries</b>. The average for this target is ${2**PD}.`,'The dots lie evenly along the line. No nonce is better than another, so there is nothing to learn from the misses.'),
+    say('Step 3 · Checking takes one hash',`Anybody who receives the block hashes the header <b>once</b> and sees that the result is below the target. Finding took ${tries} hashes, checking takes 1.`,'This is the whole point: the block carries a proof that work was done, and the proof is cheap to verify. Nobody has to trust the miner.'),
+    say('Step 4 · Difficulty','Make the target 16 times smaller (10 zero bits): the same hash that won a moment ago is now a miss, and the search takes 16 times longer on average, 1,024 tries.','<b>The network sets the target itself.</b> Every 2,016 blocks Bitcoin compares how long they took with two weeks, and moves the target so that a block again takes about ten minutes, however many machines are mining.'),
+    say('Step 5 · A lottery between miners',`Three miners search at once, each on its own version of the block. They buy tickets in proportion to their hash rate: A made ${cnt[0]} tries, B ${cnt[1]}, C ${cnt[2]}. <b>Miner ${MIN[won.m].n} hit first</b>, after ${PWR.length} tries in total.`,'Over many blocks a miner with 30% of the hash rate wins about 30% of the blocks. The winner’s block creates new coins for it (the block subsidy) and collects the fees.'),
+    say('Step 6 · Your turn','<b>Mine a block in your browser.</b> Choose how many zero bits the hash needs and press Mine. Every extra bit doubles the work.',ST.pw.found?`Found nonce <b>${fmt(ST.pw.found.nonce)}</b> after ${fmt(ST.pw.found.tries)} tries in ${ST.pw.found.secs.toFixed(2)} s.`:'With 20 bits or more you will have time to watch the counter run.')][k]},
+  bar(k){if(k!==6)return'';const p=ST.pw;
+    return`<label class="fld"><span class="flh">Zero bits asked: <b id="pwd">${p.d}</b> &nbsp;(1 hash in <span id="pwn">${fmt(2**p.d)}</span>)</span><input type="range" data-pw="d" min="8" max="24" step="1" value="${p.d}" style="width:200px"></label>
+    <button data-pw="go" class="pri">${p.run?'Stop':'Mine'}</button><div class="live" id="pwlive">${this.live()}</div>`},
+  live(){const p=ST.pw,f=p.found;if(!p.tries)return'Nothing mined yet.';
+    return`tries <b>${fmt(p.tries)}</b> · ${p.secs.toFixed(1)} s · <b>${fmt(Math.round(p.rate))}</b> hashes/s${f?` · found: <b>${sh(hid(f.hash),24)}</b>`:p.run?' · searching…':' · stopped'}`},
+  extra(k){const p=ST.pw;
+    if(k===5)return`<h3>Tickets and the winner</h3><table class="kv"><tr><th>Miner</th><th>Share</th><th>Tries</th><th></th></tr>${MIN.map((m,j)=>`<tr class="${PWR.at(-1).m===j?'good':''}"><td class="t"><i class="sw" style="background:var(--${['accent','amb','key'][j]})"></i>${m.n}</td><td>${m.w*100}%</td><td>${PWR.filter(t=>t.m===j).length}</td><td class="t">${PWR.at(-1).m===j?'found the block':''}</td></tr>`).join('')}</table><p style="margin-top:8px">The order of the tries is drawn at random with these shares; every hash is a real SHA-256d of that miner’s header.</p>`;
+    if(k===6){const r=p.rate||0;return`<h3>What your browser does</h3><table class="kv"><tr><td class="t">Expected tries for ${p.d} bits</td><td>${fmt(2**p.d)}</td></tr><tr><td class="t">Your tries</td><td>${p.tries?fmt(p.tries):'–'}</td></tr><tr><td class="t">Your speed</td><td>${r?fmt(Math.round(r))+' hashes/s':'–'}</td></tr>
+      <tr><td class="t">Bitcoin’s first blocks (2009): 2³² tries on average</td><td>${r?dur(2**32/r):'–'}</td></tr></table>
+      <p style="margin-top:8px">The first row doubles with every bit. The last row is the time your browser would need, on average, for one block at the difficulty of January 2009.</p>`}
+    const rows=k===0?[]:k===1?PWT.slice(0,5):[...PWT.slice(0,3),null,...PWT.slice(-2)];
+    return`<h3>${k===0?'The header that is hashed':'The tries, with their real hashes'}</h3>${k===0?fm('version   1<br>previous  '+sh(hid(PWB.prev),16)+'<br>tx root   '+sh(hid(PWB.root),16)+'<br>time      '+PWB.time+'<br>bits      0x'+PWB.bits.toString(16)+'<br>nonce     <b>?</b>'):
+      `<table class="kv"><tr><th>nonce</th><th>hash</th><th>zero bits</th></tr>${rows.map(t=>t?`<tr class="${t.z>=(k===4?10:PD)?'good':''}"><td>${t.n}</td><td>${sh(hid(t.h),12)}</td><td>${t.z}</td></tr>`:'<tr><td>…</td><td>…</td><td></td></tr>').join('')}</table>`}
+      <p style="margin-top:8px">${k===4?'With 10 bits asked, the winning hash of step 2 has too few zero bits.':'Asked here: '+PD+' zero bits. A hash starting with hex 00, 01, 02 or 03 has them.'}</p>`}}}
+const dur=s=>s<90?s.toFixed(0)+' seconds':s<5400?(s/60).toFixed(0)+' minutes':s<172800?(s/3600).toFixed(1)+' hours':s<63072000?(s/86400).toFixed(0)+' days':fmt(Math.round(s/31557600))+' years';
+
+/* ================= 7 · The 51% attack: a race between two chains ================= */
+const RCAP=9;   // blocks that fit in one row of the picture
+// one race, block by block. 'a' = the attacker found the next block, 'h' = the honest network did.
+// The attacker has won when the shop has seen z confirmations and his branch is as long as the honest one
+function race(q,z,seed){const r=rng(seed),ev=[];let a=0,h=0,res=null;
+  while(!res){if(r()<q)a++,ev.push('a');else h++,ev.push('h');
+    if(h>=z&&a>=h||a>=RCAP)res='attacker';else if(h>=RCAP)res='honest'}
+  return{ev,a,h,res}}
+function findRace(q,z,ok){for(let s=1;s<5000;s++){const r=race(q,z,s);if(ok(r))return{...r,seed:s}}return race(q,z,1)}
+const cnt=(ev,c,n)=>ev.slice(0,n).filter(x=>x===c).length;
+// the scripted races: a minority attacker who falls behind, and a majority attacker who overtakes
+const R30=findRace(.3,3,r=>{const i=r.ev.map((e,j)=>cnt(r.ev,'h',j+1)).indexOf(3);return r.res==='honest'&&cnt(r.ev,'a',i+1)===1&&r.a===4&&r.h===RCAP});
+const R30cut=R30.ev.map((e,j)=>cnt(R30.ev,'h',j+1)).indexOf(3)+1;
+const R55=findRace(.55,3,r=>{const i=r.ev.map((e,j)=>cnt(r.ev,'h',j+1)).indexOf(3);return r.res==='attacker'&&cnt(r.ev,'a',i+1)===1&&r.h>=5&&r.h<=7});
+{const X0=-8.5,DX=1.9,HY=1.15,AY=-1.15,TS_=1.42;
+T.attack={n:6,
+  build(){const o=this.o={};floor.position.y=-1.9;
+    o.root=add(mkTile(TS_,TS_,.32));o.root.position.set(X0,0,0);
+    o.h=[];o.a=[];o.hr=[];o.ar=[];
+    for(let n=1;n<=RCAP;n++){for(const[row,y,rods]of[[o.h,HY,o.hr],[o.a,AY,o.ar]]){const t=mkTile(TS_,TS_,.32);t.position.set(X0+n*DX,y,0);row.push(add(t));
+      rods.push(add(mkRod(n===1?[X0+.75,y*.35,0]:[X0+(n-1)*DX+.75,y,0],[X0+n*DX-.75,y,0],.05,C.line2)))}}
+    o.lh=add(mkLabel('honest network',{size:.36,color:C.accent,left:true}));o.lh.position.set(X0+1.3,2.3,0);
+    o.la=add(mkLabel('attacker, in secret',{size:.36,color:C.bad,left:true}));o.la.position.set(X0+1.3,0,0)},
+  // what step k shows: the race, how much of it, and how it ended
+  st(k){if(k===5){const r=ST.at.race;return r?{q:r.q,z:r.z,ev:r.ev,res:r.res}:{q:ST.at.q,z:ST.at.z,ev:['h'],res:null}}
+    if(k===4)return{q:.55,z:3,ev:R55.ev,res:R55.res};
+    return{q:.3,z:3,ev:k===0?['h']:k===1?R30.ev.slice(0,R30cut):R30.ev,res:k>=2?R30.res:null}},
+  pose(k,fwd){const o=this.o,s=this.st(k),H=cnt(s.ev,'h',99),A=cnt(s.ev,'a',99),lost=s.res==='attacker',rid=k<4?'a':k===4?'b':'s'+ST.at.seed,prev=rid===this.rid?this.shown||0:0;
+    camTo({c:[0,.25,0],w:E.narrow?19.6:20.4,h:E.narrow?9.4:6.4,yaw:.12,pitch:.14});
+    tile(o.root,'0','plain',{o:1});
+    // the moment each block appears, in the order of the race
+    const at={h:[],a:[]};s.ev.forEach((e,i)=>at[e].push(i));
+    const dl=i=>fwd&&i>=prev?(i-prev)*.34:0;
+    for(let n=1;n<=RCAP;n++){
+      const hv=n<=H,av=n<=A;
+      tile(o.h[n-1],n===1?(s.z===1?'1\npaid, sent':'1\npaid'):n===s.z?n+'\nsent':String(n),lost?'dim':'accent',{o:hv?(lost?.5:1):0});
+      tile(o.a[n-1],String(n),'bad',{o:av?1:0});
+      if(hv&&o.h[n-1].userData.tw)o.h[n-1].userData.tw.t0+=dl(at.h[n-1])/speed();
+      if(av&&o.a[n-1].userData.tw)o.a[n-1].userData.tw.t0+=dl(at.a[n-1])/speed();
+      aim(o.hr[n-1],{o:hv?(lost?.4:1):0,c:C.accent},{delay:hv?dl(at.h[n-1]):0});aim(o.ar[n-1],{o:av?1:0,c:C.bad},{delay:av?dl(at.a[n-1]):0})}
+    aim(o.lh,{o:1});aim(o.la,{o:1});setLabel(o.lh,lost?'honest chain: dropped, the payment is gone':'honest network · '+pct(1-s.q,0)+' of the hash rate');
+    setLabel(o.la,(lost?'attacker’s chain: now the longest · ':'attacker, in secret · ')+pct(s.q,0));
+    this.shown=s.ev.length;this.rid=rid},
+  say(k){const q=.3,p=.7,a1=cnt(R30.ev,'a',R30cut),gap=R30.h-R30.a,s5=this.st(5);return[
+    say('Step 0 · The plan','<b>The attacker pays a shop and wants the money back.</b> His payment is in block 1 of the public chain. The shop will hand over the goods after 3 confirmations.','In secret he starts his own branch from block 0. In his version the same coins go back to himself. If his branch ever becomes the longer one, every node will switch to it, and the payment to the shop will never have happened.'),
+    say('Step 1 · A race',`He has 30% of the hash rate, the rest of the network 70%. Each new block is his with probability 0.3. While the honest chain grows to 3 blocks and the shop sends the goods, he finds ${a1} block${a1===1?'':'s'}: he is ${3-a1} behind.`),
+    say('Step 2 · Catching up from behind',`The race goes on. He needs luck again and again, while the honest side only has to keep its pace. Here he ends ${gap} blocks behind and gives up.`,`From n blocks behind, the chance of ever catching up is (q/p)ⁿ. With q = 0.3: ${[1,2,3,5].map(n=>`n = ${n}: ${pct(Math.pow(q/p,n))}`).join(', ')}. It shrinks by the same factor with every block.`),
+    say('Step 3 · How many confirmations?',`Counting every way the race can go, an attacker with 30% wins against 3 confirmations with probability <b>${pct(exactDS(.3,3))}</b>. With 6 confirmations: ${pct(exactDS(.3,6))}. An attacker with 10% against 6 confirmations: <b>${pct(exactDS(.1,6),3)}</b>.`,'This is where “wait for six blocks” comes from: against a small attacker the risk falls off very fast. Against a large one it does not. The table on the right has the numbers.'),
+    say('Step 4 · More than half',`Now the attacker has 55%. He is behind after the shop’s 3 confirmations, but he finds blocks faster than everybody else together, so he <b>always</b> catches up in the end. Here he draws level at block ${R55.a}.`,'He publishes his branch. It has as much work as the honest one and he will add the next block first; the nodes switch, and the honest blocks, with the payment in them, are dropped. <b>“The longest chain is the truth” is only safe while honest miners hold the majority.</b>'),
+    say('Step 5 · Your turn','<b>Set the attacker’s share and the number of confirmations, and run races.</b> One race is drawn block by block. Ten thousand races give a frequency that you can compare with the formula.',s5.res?`This race: ${s5.res==='attacker'?'<b class="cn">the attacker caught up</b>, so the payment can be reversed.':s5.q>=.5?'he has not caught up within the nine blocks of the picture. With half of the hash rate or more he will in the end.':'<b class="cy">the attacker fell behind</b> and gave up.'}`:'')][k]},
+  bar(k){if(k!==5)return'';const a=ST.at;
+    return`<label class="fld"><span class="flh">Attacker’s share q: <b id="atq">${pct(a.q,0)}</b></span><input type="range" data-at="q" min="5" max="60" step="5" value="${a.q*100}" style="width:170px"></label>
+    <label class="fld"><span class="flh">Confirmations z: <b id="atz">${a.z}</b></span><input type="range" data-at="z" min="1" max="8" step="1" value="${a.z}" style="width:130px"></label>
+    <button data-at="run" class="pri">Run one race</button><button data-at="mc">Run 10,000 races</button>
+    <div class="live" id="atlive">${this.live()}</div>`},
+  live(){const a=ST.at;return a.mc&&a.mc.q===a.q&&a.mc.z===a.z?`10,000 races: the attacker won <b>${pct(a.mc.p,2)}</b> · exact value <b>${pct(exactDS(a.q,a.z),2)}</b>`:`exact chance for q = ${pct(a.q,0)}, z = ${a.z}: <b>${pct(exactDS(a.q,a.z),a.q<.2?3:2)}</b>`},
+  extra(k){const zs=[1,2,3,4,5,6,10],f=(x)=>x>=.9995?'100%':x<1e-4?pct(x,4):x<.01?pct(x,3):pct(x,2);
+    return`<h3>Chance that the attacker succeeds</h3><div class="scroll"><table class="kv"><tr><th>z</th><th>q = 10%</th><th>q = 30%</th><th>q = 45%</th></tr>${zs.map(z=>`<tr><td>${z}</td><td>${f(exactDS(.1,z))}</td><td>${f(exactDS(.3,z))}</td><td>${f(exactDS(.45,z))}</td></tr>`).join('')}<tr><td class="t">any</td><td colspan="3" class="t">q ≥ 50%: <b>100%</b></td></tr></table></div>
+      <p style="margin-top:8px">Exact values of the race drawn here (counted block by block). Nakamoto’s paper approximates the attacker’s progress by a Poisson law and gets slightly smaller numbers: for q = 10%, z = 6 it prints ${nakamoto(.1,6).toFixed(7)}, the exact value is ${exactDS(.1,6).toFixed(7)}.</p>
+      <h3>What a 51% attacker can and cannot do</h3>
+      <p>${Y} take back his own recent payments · ${Y} keep chosen transactions out of blocks</p><p>${N} spend other people’s coins (no signature) · ${N} create coins out of nothing (nodes reject the block)</p>`}}}
+
+/* ================= 8 · Proof of stake ================= */
+const VS=[40,10,25,5,60,20,30,10],VTOT=VS.reduce((a,b)=>a+b,0),VCUM=VS.map((s,i)=>VS.slice(0,i).reduce((a,b)=>a+b,0));
+const VCOL=['#3b7dd8','#e08a2c','#8c63d6','#2fa37a','#d65a8a','#b89b1e','#34a3b6','#8a8f98'];
+const whoAt=r=>VS.findIndex((s,i)=>r>=VCUM[i]&&r<VCUM[i]+s);
+// the draw of the scripted slot: a number that nobody controls, here SHA-256 of the slot's name, reduced mod the total stake
+const PSR=Number(big(sha256(enc('epoch 7, slot 1')))%BigInt(VTOT)),PROP=whoAt(PSR);
+const byStake=VS.map((s,i)=>i).filter(i=>i!==PROP).sort((a,b)=>VS[a]-VS[b]);
+const OFF=byStake.slice(0,2),SLASH=byStake.filter(i=>VS[i]>=20&&VS[i]<=40)[0],VOTED=VTOT-OFF.reduce((a,i)=>a+VS[i],0);
+{const RV=5.3,RW=3.5,HS=.046,TURN=1.22-Math.PI/2,ang=j=>2*Math.PI*(VCUM[j]+VS[j]/2)/VTOT+TURN,vp=(j,r)=>[r*Math.cos(ang(j)),0,-r*Math.sin(ang(j))],
+  pa=x=>{const a=2*Math.PI*x/VTOT+TURN;return[RW*Math.cos(a),.68,-RW*Math.sin(a)]},CEN=[0,3.5,0],MY=5.55,ML=6;
+T.pos={n:7,
+  build(){const o=this.o={};floor.position.y=0;o.col=[];o.lab=[];o.arc=[];
+    VS.forEach((s,j)=>{const h=s*HS,p=vp(j,RV),c=mkDisc(.58,h,VCOL[j]);c.position.set(p[0],h/2,p[2]);o.col.push(add(c));
+      const l=mkLabel(`V${j+1}\n${s}`,{size:.38});l.position.set(p[0],h+.8,p[2]);o.lab.push(add(l));
+      const a0=2*Math.PI*VCUM[j]/VTOT+TURN,sp=2*Math.PI*s/VTOT,m=new THREE.Mesh(new THREE.TorusGeometry(RW,.17,10,Math.max(6,Math.round(sp*14)),sp-.035),solid(VCOL[j]));
+      m.rotation.set(-Math.PI/2,0,a0+.0175);m.position.y=.2;m.castShadow=true;o.arc.push(add(reg(m,[m.material])))});
+    o.ptr=add(mkBall(.27,C.ink));o.ptr.position.set(...pa(0));
+    o.blk=add(mkTile(1.7,1.7,.36));o.blk.position.set(...CEN);
+    o.two=[0,1].map(i=>add(mkTile(.95,.95,.26)));
+    o.mbg=add(mkBox(ML,.26,.26,C.line2));o.mbg.position.set(0,MY,0);
+    o.mfill=add(mkBox(1,.34,.34,C.accent));o.mfill.position.set(-ML/2,MY,0);
+    o.mark=add(mkBox(.07,.7,.4,C.ink));o.mark.position.set(-ML/2+ML*2/3,MY,0);
+    o.ml=add(mkLabel('⅔',{size:.42}));o.ml.position.set(-ML/2+ML*2/3,MY-.66,0);
+    o.mt=add(mkLabel('',{size:.36,color:C.muted}));o.mt.position.set(0,MY+.6,0)},
+  hold:k=>k===1?6:5,
+  pose(k,fwd){const o=this.o,pp=vp(PROP,RV),top=j=>{const p=vp(j,RV);return[p[0],VS[j]*HS+.1,p[2]]},fin=pa(PSR+.5),draws=k===6&&ST.ps.draws;
+    camTo({c:[0,1.9,.6],w:E.narrow?13.4:14.2,h:E.narrow?11:9.6,pitch:.42,yaw:k===5?clamp(Math.atan2(vp(SLASH,1)[0],vp(SLASH,1)[2])*.5,-.6,.6):0});
+    const spinT=fwd&&k===1&&!E.snap?2.3:0;
+    VS.forEach((s,j)=>{const cut=k>=5&&j===SLASH,h=s*HS*(cut?.55:1),p=vp(j,RV),off=k>=3&&k<=4&&OFF.includes(j);
+      const isP=k>=1&&k<=4&&j===PROP,w=isP?.8:.58,txt=draws?`V${j+1}\n${ST.ps.draws[j]}`:cut?`V${j+1}\nslashed`:off?`V${j+1}\noffline`:isP?`V${j+1}\nproposer`:`V${j+1}\n${s}`;
+      aim(o.col[j],{sv:[w,h,w],p:[p[0],h/2,p[2]],c:cut?C.bad:off?C.node:VCOL[j],o:cut?.75:1},{delay:isP?spinT:0});
+      if(isP&&spinT){setLabel(o.lab[j],`V${j+1}\n${s}`,C.ink);timeline([[spinT,()=>setLabel(o.lab[j],txt,C.ink)]])}else setLabel(o.lab[j],txt,cut?C.bad:C.ink);
+      aim(o.lab[j],{p:[p[0],h+.8,p[2]],o:1});aim(o.arc[j],{o:k>=1?1:0})});
+    if(spinT){delete o.ptr.userData.goal.p;aim(o.ptr,{o:1});let t=0;const turns=2+ (PSR+.5)/VTOT;
+      fx(dt=>{t+=dt*speed();const e=ease(Math.min(1,t/spinT)),x=e*turns*VTOT;o.ptr.position.set(...pa(x));if(t>=spinT){o.ptr.userData.goal.p=fin;return false}return true})}
+    else aim(o.ptr,{p:fin,o:k>=1?1:0});
+    const bp=k===2?[pp[0],VS[PROP]*HS+1.9,pp[2]]:CEN;
+    tile(o.blk,k>=4?'slot 1\nfinal':'slot 1\nblock',k>=4?'gold':'accent',{p:bp,o:k>=2?1:0});
+    const sp=vp(SLASH,RV),sy=VS[SLASH]*HS*.55+1.95;
+    o.two.forEach((t,i)=>tile(t,i?'B':'A','bad',{p:[sp[0]+(i?.55:-.55),sy,sp[2]],o:k===5?1:0}));
+    const fr=k>=3?VOTED/VTOT:0;
+    aim(o.mbg,{o:k>=3&&k<=4?1:0});aim(o.mark,{o:k>=3&&k<=4?1:0});aim(o.ml,{o:k>=3&&k<=4?1:0});
+    aim(o.mfill,{sv:[Math.max(.001,ML*fr),.34,.34],p:[-ML/2+ML*fr/2,MY,0],c:k>=4?C.ok:C.accent,o:k>=3&&k<=4?1:0},{dur:fwd&&k===3?1.6:.75,delay:fwd&&k===3?.3:0});
+    setLabel(o.mt,`${pct(VOTED/VTOT)} of the stake voted for the block`);aim(o.mt,{o:k>=3&&k<=4?1:0});
+    if(fwd&&k===3)VS.forEach((s,j)=>{if(!OFF.includes(j))pulse(top(j),CEN,VCOL[j],.25+j*.13,.75,.16)})},
+  say(k){const p=VS[PROP]/VTOT,d=ST.ps.draws;return[
+    say('Step 0 · Stake instead of electricity',`<b>Proof of work makes cheating expensive by burning energy. Proof of stake does it with a deposit.</b> Eight validators have locked up coins: the height of a column is its stake, ${VTOT} coins in all.`,'A validator runs ordinary software on an ordinary computer. What it puts at risk is its deposit.'),
+    say('Step 1 · A lottery weighted by stake',`For every time slot one validator is drawn to propose the block. The ring is the lottery wheel: each validator owns a piece as long as its stake. The pointer stops at ${PSR} of ${VTOT}, inside the piece of <b>V${PROP+1}</b>.`,`V${PROP+1} holds ${VS[PROP]} of ${VTOT} coins, so it is drawn in ${pct(p,p*100%1?1:0)} of all slots. The number must be one that no validator can steer; Ethereum mixes random contributions of many validators (RANDAO).`),
+    say('Step 2 · The proposer builds the block',`<b>V${PROP+1} collects transactions, builds the block and signs it.</b> No puzzle is solved: making a block costs a few milliseconds.`,'In Ethereum a slot lasts 12 seconds. If the chosen validator is offline, the slot simply stays empty.'),
+    say('Step 3 · The others vote',`The other validators check the block and sign a vote for it, an <b>attestation</b>. A vote weighs as much as the stake behind it. V${OFF[0]+1} and V${OFF[1]+1} are offline; the rest add up to ${VOTED} of ${VTOT} coins: <b>${pct(VOTED/VTOT)}</b>.`),
+    say('Step 4 · Two thirds make it final',`<b>Once votes worth at least two thirds of all stake stand behind a checkpoint, and then behind its successor, it is final.</b> ${pct(VOTED/VTOT)} is more than 66.7%.`,'Final means more than “many blocks on top”. To undo it, validators holding at least one third of all stake would have to sign contradictory votes, and the protocol would destroy their deposits for it. In Ethereum this takes two epochs of 32 slots: 2 × 32 × 12 s = 12.8 minutes.'),
+    say('Step 5 · Cheating burns the deposit',`<b>V${SLASH+1} signs two different blocks for the same slot.</b> The two signatures are proof of the offence, and anybody can put them into a block. The protocol then destroys part of V${SLASH+1}’s stake and removes it from the validators: it is <b>slashed</b>.`,'In proof of work a cheater loses the electricity he spent. In proof of stake he loses the deposit itself, and the more validators cheat together, the larger the cut, up to everything.'),
+    say('Step 6 · Your turn','<b>Draw 1,000 slots</b> and see how often each validator is chosen. The numbers on the columns are the wins.',d?`With ${VS[4]} of ${VTOT} coins V5 should win about ${VS[4]*5} times and won ${d[4]}. V4, with ${VS[3]}, about ${VS[3]*5} times, and won ${d[3]}. Stake buys chances, exactly as hash rate does in proof of work.`:'')][k]},
+  bar(k){return k===6?`<button data-ps="draw" class="pri">Draw 1,000 slots</button><div class="live">${ST.ps.draws?'Every slot is drawn independently, with chances in proportion to stake.':'Nothing drawn yet.'}</div>`:''},
+  extra(k){const d=ST.ps.draws;return`<h3>The validators</h3><table class="kv"><tr><th></th><th>Stake</th><th>Chance per slot</th>${d&&k===6?'<th>Wins in 1,000</th>':''}</tr>${VS.map((s,j)=>`<tr class="${k>=1&&k<=4&&j===PROP?'sel':k>=5&&j===SLASH?'bad':''}"><td class="t"><i class="sw" style="background:${VCOL[j]}"></i>V${j+1}</td><td>${s}</td><td>${pct(s/VTOT,1)}</td>${d&&k===6?`<td>${d[j]}</td>`:''}</tr>`).join('')}</table>
+    <p style="margin-top:8px">${k===1?`The draw: SHA-256(“epoch 7, slot 1”) mod ${VTOT} = ${PSR}. V${PROP+1} owns the numbers ${VCUM[PROP]} to ${VCUM[PROP]+VS[PROP]-1}.`:k===3||k===4?`Voted: ${VOTED} of ${VTOT} = ${pct(VOTED/VTOT)}. Needed: more than ${Math.ceil(VTOT*2/3)} of ${VTOT}.`:'Toy numbers. In Ethereum a validator needs 32 ETH to start, and since May 2025 one validator may hold up to 2,048 ETH.'}</p>`}}}
+
+/* ================= the lecture notes under the picture ================= */
+const EX=(t,h)=>`<div class="exb"><b>${t}</b>${h}</div>`,NOX=(t,h)=>`<div class="exb no"><b>${t}</b>${h}</div>`,USE=(t,h)=>`<div class="exb use"><b>${t}</b>${h}</div>`,
+  BK=h=>`<div class="exb bk"><b>In the textbook</b>${h}</div>`,LK=(u,t)=>`<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
+const PAAR='Paar, Pelzl and Güneysu, <cite>Understanding Cryptography</cite>, 2nd edition (Springer, 2024)';
+// the first Bitcoin block, hashed by this page
+const GEN={ver:1,prev:new Uint8Array(32),root:rev(unhex('4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b')),time:1231006505,bits:0x1d00ffff,nonce:2083236893};
+const GENB=header(GEN),GENH=hid(sha256d(GENB));
+// all bitcoins that will ever exist: 210,000 blocks at 50 BTC, then half, then half again, counted in satoshi
+const SUPPLY=(()=>{let s=0,r=5e9;while(r>=1){s+=210000*r;r=Math.floor(r/2)}return s/1e8})();
+// the figures below were read on the dates given; they change every day
+const NOW={diff:148.36e12,date:'12 November 2026'};
+const DOC={
+why:()=>`<h2>What problem does a blockchain solve?</h2>
+<p class="lead">A blockchain is a ledger that many computers keep together, although none of them is in charge and none of them trusts the others.</p>
+<h3>The double-spending problem</h3>
+<p>Digital signatures already tell us <em>who</em> issued a payment. They cannot tell us whether the same money was paid out twice, because both payments carry a perfectly good signature. Somebody has to decide which payment came first.</p>
+<p>Until 2008 the only known answer was a trusted third party. David Chaum’s ecash (1982) hid from the bank who paid whom, but the bank still had to be online to check every coin against a list of spent coins. Take the bank away and the list has nowhere to live.</p>
+<h3>The idea of 2008</h3>
+<p>On 31 October 2008 a paper signed “Satoshi Nakamoto” was posted to a cryptography mailing list: <cite>Bitcoin: A Peer-to-Peer Electronic Cash System</cite>. It contains almost no new cryptography. Its contribution is a way to combine four known tools so that the list of all payments can be kept by everybody at once:</p>
+<ul class="pts">
+<li><b>Hash functions</b> chain the entries together, so that history cannot be rewritten quietly (tabs 2 and 4).</li>
+<li><b>Digital signatures</b> make sure that only the owner of a coin can spend it (tab 3).</li>
+<li>A <b>peer-to-peer network</b> gives every participant a full copy (tab 6).</li>
+<li>A <b>consensus rule</b>, proof of work, decides who may add the next page of the ledger, and makes it expensive to lie (tabs 5, 7 and 8).</li></ul>
+<p>The pieces are older than the combination: linked time-stamps go back to Haber and Stornetta (1991), hash trees to Merkle (1979), and “pay with computation” to Dwork and Naor (1992) and Back’s Hashcash (1997). The first block of Bitcoin was mined on 3 January 2009.</p>
+<h3>A definition to remember</h3>
+${EX('Blockchain','An append-only list of blocks. Each block holds transactions and the hash of the block before it. Many nodes store the whole list, and a consensus rule makes them agree on one version of it.')}
+<h3>What you get, and what you pay</h3>
+<table class="cmp"><tr><th></th><th>A bank’s database</th><th>A public blockchain</th></tr>
+<tr><td>Who writes</td><td>the bank</td><td>anybody who follows the rules</td></tr>
+<tr><td>Who must be trusted</td><td>the bank</td><td>nobody in particular; a majority of the work or of the stake must be honest</td></tr>
+<tr><td>Changing old records</td><td>possible for the administrator</td><td>visible to everyone, and very expensive</td></tr>
+<tr><td>Speed</td><td>thousands of payments a second</td><td>a handful a second on Bitcoin; more on newer designs</td></tr>
+<tr><td>Privacy</td><td>the bank sees everything, the public nothing</td><td>everybody sees every payment, under pseudonyms</td></tr>
+<tr><td>A mistake or a lost key</td><td>can be reversed</td><td>final</td></tr></table>
+${NOX('A useful test','If there is a party that everybody involved already trusts, an ordinary database does the job better, faster and cheaper. A blockchain earns its cost only where no such party exists.')}
+${BK(`${PAAR} has no chapter on blockchains. Its preface names cryptocurrencies and blockchains among the applications that rest on the algorithms the book teaches, and those are the ones you need here: hash functions (Chapter 11), digital signatures (Chapter 10) and elliptic curves (Chapter 9). For the blockchain itself this course reads Imamverdiyev (2019) and Nakamoto’s paper; both are in the reference list of tab 9.`)}`,
+
+chain:()=>`<h2>Blocks and hash pointers</h2>
+<p class="lead">A block names its predecessor by its hash. That one field turns a pile of blocks into a history that cannot be edited without everybody noticing.</p>
+<h3>The 80-byte header</h3>
+<p>A Bitcoin block is a list of transactions with a header in front. Only the header is hashed, and it always has the same six fields:</p>
+<table class="cmp fx"><tr><th>Field</th><th class="n">Bytes</th><th>What it is</th></tr>
+<tr><td>version</td><td class="n">4</td><td>which rules the block follows</td></tr>
+<tr><td>previous block hash</td><td class="n">32</td><td>the hash of the header before this one: the link of the chain</td></tr>
+<tr><td>Merkle root</td><td class="n">32</td><td>one hash that stands for all transactions of the block (tab 4)</td></tr>
+<tr><td>time</td><td class="n">4</td><td>seconds since 1 January 1970</td></tr>
+<tr><td>bits</td><td class="n">4</td><td>the target, in a compact form (tab 5)</td></tr>
+<tr><td>nonce</td><td class="n">4</td><td>the number the miner changes until the hash is small enough (tab 5)</td></tr></table>
+<p>The block hash is SHA-256 applied twice to these 80 bytes. Bitcoin prints hashes with the bytes in reverse order, so a small number shows as leading zeros; this page does the same.</p>
+<h3>The first Bitcoin block, checked by this page</h3>
+<p>These are the 80 header bytes of the genesis block of 3 January 2009. Your browser has just hashed them with the SHA-256 code of this page:</p>
+${fm(hex(GENB).replace(/(.{32})/g,'$1<br>'))}
+${fm('SHA-256(SHA-256(header)) = <b>'+GENH+'</b>')}
+<p>It starts with ten hex zeros, that is ${lz(sha256d(GENB))} zero bits, and it is the value every Bitcoin node in the world has stored for block 0. Its nonce is ${fmt(GEN.nonce)}; a block at that target takes about 2³² ≈ 4.3 billion tries on average.</p>
+<h3>Which property of the hash function does the work?</h3>
+<ul class="pts">
+<li><b>Second-preimage resistance.</b> Given a block, nobody can construct a different block with the same hash. So a hash pointer fixes the content it points at.</li>
+<li><b>Collision resistance.</b> Nobody can prepare two different blocks with one hash in advance. For a 256-bit hash the birthday attack needs about 2¹²⁸ hashes.</li>
+<li><b>The avalanche effect.</b> One changed input bit changes about half of the output bits, so a small edit cannot hide.</li></ul>
+<h3>Tamper-evident, not tamper-proof</h3>
+<p>Hashes do not stop anybody from rewriting a block and all blocks after it; a laptop does that for a toy chain in a moment, as step 6 shows. Hashes only make the rewrite <em>visible</em> and force it to reach the tip. What makes a rewritten chain <em>lose</em> is the consensus rule: the network follows the chain with the most work, and the forger has to produce that work faster than everybody else together.</p>
+${USE('Where else you meet hash chains','Git names every commit by a hash that covers its parent commit. Certificate Transparency logs, software update systems and secure audit logs use the same idea. None of them needs mining, because each has an owner who is allowed to write.')}
+${BK(`${PAAR}, Section 11.2, “Security Requirements of Hash Functions”: preimage resistance (11.2.1), second preimage resistance (11.2.2), collision resistance and the birthday attack (11.2.3). SHA-256 itself is Section 11.4 of the second edition (preprocessing in 11.4.1, the compression function in 11.4.2). In the first edition (2010) Section 11.4 describes SHA-1 instead, which the syllabus covers in lecture 12.`)}`,
+
+tx:()=>`<h2>Transactions and digital signatures</h2>
+<p class="lead">On a blockchain, owning money means knowing a private key. A payment is a signed statement that hands coins from one public key to another.</p>
+<h3>Keys and addresses</h3>
+<ul class="pts">
+<li>The <b>private key</b> d is a random 256-bit number. Nobody else may ever see it.</li>
+<li>The <b>public key</b> is the curve point Q = d · G on the elliptic curve secp256k1, y² = x³ + 7 over the prime field with p = 2²⁵⁶ − 2³² − 977. Computing Q from d is one scalar multiplication; computing d from Q is the elliptic-curve discrete logarithm problem.</li>
+<li>The <b>address</b> is a hash of the public key: RIPEMD-160(SHA-256(Q)) in Bitcoin, the last 20 bytes of Keccak-256(Q) in Ethereum. It is shorter than the key, and with the classic address type the key itself stays hidden until the first spend.</li></ul>
+<h3>ECDSA in four lines</h3>
+<p>To sign the hash z of a transaction, the owner picks a fresh secret number k and computes</p>
+${fm('R = k · G &nbsp;&nbsp; r = x-coordinate of R mod n<br>s = k⁻¹ · (z + r · d) mod n &nbsp;&nbsp;&nbsp; the signature is (r, s)')}
+<p>Everybody else checks it with the public key only:</p>
+${fm('u₁ = z · s⁻¹ mod n &nbsp;&nbsp; u₂ = r · s⁻¹ mod n<br>accept if the x-coordinate of u₁ · G + u₂ · Q equals r')}
+<p>The numbers in the panel beside the picture are a real signature on secp256k1, computed in your browser with these formulas.</p>
+${NOX('The number k must never repeat','Two signatures made with the same k give two equations with two unknowns, k and d, and the private key falls out: k = (z₁ − z₂)/(s₁ − s₂), d = (s₁ · k − z₁)/r. This is how the signing key of the PlayStation 3 was recovered in 2010, and how bitcoins were stolen from Android wallets with a faulty random number generator in 2013. Wallets today derive k from the key and the message (RFC 6979).')}
+<h3>Two ways to keep the books</h3>
+<table class="cmp"><tr><th></th><th>Unspent outputs (Bitcoin)</th><th>Accounts (Ethereum)</th></tr>
+<tr><td>What the ledger stores</td><td>a set of coins, each locked to a key</td><td>a balance and a counter for every address</td></tr>
+<tr><td>A payment</td><td>uses up whole coins, creates new ones, returns the change</td><td>subtracts here, adds there</td></tr>
+<tr><td>Against replaying a payment</td><td>a coin can be spent only once</td><td>each transaction carries the next counter value</td></tr>
+<tr><td>Good for</td><td>simple checking, parallel validation</td><td>programs that keep state (smart contracts)</td></tr></table>
+<h3>What a node checks before it accepts a transaction</h3>
+<ul class="pts"><li>every input refers to a coin that exists and is still unspent;</li><li>every input carries a valid signature for the key the coin is locked to;</li><li>the outputs together are not larger than the inputs. The difference is the miner’s fee.</li></ul>
+<p>In Bitcoin the lock on a coin is a small program in a stack language called Script; “pay to this public key hash” is the most common one. Since the Taproot upgrade (block 709,632, 14 November 2021) Bitcoin also accepts Schnorr signatures.</p>
+<h3>Consequences worth remembering</h3>
+<ul class="pts"><li><b>No key, no coins.</b> There is no password reset. A lost private key makes its coins unspendable for ever; a stolen key makes them somebody else’s.</li>
+<li><b>Pseudonymous, not anonymous.</b> The ledger shows addresses, not names, but it shows every payment to everybody for ever. Once one address is tied to a person, the trail can be followed.</li></ul>
+${BK(`${PAAR}, Section 10.5, “The Elliptic Curve Digital Signature Algorithm (ECDSA)”, with the algorithm in 10.5.1 and its security in 10.5.3; the curve arithmetic is Chapter 9. Why a message is hashed before it is signed is Section 11.1. Paar’s video lectures 17 (elliptic curves) and 18 (digital signatures) cover the same ground. The next lecture of this course, digital signatures, goes through RSA, DSA and ECDSA in detail.`)}`,
+
+merkle:()=>`<h2>Merkle trees</h2>
+<p class="lead">A Merkle tree squeezes any number of transactions into one 32-byte hash, and still lets you prove that a single transaction is among them with a handful of hashes.</p>
+<h3>How it is built</h3>
+<p>Hash every transaction. Hash the results in pairs. Repeat until one hash is left: the <b>Merkle root</b>, which goes into the block header. When a level has an odd number of hashes, Bitcoin pairs the last one with itself.</p>
+<h3>The proof</h3>
+<p>To show that a transaction is in a block, hand over the transaction and the sibling hash at every level. The verifier hashes upwards and compares the result with the root in the header. A tree with n leaves has log₂ n levels:</p>
+<table class="cmp"><tr><th class="n">Transactions</th><th class="n">Hashes in the proof</th><th class="n">Size of the proof</th></tr>${[8,1024,4096,1048576].map(n=>`<tr><td class="n">${fmt(n)}</td><td class="n">${Math.log2(n)}</td><td class="n">${Math.log2(n)*32} bytes</td></tr>`).join('')}</table>
+<p>Without the tree the verifier would need all the other transactions of the block to recompute a single hash over them.</p>
+<h3>Why a forged proof does not work</h3>
+<p>To make a false transaction lead to the true root, a forger would need, at some level, a second input that hashes to a value that is already fixed. That is a second preimage. The tree is exactly as strong as the hash function.</p>
+<h3>Light clients</h3>
+<p>A phone wallet cannot store hundreds of gigabytes of transactions. It stores only the 80-byte headers, ${fmt(6*24*365)} of them a year, about ${(6*24*365*80/1e6).toFixed(1)} MB, checks their proof of work, and asks a full node for the Merkle proof of the payments it cares about. Nakamoto’s paper calls this simplified payment verification.</p>
+${USE('Where else you meet Merkle trees','Certificate Transparency logs (almost every public TLS certificate is in one), Git, BitTorrent and many file systems use hash trees. Ethereum keeps all account balances in a variant of the tree. The stateless hash-based signature standard SLH-DSA (FIPS 205, 2024), one of the post-quantum standards, is built from Merkle trees.')}
+${BK(`Ralph Merkle invented the tree in 1979 to turn one-time signatures into signatures that can be used many times. ${PAAR} treats hash-based signatures in Section 12.4 (one-time signatures in 12.4.1, many-time signatures in 12.4.2), and Paar’s video lecture 24 presents the Merkle signature scheme. The security argument rests on Section 11.2.2, second preimage resistance.`)}`,
+
+pow:()=>{const exp=NOW.diff*2**32;return`<h2>Proof of work</h2>
+<p class="lead">Anybody may propose the next block, but only together with a proof that a great deal of computation was spent on it. The proof is a hash that is smaller than a target.</p>
+<h3>The puzzle</h3>
+${fm('find a nonce such that &nbsp; SHA-256(SHA-256(header)) &lt; target')}
+<p>The output of a good hash function cannot be steered, so the only strategy is to try nonces one after the other. If the target is 2²⁵⁶⁻ᵈ, a try succeeds with probability 2⁻ᵈ, and the search takes 2ᵈ tries on average. It is the brute-force attack on preimage resistance, turned into something useful: a partial preimage that everybody can check with one hash.</p>
+<h3>Target and difficulty in Bitcoin</h3>
+<p>The header stores the target in the 4-byte field <b>bits</b>: one byte of exponent e and three bytes of mantissa m, target = m · 256<sup>e−3</sup>. The genesis block has bits = 0x1d00ffff, the largest target that is allowed. The <b>difficulty</b> D says how many times smaller the current target is, and a block then needs D · 2³² hashes on average.</p>
+${EX('The real numbers, '+NOW.date,`Difficulty D = ${(NOW.diff/1e12).toFixed(2)} × 10¹². Expected hashes for one block: D · 2³² ≈ ${(exp/1e23).toFixed(1)} × 10²³, which is the same as asking for about ${Math.log2(exp).toFixed(0)} zero bits. Finding such a block every ten minutes takes about ${fmt(Math.round(exp/600/1e19)*10)} × 10¹⁸ hashes per second; the measured estimates for these days are 950 to 1,050 × 10¹⁸. At the ${fmt(Math.round(ST.pw.rate||3e5))} hashes per second of ${ST.pw.rate?'your browser':'a typical browser tab'}, one block would take about ${fmt(Math.round(exp/(ST.pw.rate||3e5)/31557600/1e9))} billion years.`)}
+<h3>Keeping the pace: retargeting</h3>
+<p>More miners find blocks faster. So every 2,016 blocks each node compares the time those blocks took with the intended two weeks and scales the target by the ratio, by a factor of four at most in either direction. The interval stays near ten minutes whether ten computers are mining or ten million. Nobody announces the new target; every node computes it from the timestamps in the chain.</p>
+<h3>Why miners do it</h3>
+<p>The first transaction of every block creates new coins for the miner, the block subsidy, and the miner also keeps the fees of the transactions in the block. The subsidy started at 50 BTC and halves every 210,000 blocks, roughly every four years: since block 840,000 (20 April 2024) it is 3.125 BTC, and at block 1,050,000, expected in spring 2028, it becomes 1.5625 BTC. Adding up all the halvings, as this page just did, gives ${SUPPLY.toLocaleString('en-US',{maximumFractionDigits:4})} BTC: the well-known limit of 21 million.</p>
+<h3>What the work buys</h3>
+<ul class="pts"><li><b>Votes that cannot be faked.</b> In an open network anybody can create a million identities. Computation cannot be multiplied that way: Nakamoto’s phrase is “one CPU, one vote”.</li>
+<li><b>A cost for rewriting history.</b> Whoever wants to replace a block must redo its work and the work of every block after it (tab 2, step 6), faster than the rest of the network adds new ones (tab 7).</li>
+<li><b>A fair lottery.</b> The chance of writing the next block is proportional to the share of the total hash rate.</li></ul>
+${NOX('The price','The work has no other use, and it has to be expensive, because the expense is the security. The Cambridge Bitcoin Electricity Consumption Index estimated the network’s demand on 11 November 2026 at 18.6 GW, which is about 163 TWh a year (plausible range 79 to 278 TWh): the electricity use of a mid-sized country. Mining is done with special chips (ASICs) that can do nothing but SHA-256, and most miners join pools to smooth out their income.')}
+${BK(`${PAAR}, Section 11.2.1, “Preimage Resistance or One-Wayness”: the argument that finding an input for a given n-bit output takes about 2ⁿ tries is the argument that makes mining slow. Section 11.4 describes SHA-256, the function a miner evaluates. The idea of paying with computation is from Dwork and Naor (1992); Back’s Hashcash (1997) is the scheme Nakamoto cites.`)}`},
+
+net:()=>`<h2>The network, forks and the longest chain</h2>
+<p class="lead">There is no server. The blockchain lives in thousands of nodes that pass transactions and blocks to their neighbours and check everything themselves.</p>
+<h3>Who is on the network</h3>
+<ul class="pts"><li><b>Full nodes</b> store and verify the whole chain. They are the ones that enforce the rules: a block that breaks a rule is ignored, no matter how much work is in it.</li>
+<li><b>Miners</b> (or validators, in proof of stake) are full nodes that also build new blocks.</li>
+<li><b>Light clients</b> keep only headers and ask full nodes for Merkle proofs (tab 4).</li></ul>
+<h3>The life of a transaction</h3>
+<ul class="pts"><li>A wallet signs it and sends it to a few nodes; they check it and pass it on.</li>
+<li>It waits in each node’s pool of unconfirmed transactions.</li>
+<li>A miner includes it in the block it is working on, usually the best-paying transactions first.</li>
+<li>The miner finds a valid block and broadcasts it; every node checks the whole block and adds it to its chain.</li>
+<li>Miners show that they accept the block by building the next one on top of it.</li></ul>
+<h3>Forks</h3>
+<p>When two valid blocks appear at the same height, the network holds two chains for a moment. Each node works on the block it saw first and keeps the other. The next block decides: its branch has more accumulated work, and everybody moves to it. “Longest chain” is shorthand for <b>the valid chain with the most total work</b>.</p>
+<p>So confirmation is a matter of degree. A transaction one block deep is undone now and then by an ordinary fork. Six blocks deep, it would take an attacker with a large part of the hash rate, and a lot of luck, to undo it (tab 7).</p>
+<h3>Changing the rules</h3>
+<table class="cmp"><tr><th></th><th>Soft fork</th><th>Hard fork</th></tr>
+<tr><td>The new rules</td><td>are stricter: every new block is still valid for old nodes</td><td>allow something old nodes reject</td></tr>
+<tr><td>Nodes that do not upgrade</td><td>keep following the chain</td><td>split off onto their own chain</td></tr>
+<tr><td>Example</td><td>Taproot in Bitcoin, November 2021</td><td>Bitcoin Cash split from Bitcoin on 1 August 2017; Ethereum Classic is the chain that refused Ethereum’s rule change of July 2016</td></tr></table>
+<h3>The problem behind it: Byzantine agreement</h3>
+<p>Getting computers to agree when some of them lie is an old problem, named the Byzantine generals problem by Lamport, Shostak and Pease in 1982. The classical solutions need a fixed, known list of participants, and they tolerate fewer than one third of them being dishonest. Nakamoto’s rule works with an open, changing, anonymous set of participants. It pays for this with finality that is only probable, and with the cost of proof of work.</p>
+<h3>Why it is slow</h3>
+<p>Every full node must receive, check and store every transaction, so the whole network is about as fast as one modest computer. Bitcoin confirms a handful of transactions per second; the figure usually quoted is at most about seven. Raising the block size raises the cost of running a node and so reduces the number of independent nodes. This tension between decentralisation, security and throughput is often called the scalability trilemma.</p>
+${USE('Layer 2','The usual way out is to do most of the work off the chain and use the chain as the judge. Payment channels (the Lightning Network on Bitcoin) settle only their opening and closing on the chain. Rollups execute transactions elsewhere and post compressed data, with a proof, to Ethereum; on 12 November 2026 rollups held about 27.7 billion dollars of assets, more than half of it on Base and Arbitrum One.')}
+${BK(`The textbook does not cover peer-to-peer networks or consensus. The closest material in ${PAAR} is Chapter 14 on key management, which shows why a trusted centre (the key distribution centre of Section 14.3.1, the certificate authorities of Section 14.5) is the usual answer to “whom do I believe?”. A blockchain is what you build when you refuse that answer. Read Section 5 of Nakamoto’s paper: it is half a page.`)}`,
+
+attack:()=>`<h2>The 51% attack and double spending</h2>
+<p class="lead">The network follows the chain with the most work. So whoever controls most of the work controls the chain. This is the security assumption of proof of work, stated honestly.</p>
+<h3>The attack</h3>
+<ul class="pts"><li>The attacker pays a merchant, and the payment enters block n of the public chain.</li>
+<li>In secret he mines a branch from block n − 1 in which the same coins go to himself.</li>
+<li>The merchant waits for z confirmations and hands over the goods.</li>
+<li>If the secret branch ever becomes at least as long as the public one, he publishes it. The nodes switch to it, and the payment to the merchant has disappeared.</li></ul>
+<h3>The mathematics of the race</h3>
+<p>Let q be the attacker’s share of the hash rate and p = 1 − q the honest share. Each new block is the attacker’s with probability q. Being n blocks behind is a random walk that moves one step closer with probability q and one step away with probability p: the gambler’s ruin. For q &lt; p the chance of ever closing a gap of n blocks is</p>
+${fm('(q / p)ⁿ')}
+<p>While the merchant waits for z honest blocks, the attacker finds k blocks with a probability given by the negative binomial distribution, and then has to close a gap of z − k:</p>
+${fm('P = 1 − Σ<sub>k=0…z−1</sub> C(k+z−1, k) · pᶻ qᵏ · (1 − (q/p)<sup>z−k</sup>)')}
+<p>The table beside the picture is this formula. Nakamoto’s paper approximates the attacker’s progress by a Poisson distribution with mean z·q/p and gets somewhat smaller numbers; Rosenfeld (2014) worked out the exact ones. Both fall off exponentially in z, and that is the point.</p>
+<table class="cmp"><tr><th class="n">Attacker’s share q</th><th class="n">Confirmations for a risk below 0.1%</th></tr>${[.1,.2,.3,.4,.45].map(q=>{let z=1;while(exactDS(q,z)>=.001&&z<2000)z++;return`<tr><td class="n">${pct(q,0)}</td><td class="n">${z}</td></tr>`}).join('')}<tr><td class="n">50% or more</td><td class="n">no number is enough</td></tr></table>
+<h3>What a majority attacker can and cannot do</h3>
+<ul class="pts"><li>He <b>can</b> reverse his own recent payments, and keep any transaction he dislikes out of the chain.</li>
+<li>He <b>cannot</b> spend coins that belong to others: that needs their signatures.</li>
+<li>He <b>cannot</b> create coins or change the rules: full nodes reject an invalid block however much work it carries.</li></ul>
+<h3>Has it happened?</h3>
+<p>Not on Bitcoin, where the necessary hardware and electricity are out of reach. It has happened on small proof-of-work coins whose whole hash rate can be rented for an hour: Bitcoin Gold in May 2018, and Ethereum Classic in January 2019 and again in August 2020, with double spends worth millions of dollars in total. The lesson is that the security of proof of work is bought with hash rate, and a small chain has little of it.</p>
+<h3>Less than half can be enough to cheat a little</h3>
+<p>Eyal and Sirer (2014) showed that a mining pool can earn more than its fair share by keeping its blocks secret for a while and publishing them at the right moment, so that honest miners waste work on blocks that will be dropped. This “selfish mining” pays off from somewhere between a quarter and a third of the hash rate, depending on how well the pool is connected. It does not steal coins, but it shows that “honest as long as below 50%” is too simple.</p>
+${BK(`This tab is probability, not cryptography, and it is not in ${PAAR}. The sources are Section 11 of Nakamoto’s paper, which prints the table for q = 0.1 and q = 0.3, and Rosenfeld’s “Analysis of Hashrate-Based Double Spending”. The page computes both formulas and checks them against ten thousand simulated races when you ask for it in step 5.`)}`,
+
+pos:()=>`<h2>Proof of stake</h2>
+<p class="lead">Proof of stake keeps the chain of blocks and replaces the lottery. The chance to write the next block is proportional to the money a validator has locked up, and a validator that cheats loses that money.</p>
+<h3>From idea to Ethereum</h3>
+<p>The idea was proposed in 2011 and first used by Peercoin (King and Nadal, 2012). Ethereum, the second largest blockchain, ran on proof of work until 15 September 2022, when it switched to proof of stake in an upgrade called the Merge. Its electricity use fell by more than 99.9%: a study by CCRI measured a drop from about 22.9 TWh to about 0.0026 TWh a year.</p>
+<h3>How Ethereum does it</h3>
+<ul class="pts"><li><b>Validators.</b> Anybody can become a validator by depositing 32 ETH. Since the Pectra upgrade of 7 May 2025 a single validator may hold up to 2,048 ETH. In November 2026 about 807,000 validators were active, with 44.6 million ETH at stake, more than a third of all ETH.</li>
+<li><b>Slots and epochs.</b> Time is cut into slots of 12 seconds; 32 slots make an epoch of 6.4 minutes.</li>
+<li><b>Proposing.</b> For each slot one validator is drawn at random, weighted by stake, and proposes a block.</li>
+<li><b>Attesting.</b> In every epoch each validator votes once for the block it sees at the head of the chain and for a checkpoint.</li>
+<li><b>Finality.</b> A checkpoint that gathers votes from two thirds of all stake is justified; when the next checkpoint is justified on top of it, it is <b>final</b>. That takes two epochs, about 13 minutes.</li></ul>
+<h3>Slashing</h3>
+<p>Three things can be proved against a validator from its own signatures: proposing two different blocks for one slot, voting twice for the same target, and casting a vote that surrounds one of its earlier votes. Each is the signature of an attempt to support two histories. The punishment is automatic: a part of the stake is burned at once, the validator is removed, and a further penalty grows with the number of validators slashed in the same period, up to the entire deposit.</p>
+${EX('Economic finality','Two conflicting checkpoints can both be final only if validators with at least one third of all stake signed contradictory votes, and all of those would be slashed. So reverting a final block has a price that can be computed: a third of everything that is staked.')}
+<h3>What can go wrong, and the answers</h3>
+<table class="cmp"><tr><th>Problem</th><th>What it is</th><th>The answer</th></tr>
+<tr><td>Nothing at stake</td><td>In a fork, voting for both branches costs a validator nothing, unlike mining on both</td><td>slashing: a double vote can be proved and is punished</td></tr>
+<tr><td>Long-range attack</td><td>Old keys that no longer hold any stake can sign a different history from far back, for free</td><td>finality, and new nodes start from a recent trusted checkpoint (“weak subjectivity”)</td></tr>
+<tr><td>Steering the lottery</td><td>A proposer who can influence the random number can favour himself</td><td>the number mixes contributions from many validators (RANDAO)</td></tr>
+<tr><td>Offline validators</td><td>If more than a third stop voting, nothing becomes final</td><td>the stake of the absent slowly leaks away until two thirds are present again</td></tr>
+<tr><td>Rich get richer</td><td>Rewards are proportional to stake; large staking services gather much of it</td><td>open question; watched closely</td></tr></table>
+<h3>Proof of work and proof of stake side by side</h3>
+<table class="cmp"><tr><th></th><th>Proof of work</th><th>Proof of stake</th></tr>
+<tr><td>The scarce resource</td><td>computation: hardware and electricity, outside the system</td><td>coins of the system itself, locked as a deposit</td></tr>
+<tr><td>Who writes the next block</td><td>whoever finds a small enough hash first</td><td>a validator drawn at random, weighted by stake</td></tr>
+<tr><td>Chance to be chosen</td><td>share of the hash rate</td><td>share of the stake</td></tr>
+<tr><td>A cheater loses</td><td>the electricity already spent</td><td>the deposit</td></tr>
+<tr><td>To control the chain</td><td>more than half of the hash rate</td><td>two thirds of the stake to finalise; one third is enough to block finality</td></tr>
+<tr><td>Finality</td><td>probable, grows with every block</td><td>explicit after two epochs, with a known price for reverting it</td></tr>
+<tr><td>Energy</td><td>very high, by design</td><td>that of ordinary servers</td></tr>
+<tr><td>Chain selection</td><td>most accumulated work</td><td>most votes (LMD-GHOST), never past a final checkpoint</td></tr>
+<tr><td>Used by</td><td>Bitcoin, Litecoin, Dogecoin, Monero</td><td>Ethereum, Cardano, Solana and most newer chains</td></tr></table>
+<h3>Other ways to agree</h3>
+<table class="cmp"><tr><th>Family</th><th>Who decides</th><th>Where it is used</th></tr>
+<tr><td>Byzantine fault tolerance (PBFT, 1999, and its successors)</td><td>a known list of n validators votes in rounds; safe while fewer than n/3 are faulty; final at once</td><td>permissioned ledgers; Tendermint-style chains such as Cosmos</td></tr>
+<tr><td>Proof of authority</td><td>a fixed set of approved signers take turns</td><td>private and test networks</td></tr>
+<tr><td>Delegated proof of stake</td><td>coin holders elect a small group of block producers</td><td>EOS, TRON</td></tr></table>
+${BK(`Proof of stake is built from the same parts as everything else on this page: every vote is a digital signature (${PAAR}, Chapter 10), every block and every checkpoint is named by a hash (Chapter 11), and slashing works because a signature cannot be denied afterwards, the security service called non-repudiation in Section 10.1.3. The consensus protocol itself is described in “Casper the Friendly Finality Gadget” (Buterin and Griffith, 2017) and in the documentation on ethereum.org.`)}`,
+
+today:()=>`<h2>Where blockchains are used today</h2>
+<p class="lead">Seventeen years after the first block, a few uses carry real weight, many proposed ones have quietly ended, and the law has started to catch up. The figures below were read in November 2026 and change daily; the sources are at the end.</p>
+<h3>Short history</h3>
+<ul class="tl">
+<li><b>1979–1997</b><span>The parts: Merkle trees (1979), linked time-stamps (Haber and Stornetta, 1991), paying with computation (Dwork and Naor, 1992; Hashcash, 1997).</span></li>
+<li><b>31 Oct 2008</b><span>The Bitcoin paper is announced. The genesis block follows on 3 January 2009.</span></li>
+<li><b>2015</b><span>Ethereum starts: a blockchain whose transactions can run programs, “smart contracts”.</span></li>
+<li><b>2017</b><span>Bitcoin splits over the block size (Bitcoin Cash, 1 August).</span></li>
+<li><b>2021</b><span>Taproot adds Schnorr signatures to Bitcoin (November). El Salvador makes bitcoin legal tender (September).</span></li>
+<li><b>15 Sep 2022</b><span>Ethereum moves from proof of work to proof of stake.</span></li>
+<li><b>2024</b><span>The US regulator approves exchange-traded funds that hold bitcoin (10 January); funds holding ether start trading on 23 July. The Bitcoin subsidy halves to 3.125 BTC (20 April). The EU’s crypto-asset regulation, MiCA, applies in full from December.</span></li>
+<li><b>2025</b><span>El Salvador ends the duty to accept bitcoin (January). Ethereum’s Pectra upgrade (7 May). The United States passes a law on stablecoins, the GENIUS Act (signed 18 July).</span></li></ul>
+<h3>What it is used for</h3>
+<div class="grid2">
+<div class="use"><span class="st on">in wide use</span><h4>Money without an issuer: Bitcoin</h4><p>Still the largest blockchain and still proof of work: about 950 to 1,050 EH/s of hash rate in November 2026. It is used mostly to hold and transfer value, less for everyday payments. Since January 2024 it can be held through ordinary exchange-traded funds in the United States.</p></div>
+<div class="use"><span class="st on">in wide use</span><h4>Programs on a ledger: Ethereum</h4><p>A smart contract is a program stored on the chain; every node runs it and gets the same result. Each step costs a fee (“gas”), so programs must stop. Tokens, exchanges and loans are written this way. A bug is final too: in 2016 a flaw in a contract called The DAO let an attacker drain about 3.6 million ETH.</p></div>
+<div class="use"><span class="st grow">growing fast</span><h4>Stablecoins</h4><p>Tokens that a company promises to redeem for one dollar each. About 290 billion dollars were in circulation on 12 November 2026; the two largest, USDT (176 billion) and USDC (70 billion), make up over 80%. They are the main use of blockchains for payments today, and the reason for the new laws in the US (2025) and the EU (stablecoin rules since 30 June 2024).</p></div>
+<div class="use"><span class="st grow">growing</span><h4>Tokenised assets</h4><p>Shares of ordinary funds recorded on a blockchain. Tokenised US government debt funds held about 14 billion dollars on 11 November 2026; BlackRock’s BUIDL fund alone about 1.7 billion. Settlement runs around the clock, but an issuer still stands behind every token.</p></div>
+<div class="use"><span class="st mix">mostly pilots</span><h4>Central bank digital currencies</h4><p>Three countries have launched one (the Bahamas, Jamaica and Nigeria) and 146 countries and currency unions are exploring one, according to the Atlantic Council’s tracker (May 2026). China’s e-CNY is the largest pilot. The European Central Bank finished its preparation phase in October 2025 and has not decided to issue a digital euro; 2029 is named as the earliest date. A central bank is a trusted centre, so many of these designs use little or nothing of a blockchain.</p></div>
+<div class="use"><span class="st mix">a few survive</span><h4>Permissioned ledgers in finance</h4><p>A closed group of known institutions shares a ledger and agrees by voting, without mining. The Swiss exchange’s SIX Digital Exchange has run a regulated securities depository on such a ledger since late 2021, with more than 2 billion francs of securities issued.</p></div>
+<div class="use"><span class="st fail">ended</span><h4>Supply chains: TradeLens</h4><p>IBM and Maersk launched a shipping ledger in August 2018, announced its end on 29 November 2022 and switched it off in early 2023: it had not won the industry-wide cooperation it needed to pay for itself. Many supply-chain and land-registry projects ended the same way. A blockchain can prove that a record was not changed; it cannot prove that the record was true when it was typed in.</p></div>
+<div class="use"><span class="st mix">in preparation</span><h4>Azerbaijan</h4><p>The Central Bank’s rules on transactions with virtual assets (decision 11/1 of 24 February 2023) set anti-money-laundering duties. The state action plan for digital development 2026–2028, approved on 27 February 2026, includes a central bank digital currency platform. In June 2026 the Central Bank said a draft law on crypto-assets had been sent to the state bodies; its adoption had not been reported by 12 November 2026.</p></div>
+</div>
+<h3>Limits you should be able to name</h3>
+<ul class="pts"><li><b>Throughput.</b> Every node repeats every computation. The main chains handle tens of transactions per second; the rest moves to layer 2 (tab 6).</li>
+<li><b>Privacy.</b> Everything is public by default. Hiding amounts and parties takes heavy cryptography such as zero-knowledge proofs.</li>
+<li><b>Keys.</b> There is no recovery. Most losses are not broken cryptography but stolen keys, phishing and faulty programs.</li>
+<li><b>Input.</b> The chain knows nothing about the outside world. Whoever reports a price, a delivery or an identity to it has to be trusted again.</li>
+<li><b>Energy</b>, for proof of work (tab 5), and <b>concentration</b> of mining pools or of stake everywhere.</li></ul>
+<h3>Quantum computers</h3>
+<p>Shor’s algorithm solves the discrete logarithm problem on elliptic curves, so a large quantum computer would compute a private key from a public key: NIST’s report on post-quantum cryptography lists ECDSA as “no longer secure” in that case. Hash functions are affected much less: Grover’s algorithm only gives a square-root speed-up, so SHA-256 keeps a comfortable margin and mining is not broken.</p>
+<p>The weak point is therefore the signature, and in particular every coin whose public key is already visible on the chain. Post-quantum signature standards exist since August 2024 (FIPS 204 and 205), but their signatures are many times larger. As of November 2026 Bitcoin has adopted none; the proposal BIP 360 is a draft. ${PAAR}, Chapter 12, is the place to read about these algorithms.</p>
+<h3>References</h3>
+<ol class="refs">
+<li>C. Paar, J. Pelzl, T. Güneysu, <cite>Understanding Cryptography: From Established Symmetric and Asymmetric Ciphers to Post-Quantum Algorithms</cite>, 2nd ed., Springer, 2024. ${LK('https://doi.org/10.1007/978-3-662-69007-9','doi:10.1007/978-3-662-69007-9')}. Chapters 9 (elliptic curves), 10 (digital signatures, ECDSA in 10.5), 11 (hash functions; SHA-256 in 11.4), 12 (post-quantum; hash-based signatures in 12.4). First edition: Paar and Pelzl, Springer, 2010, ${LK('https://doi.org/10.1007/978-3-642-04101-3','doi:10.1007/978-3-642-04101-3')}, with SHA-1 in 11.4.</li>
+<li>C. Paar, video lectures “Introduction to Cryptography”: ${LK('https://www.youtube.com/watch?v=zTt4gvuQ6sY','17, elliptic curves')}; ${LK('https://www.youtube.com/watch?v=jbBe4AS5pk0','18, digital signatures')}; ${LK('https://www.youtube.com/watch?v=tLkHk__-M6Q','20, hash functions')}; ${LK('https://www.youtube.com/watch?v=JIhZWgJA-9o','21, SHA-1')}; ${LK('https://www.youtube.com/watch?v=CPysWGEv5eY','24, the Merkle signature scheme')}.</li>
+<li>Y. N. Imamverdiyev, “Blokçeyn texnologiyaları: komponentləri, tətbiqləri və problemləri” (Blockchain technology: components, applications and problems), <cite>İnformasiya cəmiyyəti problemləri</cite>, 2019, no. 2, pp. 18–32. ${LK('https://doi.org/10.25045/jpis.v10.i2.02','doi:10.25045/jpis.v10.i2.02')}. The reading for this topic in the course syllabus.</li>
+<li>S. Nakamoto, “Bitcoin: A Peer-to-Peer Electronic Cash System”, 2008. ${LK('https://bitcoin.org/bitcoin.pdf','bitcoin.org/bitcoin.pdf')}. Nine pages; sections 4, 5, 8 and 11 are tabs 5, 6, 4 and 7 of this page.</li>
+<li>M. Rosenfeld, “Analysis of Hashrate-Based Double Spending”, 2014. ${LK('https://arxiv.org/abs/1402.2009','arXiv:1402.2009')}.</li>
+<li>I. Eyal, E. G. Sirer, “Majority Is Not Enough: Bitcoin Mining Is Vulnerable”, Financial Cryptography 2014. ${LK('https://arxiv.org/abs/1311.0243','arXiv:1311.0243')}.</li>
+<li>V. Buterin, V. Griffith, “Casper the Friendly Finality Gadget”, 2017. ${LK('https://arxiv.org/abs/1710.09437','arXiv:1710.09437')}. Ethereum’s own description: ${LK('https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/','ethereum.org, proof of stake')}.</li>
+<li>S. Haber, W. S. Stornetta, “How to Time-Stamp a Digital Document”, <cite>Journal of Cryptology</cite> 3(2), 1991, pp. 99–111. L. Lamport, R. Shostak, M. Pease, “The Byzantine Generals Problem”, <cite>ACM TOPLAS</cite> 4(3), 1982.</li>
+<li>L. Chen et al., <cite>Report on Post-Quantum Cryptography</cite>, NIST IR 8105, 2016. ${LK('https://nvlpubs.nist.gov/nistpubs/ir/2016/NIST.IR.8105.pdf','nvlpubs.nist.gov')}.</li>
+<li>Bitcoin reference: ${LK('https://developer.bitcoin.org/reference/block_chain.html','developer.bitcoin.org, block chain')} (header format, double SHA-256).</li>
+</ol>
+<h3>Where the figures come from</h3>
+<p class="fine">Bitcoin difficulty and hash rate: mempool.space, 12 Nov 2026, and Hashrate Index, 9 Nov 2026. Electricity: Cambridge Bitcoin Electricity Consumption Index, 11 Nov 2026. Halving at block 840,000: block timestamp 20 Apr 2024. Ethereum: ethereum.org (the Merge, Pectra, slots and epochs, slashing), CCRI report of September 2022, validatorqueue.com read on 12 Nov 2026. Stablecoins: DefiLlama, 12 Nov 2026. Tokenised treasuries: rwa.xyz, 11 Nov 2026. Rollups: ethbeat.org (formerly L2BEAT), 12 Nov 2026. Central bank digital currencies: Atlantic Council CBDC tracker (May 2026) and the ECB’s digital euro progress page. Exchange-traded funds: US SEC statement of 10 Jan 2024. GENIUS Act: White House, 18 Jul 2025. MiCA: ESMA and EBA. TradeLens: Supply Chain Dive, 30 Nov 2022. SIX Digital Exchange: six-group.com. Azerbaijan: Central Bank decision 11/1 (cbar.az), the action plan on president.az, and Trend and Report news agencies, 29 Jun 2026.</p>`};
+
+const QZ={
+  why:{q:'Alice signs a payment to Bob and, with the same coin, a payment to Carol. What do the two signatures prove?',o:['That one of the payments is forged','That Alice issued both payments; they say nothing about which came first','That Bob was paid first'],a:1,why:'Both signatures are valid. A signature answers “who?”, never “in which order?”. Deciding the order is the job of the chain.'},
+  chain:{q:'In a chain of blocks 0 to 4, somebody changes a transaction in block 1. Which blocks need a new proof of work before the chain is valid again?',o:['Only block 1','Blocks 1, 2, 3 and 4','Only block 4, the tip'],a:1,why:'Block 1 gets a new hash, so block 2 must store a new “previous hash”, which changes the hash of block 2, and so on to the tip.'},
+  tx:{q:'Alice spends coins of 5.0 and 3.0. The outputs are 6.0 to Bob and 1.9 to herself. Where is the remaining 0.1?',o:['It stays in Alice’s wallet','It is destroyed','It goes to the miner of the block, as the fee'],a:2,why:'A fee is never written down. It is whatever the inputs hold more than the outputs.'},
+  merkle:{q:'A block holds 1,024 transactions. How many hashes does the Merkle proof for one of them contain?',o:['10','512','1,024'],a:0,why:'One sibling hash per level, and 1,024 = 2¹⁰ leaves give 10 levels: 320 bytes.'},
+  pow:{q:'The target is made half as large. What happens to the average number of tries for a block?',o:['It halves','It doubles','It does not change'],a:1,why:'Half as many hash values count as a hit, so each try succeeds half as often.'},
+  net:{q:'Two valid blocks appear at the same height. Which one stays in the chain?',o:['The one with the earlier timestamp','The one with more transactions','The one on which the next block is built first'],a:2,why:'Nodes follow the chain with the most work. The branch that gets the next block has more work, and the other block becomes stale.'},
+  attack:{q:'An attacker has 10% of the hash rate and the shop waits for 6 confirmations. How likely is a successful double spend?',o:['About 10%','About 1%','Less than 0.1%'],a:2,why:`The exact value is ${pct(exactDS(.1,6),3)}. With every extra confirmation the chance shrinks by another factor.`},
+  pos:{q:'A validator signs two different blocks for the same slot. What happens?',o:['Nothing: the network keeps the block it saw first','The two signatures are proof of cheating: part of its stake is destroyed and it is removed','It has to solve a harder puzzle next time'],a:1,why:'This is slashing. In proof of stake the deposit is what makes cheating expensive.'}};
+/* ---------- one question per tab: answer first, then read why ---------- */
+function quiz(id){
+  const z=QZ[id];if(!z)return'';const p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`}
+
+/* ---------- the walkthrough: one step at a time ---------- */
+const ROOM={k:'',h:0};
+// The text changes length from step to step. Room is kept for the longest text of the open tab, so the cards under it stay where they are
+function holdRoom(t,k){const ex=$('#explain');ex.style.minHeight='';
+  const ck=ST.tab+'|'+ex.clientWidth;
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<t.n;j++){ex.innerHTML=t.say(j);h=Math.max(h,ex.offsetHeight)}ex.innerHTML=t.say(k);ROOM.k=ck;ROOM.h=h}
+  ex.style.minHeight=ROOM.h+'px'}
+function show(fwd,keepBar){
+  const t=T[ST.tab];if(!t)return;
+  const k=clamp(ST.step[ST.tab]||0,0,t.n-1);ST.step[ST.tab]=k;
+  if(E.ok){stopFx();const snap=E.snap;if(RM.matches)E.snap=true;t.pose(k,!!fwd&&!E.snap);E.snap=snap;kick()}
+  $('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  if(!keepBar){const b=$('#bar'),h=t.bar?t.bar(k):'';b.hidden=!h;b.innerHTML=h}
+  holdRoom(t,k);
+  $('#prog').textContent=`Step ${k} of ${t.n-1}`;$('#pfill').style.width=`${100*k/(t.n-1)}%`;
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=t.n-1;
+  $('#tip').textContent=E.ok?(t.tip&&t.tip(k))||'Drag to turn the picture':''}
+function repose(){const t=T[ST.tab];if(!t||!E.ok||!root)return;const s=E.snap;E.snap=true;stopFx();t.pose(ST.step[ST.tab]||0,false);E.snap=s;kick()}
+function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
+function tickPlay(){const t=T[ST.tab],k=ST.step[ST.tab]||0,hold=(t.hold&&t.hold(k))||5;
+  ST.playT=setTimeout(()=>{ST.playT=null;const k=ST.step[ST.tab]||0;if(k>=t.n-2||t.n<2){if(k<t.n-1){ST.step[ST.tab]=k+1;show(true)}setPlaying(false);return}ST.step[ST.tab]=k+1;show(true);tickPlay()},hold*1000/speed())}
+function go(d){setPlaying(false);pwStop();const k=ST.step[ST.tab]||0;ST.step[ST.tab]=d===0?0:k+d;show(d>0)}
+function setTab(id,keep){
+  if(!T[id]&&id!=='today')id='why';
+  setPlaying(false);pwStop();ST.tab=id;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  const read=id==='today';$('#layout').classList.toggle('read',read);$('#doc').innerHTML=DOC[id]();
+  if(read){if(E.ok){clearRoot();kick()}}
+  else{if(E.ok){E.snap=true;clearRoot();root=new THREE.Group();scene.add(root);E.tmp=new THREE.Group();root.add(E.tmp);T[id].shown=0;T[id].rid=null;T[id].build();resize();show(false);E.snap=false;kick()}else show(false)}
+  try{localStorage.setItem('bc-tab',id);history.replaceState(null,'','#'+id)}catch(e){}}
+
+/* ---------- the parts the reader can play with ---------- */
+function sbMine(all){const c=ST.sb;
+  if(all){let total=0,n=0;for(let i=0;i<c.length;i++)if(!judge(c,D)[i].ok){if(i>0)c[i].prev=c[i-1].hash;total+=mine(c[i],D)+1;n++}
+    ST.msg=n?`Mined ${n} block${n>1?'s':''}, in order: <b>${fmt(total)}</b> tries in all. The chain is valid again, with new hashes from the changed block on.`:'Nothing to repair: the chain is valid.'}
+  else{const i=ST.sel,b=c[i];if(i>0)b.prev=c[i-1].hash;const n=mine(b,D)+1,j=judge(c,D);
+    ST.msg=`${i?'Block '+i:'The genesis block'}: nonce <b>${fmt(b.nonce)}</b> found after ${fmt(n)} tries.`+(j[i].ok?(j.every(x=>x.ok)?' The whole chain is valid.':' Now the next block points at an old hash.'):' The block before it is still broken, so this one does not count yet.')}
+  show(true)}
+function pwStop(){const p=ST.pw;if(!p.run)return;p.run=false;clearTimeout(p.timer);const b=$('[data-pw=go]');if(b)b.textContent='Mine';const l=$('#pwlive');if(l)l.innerHTML=T.pow.live()}
+function pwStart(){const p=ST.pw;Object.assign(p,{run:true,tries:0,secs:0,found:null,rate:0,n:0,runs:(p.runs||0)+1,dots:[],ball:0,stamp:0});
+  const b={...PWB,bits:bitsFor(p.d),time:PWB.time+600+p.runs};b.root=merkleRoot(b.txs.map(txid));p.u=header(b);p.dv=new DataView(p.u.buffer);p.t0=performance.now();
+  show(false);pwTick()}
+function pwTick(){const p=ST.pw;if(!p.run)return;const t0=performance.now();let h=null,hit=false;
+  while(!hit&&performance.now()-t0<12)for(let i=0;i<300;i++){p.dv.setUint32(76,p.n,true);h=sha256d(p.u);p.tries++;if(lz(h)>=p.d){hit=true;break}p.n++}
+  const now=performance.now();p.secs=(now-p.t0)/1000;p.rate=p.tries/Math.max(p.secs,.001);p.last=h;
+  const i=p.ball++%80,dot={f:frac(h),c:hit?C.ok:C.node,big:hit};p.dots[i]=dot;
+  if(hit){p.found={nonce:p.n,hash:h,tries:p.tries,secs:p.secs};p.run=false;show(false);return}
+  if(E.ok&&T.pow.o){T.pow.drop(i,dot);if(now-p.stamp>90){p.stamp=now;paint(T.pow.o.blk,T.pow.face(6))}}
+  const l=$('#pwlive');if(l)l.innerHTML=T.pow.live();
+  p.timer=setTimeout(pwTick,0)}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>go(1);$('#bBack').onclick=()=>go(-1);$('#bReset').onclick=()=>go(0);
+$('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const t=T[ST.tab];if(!t)return;if((ST.step[ST.tab]||0)>=t.n-1){ST.step[ST.tab]=0;show(false)}setPlaying(true)};
+$('#bView').onclick=()=>{if(E.cam.last)camTo(E.cam.last)};
+document.addEventListener('click',e=>{const q=s=>e.target.closest(s);let b;
+  if(b=q('[data-qz]')){const[id,i]=b.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+  if(b=q('[data-goto]')){setTab(b.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:RM.matches?'auto':'smooth'});return}
+  if(b=q('[data-sb]')){const a=b.dataset.sb;if(a==='mine')sbMine(false);else if(a==='all')sbMine(true);else if(a==='reset'){ST.sb=cloneChain(CH);ST.msg='';show(false)}return}
+  if(b=q('[data-pw=go]')){if(ST.pw.run){pwStop();show(false)}else pwStart();return}
+  if(b=q('[data-at]')){const a=ST.at,w=b.dataset.at;
+    if(w==='run'){a.seed=(a.seed*7919+Date.now())%1000003;a.race={...race(a.q,a.z,a.seed),q:a.q,z:a.z};show(true,true)}
+    else if(w==='mc'){a.mc={q:a.q,z:a.z,p:raceMC(a.q,a.z,10000,rng(Date.now()&0xffffff))};$('#atlive').innerHTML=T.attack.live()}return}
+  if(b=q('[data-ps=draw]')){const r=rng(Date.now()&0xffffff),c=VS.map(()=>0);for(let i=0;i<1000;i++)c[whoAt(Math.floor(r()*VTOT))]++;ST.ps.draws=c;show(false);return}});
+document.addEventListener('change',e=>{const s=e.target.closest('[data-sb=sel]');if(s){ST.sel=+s.value;ST.msg='';show(false)}});
+document.addEventListener('input',e=>{const q=s=>e.target.closest(s);let i;
+  if(i=q('[data-sb=tx]')){const b=ST.sb[ST.sel];b.txs[0]=i.value||' ';seal(b);ST.msg='';show(false,true);return}
+  if(i=q('[data-pw=d]')){pwStop();const p=ST.pw;p.d=+i.value;p.found=null;p.tries=0;p.dots=[];$('#pwd').textContent=p.d;$('#pwn').textContent=fmt(2**p.d);show(false,true);$('#pwlive').innerHTML=T.pow.live();return}
+  if(i=q('[data-at]')){const a=ST.at;if(i.dataset.at==='q')a.q=+i.value/100;else a.z=+i.value;a.race=null;$('#atq').textContent=pct(a.q,0);$('#atz').textContent=a.z;show(false,true);$('#atlive').innerHTML=T.attack.live()}});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey||ST.tab==='today')return;
+  if(e.key==='ArrowRight'){if(!$('#bStep').disabled)go(1);e.preventDefault()}
+  else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)go(-1);e.preventDefault()}
+  else if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){$('#bPlay').click();e.preventDefault()}});
+
+/* ---------- start ---------- */
+E.ok=initGL();
+if(E.ok){
+  const cvs=renderer.domElement,RAY=new THREE.Raycaster(),PT=new THREE.Vector2();
+  const hit=e=>{const r=cvs.getBoundingClientRect();PT.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);RAY.setFromCamera(PT,camera);
+    let best=null;for(const p of E.picks){if(!p.o.visible||(p.on&&!p.on()))continue;const h=RAY.intersectObject(p.o,true);if(h.length&&(!best||h[0].distance<best.d))best={d:h[0].distance,p}}return best&&best.p};
+  cvs.addEventListener('pointerdown',e=>{E.drag={x:e.clientX,y:e.clientY,uy:E.cam.uy,up:E.cam.up,moved:false};E.cam.uy0=E.cam.up0=null;try{cvs.setPointerCapture(e.pointerId)}catch(_){}cvs.classList.add('drag');kick()});
+  cvs.addEventListener('pointermove',e=>{const d=E.drag;if(!d){cvs.classList.toggle('pick',!!hit(e));return}
+    const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)+Math.abs(dy)>5)d.moved=true;
+    if(d.moved){E.cam.uy=clamp(d.uy-dx*.006,-1.6,1.6);E.cam.up=clamp(d.up+dy*.004,-.6,.9);kick()}});
+  const end=e=>{const d=E.drag;E.drag=null;cvs.classList.remove('drag');if(d&&!d.moved&&e.type==='pointerup'){const p=hit(e);if(p)p.fn()}};
+  cvs.addEventListener('pointerup',end);cvs.addEventListener('pointercancel',end);
+  matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{readTheme();COL.clear();setTab(ST.tab)});
+}else{$('#nogl').hidden=false;$('#bView').hidden=true;$('#tip').hidden=true}
+let startTab='why';try{const h=location.hash.slice(1),s=localStorage.getItem('bc-tab');if(h&&(T[h]||h==='today'))startTab=h;else if(s&&(T[s]||s==='today'))startTab=s}catch(e){}
+setTab(startTab);
+window.BC={THREE,cam:()=>camera,ren:()=>renderer,E,T,ST,sha256,sha256d,hid,hex,enc,ecKey,ecSign,ecVerify,EC,nakamoto,exactDS,raceMC,rng,frame,show,setTab,go,CH,TAM,FIX,PWT,PWR,R30,R55,header,unhex,rev,lz,bitsFor,merkleRoot};
+</script>
+</body>
+</html>
