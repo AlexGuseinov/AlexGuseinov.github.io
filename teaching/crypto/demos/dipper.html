@@ -555,6 +555,56 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 @media (max-width:560px){.brow{gap:4px}.bits16 i.sp,.bits16 i.ovf,.bidx span.sp{margin-right:2px}.brow.small>.bl{font-size:9.5px}}
 .bits16 i{box-sizing:border-box}
 @media (max-width:560px){.brow>.bl{width:27px}}
+/* parts of a picture that can be clicked */
+.prw g[data-goto]{cursor:pointer;outline:none}
+.prw g[data-goto] .lab{fill:var(--ink);text-decoration:underline}
+.prw g[data-goto]:hover .lab,.prw g[data-goto]:focus-visible .lab{fill:var(--accent)}
+.prw g[data-cell]{cursor:pointer;outline:none}
+.prw g[data-cell]:hover .nc,.prw g[data-cell]:focus-visible .nc{stroke:var(--ink);stroke-width:2}
+.ovw [data-goto]{outline:none}
+.ovw [data-goto]:focus-visible .ob{stroke:var(--accent);stroke-width:2.6}
+.kw[data-kw]{cursor:pointer;outline:none}
+.kw[data-kw]:hover,.kw[data-kw]:focus-visible{border-color:var(--accent)}
+.kw.pk{outline:3px solid var(--ink);outline-offset:1px}
+.dgw[data-step]{cursor:pointer;border-radius:5px;outline:none}
+.dgw[data-step]:hover b,.dgw[data-step]:focus-visible b{color:var(--accent)}
+.dgw[data-step]:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.pickline{margin:10px auto 0;max-width:780px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+:root{--math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif}
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.doc a:focus-visible,.doc button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* a worked example: the name of a value on the left, the value on the right */
+table.kv{border-collapse:collapse;margin:2px 0}
+table.kv td{padding:1px 14px 1px 0;vertical-align:baseline;font-size:14.5px}
+table.kv td:first-child{color:var(--muted)}
+table.kv td.m{padding-right:0;word-break:break-all}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -607,6 +657,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
     <div class="card" id="explain"></div>
     <div class="card" id="extra"></div>
   </aside>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline. Test vectors from the Dipper specification v1.1.</footer>
 
@@ -722,7 +773,7 @@ const NAME={in:'Input',ark:'AddRoundKey',sc:'SubCells',rot:'Word rotations',arx:
 const SHORT={in:'IN',ark:'K',sc:'S',rot:'R',arx:'+',p:'P',isc:'S⁻¹',irot:'R⁻¹',iarx:'−',ip:'P⁻¹'};
 
 /* ---------- tabs ---------- */
-const ST={tab:'ov',step:{},round:{rd:1,sc:1,arx:1,pl:1,ark:1,ks:1},mode:'enc',built:'',pick:null,plPick:null,flip:63};
+const ST={tab:'ov',step:{},round:{rd:1,sc:1,arx:1,pl:1,ark:1,ks:1},mode:'enc',built:'',pick:null,plPick:null,flip:63,rdCell:null,kw:null,df:null};
 const stage=$('#stage');
 const T={};
 /* ---------- animation helpers (one set for all tabs, as in the DES demo) ---------- */
@@ -800,7 +851,7 @@ const ovRest=k=>k===0?'P':k<=28?'PB':'C';
 T.ov={n:()=>30,render(k){
   const r=k>=1&&k<=28?k:null,rest=ovRest(k),s=ovState(k),{bx,bw,bh,wx,tx}=OV;
   const arrow=(d,w,kind)=>`<path class="ow${kind?' k':''}" data-w="${w}" d="${d}" marker-end="url(#${kind?'omk':'om'})"/>`;
-  const box=(id,label,o={})=>`<g${o.go?` data-goto="${o.go}"${o.round!=null?` data-round="${o.round}"`:''}><title>Open ${label}</title`:''}><rect class="ob${o.cls?' '+o.cls:''}${id===rest?' on':''}" id="ov-${id}" x="${o.x||bx}" y="${OV.y[id]}" width="${o.w||bw}" height="${bh}" rx="8"/><text class="ot${o.cls==='io'?' io':''}" x="${o.tx||tx}" y="${ovc(id)}"${o.mid?' text-anchor="middle"':''}>${label}</text>${o.key?`<text class="okk" x="${bx+bw-12}" y="${ovc(id)}">${o.key}</text>`:''}</g>`;
+  const box=(id,label,o={})=>`<g${o.go?` data-goto="${o.go}"${o.round!=null?` data-round="${o.round}"`:''} tabindex="0" role="button"><title>Open ${label}</title`:''}><rect class="ob${o.cls?' '+o.cls:''}${id===rest?' on':''}" id="ov-${id}" x="${o.x||bx}" y="${OV.y[id]}" width="${o.w||bw}" height="${bh}" rx="8"/><text class="ot${o.cls==='io'?' io':''}" x="${o.tx||tx}" y="${ovc(id)}"${o.mid?' text-anchor="middle"':''}>${label}</text>${o.key?`<text class="okk" x="${bx+bw-12}" y="${ovc(id)}">${o.key}</text>`:''}</g>`;
   let h=`<svg class="ovw" id="ovSvg" viewBox="0 0 ${OV.W} ${OV.H}" role="img" aria-label="Dipper encryption as a flowchart"><defs>
     <marker id="om" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="om" d="M0,0 L10,5 L0,10 z"/></marker>
     <marker id="omk" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="omk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
@@ -879,12 +930,13 @@ const wirePts=(i,y0,y1,steps=14)=>{const x0=rbx(i),x1=rbx(P(i)),ym=(y0+y1)/2,pts
 function rdData(r){const o=op=>findOp(op,r);return{L:[o('ark').p,o('ark').s,o('sc').s,o('rot').s,o('arx').s,o('p').s],K:D.KS.RK[r-1]}}
 T.rd={n:()=>6,rounds:()=>rng(1,28),render(k){
   const r=ST.round.rd,{L,K}=rdData(r),g=RD,Y=[g.Y0,g.Y1,g.Y2,g.Y3,g.Y4,g.Y5];
-  const row=l=>{let s='';for(let n=0;n<16;n++){const sh=k>=l,v=nib(L[l],n);
-    s+=`<g data-rl="${l}" data-n="${n}"><rect class="nc" x="${rcx(n)-g.NW/2}" y="${Y[l]}" width="${g.NW}" height="${g.NH}" rx="5" style="fill:${sh?`color-mix(in srgb,${ncol(v)} 26%,var(--panel))`:'none'}"/><text class="nt${sh?'':' emp'}" x="${rcx(n)}" y="${Y[l]+g.NH/2}">${sh?h1(v):'·'}</text></g>`}return s};
+  const row=l=>{let s='';for(let n=0;n<16;n++){const sh=k>=l,v=nib(L[l],n),pc=sh&&ST.rdCell&&ST.rdCell[0]===l&&ST.rdCell[1]===n;
+    s+=`<g data-rl="${l}" data-n="${n}"${sh?` data-cell="${l},${n}" tabindex="0" role="button"`:''}><rect class="nc" x="${rcx(n)-g.NW/2}" y="${Y[l]}" width="${g.NW}" height="${g.NH}" rx="5" style="fill:${sh?`color-mix(in srgb,${ncol(v)} 26%,var(--panel))`:'none'}${pc?';stroke:var(--ink);stroke-width:2.8':''}"/><text class="nt${sh?'':' emp'}" x="${rcx(n)}" y="${Y[l]+g.NH/2}">${sh?h1(v):'·'}</text></g>`}return s};
   const bits=(l,y,shown,cw)=>{let s='';for(let i=0;i<64;i++){const v=bit(L[l],i);s+=`<g data-bl="${l}" data-i="${i}"><rect class="bb" x="${rbx(i)-5}" y="${y}" width="10" height="12" rx="2" style="fill:${shown?(v?wcol(cw(i)):'var(--panel)'):'none'}"/>${shown?`<text class="bv" x="${rbx(i)}" y="${y+6}" style="${v?'fill:#fff':''}">${v}</text>`:''}</g>`}return s};
   const lab=(y,t)=>`<text class="lab" x="8" y="${y}" dominant-baseline="central">${t}</text>`,mid=y=>y+g.NH/2,ln=(d,on)=>`<path class="w${on?' on':''}" d="${d}"/>`;
+  const glab=(y,t,tab,name)=>`<g data-goto="${tab}" data-round="${r}" tabindex="0" role="button"><title>Open ${name} for round ${r}</title>${lab(y,t)}</g>`;
   let s=`<svg id="rdSvg" viewBox="0 0 ${g.W} ${g.H}" role="img" aria-label="One Dipper round"><defs><marker id="rdm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="mk" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
-  s+=lab(mid(g.Y0),`round ${r} input`)+lab(g.XY,`⊕ round key RK${r}`)+lab(mid(g.Y1),'after AddRoundKey')+lab(mid(g.SBY),'SubCells: 16 × S')+lab(mid(g.Y2),'after SubCells')+lab(mid(g.RTY),'rotations')+lab(mid(g.Y3),'after rotations')+lab(g.ADY,'A + B, C + D')+lab(mid(g.Y4),'after additions')+lab((g.BT+g.WB)/2,'permutation P')+lab(mid(g.Y5),`round ${r} output`);
+  s+=lab(mid(g.Y0),`round ${r} input`)+glab(g.XY,`⊕ round key RK${r}`,'ark','AddRoundKey')+lab(mid(g.Y1),'after AddRoundKey')+glab(mid(g.SBY),'SubCells: 16 × S','sc','SubCells')+lab(mid(g.Y2),'after SubCells')+glab(mid(g.RTY),'rotations','arx','Rotations + ARX')+lab(mid(g.Y3),'after rotations')+glab(g.ADY,'A + B, C + D','arx','Rotations + ARX')+lab(mid(g.Y4),'after additions')+glab((g.BT+g.WB)/2,'permutation P','pl','Bit permutation')+lab(mid(g.Y5),`round ${r} output`);
   for(let w=0;w<4;w++)s+=`<text class="wlab" x="${wcx(w)}" y="14" style="fill:${wcol(w)}">${WN[w]}</text>`;
   for(let i=0;i<64;i++){const d=wirePts(i,g.BT+12,g.WB).map((q,j)=>(j?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('');s+=`<path class="w" data-w="${i}" d="${d}" style="stroke:${wcol(bw(i))};opacity:.5"/>`}
   for(let n=0;n<16;n++){const x=rcx(n),w=wordOf(n);
@@ -902,7 +954,8 @@ T.rd={n:()=>6,rounds:()=>rng(1,28),render(k){
     s+=`<g data-ad="${w}"><circle class="xo" cx="${wcx(w)}" cy="${g.ADY}" r="14"/><text class="sbt" x="${wcx(w)}" y="${g.ADY}" style="font-size:17px">+</text></g><text class="ni" x="${wcx(w)-22}" y="${g.ADY+4}" style="text-anchor:end;font-size:11px;fill:var(--muted)">mod 2¹⁶</text>`}
   s+=row(0)+row(1)+row(2)+row(3)+row(4)+bits(4,g.BT,k>=4,bw)+bits(5,g.WB-12,k>=5,i=>bw(PI[i]))+row(5);
   for(let n=0;n<16;n++)s+=`<text class="ni" x="${rcx(n)}" y="${g.Y0-4}">${n}</text>`;
-  stage.innerHTML=`<div class="h3">Round ${r} of 28 with the real values (nibble 15 on the left; words A, B, C, D of 16 bits). Wire colours: the word each bit comes from.</div><div class="prw scroll"><div style="min-width:820px">${s}</svg></div></div>`;
+  stage.innerHTML=`<div class="h3">Round ${r} of 28 with the real values (nibble 15 on the left; words A, B, C, D of 16 bits). Wire colours: the word each bit comes from.</div><div class="prw scroll"><div style="min-width:820px">${s}</svg></div></div>
+    <p class="pickline">${rdLine(r,k)}</p><p class="hint">Click a nibble to see how it was computed, or an underlined row name to open its tab.</p>`;
   const msg=[`<p>One Dipper round has five steps. Press <b>Step</b> to go through them with the real values.</p>`,
     `<p><b>AddRoundKey</b>: every nibble is XORed with the matching nibble of RK${r} (the small purple numbers). Dipper adds the key to all 64 bits.</p>`,
     `<p><b>SubCells</b>: every nibble goes through the same 4-bit GIFT S-box.</p>`,
@@ -1155,7 +1208,7 @@ const kwv=(K,j)=>Number((K>>B(16*j))&0xFFFFn);
 const b5=v=>v.toString(2).padStart(5,'0');
 // the register as words: top row k(n−1) … k4, bottom row k3 … k0 (the round key)
 function kregH(K,n,o={}){
-  const box=j=>`<div class="kw${j<4?' rk':''}" id="kw${j}"><b>k${j}</b>${nibs(m=>Number((K>>B(16*j+4*m))&15n),{n:4,id:'kn'+j,cls:m=>o.cls?o.cls(j,m)||'':''})}${o.src?`<span class="ksrc" id="ks${j}">${o.src(j)}</span>`:''}</div>`;
+  const box=j=>`<div class="kw${j<4?' rk':''}${ST.kw===j?' pk':''}" id="kw${j}" data-kw="${j}" tabindex="0" role="button" title="Where k${j} came from"><b>k${j}</b>${nibs(m=>Number((K>>B(16*j+4*m))&15n),{n:4,id:'kn'+j,cls:m=>o.cls?o.cls(j,m)||'':''})}${o.src?`<span class="ksrc" id="ks${j}">${o.src(j)}</span>`:''}</div>`;
   return `<div class="kwords" id="kTop">${rng(4,n-1).reverse().map(box).join('')}</div>
     <div class="gcap" style="margin:6px 0">↓ k3 ‖ k2 ‖ k1 ‖ k0 = the round key (purple)</div>
     <div class="kwords" id="kBot">${[3,2,1,0].map(box).join('')}</div>`;
@@ -1166,7 +1219,8 @@ T.ks={n:()=>4,rounds:()=>rng(1,27),render(k){
   const cap=[`The ${kb}-bit key register at round ${r}`,'1 · the words move; two of them also rotate right',`2 · GIFT S-box on the top nibble of ${sbW.map(j=>'k'+j).join(', ')}`,`3 · round constant RC${r} = ${b5(st.rc)} XORed into k${rcW}`][k];
   let h=`<div class="klab" style="text-align:center;margin-bottom:12px"><b>${cap}</b></div><div id="kReg">`+kregH(val,n,{
     src:k===1?j=>`← k${F[j]}${RT[j]?' ⋙ '+RT[j]:''}`:null,
-    cls:(j,m)=>k===1&&RT[j]?'chg':k===2&&sbW.includes(j)&&m===3?'chg':k===3&&j===rcW&&m<2?'hi':''})+'</div>';
+    cls:(j,m)=>k===1&&RT[j]?'chg':k===2&&sbW.includes(j)&&m===3?'chg':k===3&&j===rcW&&m<2?'hi':''})+'</div>'
+    +`<p class="pickline">${ksLine(st,k,r)}</p><p class="hint">Click a word of the register to see where it came from.</p>`;
   if(k===0)h+=`<div class="sec"><div class="h3">Round key RK${r} = k3 ‖ k2 ‖ k1 ‖ k0</div><p class="mono k" style="text-align:center;font-size:16px;margin:0">${hex(D.KS.RK[r-1])}</p></div>`;
   if(k===1)h+=`<div class="sec"><p class="mono" style="font-size:13px;margin:0;text-align:center">${kb===96?'(k5, k4, k3, k2, k1, k0) ← (k3, k2, k1 ⋙ 2, k0 ⋙ 12, k5, k4)':'(k7, …, k0) ← (k3, k2, k7, k6, k5, k4, k1 ⋙ 2, k0 ⋙ 12)'}</p></div>`;
   if(k===2)h+=`<div class="sec stack"><div class="op" id="ksS"><big>S</big>GIFT S-box</div><p class="mono" style="margin:0;text-align:center;font-size:13px">${st.pos.map(p=>`k${p>>4}, bits ${p+3} … ${p}: S(${h1(Number((st.K1>>B(p))&15n))}) = ${h1(Number((st.K2>>B(p))&15n))}`).join('<br>')}</p></div>`;
@@ -1285,11 +1339,12 @@ T.df={n:()=>29,render(k){
   const fb=ST.flip,pt2=D.pt^(1n<<B(fb)),t2=encTrace(pt2,D.KS),st=(ops,r)=>ops.filter(x=>x.r===r).at(-1).s;
   let pick='';for(let n=15;n>=0;n--)pick+=`<div class="n4"><span>${h1(nib(pt2,n))}</span><div>${[3,2,1,0].map(j=>{const i=4*n+j;return `<i class="${i===fb?'flip':(bit(D.pt,i)?'one':'')}" data-fb="${i}" title="bit ${i}"></i>`}).join('')}</div></div>`;
   const diffs=rng(0,28).map(r=>st(D.enc,r)^st(t2,r)),counts=diffs.map(pc64);
+  ST.df={fb,diffs,counts,ct2:t2.at(-1).s};          // kept for the article under the picture
   const grid=(d,on)=>`<div class="dg16">${rng(0,15).map(q=>{const n=15-q,v=nib(d,n),c=v?((v&1)+((v>>1)&1)+((v>>2)&1)+((v>>3)&1)):0;return `<i style="${on&&c?`background:color-mix(in srgb,var(--xor) ${30+17*c}%,var(--panel))`:''}"></i>`}).join('')}</div>`;
   stage.innerHTML=`<div class="h3">Plaintext bits (bit 63 on the left). Click a bit to flip it. Now flipped: bit ${fb} (word ${WN[3-(fb>>4)]}).</div>
     <div class="bitpick">${pick}</div>
     <div class="sec"><div class="h3">Which nibbles differ after each round (one row per word A, B, C, D; darker = more different bits). Press Step to go round by round.</div>
-      <div class="dgr">${diffs.map((d,r)=>`<div class="dgw" data-dr="${r}">${r===0?'start':'r'+r}<b>${r<=k?counts[r]:'–'}</b>${grid(d,r<=k)}</div>`).join('')}</div></div>
+      <div class="dgr">${diffs.map((d,r)=>`<div class="dgw" data-dr="${r}" data-step="${r}" tabindex="0" role="button" title="Go to ${r===0?'the start':'round '+r}">${r===0?'start':'r'+r}<b>${r<=k?counts[r]:'–'}</b>${grid(d,r<=k)}</div>`).join('')}</div><p class="hint">Click a round to go to it.</p></div>
     <div class="sec"><div class="h3">Number of different bits after each round (out of 64)</div>
       <div class="bars"><div class="ref" style="bottom:50%"><span>32 = half</span></div>${counts.map((n,r)=>`<div class="bar" data-br="${r}" data-n="${n}" style="height:${r<=k?n/64*100:0}%"></div>`).join('')}</div>
       <div class="blbl"><span>start</span><span>round 14</span><span>round 28</span></div></div>`;
@@ -1304,6 +1359,235 @@ plan(k){return{dur:1100,start(){
   const cells=[...g.querySelectorAll('.dg16 i')],cnt=g.querySelector('b'),N=+bar.dataset.n;hide(cells);
   return p=>{cells.forEach((e,i)=>{e.style.opacity=clamp(p*2-i*.04,0,1)});const q=ease(clamp(p*1.25-.25,0,1));bar.style.height=(q*N/64*100)+'%';cnt.textContent=Math.round(q*N)};
 }}}};
+
+/* ---------- the longer read under each picture: one article per tab (two for Encrypt / Decrypt) ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const KV=rows=>`<table class="kv">${rows.map(([a,b])=>`<tr><td>${a}</td><td class="m">${b}</td></tr>`).join('')}</table>`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents; the Dipper paper: checked on Crossref (doi 10.3390/cryptography10040052)
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)';
+const DIP='A. Huseynli, Y. Imamverdiyev, J. Alizadeh, “Dipper: A Lightweight Hybrid SPN–ARX Block Cipher”, <cite>Cryptography</cite> 10(4), 52 (2026), <a href="https://doi.org/10.3390/cryptography10040052">doi:10.3390/cryptography10040052</a>.';
+const SPEC='The Dipper specification v1.1 and reference code, the source of this page and its test vectors: <a href="https://github.com/AlexGuseinov/Dipper-lightweight-cipher">github.com/AlexGuseinov/Dipper-lightweight-cipher</a>.';
+const PCD=`${PAAR}, chapter 3: section 3.1.1, “Confusion and Diffusion”.`,PPR=`${PAAR}, chapter 3: section 3.7.3, “Lightweight Cipher PRESENT”, for a 4-bit S-box and a bit permutation in a lightweight SPN.`;
+const REFS={ov:[DIP,SPEC],rd:[DIP,PPR],sc:[DIP,PPR],
+  arx:[DIP,`${PAAR}, chapter 2: section 2.4.1, “Salsa20”, and section 2.4.2, “ChaCha”, two designs built from addition, rotation and XOR.`],
+  pl:[DIP,PPR],ark:[DIP,PCD],ks:[SPEC],'x/enc':[DIP,SPEC],'x/dec':[DIP,SPEC],df:[DIP,PCD]};
+const MORE=id=>REFS[id]&&REFS[id].length?box('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const goT=(tab,r,t)=>`<button class="link" data-goto="${tab}"${r!=null?` data-round="${r}"`:''}>${t}</button>`;
+const bin16=v=>v.toString(2).padStart(16,'0').replace(/(.{4})(?=.)/g,'$1 ');
+
+// one line under the round picture: how the clicked nibble (or nibble 15 of the newest row) was computed
+function rdLine(r,k){const {L,K}=rdData(r),c=ST.rdCell&&ST.rdCell[0]<=k?ST.rdCell:[k,15],l=c[0],n=c[1],v=nib(L[l],n),w=wordOf(n),m=n&3;
+  if(l===0)return`nibble ${n} of the round input = <b>${h1(v)}</b>, ${r===1?'taken from the plaintext':`the output of round ${r-1}`}`;
+  if(l===1)return`nibble ${n}: ${h1(nib(L[0],n))} ⊕ ${h1(nib(K,n))} (nibble ${n} of RK${r}) = <b>${h1(v)}</b>`;
+  if(l===2)return`nibble ${n}: S(${h1(nib(L[1],n))}) = <b>${h1(v)}</b>`;
+  if(l===3){const R=ROT[w];return`nibble ${n} = <b>${b4(v)}</b>: bits ${[3,2,1,0].map(j=>4*m+j).join(', ')} of ${WN[w]} ⋘ ${R} were bits ${[3,2,1,0].map(j=>(4*m+j-R+16)&15).join(', ')} of ${WN[w]} before the rotation`}
+  if(l===4){if(w&1)return`nibble ${n} = <b>${h1(v)}</b>: word ${WN[w]} is not changed by the additions`;
+    const a=words(L[3])[w],b=words(L[3])[w+1],ci=(carries(a,b).cin>>(4*m))&1,x=(a>>(4*m))&15,y=(b>>(4*m))&15,s=x+y+ci;
+    return`nibble ${n} of ${WN[w]} + ${WN[w+1]}: ${h1(x)} + ${h1(y)} + carry ${ci} = ${h1(s)} (hex) → <b>${h1(s&15)}</b>${s>15?(m===3?'; the carry out of bit 15 is dropped':'; the 1 in front is the carry into the next nibble'):''}`}
+  const src=[3,2,1,0].map(j=>PI[4*n+j]);
+  return`nibble ${n} = <b>${b4(v)}</b>: its bits came from bits ${src.join(', ')} after the additions, in words ${src.map(i=>WN[bw(i)]).join(', ')}`}
+// one line under the key register: where the clicked word (or a word that changes in this step) came from
+function ksLine(st,k,r){const kb=D.kb,n=kb/16,F=KFROM(kb),RT=KROT(kb),rcW=st.rcs>>4;
+  const j=ST.kw!=null&&ST.kw<n?ST.kw:k===2?st.pos[0]>>4:k===3?rcW:0,v=kwv([st.reg,st.K1,st.K2,st.K3][k],j),x=hex(v,4);
+  if(k===0){const t=F.indexOf(j);return`k${j} = <b>${x}</b>, register bits ${16*j+15} … ${16*j}${j<4?`: bits ${16*j+15} … ${16*j} of RK${r}`:`: not part of RK${r}`}. Next it moves to k${t}${RT[t]?`, rotated right by ${RT[t]}`:''}.`}
+  if(k===1)return`new k${j} = old k${F[j]}${RT[j]?` ⋙ ${RT[j]}`:''} = ${hex(kwv(st.reg,F[j]),4)}${RT[j]?` ⋙ ${RT[j]}`:''} = <b>${x}</b>`;
+  if(k===2){const ps=st.pos.filter(p=>p>>4===j);return ps.length?`k${j}: ${ps.map(p=>`bits ${p+3} … ${p}: S(${h1(Number((st.K1>>B(p))&15n))}) = ${h1(Number((st.K2>>B(p))&15n))}`).join(', ')}, so ${hex(kwv(st.K1,j),4)} → <b>${x}</b>`:`k${j} = <b>${x}</b>: no S-box in this word, unchanged`}
+  return j===rcW?`k${j}: ${hex(kwv(st.K2,j),4)} ⊕ ${hex(st.rc,4)} (RC${r} = ${b5(st.rc)}) = <b>${x}</b>`:`k${j} = <b>${x}</b>: the round constant does not touch this word`}
+
+T.ov.doc=()=>{const kb=D.kb,ok=D.expect?hex(D.ct)===D.expect:null,w=words(D.pt);
+  return`<h2>Dipper: an SPN round with an ARX step</h2>
+  <p class="lead">Dipper is a block cipher. It turns a 64-bit block of plaintext into a 64-bit block of ciphertext under a secret key of 96 or 128 bits, in 28 rounds. This page runs Dipper-64/${kb} on your input.</p>
+  <h3>Two classic ways to build a round</h3>
+  <p>A <b>substitution–permutation network</b> (SPN) repeats a round of three layers. <b>Key addition</b> XORs a round key onto the state. <b>Substitution</b> cuts the state into small pieces and replaces each piece by a table lookup, an <b>S-box</b>. This layer is non-linear: its output bits are not XORs of its input bits. <b>Permutation</b> moves bits between the pieces, so that each S-box of the next round gets bits from several S-boxes of this round.</p>
+  <p>An <b>ARX</b> design works on whole words with three operations: <b>a</b>ddition modulo 2<sup>n</sup>, <b>r</b>otation and <b>X</b>OR. The carries of the addition make it non-linear, so no table is needed.</p>
+  <p>Dipper is a hybrid of the two. Its round is an SPN round, like those of PRESENT and GIFT, with an ARX step between the S-boxes and the permutation. For the S-boxes the state is 16 nibbles of 4 bits; for the ARX step it is four 16-bit words A, B, C, D.</p>
+  <table class="cmp3"><tr><th>Step</th><th>What it does</th><th>Kind</th></tr>
+    <tr><td>${goT('ark',null,'AddRoundKey')}</td><td>XOR with the 64-bit round key RK<sub>r</sub></td><td>XOR with key bits</td></tr>
+    <tr><td>${goT('sc',null,'SubCells')}</td><td>the GIFT S-box on each of the 16 nibbles</td><td>non-linear table</td></tr>
+    <tr><td>${goT('arx',null,'Word rotations')}</td><td>A ⋘ 1, B ⋘ 4, C ⋘ 7, D ⋘ 11</td><td>moves bits inside a word</td></tr>
+    <tr><td>${goT('arx',null,'Additions')}</td><td>A ← A + B, C ← C + D (mod 2<sup>16</sup>)</td><td>non-linear through the carries</td></tr>
+    <tr><td>${goT('pl',null,'Bit permutation')}</td><td>the GIFT-64 permutation P</td><td>moves bits between words</td></tr></table>
+  <h3>Your example (Dipper-64/${kb})</h3>
+  ${EX(KV([[`Key (${kb} bits)`,hex(D.key,kb/4)],['Plaintext',hex(D.pt)],['RK1',hex(D.KS.RK[0])],['After round 1',hex(findOp('p',1).s)],['RK28',hex(D.KS.RK[27])],['Ciphertext',hex(D.ct)]])+(ok===true?'This is the ciphertext of the test vector in the Dipper specification v1.1.':ok===false?'This is not the ciphertext of the test vector.':''))}
+  <p>The ${goT('ks',null,'key schedule')} makes the 28 round keys RK1 … RK28 from the key. Round r starts with RK<sub>r</sub>. Round 28 ends with the bit permutation; no key is added after it.</p>
+  <h3>Why it is built this way</h3>
+  <ul class="pts"><li>Every round has two different non-linear operations: the S-box mixes the 4 bits inside a nibble, and an addition mixes the bits along a whole 16-bit word through its carries.</li>
+    <li>The rotations and the permutation only move bits. In hardware they are wires, so they cost no gates.</li></ul>
+  ${NO(`Numbering matters. On this page bit 63 is the leftmost bit, nibble 15 the leftmost nibble, and word A holds bits 63 … 48. Your plaintext has A = ${M(hex(w[0],4))}, B = ${M(hex(w[1],4))}, C = ${M(hex(w[2],4))}, D = ${M(hex(w[3],4))}. An implementation that numbers bits, nibbles or words the other way computes something else. Compare every implementation with the test vectors TV1 … TV4 in the list.`)}
+  ${USE(`A lightweight cipher is made for devices with very little chip area and energy, and Dipper was designed as one. <a href="present.html">PRESENT</a> is a lightweight SPN on this site, with 4-bit S-boxes and a bit permutation but no ARX step. <a href="aes.html">AES</a> is an SPN on bytes. Computing modulo 2<sup>16</sup> is arithmetic in a ring, see <a href="fields.html">fields</a>.`)}
+  ${MORE('ov')}`};
+
+T.rd.doc=k=>{const r=ST.round.rd,{L,K}=rdData(r),n=ST.rdCell?ST.rdCell[1]:15,w=wordOf(n),e=w&2,R=ROT[w];
+  const x0=nib(L[0],n),kn=nib(K,n),x1=nib(L[1],n),x2=nib(L[2],n),W=l=>words(L[l]),a=W(3)[e],b=W(3)[e+1],to=[3,2,1,0].map(j=>P(4*n+j));
+  return`<h2>One round of Dipper</h2>
+  <p class="lead">A round takes the 64-bit state and the 64-bit round key RK<sub>r</sub> and returns a new 64-bit state. All 28 rounds do the same five steps; only the round key changes.</p>
+  <h3>How it works</h3>
+  <p>In one line, round r computes ${M('state ← P( ARX( ROT( S( state ⊕ RK<sub>r</sub> ) ) ) )')}. S applies the S-box to each nibble, ROT turns each word by its own amount, ARX does the two additions, and P moves the 64 bits.</p>
+  <p>The steps work on different units. AddRoundKey and P work on single bits, SubCells on nibbles, the rotations and additions on 16-bit words. The S-box never mixes two nibbles. A rotation moves bits to other nibbles of the same word, never out of it. A value reaches another word in only two places: the additions (B into A, D into C) and P (between all four words).</p>
+  <h3>Nibble ${n} through round ${r}</h3>
+  ${EX(KV([[`input, nibble ${n} (word ${WN[w]})`,`${h1(x0)} = ${b4(x0)}`],[`⊕ nibble ${n} of RK${r}`,`${h1(kn)} = ${b4(kn)}`],['= after AddRoundKey',`${h1(x1)} = ${b4(x1)}`],['SubCells',`S(${h1(x1)}) = ${h1(x2)} = ${b4(x2)}`],[`word ${WN[w]} after SubCells`,hex(W(2)[w],4)],[`${WN[w]} ⋘ ${R}`,hex(W(3)[w],4)],[`${WN[e]} + ${WN[e+1]} (mod 2¹⁶)`,`${hex(a,4)} + ${hex(b,4)} = ${hex(W(4)[e],4)}${w&1?`; ${WN[w]} itself stays ${hex(W(4)[w],4)}`:''}`],[`P, the bits at nibble ${n}`,`${[3,2,1,0].map(j=>4*n+j).join(', ')} → ${to.join(', ')}`],['in the next round',`nibbles ${to.map(i=>i>>2).join(', ')}, words ${to.map(i=>WN[bw(i)]).join(', ')}`]]))}
+  <p>Click a nibble in the picture to follow it here; the line under the picture says how that one value was computed.</p>
+  <h3>Why this order</h3>
+  <ul class="pts"><li>The key is added first, so even the first S-box works on a value that depends on the key.</li>
+    <li>The four rotation amounts 1, 4, 7, 11 are different, so the words are no longer lined up when they are added.</li>
+    <li>P comes last. Every new word gets one nibble from each of A, B, C and D, so the words mix in the next round.</li></ul>
+  ${NO(`Decryption is not the same circuit. It undoes the five steps in reverse order: P⁻¹, then A ← A − B and C ← C − D, then rotations to the right, then S⁻¹, then the XOR with RK<sub>r</sub>. The subtraction works only because the additions leave B and D unchanged.`)}
+  ${USE(`<a href="aes.html">AES</a> has the same round shape: AddRoundKey, a layer of S-boxes (SubBytes) and a linear layer (ShiftRows and MixColumns). <a href="present.html">PRESENT</a> has key addition, S-boxes and a bit permutation. The steps of Dipper one by one: ${goT('ark',r,'AddRoundKey')}, ${goT('sc',r,'SubCells')}, ${goT('arx',r,'rotations and additions')}, ${goT('pl',r,'bit permutation')}.`)}
+  ${MORE('rd')}`};
+
+T.sc.doc=k=>{const r=ST.round.sc,o=findOp('sc',r),n=k>0?16-k:15,x=nib(o.p,n),y=S[x];
+  // the first a (from your nibble on) that has some b where the affine equation fails; a = 0 satisfies it for every b
+  const a0=x||1;let a=a0,b=0;for(let t=0;t<15&&!b;t++){a=(a0-1+t)%15+1;for(let q=1;q<16&&!b;q++)if(S[a^q]^S[a]^S[q]^S[0])b=q}
+  const z=S[a^b]^S[a]^S[b]^S[0],fx=rng(0,15).filter(v=>S[v]===v),nDU=DDT.slice(1).flat().filter(v=>v===DU).length,nInv=rng(0,15).filter(v=>S[v]!==SI[v]).length;
+  return`<h2>SubCells: one 4-bit S-box, 16 times</h2>
+  <p class="lead">An S-box (substitution box) is a fixed table that replaces a small input by a small output. Dipper has one S-box from 4 bits to 4 bits, the S-box of GIFT, and SubCells applies it to each of the 16 nibbles of the state.</p>
+  <h3>The table</h3>
+  <p>${M('x &nbsp;&nbsp;&nbsp;: '+rng(0,15).map(h1).join(' ')+'<br>S(x) : '+S.map(h1).join(' '))}</p>
+  <p>Every value 0 … f appears exactly once in the second row. So S is a <b>bijection</b> (one-to-one) and has an inverse S⁻¹, which decryption uses: ${M('S⁻¹ = '+SI.map(h1).join(''))}.</p>
+  <h3>Your nibble</h3>
+  ${EX(`Round ${r}, nibble ${n} (bits ${4*n+3} … ${4*n}, word ${WN[wordOf(n)]}):<br>${M(`x = ${h1(x)} = ${b4(x)} &nbsp;→&nbsp; S(x) = ${h1(y)} = ${b4(y)}`)}<br>The other 15 nibbles use the same table at the same time.`)}
+  <h3>Why it must be non-linear</h3>
+  <p>A map F is <b>affine</b> when ${M('F(a ⊕ b) = F(a) ⊕ F(b) ⊕ F(0)')} for all a and b. A cipher made only of affine steps is affine as a whole, and an affine cipher can be solved with linear algebra. In a Dipper round, AddRoundKey, the rotations and P are affine; the S-box and the additions are not. ${a===x?'With your nibble as a, the equation fails:':`The example takes a = ${h1(a)}, where the equation fails:`}</p>
+  ${EX(M(`a = ${h1(a)}, b = ${h1(b)}<br>S(a ⊕ b) = S(${h1(a^b)}) = ${h1(S[a^b])}<br>S(a) ⊕ S(b) ⊕ S(0) = ${h1(S[a])} ⊕ ${h1(S[b])} ⊕ ${h1(S[0])} = ${h1(S[a]^S[b]^S[0])}<br>difference: ${h1(z)}`))}
+  <h3>What the table under the picture measures</h3>
+  <ul class="pts"><li><b>Differential uniformity ${DU}</b>: for every non-zero input difference Δin, at most ${DU} of the 16 inputs x give the same output difference Δout. The largest value ${DU} appears ${nDU} times in the table (row 0 not counted). A difference followed through one S-box holds with probability at most ${DU}/16.</li>
+    <li><b>Linearity ${LIN}</b>: for any non-zero masks, a XOR of some input bits equals a XOR of some output bits for at least ${8-LIN/2} and at most ${8+LIN/2} of the 16 inputs${LIN<16?', never for all or none':''}.</li>
+    <li><b>Fixed points</b>: ${fx.length?`S(x) = x for x = ${fx.map(h1).join(', ')}`:'S(x) ≠ x for every x'}.</li></ul>
+  ${NO(`S and S⁻¹ are different tables. A common mistake in decryption is to apply S again. For your nibble: ${M(`S(${h1(y)}) = ${h1(S[y])}`)}, but ${M(`S⁻¹(${h1(y)}) = ${h1(SI[y])}`)} = x. The two tables differ for ${nInv} of the 16 inputs.`)}
+  ${USE(`<a href="aes.html">AES</a> uses one 8-bit S-box built from inversion in GF(2⁸) (see also <a href="fields.html">fields</a>). 4-bit S-boxes are common in lightweight ciphers because a 16-entry table is small on a chip; <a href="present.html">PRESENT</a> has one too. Dipper uses this S-box also in its ${goT('ks',null,'key schedule')}.`)}
+  ${MORE('sc')}`};
+
+T.arx.doc=k=>{const r=ST.round.arx,{w0,w1,w2}=arxData(r),j=k===6?2:0,a=w1[j],b=w1[j+1],s=w2[j],x=a^b,an=a&b,{cin,out}=carries(a,b);
+  const nc=[...bin16(cin)].filter(c=>c==='1').length,An=WN[j]+'₁',Bn=WN[j+1]+'₁',bt=(v,i)=>(v>>i)&1,sh=(w0[0]<<1)&0xFFFF,an2=(an<<1)&0xFFFF;
+  return`<h2>Rotations and ARX: mixing along a word</h2>
+  <p class="lead">ARX stands for addition, rotation and XOR: three cheap operations on whole words. Dipper uses the first two in this step. The state is cut into four 16-bit words A, B, C, D; each word is rotated left by its own amount, and then A ← A + B and C ← C + D, modulo 2<sup>16</sup>. XOR enters the round in AddRoundKey.</p>
+  <h3>The operations</h3>
+  <ul class="pts"><li><b>Rotation</b> ${M('x ⋘ t')}: every bit moves t places to the left, and the t bits that fall off the left end come back on the right. Nothing is lost.</li>
+    <li><b>XOR</b> ${M('x ⊕ y')}: bit by bit, 1 where the two bits differ. No bit affects its neighbours.</li>
+    <li><b>Addition modulo 2<sup>16</sup></b>: add as whole numbers and keep the lowest 16 bits; the carry out of bit 15 is dropped. These are the numbers 0 … 65535 with addition, the ring ℤ<sub>65536</sub>.</li></ul>
+  ${EX(`Round ${r}, the four rotations:<br>`+M(WN.map((nm,q)=>`${nm} ⋘ ${ROT[q]}: ${hex(w0[q],4)} → ${hex(w1[q],4)}`).join('<br>')))}
+  <h3>Addition is not XOR</h3>
+  <p>A map F is <b>linear over XOR</b> when ${M('F(u ⊕ v) = F(u) ⊕ F(v)')}. If F(a, b) = a + b were linear, then ${M('a + b = F(a, 0) ⊕ F(0, b) = a ⊕ b')} for all a and b. Carries break this. Bit i of the sum is ${M('a<sub>i</sub> ⊕ b<sub>i</sub> ⊕ c<sub>i</sub>')}, where the carry c<sub>i</sub> into bit i depends on all lower bits of a and b. So a + b and a ⊕ b differ exactly in the bits where a carry comes in.</p>
+  ${EX(`Round ${r}, a = ${An} and b = ${Bn}:`+KV([['a',`${bin16(a)} = ${hex(a,4)}`],['b',`${bin16(b)} = ${hex(b,4)}`],['a ⊕ b',`${bin16(x)} = ${hex(x,4)}`],['carries in',bin16(cin)],['a + b mod 2¹⁶',`${bin16(s)} = ${hex(s,4)}`]])+(nc?`The sum and the XOR differ in ${nc} bit${nc>1?'s':''}, exactly where a carry comes in.`:`No carry occurs for these two words, so here a + b = a ⊕ b. One carry is enough to break it: ${M('1 + 1 = 2')}, but ${M('1 ⊕ 1 = 0')}.`)+(out?' The carry out of bit 15 is dropped.':''))}
+  <p>The same fact as a formula: ${M('a + b = (a ⊕ b) + 2 · (a ∧ b)')}, where ∧ is AND; the AND marks the places where a carry starts. Here ${M(`${hex(x,4)} + 2 · ${hex(an,4)} = ${hex(x,4)} + ${hex(an2,4)} = ${hex((x+an2)&0xFFFF,4)}`)} (mod 2¹⁶), which is a + b.</p>
+  <p>Carries also raise the degree. Bit 0 of the sum is ${M('a₀ ⊕ b₀')}, but bit 1 is ${M('a₁ ⊕ b₁ ⊕ a₀ · b₀')}: a product of two input bits. Bit i contains products of up to i + 1 input bits. With your words: ${M(`${bt(a,1)} ⊕ ${bt(b,1)} ⊕ ${bt(a,0)} · ${bt(b,0)} = ${bt(s,1)}`)}, which is bit 1 of a + b.</p>
+  <h3>Undoing the step</h3>
+  <p>B₁ and D₁ are not changed, so subtraction gives A₁ and C₁ back: ${M(`${An} = ${WN[j]}₂ − ${Bn} = ${hex(s,4)} − ${hex(b,4)} = ${hex((s-b)&0xFFFF,4)}`)}. A rotation to the right by the same amount undoes each rotation.</p>
+  <h3>Why the rotations come first</h3>
+  <p>The amounts 1, 4, 7, 11 are all different, so the words are no longer lined up when they are added: bit i of A₁ was bit i − 1 of A, but bit i of B₁ was bit i − 4 of B (counted modulo 16). 1, 7 and 11 are odd; 4 moves exactly one nibble.</p>
+  ${NO(`A rotation is not a shift. A shift drops the bits that fall off and fills in zeros, so it loses information and cannot be undone. With A of round ${r}: ${M(`A ≪ 1 = ${hex(sh,4)}`)} (shift), ${M(`A ⋘ 1 = ${hex(w1[0],4)}`)} (rotation). ${w0[0]>>15?'They differ in bit 0, where the top bit of A came back.':'Here they agree, because the top bit of A is 0; a top bit 1 would be lost by the shift.'}`)}
+  ${USE(`Some ciphers use only these three operations. The stream cipher ChaCha20 works on 32-bit words with additions, rotations and XOR, and so does the block cipher SPECK on its words. The hash function SHA-256 also adds modulo 2<sup>32</sup>. Rings such as ℤ<sub>n</sub> are explained on <a href="fields.html">fields</a>.`)}
+  ${MORE('arx')}`};
+
+T.pl.doc=k=>{const r=ST.round.pl,o=findOp('p',r),K=D.KS.RK[r-1],pk=ST.plPick,i=pk!=null?pk:k>0?4*(16-k)+3:63,w=i>>4,m=(i&15)>>2,j=i&3,t=(3*m+j)&3,pi=P(i);
+  const fx=rng(0,63).filter(v=>P(v)===v),pa=perm(o.p^K),pb=perm(o.p)^perm(K);
+  return`<h2>The bit permutation P</h2>
+  <p class="lead">P moves each of the 64 state bits to a new position. No bit is changed, added or lost: in round ${r} the state has ${pc64(o.p)} ones before P and ${pc64(o.s)} after it.</p>
+  <h3>The rule</h3>
+  <p>${M('P(i) = 4⌊i/16⌋ + 16((3⌊(i mod 16)/4⌋ + (i mod 4)) mod 4) + (i mod 4)')}</p>
+  <p>It is easier to read with names. Write the position as ${M('i = 16w + 4m + j')}: w is the word (3 = A, 2 = B, 1 = C, 0 = D), m is the nibble inside the word and j is the bit inside the nibble. Then ${M('P(i) = 16 · ((3m + j) mod 4) + 4w + j')}. In words, the bit</p>
+  <ul class="pts"><li>lands in word number ${M('(3m + j) mod 4')},</li><li>in nibble w of that word, the number of the word it came from,</li><li>and stays bit j of its nibble.</li></ul>
+  ${EX(`Bit ${i} (${pk!=null?'the bit you clicked':k>0?`bit 3 of nibble ${16-k}, the nibble of this step`:'the leftmost bit'}): ${M(`w = ${w} (${WN[3-w]}), m = ${m}, j = ${j}`)}<br>${M(`P(${i}) = 16 · ((3 · ${m} + ${j}) mod 4) + 4 · ${w} + ${j} = 16 · ${t} + ${4*w} + ${j} = ${pi}`)}<br>So bit ${i} goes to word ${WN[3-t]}, nibble ${w} of that word, bit ${j}. Click a top bit in the picture to compute another one.`)}
+  <h3>What follows from the rule</h3>
+  <ul class="pts"><li>For one nibble m is fixed and j runs over 0 … 3, so ${M('(3m + j) mod 4')} takes 4 different values. The 4 bits of one nibble land in 4 different words, and in the next round they enter 4 different S-boxes.</li>
+    <li>Nibble w of every new word is filled from old word w. So every new word holds 4 bits from each of A, B, C and D.</li>
+    <li>Positions that do not move: ${fx.length?fx.join(', '):'none'}.</li></ul>
+  <p>Decryption uses the inverse P⁻¹, which sends every bit back: ${M(`P⁻¹(${pi}) = ${PI[pi]}`)}. Like the rotations, P is only wires in hardware.</p>
+  ${NO(`A bit permutation on its own is linear: ${M('P(a ⊕ b) = P(a) ⊕ P(b)')}. With the state before P in round ${r} as a and RK${r} as b: ${M(`P(a ⊕ b) = ${hex(pa)}`)} and ${M(`P(a) ⊕ P(b) = ${hex(pb)}`)}${pa===pb?', the same value':''}. So P adds no non-linearity; that comes from the S-box and the additions.`)}
+  ${USE(`<a href="present.html">PRESENT</a> also uses a bit permutation: bit i goes to 16 · i mod 63, and bit 63 stays. <a href="aes.html">AES</a> spreads bytes with ShiftRows and MixColumns instead. The effect of P over many rounds is shown in ${goT('df',null,'Diffusion')}.`)}
+  ${MORE('pl')}`};
+
+T.ark.doc=k=>{const r=ST.round.ark,o=findOp('ark',r),K=D.KS.RK[r-1],n=k>0?16-k:15,a=nib(o.p,n),kk=nib(K,n),kb=D.kb,reg=D.KS.st[r-1].reg;
+  return`<h2>AddRoundKey: XOR with the round key</h2>
+  <p class="lead">AddRoundKey XORs the 64-bit state with the 64-bit round key RK<sub>r</sub>, bit by bit. It is the only step of a round that depends on the key; every other step is public.</p>
+  <h3>How it works</h3>
+  <p>XOR (⊕) of two bits is 1 when the bits differ and 0 when they are equal. Each of the 64 state bits is XORed with the bit of RK${r} at the same position, and no bit affects another. It is the first step of every round. After round 28 no key is added, so RK28 is the last key that enters.</p>
+  ${EX(`Round key RK${r} = ${M(hex(K))}<br>Nibble ${n}: ${M(`${b4(a)} ⊕ ${b4(kk)} = ${b4(a^kk)}`)}, in hex ${M(`${h1(a)} ⊕ ${h1(kk)} = ${h1(a^kk)}`)}<br>The whole state: ${M(`${hex(o.p)} ⊕ ${hex(K)} = ${hex(o.s)}`)}`)}
+  <h3>Where the round key comes from</h3>
+  <p>RK${r} is the lower 64 bits of the ${kb}-bit key register at round ${r}, the words k3 ‖ k2 ‖ k1 ‖ k0:</p>
+  ${EX(KV([[`register at round ${r}`,hex(reg,kb/4)],[`lower 64 bits = RK${r}`,hex(reg&M64)]]))}
+  <p>In round 1 the register is the key itself, so RK1 = ${M(hex(D.KS.RK[0]))} is the lower 64 bits of your key. The ${goT('ks',Math.min(r,27),'key schedule')} shows how the register changes from round to round.</p>
+  <h3>Why XOR</h3>
+  <p>XOR is its own inverse: ${M('(s ⊕ K) ⊕ K = s')}. So decryption removes the key with the same operation and the same round key. And when a key bit is unknown and equally likely to be 0 or 1, the output bit says nothing about the state bit.</p>
+  ${NO(`Key addition does not change a difference between two states: ${M('(a ⊕ K) ⊕ (b ⊕ K) = a ⊕ b')}. A linear step, such as a rotation or P, moves a difference, but the new difference depends only on the old one. Only the S-box and the additions change a difference in a way that depends on the values themselves. So an attack that follows differences through the cipher can ignore the key additions.`)}
+  ${USE(`The same step is called AddRoundKey in <a href="aes.html">AES</a> and addRoundKey in <a href="present.html">PRESENT</a>. In <a href="des.html">DES</a> the round key is XORed inside the round function instead of onto the whole state.`)}
+  ${MORE('ark')}`};
+
+T.ks.doc=k=>{const r=ST.round.ks,st=D.KS.st[r-1],kb=D.kb,n=kb/16,w=kb/4,ot=kb===96?128:96,rcW=st.rcs>>4,up=st.reg>>B(kb-64),lo=st.reg&M64;
+  let per=0,l=1;do{l=lfsr(l);per++}while(l!==1&&per<40);
+  const dist=new Set(D.KS.st.map(x=>x.rc)).size,ndiff=D.KS.st.filter(x=>(x.reg>>B(kb-64))!==(x.reg&M64)).length;
+  return`<h2>The key schedule of Dipper-64/${kb}</h2>
+  <p class="lead">The key schedule turns the ${kb}-bit key into 28 round keys of 64 bits. It keeps a ${kb}-bit register of ${n} words k${n-1} … k0, 16 bits each. Round key RK<sub>r</sub> is the lower 64 bits, k3 ‖ k2 ‖ k1 ‖ k0. After each round key the register is updated in three steps.</p>
+  <h3>The three steps for a ${kb}-bit key</h3>
+  <ol class="pts"><li><b>Word moves</b>: ${M(kb===96?'(k5, k4, k3, k2, k1, k0) ← (k3, k2, k1 ⋙ 2, k0 ⋙ 12, k5, k4)':'(k7, …, k0) ← (k3, k2, k7, k6, k5, k4, k1 ⋙ 2, k0 ⋙ 12)')}, where ⋙ t is a rotation to the right by t bits.</li>
+    <li><b>S-boxes</b>: the GIFT S-box replaces the ${st.pos.length} nibbles at register bits ${st.pos.map(p=>`${p+3} … ${p} (nibble ${(p>>2)&3} of k${p>>4})`).join(', ')}. Nibble 3 is the top nibble of a word.</li>
+    <li><b>Round constant</b>: the 5-bit constant RC<sub>r</sub> is XORed into register bits ${st.rcs+4} … ${st.rcs}, the lowest 5 bits of k${rcW}.</li></ol>
+  <p>Dipper-64/${ot} uses the same three kinds of step on ${ot/16} words, with its own word moves and ${ot===128?'3':'4'} S-boxes. Enter a key of ${ot/4} hex digits to see it.</p>
+  <h3>Your register, round ${r}</h3>
+  ${EX(KV([['register',hex(st.reg,w)],[`RK${r} = lower 64 bits`,hex(D.KS.RK[r-1])],['1 · after the word moves',hex(st.K1,w)],['2 · after the S-boxes',hex(st.K2,w)],[`3 · ⊕ RC${r} = ${b5(st.rc)}`,hex(st.K3,w)],[`RK${r+1}`,hex(D.KS.RK[r])]]))}
+  <p>Click a word of the register in the picture: the line under it says where that word came from in the current step.</p>
+  <h3>The round constants</h3>
+  <p>RC comes from a 5-bit LFSR (linear feedback shift register). It starts at 00001. Each round it shifts left by one place, the top bit falls off, and ${M('RC[4] ⊕ RC[1]')} of the old value becomes the new lowest bit. From 00001 the sequence comes back to 00001 after ${per} steps, and RC1 … RC28 are ${dist===28?'28 different values':`only ${dist} different values`}. LFSRs are explained on <a href="lfsr.html">LFSR</a>.</p>
+  <h3>Why these steps</h3>
+  <ul class="pts"><li>The <b>word moves</b> bring other words of the register into the lower 64 bits, so different rounds take their key from different parts of the register. Two words are also rotated, the same idea as in GIFT.</li>
+    <li>The <b>S-boxes</b> make the key schedule non-linear. Without them every bit of the register would stay one key bit, possibly XORed with constant bits.</li>
+    <li>The <b>round constant</b> makes every round different.</li>${kb===128?'<li>The 128-bit version uses 3 S-boxes, to keep the hardware small.</li>':''}</ul>
+  ${NO(`The round key is the <b>lower</b> 64 bits of the register. An implementation that takes the upper 64 bits gets other round keys. In round ${r}: upper 64 bits ${M(hex(up))}, lower 64 bits (RK${r}) ${M(hex(lo))}. For your key the two halves differ in ${ndiff} of the 28 rounds. Compare every implementation with the test vectors TV1 … TV4.`)}
+  ${USE(`The key expansion of <a href="aes.html">AES</a> also uses its S-box and round constants. <a href="present.html">PRESENT</a> rotates its key register and also uses its S-box and a round counter.`)}
+  ${MORE('ks')}`};
+
+T.x.doc=k=>{const enc=ST.mode==='enc',ops=enc?D.enc:D.dec,o=ops[k],n=ops.length-1,now=`step ${k} of ${n}: ${NAME[o.op]}${o.op==='ark'?' RK'+o.ki:''} → ${hex(o.s)}`;
+  if(enc){const ok=D.expect?hex(D.ct)===D.expect:null;
+  return`<h2>Encryption from start to end</h2>
+  <p class="lead">Encryption runs the same round 28 times, with the round keys RK1 … RK28. The chips above the picture are all ${n} steps of this run, five per round; click a chip to jump to it.</p>
+  <h3>The algorithm</h3>
+  <p>${M(`state ← plaintext<br>for r = 1 … 28:<br>&nbsp;&nbsp;state ← state ⊕ RK<sub>r</sub><br>&nbsp;&nbsp;state ← SubCells(state)<br>&nbsp;&nbsp;(A, B, C, D) ← (A ⋘ 1, B ⋘ 4, C ⋘ 7, D ⋘ 11)<br>&nbsp;&nbsp;A ← A + B, C ← C + D (mod 2¹⁶)<br>&nbsp;&nbsp;state ← P(state)<br>ciphertext ← state`)}</p>
+  <h3>Your run</h3>
+  ${EX(KV([['Plaintext',hex(D.pt)],[`Key (${D.kb} bits)`,hex(D.key,D.kb/4)],['Steps',`28 · 5 = ${n}`],['S-box lookups',`28 · 16 = ${28*16}`],['Now',now],['Ciphertext',hex(D.ct)]])+(ok===true?'This equals the test vector in the Dipper specification.':ok===false?'This does not equal the expected test vector.':''))}
+  <p>The four examples in the list are test vectors from the Dipper specification v1.1. A test vector is a known plaintext, key and ciphertext. An implementation that reproduces all of them is very likely correct; one that does not is certainly wrong.</p>
+  ${NO(`Encrypting each 64-bit block on its own (ECB mode) shows patterns: under one key, equal plaintext blocks give equal ciphertext blocks. Longer messages need a mode of operation, see <a href="modes.html">modes</a>.`)}
+  ${USE(`Switch to <b>Decrypt</b> to run the same round keys backwards. Compare the same kind of run in <a href="present.html">PRESENT</a> and <a href="aes.html">AES</a>.`)}
+  ${MORE('x/enc')}`}
+  const i2=D.dec[2],a2=words(i2.p)[0],b1=words(i2.p)[1],a1=words(i2.s)[0],e28=words(findOp('rot',28).s)[0],ea=findOp('arx',28).s,last=D.dec.at(-1).s;
+  return`<h2>Decryption: every step undone in reverse order</h2>
+  <p class="lead">Decryption starts from the ciphertext and undoes the steps of encryption from the last to the first, with the round keys RK28 … RK1.</p>
+  <h3>The algorithm</h3>
+  <p>${M(`state ← ciphertext<br>for r = 28 … 1:<br>&nbsp;&nbsp;state ← P⁻¹(state)<br>&nbsp;&nbsp;A ← A − B, C ← C − D (mod 2¹⁶)<br>&nbsp;&nbsp;(A, B, C, D) ← (A ⋙ 1, B ⋙ 4, C ⋙ 7, D ⋙ 11)<br>&nbsp;&nbsp;state ← SubCells⁻¹(state)<br>&nbsp;&nbsp;state ← state ⊕ RK<sub>r</sub><br>plaintext ← state`)}</p>
+  <p>SubCells⁻¹ uses the inverse table ${M('S⁻¹ = '+SI.map(h1).join(''))}. The chips above the picture number the decryption rounds 1 … 28; decryption round i uses RK<sub>29 − i</sub>.</p>
+  <h3>Your run</h3>
+  ${EX(KV([['Ciphertext',hex(D.ct)],['after P⁻¹',hex(i2.p)+(i2.p===ea?', the state after the additions of round 28 in encryption':'')],['A ← A − B',`${hex(a2,4)} − ${hex(b1,4)} = ${hex(a1,4)}`+(a1===e28?', the word A₁ of round 28 in encryption':'')],['Now',now],['Result',hex(last)+(last===D.pt?', the plaintext':'')]]))}
+  <p>The subtraction works because the addition left B unchanged: the B that decryption subtracts is the same B₁ that encryption added into A.</p>
+  ${NO(`The round keys are needed in reverse order, RK28 first, but the key schedule makes them in the order RK1, RK2, … On this page all 28 are computed before decryption starts. A mode such as CTR uses only the encryption direction of a block cipher, so a device that runs such a mode needs no decryption circuit at all (see <a href="modes.html">modes</a>).`)}
+  ${USE(`In a Feistel network such as <a href="des.html">DES</a>, decryption is the same circuit as encryption with the round keys in reverse order. An SPN such as <a href="aes.html">AES</a>, <a href="present.html">PRESENT</a> or Dipper needs the inverse of every step.`)}
+  ${MORE('x/dec')}`};
+
+T.df.doc=k=>{const f=ST.df;if(!f)return'';const {fb,diffs,counts,ct2}=f;
+  // which bits can depend on the flipped bit: an S-box spreads to its whole nibble, a rotation moves bits,
+  // an addition spreads from the lowest affected bit of its two words to all higher bits of A (or C), P moves bits
+  let m=1n<<B(fb),r16=0,rAll=0;
+  for(let r=1;r<=28&&!rAll;r++){let t=0n;for(let n=0;n<16;n++)if(nib(m,n))t|=15n<<B(4*n);
+    const w=words(rotW(t));for(const j of [0,2]){const u=w[j]|w[j+1];if(u)w[j]=(0x10000-(u&-u))&0xFFFF}
+    m=perm(join(w));if(!r16&&rng(0,15).every(n=>nib(m,n)))r16=r;if(m===M64)rAll=r}
+  const nn=diffs.map(d=>rng(0,15).filter(n=>nib(d,n)).length),first16=nn.findIndex(v=>v===16),tail=counts.slice(5),avg=tail.reduce((a,b)=>a+b,0)/tail.length;
+  return`<h2>Diffusion: how one bit spreads</h2>
+  <p class="lead">Diffusion means that a change in one input bit soon changes many state bits. This tab encrypts two plaintexts that differ only in bit ${fb} under the same key, and counts the different bits after each round.</p>
+  <h3>How a difference moves through a round</h3>
+  <ul class="pts"><li><b>AddRoundKey</b> does not change it, because both states get the same key: ${M('(a ⊕ K) ⊕ (b ⊕ K) = a ⊕ b')}.</li>
+    <li><b>SubCells</b>: a nibble that differs gives S-box outputs that differ in 1 to 4 bits. Never in 0 bits, because the S-box is a bijection.</li>
+    <li><b>Rotations</b> move the different bits inside their word.</li>
+    <li><b>Additions</b>: a different bit in A, B, C or D can change the carries, and so the bits above it in A or C.</li>
+    <li><b>P</b> sends the 4 bits of a nibble to 4 different words.</li></ul>
+  <h3>Counted for bit ${fb}</h3>
+  ${EX(KV([['rounds until the difference can reach all 16 nibbles',r16||'more than 28'],['rounds until all 64 bits can depend on it',rAll||'more than 28'],['different bits after rounds 1, 2, 3, 4',counts.slice(1,5).join(', ')],['different nibbles after rounds 1, 2, 3, 4',nn.slice(1,5).join(', ')],['first round with all 16 nibbles different',first16>0?first16:'none in 28 rounds'],['average different bits, rounds 5 … 28',avg.toFixed(1)+' of 64'],['ciphertexts differ in',pc64(D.ct^ct2)+' of 64 bits']]))}
+  <p>The first two lines apply the list above with every possible carry counted, so they say which bits can change at all. The other lines are what really happened with your plaintext and key: an S-box or an addition may change fewer bits than it could. Click a round in the picture to go to it, or another plaintext bit to start again.</p>
+  <h3>Why about half</h3>
+  <p>When two states look like two independent random 64-bit strings, each bit differs with probability 1/2, so about 32 of the 64 bits differ. The count then moves up and down around 32 from round to round.</p>
+  ${NO(`Full diffusion after a few rounds does not by itself make a cipher secure. Differential cryptanalysis follows differences that hold with high probability through many rounds. Through one S-box a chosen difference holds with probability up to ${DU}/16; see the table on the ${goT('sc',null,'SubCells')} tab.`)}
+  ${USE(`This experiment shows the avalanche effect: a change of one input bit changes about half of the output bits. Compare how <a href="present.html">PRESENT</a>, <a href="aes.html">AES</a> and <a href="des.html">DES</a> spread one changed bit.`)}
+  ${MORE('df')}`};
 
 /* ---------- step engine: one animation at a time (as in the DES demo) ----------
    Each tab: n() = number of states, render(k) = static picture after step k,
@@ -1320,7 +1604,11 @@ function controls(k){
   $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
   $('#fWrap').hidden=!t.focus;
+  fillDoc(k);
 }
+// the longer read under the picture; rewritten only when its text changes, so a selection survives a step
+let DOCH=null;
+function fillDoc(k){const t=T[ST.tab],h=t.doc?t.doc(k):'',d=$('#doc');d.hidden=!h;if(h!==DOCH){d.innerHTML=h;DOCH=h}}
 // static picture of the current step; any running animation or pending play step is dropped
 function show(){
   if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
@@ -1393,9 +1681,15 @@ document.addEventListener('click',e=>{
   const j=e.target.closest('[data-jump]');if(j){setPlaying(false);ST.step.x=+j.dataset.jump;show();return}
   const kr=e.target.closest('[data-kr]');if(kr){setPlaying(false);ST.round.ks=+kr.dataset.kr;fillRounds();ST.step.ks=0;show();return}
   const fb=e.target.closest('[data-fb]');if(fb){ST.flip=+fb.dataset.fb;show();return}
+  const cl=e.target.closest('[data-cell]');if(cl){const[l,n]=cl.dataset.cell.split(',').map(Number),c=ST.rdCell;ST.rdCell=c&&c[0]===l&&c[1]===n?null:[l,n];show();return}
+  const kw=e.target.closest('[data-kw]');if(kw){const j=+kw.dataset.kw;ST.kw=ST.kw===j?null:j;show();return}
+  const sp=e.target.closest('[data-step]');if(sp){setPlaying(false);ST.step[ST.tab]=+sp.dataset.step;show();return}
 });
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  // the clickable parts of the pictures also answer Enter and Space
+  const act=e.target.closest&&e.target.closest('svg [data-goto],svg [data-cell],[data-kw],.dgw[data-step]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
   if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
