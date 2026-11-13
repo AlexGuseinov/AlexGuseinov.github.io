@@ -562,6 +562,45 @@ button.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoratio
 #t4 .dbits{font:14px var(--mono);word-break:break-all;line-height:1.7}
 #t4 .dbits .d{background:var(--hl);border-radius:2px}
 #t4>*+*{margin-top:12px}
+/* the longer read under the picture, for every tab but Feistel (that tab has its own card, #doc-feistel).
+   All rules are written under #doc, so the Feistel card keeps its look */
+:root{--xorBg:#fbe9e7}
+@media (prefers-color-scheme:dark){:root{--xorBg:#3a1f1d}}
+#doc ol.pts{max-width:72ch;font-size:15.5px;margin:0 0 10px;padding-left:22px}#doc ol.pts li{margin:0 0 6px}
+#doc .exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+#doc .exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+#doc .exb.no{border-color:var(--xor);background:var(--xorBg)}#doc .exb.no>b{color:var(--xor)}
+#doc .exb.use{border-color:var(--ok);background:var(--okBg)}#doc .exb.use>b{color:var(--ok)}
+#doc .exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}#doc .exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){#doc .exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}#doc .exb.bk>b{color:#b49aec}}
+#doc .exb ul{margin:4px 0 0;padding-left:20px}#doc .exb li{margin:0 0 4px}
+#doc .m{font:13.5px/1.7 var(--mono)}
+#doc .dsw{overflow-x:auto;max-width:100%;margin:6px 0 12px}
+#doc table.cmp3{border-collapse:collapse;font-size:14.5px}
+#doc table.cmp3 th,#doc table.cmp3 td{padding:6px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+#doc table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+#doc table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+#doc table.ddt{border-collapse:collapse}
+#doc table.ddt th,#doc table.ddt td{padding:4px 7px;text-align:center;font:13px var(--mono);border-bottom:1px solid var(--line)}
+#doc table.ddt th{color:var(--muted)}
+#doc table.ddt th:first-child,#doc table.ddt td:first-child{text-align:left;font-family:var(--sans);color:var(--muted)}
+#doc tr.dcur td,#doc table.ddt .dcur{background:var(--accentBg)}
+#doc table.ddt .dcur{font-weight:700;color:var(--ink)}
+/* wide screens: the article follows the picture directly, and the side panel runs along both (Feistel tab: unchanged) */
+@media (min-width:1001px){main.layout.hasdoc{grid-template-rows:auto 1fr}main.layout.hasdoc>.stage{grid-column:1;grid-row:1}main.layout.hasdoc>#doc{grid-column:1;grid-row:2}main.layout.hasdoc>.panel{grid-column:2;grid-row:1/span 2}}
+/* narrow screens: right after the picture (same order as .stage, later in the page) */
+@media (max-width:1000px){#doc{order:3}}
+/* parts of the pictures that can be clicked: two step names in f, the round keys of the key schedule */
+#svg-f .dgo{cursor:pointer;outline:none}
+#svg-f .dgt{fill:var(--accent);font-weight:600}
+#svg-f .dgo:hover .lbl,#svg-f .dgo:focus-visible .lbl{text-decoration:underline}
+#svg-f .dgo:hover .stp circle,#svg-f .dgo:focus-visible .stp circle{stroke:var(--accent);stroke-width:2.6}
+#svg-ks .kpk{cursor:pointer;outline:none}
+#svg-ks .khit{fill:transparent}
+#svg-ks .kpk:hover .khit,#svg-ks .kpk:focus-visible .khit{fill:var(--accentBg)}
+#svg-ks .kpk.on .khit{fill:var(--accentBg);stroke:var(--accent);stroke-width:1.4}
+#vp-ks .kpick{margin:8px auto 4px;max-width:760px;text-align:center;font:13.5px/1.5 var(--mono);color:var(--muted);min-height:22px}
+#vp-ks .kpick b{color:var(--ink)}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -600,7 +639,7 @@ button.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoratio
       </table>
       <p class="small">The charts below show the whole cipher (A), the function f (B) and the key schedule (C). Press <b>Step</b> or click a block.</p>
     </div><div class="fcbar"><div class="seg"><button data-fch="A" class="on">A · Whole DES</button><button data-fch="B">B · Function f</button><button data-fch="C">C · Key schedule</button></div><button data-fcpng title="Save this chart as a PNG picture (white background)">⤓ Save as PNG</button></div><p class="fccap" id="fcCap"></p><svg id="svg-fc" role="img" aria-label="DES flowchart"></svg></div>
-    <div class="vp" id="vp-ks" hidden><svg id="svg-ks" role="img" aria-label="DES key schedule"></svg></div>
+    <div class="vp" id="vp-ks" hidden><svg id="svg-ks" role="img" aria-label="DES key schedule"></svg><p class="kpick" id="ksPick"></p></div>
   </div>
   <aside class="panel">
     <div class="card c-ctrl">
@@ -682,6 +721,7 @@ button.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoratio
       <li>NIST, <a href="https://csrc.nist.gov/pubs/sp/800/131/a/r2/final" target="_blank" rel="noopener">SP 800-131A Rev. 2, Transitioning the Use of Cryptographic Algorithms and Key Lengths</a>, 2019.</li>
     </ul>
   </section>
+  <section class="card doc" id="doc" hidden></section>
 </main>
 <section class="wrap" id="t4" hidden>
   <div class="card">
@@ -871,12 +911,14 @@ function panel(kText){
   $('bBack').disabled=s.k===0&&!ENG.anim;$('bStep').disabled=s.k>=s.total()&&!ENG.anim;
   $('mode').hidden=!s.modes;$('nrWrap').hidden=s.id!=='feistel';$('followWrap').hidden=s.id!=='feistel';
   if(s.modes)document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===s.mode));
+  docFill(k);
 }
 function switchTab(t){
   if(ENG.anim)stopAnim(true);setPlaying(false);
   ENG.tab=t;
   for(const id of ['feistel','f','e','s','ks','ip','fc'])$('vp-'+id).hidden=id!==t;
   $('doc-feistel').hidden=t!=='feistel';
+  document.querySelector('main.layout').classList.toggle('hasdoc',!!(SC[t]&&SC[t].doc));   // the article sits right under the picture
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   const des=t==='des';document.querySelector('main.layout').hidden=des;document.querySelector('main.layout').classList.toggle('wide',['f','e','s','ip','fc'].includes(t));$('t4').hidden=!des;
   if(des){if(window.T4)T4.show();return;}
@@ -1126,12 +1168,14 @@ FS.render=()=>{
   let h='',lh='';
   if(!tr)h+=`<rect class="zsel" x="${gx(zg)-6}" y="${YF.R-16}" width="118" height="${YF.SO-YF.R+32}" rx="10"/>`;
   const stp=n=>`<g class="stp${k===n?' cur':k>n?' done':''}"><circle cx="24" cy="-5" r="12"/><text x="24" y="0" text-anchor="middle">${n}</text></g>`;
-  const lab=(y,t,n)=>n?`<g transform="translate(0,${y})">${stp(n)}<text class="lbl" x="44" y="0">${t}</text></g>`:`<text class="lbl" x="14" y="${y}">${t}</text>`;
+  // go: a step name that opens its own tab, at the S-box shown up close
+  const lab=(y,t,n,go)=>n?`<g transform="translate(0,${y})"${go?` class="dgo" ${go.a} tabindex="0" role="button"`:''}>${go?`<title>${go.t}</title>`:''}${stp(n)}<text class="lbl" x="44" y="0">${t}${go?`<tspan class="dgt"> · ${go.l}</tspan>`:''}</text></g>`:`<text class="lbl" x="14" y="${y}">${t}</text>`;
+  const zsix=FS.zinfo(zg).sbj.six.join('');
   lh+=lab(YF.R-26,'<tspan class="b">R</tspan> · right half, 32 bits = 8 groups of 4');
-  lh+=lab(YF.E-26,'<tspan class="b">E(R)</tspan> · expansion, 32 → 48 bits',1);
+  lh+=lab(YF.E-26,'<tspan class="b">E(R)</tspan> · expansion, 32 → 48 bits',1,{a:`data-goto="e" data-eg="${zg}"`,t:'Open tab 4 · Expansion E',l:'open tab 4'});
   lh+=lab(YF.K-26,'<tspan class="b">kᵢ</tspan> · round key, 48 bits, XORed bit by bit',2);
   lh+=lab(YF.X-26,'<tspan class="b">E(R) ⊕ kᵢ</tspan> · 48 bits = 8 groups of 6');
-  lh+=lab(YF.SB-38,'<tspan class="b">S-boxes</tspan> · 6 bits in → 4 bits out',3);
+  lh+=lab(YF.SB-38,'<tspan class="b">S-boxes</tspan> · 6 bits in → 4 bits out',3,{a:`data-goto="s" data-sbj="${zg}" data-six="${zsix}"`,t:'Open tab 5 · S-boxes',l:'open tab 5'});
   lh+=lab(YF.SO-26,'<tspan class="b">S-box outputs</tspan> · 32 bits');
   lh+=lab(YF.F-26,'<tspan class="b">f(R, kᵢ)</tspan> = P(S-box outputs) · 32 bits → goes to ⊕ with L',4);
   lh+=`<text class="hint" x="${sW-12}" y="${YF.R-26}" text-anchor="end">click an S-box to see it up close below</text>`;
@@ -1377,7 +1421,7 @@ SB.render=(lv,anim)=>{
   const sm=(v,col)=>`<span class="fxsm" style="--c:${col}">${v}</span>`;
   const qm=n=>Array(n).fill('<span class="fxsm fxq">?</span>').join('');
   let tbl='<div class="zsw"><table class="zst fxst"><tr><th></th>';for(let cc=0;cc<16;cc++)tbl+=`<th class="${k>=2&&cc===c.col?'zcc':''}">${cc}<small>${bin(cc,4)}</small></th>`;tbl+='</tr>';
-  for(let r=0;r<4;r++){tbl+=`<tr><th class="${k>=1&&r===c.row?'zcc':''}">${r}<small>${bin(r,2)}</small></th>`;for(let cc=0;cc<16;cc++){const hr=k>=1&&r===c.row,hc=k>=2&&cc===c.col;tbl+=`<td data-cell="${r},${cc}" class="${k>=3&&hr&&hc?'zhit'+ap(3):hr?'zr':hc?'zcl':''}">${S[j][16*r+cc]}</td>`;}tbl+='</tr>';}
+  for(let r=0;r<4;r++){tbl+=`<tr><th class="${k>=1&&r===c.row?'zcc':''}">${r}<small>${bin(r,2)}</small></th>`;for(let cc=0;cc<16;cc++){const hr=k>=1&&r===c.row,hc=k>=2&&cc===c.col;tbl+=`<td data-cell="${r},${cc}" title="input ${r>>1}${bin(cc,4)}${r&1}" class="${k>=3&&hr&&hc?'zhit'+ap(3):hr?'zr':hc?'zcl':''}">${S[j][16*r+cc]}</td>`;}tbl+='</tr>';}
   tbl+='</table></div>';
   const flow=`<div class="fxflow">
     <div class="fxbox fxfin"><div class="fxbt">Input · 6 bits <span>(click a bit to flip it)</span></div><div>${[0,1,2,3,4,5].map(ib).join('')}</div></div>
@@ -1748,11 +1792,14 @@ KS.render=()=>{
   // key list
   h+=`<text class="lbl" x="14" y="${KY.LIST}"><tspan class="b">Round keys so far</tspan> (${KS.mode==='enc'?'in encryption order':'in decryption order'})</text>`;
   for(let r=1;r<=16;r++){const col=(r-1)>=8?1:0,row=(r-1)%8,x=14+col*430,y=KY.LIST+12+row*15;
+    // each round key in the list can be clicked: the line under the picture says how it was made
+    h+=`<g class="kpk${r===KS.pick?' on':''}" data-kpk="${r}" tabindex="0" role="button"><title>How k${sb(KS.ki(r))} is made</title><rect class="khit" x="${x-4}" y="${y-2}" width="${48*7.4+60}" height="15" rx="3"/>`;
     h+=`<text class="rl" x="${x}" y="${y+9}">k${sb(KS.ki(r))}</text>`;
     if(r<=pr){const bb=KS.bits(r);for(let j=0;j<48;j++)h+=`<rect x="${x+30+j*7.4+Math.floor(j/6)*3}" y="${y}" width="6.4" height="11" rx="1.5" fill="${byteC(bb[j])}"/>`;}
-    else h+=`<rect class="emp" x="${x+30}" y="${y}" width="${48*7.4+21}" height="11" rx="2"/>`;}
+    else h+=`<rect class="emp" x="${x+30}" y="${y}" width="${48*7.4+21}" height="11" rx="2"/>`;
+    h+='</g>';}
   h+='<g id="ks-anim"></g>';
-  svg.innerHTML=h;
+  svg.innerHTML=h;$('ksPick').innerHTML=KS.pickLine();
   if(k>=1)KS.placeRing(off);
 };
 KS.placeRing=(off)=>{
@@ -1808,6 +1855,251 @@ KS.extra=k=>{
 };
 SC.ks=KS;
 
+/* ================= the longer read under the picture =================
+   One article per tab (doc), shown in #doc. The Feistel tab has its own card, #doc-feistel, and no doc here.
+   Every number in an article is computed from the state of its tab, or from the input of tab 7. */
+const dbox=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const DEX=b=>dbox('Example',b),DNO=b=>dbox('Careful',b,'no'),DUSE=b=>dbox('In cryptography',b,'use');
+const DM=s=>`<span class="m">${s}</span>`;
+// reading references per tab or sub-view: filled in after the books' tables of contents were checked
+// section numbers: the book's table of contents; page ranges: the course syllabus
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB5='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook: pp. 239–247, the DES cipher (lecture 5 of the syllabus).';
+const P3=t=>`${PAAR}, chapter 3: ${t}`;
+const REFS={
+  fc:[P3('section 3.2, “Overview of the DES Algorithm”, section 3.4, “Decryption”, section 3.5.1, “Exhaustive Key Search”, and section 3.7.2, “Triple DES (3DES) and DESX”.'),`${PAAR}, chapter 5: section 5.3.1, “Double Encryption and Meet-in-the-Middle Attack”, and section 5.3.2, “Triple Encryption”.`,AZB5],
+  f:[P3('section 3.3.2, “The f Function”, and section 3.1.1, “Confusion and Diffusion”.'),AZB5],
+  e:[P3('section 3.3.2, “The f Function”.'),AZB5],
+  s:[P3('section 3.3.2, “The f Function”, and section 3.5.2, “Analytical Attacks”.'),AZB5],
+  ks:[P3('section 3.3.3, “Key Schedule”.'),AZB5],
+  ip:[P3('section 3.3.1, “Initial and Final Permutation”.'),AZB5]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?dbox('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const dgo=(t,l)=>`<button class="lnk" data-goto="${t}">${l}</button>`;
+const dsw=t=>`<div class="dsw">${t}</div>`;     // a table that may scroll sideways on a phone
+const dhx=b=>IPX.hex(b),dhx8=b=>IPX.hex(b).replace(/(.{8})(?=.)/g,'$1 ');
+const dHB=h=>[...h].flatMap(c=>{const v=parseInt(c,16);return[(v>>3)&1,(v>>2)&1,(v>>1)&1,v&1];});
+const dEsc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+// a block as text, only when all its bytes are printable
+const dTxt=b=>{let s='';for(let i=0;i<b.length;i+=8){let v=0;for(let j=0;j<8;j++)v=v<<1|b[i+j];if(v<32||v>126)return null;s+=String.fromCharCode(v);}return s;};
+const dCmp=b=>b.map(v=>1-v),dEq=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+const dBig=n=>n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+// computed once: the S-boxes of the next round that the 4 output bits of each S-box reach, through P and then E
+const PREACH=[0,1,2,3,4,5,6,7].map(j=>{const s=new Set();for(let b=0;b<4;b++){const p=P.indexOf(4*j+b+1);E.forEach((v,i)=>{if(v===p+1)s.add(Math.floor(i/6));});}return[...s].sort((x,y)=>x-y);});
+// computed once: the largest entry of the difference tables of all 8 S-boxes (input difference not 0)
+const DDTMAX=(()=>{let m=0;for(const bx of S)for(let d=1;d<64;d++){const c=Array(16).fill(0);for(let a=0;a<64;a++)c[sval(bx,a)^sval(bx,a^d)]++;m=Math.max(m,...c);}return m;})();
+// computed once: in how many of the 16 round keys each of the 56 key bits appears
+const KUSE=(()=>{const n=Array(64).fill(0);for(let i=1;i<=16;i++)PC2.forEach(v=>{const pos=v-1;n[ringBit(pos<28?0:1,(pos%28+CUM[i])%28)]++;});return n.filter((c,b)=>!isPar(b));})();
+/* the reader's block and key from tab 7 (the chosen block, as plaintext), worked through once per input */
+const DV={src:null,v:null};let DTB=null;
+const dTB=()=>DTB||(DTB=T4.runDES(dHB(ZPT),dHB(ZKEY),false));
+function docRun(){
+  const XT=T4.X,tr=XT.tr;
+  if(DV.v&&DV.src===tr)return DV.v;
+  const key=tr?tr.key:dHB(ZKEY),x=tr?(tr.decrypt?tr.out:tr.input):dHB(ZPT);
+  const enc=tr&&!tr.decrypt?tr:T4.runDES(x,key,false),dec=T4.runDES(enc.out,key,true);
+  const W=dHB('0101010101010101'),w1=T4.runDES(x,W,false),kp=key.map((b,i)=>i%8===7?1-b:b);
+  DV.src=tr;DV.v={x,key,enc,dec,cx:T4.runDES(dCmp(x),dCmp(key),false).out,t3:T4.runDES(dec.out,key,false).out,
+    W,w1,w2:T4.runDES(w1.out,W,false),kp,kpr:T4.runDES(x,kp,false),blk:tr?XT.sel+1:0,nb:tr&&XT.res?XT.res.blocks.length:1,dm:tr?tr.decrypt:false};
+  return DV.v;
+}
+const dSrc=v=>{const t=dTxt(v.x),kt=dTxt(v.key);
+  return `${v.blk?`block ${v.blk}${v.nb>1?` of ${v.nb}`:''} of the ${v.dm?'decrypted ':''}message in ${dgo('des','tab 7')}`:'the textbook example'}: x = ${DM(dhx8(v.x))}${t!==null?` (“${dEsc(t)}”)`:''}, with the key K = ${DM(dhx8(v.key))}${kt!==null?` (“${dEsc(kt)}”)`:''}`;};
+
+/* tab 1: the whole cipher */
+FC.doc=()=>{
+  const v=docRun(),e=v.enc,d=v.dec,L=e.L,R=e.R,f1=e.rounds[1].fd.p;
+  const ipy=dEq(d.ip,e.pre),r1=dEq(d.L[1],R[15])&&dEq(d.R[1],L[15]),back=dEq(d.out,v.x),cOK=dEq(v.cx,dCmp(e.out)),t3ok=dEq(v.t3,e.out);
+  const tm=r=>{const s=2**55/r;return s<172800?`about ${Math.round(s/3600)} hours`:s<63072000?`about ${Math.round(s/86400)} days`:`about ${(s/31557600).toFixed(1)} years`;};
+  return `<h2>One block through DES</h2>
+  <p class="lead">DES turns a 64-bit block x and a 64-bit key K into a 64-bit block y. Chart A shows the steps. Here they are filled with real values, computed in this page. Charts B and C are explained in depth under ${dgo('f','tab 3')} and ${dgo('ks','tab 6')}.</p>
+  <h3>The path of one block</h3>
+  <p>The input is ${dSrc(v)}.</p>
+  ${dsw(`<table class="cmp3"><tr><th>step</th><th>value (hex)</th></tr>
+   <tr><td>input</td><td class="m">x = ${dhx8(v.x)}</td></tr>
+   <tr><td>IP</td><td class="m">IP(x) = L₀ R₀ = ${dhx(L[0])} ${dhx(R[0])}</td></tr>
+   <tr><td>round 1</td><td class="m">f(R₀, K₁) = ${dhx(f1)}<br>L₁ = R₀ = ${dhx(L[1])}<br>R₁ = L₀ ⊕ f(R₀, K₁) = ${dhx(R[1])}</td></tr>
+   <tr><td>rounds 2–15</td><td>the same rule with K₂ … K₁₅ (${dgo('des','tab 7')} shows every round)</td></tr>
+   <tr><td>round 16</td><td class="m">L₁₆ = ${dhx(L[16])}<br>R₁₆ = ${dhx(R[16])}</td></tr>
+   <tr><td>final swap</td><td class="m">R₁₆ L₁₆ = ${dhx(R[16])} ${dhx(L[16])}</td></tr>
+   <tr><td>IP⁻¹</td><td class="m">y = IP⁻¹(R₁₆ L₁₆) = ${dhx8(e.out)}</td></tr></table>`)}
+  <p>The rule Lᵢ = Rᵢ₋₁, Rᵢ = Lᵢ₋₁ ⊕ f(Rᵢ₋₁, Kᵢ) ends every round with an exchange of the two halves. The final swap exchanges them once more, so after round 16 the two exchanges cancel. That is why chart A draws round 16 without a swap.</p>
+  <h3>Why decryption is the same circuit</h3>
+  <p>To decrypt, DES runs the same steps on y, with the round keys in the order K₁₆, K₁₅, …, K₁. Follow the halves:</p>
+  <ol class="pts">
+   <li>IP at the start undoes IP⁻¹ at the end of encryption: IP(y) = R₁₆ L₁₆${ipy?` = ${DM(dhx8(d.ip))}`:''}.</li>
+   <li>Decryption round 1 gets L₁₆ = R₁₅ as its right half and uses K₁₆. So its f computes f(R₁₅, K₁₆): the value that encryption round 16 XORed into L₁₅. XORed into R₁₆ a second time, it cancels and leaves L₁₅.${r1?` After this round the halves are R₁₅ L₁₅ = ${DM(dhx(d.L[1])+' '+dhx(d.R[1]))}: the state after encryption round 15, with the halves exchanged.`:''}</li>
+   <li>Each further round undoes one more encryption round. After 16 rounds the halves are R₀ L₀, the final swap gives L₀ R₀ = IP(x), and IP⁻¹ gives ${DM(dhx8(d.out))}${back?' = x':''}.</li>
+  </ol>
+  <p>This works for any function f. The structure behind it is the Feistel network: ${dgo('feistel','tab 2')} shows it round by round.</p>
+  <h3>The 56-bit key and exhaustive search</h3>
+  <p><b>Exhaustive search</b> (brute force) needs one known pair: a plaintext block x and its ciphertext y. The attacker tries keys until one encrypts x to y. DES has 2⁵⁶ = ${dBig(1n<<56n)} keys. On average the right key comes after half of them, 2⁵⁵ trials.</p>
+  <p>A wrong key maps x to y only by chance, with a probability of about 2⁻⁶⁴. Over all keys that gives about 2⁵⁶ / 2⁶⁴ = 1/256 false alarms, so one known block almost always identifies the key, and a second block settles it.</p>
+  ${DEX(`At 10⁹ keys per second, 2⁵⁵ trials take ${tm(1e9)}. A thousand such chips in parallel, 10¹² keys per second, need ${tm(1e12)}. The search splits into independent parts, so the time falls in proportion to the number of chips.`)}
+  ${cOK?DNO(`The search costs even half as much. DES has the <b>complementation property</b>: flip every bit of x and of K, and every bit of y flips. Here DES with the complement of x, ${DM(dhx8(dCmp(v.x)))}, and the complement of K, ${DM(dhx8(dCmp(v.key)))}, gives ${DM(dhx8(v.cx))}: the complement of y. The reason: the key schedule, E and P only move bits, so in E(R) ⊕ Kᵢ the two complements cancel, and every S-box gets the same input as before. An attacker who knows the encryptions of x and of its complement tests two keys, K and its complement, with one trial encryption.`):''}
+  <h3>Triple DES</h3>
+  <p>To keep DES hardware and software in use with a longer key, DES was applied three times, with up to three keys:</p>
+  <p class="fml">y = E<sub>K3</sub>(D<sub>K2</sub>(E<sub>K1</sub>(x)))</p>
+  <p>E is DES encryption and D is DES decryption. The middle step decrypts, so with K₁ = K₂ = K₃ the first two steps cancel and Triple DES equals single DES. A Triple DES system could therefore still work with old single-DES equipment.</p>
+  ${back&&t3ok?DEX(`With K₁ = K₂ = K₃ = K: encrypting x gives ${DM(dhx8(e.out))}, decrypting that gives ${DM(dhx8(d.out))} = x, and encrypting again gives ${DM(dhx8(v.t3))} = y, the single-DES result.`):''}
+  <p>Double DES, E<sub>K2</sub>(E<sub>K1</sub>(x)), has 112 key bits but falls to a <b>meet-in-the-middle</b> attack. Encrypt x under all 2⁵⁶ keys K₁ and store the results, decrypt y under all 2⁵⁶ keys K₂, and look for a value that appears in both lists. That costs about 2 · 2⁵⁶ = 2⁵⁷ DES operations and a large table, far less than 2¹¹². With three independent keys (168 key bits), the same attack still needs about 2¹¹² operations. A variant with two keys, K₁ = K₃, was also common.</p>
+  ${DNO(`Triple DES keeps the 64-bit block. After about 2³² blocks, ${dBig(8n<<32n)} bytes (32 GiB) under one key, two equal ciphertext blocks become likely: the birthday bound. In CBC mode two equal ciphertext blocks reveal the XOR of two plaintext blocks. The Sweet32 attack (2016) used this against Triple DES in HTTPS.`)}
+  ${DUSE(`Triple DES was used for many years in payment systems, for example to protect the PINs and keys of bank cards. Its successor is AES, with 128-bit blocks and keys of 128, 192 or 256 bits (<a href="aes.html">aes.html</a>). How a long message is cut into blocks and chained: <a href="modes.html">modes.html</a>.`)}
+  ${MORE('fc')}`;
+};
+
+/* tab 3: the round function, with round 1 of the textbook example (the values of the up-close view) */
+FS.doc=()=>{
+  const d=FS.data(),fd=d.fd,j=FS.zg(),b6=a=>a.join('');
+  // an S-box input that shows S(a ⊕ b) ≠ S(a) ⊕ S(b) ⊕ S(0), with a from E(R₀) and b from k₁; first try the S-box shown up close
+  let nl=null;
+  for(let q=0;q<8&&!nl;q++){const jj=(j+q)%8,A=parseInt(b6(fd.e.slice(6*jj,6*jj+6)),2),B=parseInt(b6(d.k.slice(6*jj,6*jj+6)),2),bx=S[jj],l=sval(bx,A^B),r=sval(bx,A)^sval(bx,B)^sval(bx,0);
+    if(l!==r)nl={jj,A,B,l,r,sA:sval(bx,A),sB:sval(bx,B),z:sval(bx,0)};}
+  const rs=PREACH.map(r=>r.length),self=PREACH.every((r,i)=>!r.includes(i)),same=rs.every(n=>n===rs[0]);
+  return `<h2>The round function f</h2>
+  <p class="lead">f(R, k) takes the 32-bit right half R and a 48-bit round key k and gives back 32 bits. All the key-dependent mixing of a DES round happens inside f. The Feistel structure around it only decides where the result goes.</p>
+  <h3>One call of f, all bits at once</h3>
+  <p>Round 1 of the textbook example (plaintext ${DM(ZPT)}, key ${DM(ZKEY)}): the values of the up-close view, for all eight S-boxes together.</p>
+  ${dsw(`<table class="cmp3"><tr><th>value</th><th>bits</th><th>hex</th></tr>
+   <tr><td>R₀</td><td>32</td><td class="m">${dhx(d.R)}</td></tr>
+   <tr><td>E(R₀)</td><td>48</td><td class="m">${dhx(fd.e)}</td></tr>
+   <tr><td>k₁</td><td>48</td><td class="m">${dhx(d.k)}</td></tr>
+   <tr><td>E(R₀) ⊕ k₁</td><td>48</td><td class="m">${dhx(fd.x)}</td></tr>
+   <tr><td>S-box outputs</td><td>32</td><td class="m">${dhx(fd.s)}</td></tr>
+   <tr><td>f(R₀, k₁) = P(S-box outputs)</td><td>32</td><td class="m">${dhx(fd.p)}</td></tr></table>`)}
+  <p>Each hex digit of the S-box outputs is the output of one S-box. The 48 bits after the XOR, cut into the eight S-box inputs:</p>
+  ${dsw(`<table class="cmp3"><tr><th>S-box</th><th>input</th><th>row</th><th>column</th><th>output</th></tr>${fd.sb.map((s,i)=>`<tr${i===j?' class="dcur"':''}><td>S${i+1}</td><td class="m">${b6(s.six)}</td><td>${s.row}</td><td>${s.col}</td><td class="m">${s.val} = ${b6(s.out)}</td></tr>`).join('')}</table>`)}
+  <h3>What each step adds</h3>
+  <ul class="pts">
+   <li><b>E</b> uses no key and computes nothing. It gives the S-boxes 48 input bits, and neighbouring S-box inputs share two bits of R (${dgo('e','tab 4')}).</li>
+   <li><b>⊕ k</b> is the only step that depends on the key. It comes before the S-boxes, so without the key nobody knows which row and column an S-box uses.</li>
+   <li><b>S1 to S8</b> are the only steps that are not linear (${dgo('s','tab 5')}).</li>
+   <li><b>P</b> only moves bits. Together with E in the next round, the 4 output bits of S${j+1} reach ${PREACH[j].length} S-boxes: ${PREACH[j].map(i=>'S'+(i+1)).join(', ')}${self?`, never S${j+1} itself`:''}.${same?` Every S-box reaches ${rs[0]} S-boxes of the next round in this way.`:''}</li>
+  </ul>
+  ${nl?DEX(`A linear or affine step L would always satisfy L(a ⊕ b) = L(a) ⊕ L(b) ⊕ L(0). In S${nl.jj+1} the data part is a = ${DM(bin(nl.A,6))} (from E(R₀)) and the key part is b = ${DM(bin(nl.B,6))} (from k₁). S${nl.jj+1}(a ⊕ b) = ${DM(bin(nl.l,4))}, but S${nl.jj+1}(a) ⊕ S${nl.jj+1}(b) ⊕ S${nl.jj+1}(000000) = ${DM(bin(nl.sA,4))} ⊕ ${DM(bin(nl.sB,4))} ⊕ ${DM(bin(nl.z,4))} = ${DM(bin(nl.r,4))}. After the S-box, the effect of the data and the effect of the key cannot be taken apart.`):''}
+  <h3>Why f is built this way</h3>
+  <p>Claude Shannon (1949) named two goals for a cipher. <b>Confusion</b>: the link between the key and the ciphertext should be complicated. <b>Diffusion</b>: every input bit should affect many output bits. In f, the S-boxes give confusion, and E and P give diffusion. Each needs the other. Without the S-boxes, all of DES is linear. Without P, and with an E that took only each group's own bits, group j of the right half would only ever meet group j of the left half, and DES would fall apart into eight small ciphers on 8 bits each.</p>
+  ${DNO(`Bit numbering. The DES standard numbers bits from 1, starting with the leftmost (most significant) bit. The first entry of E, ${E[0]}, means the last bit of R. The first entry of P, ${P[0]}, means that bit ${P[0]} of the S-box outputs becomes bit 1 of f. Code that counts from 0, or from the right, gives wrong results that are hard to find.`)}
+  ${DUSE(`Key XOR, a layer of S-boxes, then a bit permutation: this is a substitution–permutation round. DES uses it inside f, on half a block. AES (<a href="aes.html">aes.html</a>) and PRESENT (<a href="present.html">present.html</a>) apply such a round to the whole block.`)}
+  ${MORE('f')}`;
+};
+
+/* tab 4: the expansion, with the current R */
+EX.doc=()=>{
+  EX.ensure();const R=EX.R,e=E.map(v=>R[v-1]),blk=[0,1,2,3,4,5,6,7].map(j=>e.slice(6*j,6*j+6).join(''));
+  const two=EUSE.map((n,i)=>n===2?i+1:0).filter(Boolean),one=32-two.length,q4=s=>s.replace(/(.{4})(?=.)/g,'$1 ');
+  const roles=r=>E.map((v,i)=>v===r?i:-1).filter(i=>i>=0).map(i=>({s:Math.floor(i/6)+1,p:i%6+1,row:i%6===0||i%6===5}));
+  const mixed=two.every(r=>{const o=roles(r);return o.length===2&&o[0].row!==o[1].row;});
+  const over=blk.every((b,j)=>b.slice(4)===blk[(j+1)%8].slice(0,2));
+  // R turned right by one place, read in windows of 6 that move by 4
+  const rr=[R[31]].concat(R.slice(0,31)),winOK=blk.every((b,j)=>[0,1,2,3,4,5].map(q=>rr[(4*j+q)%32]).join('')===b);
+  const eb=4*(EX.cur()>=0?EX.cur():0)+4;   // the last bit of the group being built: one of the bits used twice
+  return `<h2>The expansion E</h2>
+  <p class="lead">E is fixed wiring that turns the 32 bits of R into 48 bits. It uses no key: ${two.length} bits of R are copied a second time, so that the eight blocks of 6 bits for the S-boxes overlap.</p>
+  <h3>Which bits are used twice</h3>
+  <p>Bits ${two.join(', ')}: the first and the last bit of every group of 4. The other ${one} bits are used once.</p>
+  ${mixed?`<p>Each of these bits has two different jobs. In the block of one S-box it is an outer bit (bit 1 or 6, which choose the row). In the block of the neighbour it is a middle bit (bits 2 to 5, which choose the column). For example bit ${eb} of R: ${roles(eb).map(o=>`bit ${o.p} of the S${o.s} block, so it helps choose the ${o.row?'row':'column'}`).join('; ')}.</p>`:''}
+  <h3>With the current R</h3>
+  ${DEX(`R = ${DM(dhx(R))} = ${DM(q4(R.join('')))}<br>E(R) = ${DM(dhx(e))} = ${DM(blk.join(' '))}${over?'<br>The last two bits of each block of 6 are the first two bits of the next block, and the last two bits of the S8 block are the first two of the S1 block. That is the overlap.':''}`)}
+  ${winOK?`<h3>E as a sliding window</h3><p>Turn R right by one place, so that bit 32 comes first: ${DM(q4(rr.join('')))}. Read 6 bits, move 4 places, and read 6 bits again, eight times, going round the end. The eight windows are exactly the eight blocks of E(R) above. So software can replace the 48 entries of the E table by one rotation and eight masks of 6 bits.</p>`:''}
+  <h3>What one changed bit of R does</h3>
+  <p>A changed middle bit changes one bit of E(R), in one S-box input. A changed edge bit changes two bits, in two S-box inputs. Over all 32 bits that is (${two.length} × 2 + ${one} × 1) / 32 = ${(2*two.length+one)/32} S-box inputs on average.</p>
+  ${DNO(`Some books call E the “expansion permutation”. It is not a permutation: it has 48 outputs for 32 inputs and repeats 16 of them. E is also linear, E(a ⊕ b) = E(a) ⊕ E(b), so on its own it adds no security.`)}
+  ${DUSE(`Differential cryptanalysis (timeline in ${dgo('feistel','tab 2')}) follows XOR differences through the cipher. Because E is linear, a difference Δ in R becomes the difference E(Δ) in E(R). The key XOR does not change a difference at all: (a ⊕ k) ⊕ (b ⊕ k) = a ⊕ b. So the attacker knows the difference at every S-box input without knowing the key. Only the S-boxes make the output difference uncertain (difference table in ${dgo('s','tab 5')}).`)}
+  ${MORE('e')}`;
+};
+
+/* tab 5: the S-boxes, with the current S-box and input */
+SB.doc=()=>{
+  const j=SB.j,x=SB.x,c=sbCalc(j,x),n=j+1,bx=S[j],xi=parseInt(x.join(''),2);
+  let nb=0;for(let b=1;b<64&&!nb;b++)if(sval(bx,xi^b)!==(sval(bx,xi)^sval(bx,b)^sval(bx,0)))nb=b;
+  // one row of the difference table: for the reader's last change of the input, else for a flip of bit 6
+  const pv=!!SB.prev&&SB.prev.some((v,i)=>v!==x[i]),dx=pv?parseInt(SB.prev.join(''),2)^xi:1;
+  const row=Array(16).fill(0);for(let a=0;a<64;a++)row[sval(bx,a)^sval(bx,a^dx)]++;
+  const dy=sval(bx,xi)^sval(bx,xi^dx),mx=Math.max(...row);
+  return `<h2>The S-boxes</h2>
+  <p class="lead">An S-box (substitution box) is a fixed table that maps 6 bits to 4 bits. DES has eight of them, and they are the only part of DES that is not linear.</p>
+  ${ROWPERM?`<h3>A row is a small 4-bit S-box</h3>
+  <p>Every row holds each number from 0 to 15 exactly once, so a row is an invertible map from 4 bits to 4 bits. The two outer input bits choose one of the four rows, and the four middle bits are the input to that row.</p>
+  ${DEX(`Input ${DM(x.join(''))} to S${n}: the outer bits ${DM(''+x[0]+x[5])} choose row ${c.row}, and the middle bits ${DM(x.slice(1,5).join(''))} = ${c.col} give ${c.val}. The same middle bits give ${[0,1,2,3].filter(r=>r!==c.row).map(r=>`${bx[16*r+c.col]} in row ${r}`).join(', ')}. The outer bits change the whole map, not one value.`)}`:''}
+  <h3>Why only the S-boxes are not linear</h3>
+  <p>Every other step of DES moves, copies or drops bits (IP, E, P, PC-1, PC-2 and the rotations) or XORs the key. Each output bit of such a step is one input bit, or the XOR of a data bit and a key bit. Without the S-boxes, every ciphertext bit would be an XOR of some plaintext bits and some key bits. A few known blocks would then give a system of linear equations for the 56 key bits, which Gaussian elimination solves.</p>
+  ${nb?DEX(`A linear or affine table would satisfy S(a ⊕ b) = S(a) ⊕ S(b) ⊕ S(000000) for all a and b. Take a = ${DM(x.join(''))} and b = ${DM(bin(nb,6))}: S${n}(a ⊕ b) = S${n}(${DM(bin(xi^nb,6))}) = ${DM(bin(sval(bx,xi^nb),4))}, but S${n}(a) ⊕ S${n}(b) ⊕ S${n}(000000) = ${DM(bin(sval(bx,xi),4))} ⊕ ${DM(bin(sval(bx,nb),4))} ⊕ ${DM(bin(sval(bx,0),4))} = ${DM(bin(sval(bx,xi)^sval(bx,nb)^sval(bx,0),4))}.`):''}
+  <h3>The difference table</h3>
+  <p>Attacks look at pairs of inputs. For an input difference Δx = x ⊕ x′, the output difference is Δy = S(x) ⊕ S(x′). The <b>difference table</b> of an S-box counts, for each Δx and each Δy, how many of the 64 inputs x give that Δy. Here is one row of it for S${n}, with Δx = ${DM(bin(dx,6))} (${pv?'your last change of the input':'bit 6 flipped'}):</p>
+  ${dsw(`<table class="ddt"><tr><th>Δy</th>${row.map((_,i)=>`<th${i===dy?' class="dcur"':''}>${i}</th>`).join('')}</tr><tr><td>inputs</td>${row.map((v,i)=>`<td${i===dy?' class="dcur"':''}>${v}</td>`).join('')}</tr></table>`)}
+  <p>The input ${DM(x.join(''))} and ${DM(bin(xi^dx,6))} give Δy = ${DM(bin(dy,4))} = ${dy}, and ${row[dy]} of the 64 inputs give this same Δy. All counts are even, because x and x ⊕ Δx always come as a pair. The largest count in this row is ${mx}. Over all rows with Δx ≠ 0 of all eight S-boxes, the largest count is ${DDTMAX} of 64.</p>
+  ${DNO(`Not linear is not the same as strong. An attacker looks for large counts: a count of ${DDTMAX} means that an input difference leads to one output difference for ${DDTMAX} of the 64 inputs. Differential cryptanalysis chains such guesses over many rounds. The DES S-boxes were chosen to keep these counts low (the story is in ${dgo('feistel','tab 2')}).`)}
+  ${DUSE(`AES uses one S-box on 8 bits, built from inversion in the field GF(2⁸) (<a href="fields.html">fields.html</a>, <a href="aes.html">aes.html</a>). Its largest difference-table count is 4 of 256. PRESENT uses one S-box on 4 bits (<a href="present.html">present.html</a>). Both ciphers apply their S-box to the whole block, so it must be invertible. A DES S-box sits inside f and never has to be.`)}
+  ${MORE('s')}`;
+};
+
+/* tab 6: the key schedule, with the key of tab 7. The line under the picture explains one round key */
+KS.pick=0;
+KS.pickLine=()=>{
+  const r=KS.pick;if(!r)return 'Click a round key in the list to see how it is made.';
+  const ki=KS.ki(r),bits=KS.bits(r),tr=window.T4?T4.X.tr:null,c=`C${sb(ki)} D${sb(ki)}`;
+  const turn=KS.mode==='enc'?`C₀ and D₀ turned left ${SHIFTS.slice(0,ki).join(' + ')} = <b>${CUM[ki]}</b> places`
+    :`the halves turned right ${DSHIFTS.slice(0,r).join(' + ')} = <b>${DCUM[r]}</b> places from C₀ D₀, the same as left ${CUM[ki]}`;
+  return `<b>k${sb(ki)}</b>${KS.mode==='enc'?'':` (decryption round ${r})`} = PC-2(${c}): ${turn}. PC-2 keeps 48 of the 56 bits; S1 gets key bits ${bits.slice(0,6).map(b=>b+1).join(', ')}.${tr?` With the key of tab 7: k${sb(ki)} = <b>${IPX.hex(tr.ks.K[ki])}</b>.`:''}`;
+};
+KS.doc=()=>{
+  const v=docRun(),key=v.key,ks=v.enc.ks,kt=dTxt(key),kpt=dTxt(v.kp);
+  const odd=[0,1,2,3,4,5,6,7].filter(i=>key.slice(8*i,8*i+8).reduce((s,b)=>s+b,0)%2===1).length;
+  const same=ks.K.every((k,i)=>!i||dEq(k,v.kpr.ks.K[i])),ySame=dEq(v.kpr.out,v.enc.out);
+  const drop=[...Array(56).keys()].map(i=>i+1).filter(p=>!PC2.includes(p)),tot=CUM.slice(1),diff=new Set(tot.map(t=>t%28)).size===16;
+  const wk=v.w1.ks,wAll=wk.K.every((k,i)=>!i||dEq(k,wk.K[1])),wBack=dEq(v.w2.out,v.x);
+  return `<h2>The key schedule</h2>
+  <p class="lead">The key schedule makes sixteen round keys of 48 bits from the 64-bit key. It has no S-box and no arithmetic: every bit of every round key is one bit of the key, chosen by fixed tables and rotations.</p>
+  <h3>The parity bits</h3>
+  <p>The last bit of every byte (bits 8, 16, …, 64) was meant as a check bit: the standard asks for <b>odd parity</b>, an odd number of 1s in every byte. The encryption never looks at these bits, because PC-1 drops them.</p>
+  ${DEX(`The key of ${dgo('des','tab 7')} is ${DM(dhx8(key))}${kt!==null?` (“${dEsc(kt)}”)`:''}. ${odd} of its 8 bytes have odd parity. Flip all eight parity bits: ${DM(dhx8(v.kp))}${kpt!==null?` (“${dEsc(kpt)}”)`:''}. ${same?`All 16 round keys stay the same${ySame?`, and the block x = ${DM(dhx8(v.x))} still encrypts to ${DM(dhx8(v.enc.out))}`:''}. `:''}So every DES key can be written in 2⁸ = 256 ways, and the 2⁶⁴ keys of 64 bits are only 2⁵⁶ different keys.`)}
+  <h3>PC-1 and the two halves</h3>
+  <p>PC-1 puts the other 56 bits in a new order and cuts them into two halves of 28 bits, C₀ and D₀. For this key C₀ = ${DM(dhx(ks.C[0]))} and D₀ = ${DM(dhx(ks.D[0]))}, 7 hex digits each. From here on, C and D are only turned and read.</p>
+  <h3>The rotations</h3>
+  <p>Before each round key, both halves turn left by ${SHIFTS.join(', ')} places in rounds 1 to 16. Added up from the start, the halves of rounds 1 to 16 have turned ${tot.join(', ')} places.${diff?' These 16 totals are all different modulo 28, so every round sees the halves in a different position, and the last total, 28, brings them back to the start.':''}</p>
+  <h3>PC-2</h3>
+  <p>PC-2 takes ${TAP[0].length} bits from C and ${TAP[1].length} bits from D, in a new order, and leaves out 8 of the 56 positions: ${drop.join(', ')}. Because the halves turn, other key bits sit in the left-out positions in every round. Over the 16 round keys, each of the 56 key bits is used between ${Math.min(...KUSE)} and ${Math.max(...KUSE)} times.</p>
+  <h3>Weak keys</h3>
+  <p>If C₀ and D₀ are each all zeros or all ones, turning them changes nothing, so all 16 round keys are equal. That gives 2 × 2 = 4 such <b>weak keys</b> (written with odd parity). Decryption only reverses the order of the round keys, so for a weak key decryption is the same as encryption.</p>
+  ${wAll&&wBack?DNO(`Key ${DM(dhx8(v.W))}: C₀ = ${DM(dhx(wk.C[0]))}, D₀ = ${DM(dhx(wk.D[0]))}, and k₁ = k₂ = … = k₁₆ = ${DM(dhx(wk.K[1]))}. Encrypting the block x twice: ${DM(dhx8(v.x))} → ${DM(dhx8(v.w1.out))} → ${DM(dhx8(v.w2.out))} = x. The second encryption gives the plaintext back.`):''}
+  ${DUSE(`The DES key schedule is linear: every round-key bit is a key bit. AES computes its round keys with its S-box, so they are not linear in the key (<a href="aes.html">aes.html</a>).`)}
+  ${MORE('ks')}`;
+};
+
+/* tab 8: IP and IP⁻¹, with the current x */
+IPX.doc=()=>{
+  IPX.ensure();const {IP,FP}=ipT(),x=IPX.x,ipx=IP.map(v=>x[v-1]),back=FP.map(v=>ipx[v-1]),twice=IP.map(v=>ipx[v-1]);
+  const invol=IP.every((v,i)=>IP[v-1]===i+1);
+  // IP as a permutation of the 64 places: its cycles, and how often it must be applied to give the identity
+  const seen=Array(64).fill(false),cyc=[];
+  for(let i=0;i<64;i++)if(!seen[i]){let n=0,j=i;while(!seen[j]){seen[j]=true;j=IP[j]-1;n++;}cyc.push(n);}
+  const gcd=(a,b)=>b?gcd(b,a%b):a,ord=cyc.reduce((a,c)=>a/gcd(a,c)*c,1),cnt={};cyc.forEach(c=>{cnt[c]=(cnt[c]||0)+1;});
+  const cs=Object.keys(cnt).map(Number).sort((a,b)=>a-b).map(c=>`${cnt[c]} of length ${c}`).join(', ');
+  const fixed=IP.map((v,i)=>v===i+1?i+1:0).filter(Boolean);
+  const tb=dTB(),ipy=IP.map(v=>tb.out[v-1]),noip=T4.runDES(FP.map(v=>tb.input[v-1]),tb.key,false).pre;
+  return `<h2>The initial and final permutation</h2>
+  <p class="lead">IP and IP⁻¹ are fixed bit permutations at the two ends of DES. They use no key and their tables are public, so they add no security. They are still part of the standard: without them the result is not DES.</p>
+  <h3>IP⁻¹ undoes IP${invol?'':', and IP does not undo itself'}</h3>
+  ${DEX(`x = ${DM(dhx8(x))}<br>IP(x) = ${DM(dhx8(ipx))}<br>IP⁻¹(IP(x)) = ${DM(dhx8(back))}${dEq(back,x)?' = x':''}<br>IP(IP(x)) = ${DM(dhx8(twice))}${dEq(twice,x)?' = x, but only because of this x':', which is not x'}`)}
+  ${invol?'':`<p>So DES needs the second table. As a permutation of the 64 places, IP splits into cycles: ${cs}. ${fixed.length?`Place${fixed.length>1?'s':''} ${fixed.join(' and ')} keep${fixed.length>1?'':'s'} ${fixed.length>1?'their':'its'} own bit. `:''}A bit in a cycle of length n is back in its place after n steps. So IP applied ${ord} times in a row changes nothing, and IP⁻¹ is the same as IP applied ${ord-1} times.</p>`}
+  <h3>Why they add no security</h3>
+  <p>Write DES as y = IP⁻¹(F(IP(x))), where F stands for the 16 rounds and the final swap. Anyone who knows a pair x, y can compute IP(x) and IP(y) = F(IP(x)) without the key. So every attack on F is an attack on DES, and the other way round: the two are exactly as strong.</p>
+  ${dEq(ipy,tb.pre)?DEX(`The textbook example of ${dgo('f','tab 3')}: x = ${DM(ZPT)} and K = ${DM(ZKEY)} give y = ${DM(dhx8(tb.out))}. Without the key, anyone can compute IP(y) = ${DM(dhx8(ipy))}: the output R₁₆ L₁₆ of the rounds.`):''}
+  <p>IP⁻¹ at the end is the inverse of IP for a reason. Decryption starts with IP, and IP(y) gives back R₁₆ L₁₆, the exact state at which encryption stopped. So the decryption circuit is the encryption circuit (${dgo('fc','tab 1')} follows this with numbers).</p>
+  ${dEq(noip,tb.out)?'':DNO(`Some textbook exercises leave out IP and IP⁻¹ to save work. The result is then not DES: for the textbook example, the rounds and the final swap alone give ${DM(dhx8(noip))} instead of ${DM(dhx8(tb.out))}. Published test vectors only match with both permutations.`)}
+  ${DUSE(`AES has no keyless permutation at its ends. It starts with an XOR of a round key and ends with one (<a href="aes.html">aes.html</a>). An XOR with key bits at the ends, called whitening, does make attacks harder, because the attacker cannot remove it without the key.`)}
+  ${MORE('ip')}`;
+};
+
+/* the article is rewritten only when it changes, so a selection or reading position in it survives a redraw */
+let DOCH=null;
+function docFill(k){
+  const s=cur(),dc=$('doc');
+  if(!s||!s.doc||!window.T4){dc.hidden=true;return;}     // the articles use runDES of tab 7, defined further down
+  const h=s.doc(k===undefined?s.k:k);dc.hidden=!h;
+  if(h!==DOCH){dc.innerHTML=h;DOCH=h;}
+}
+
 /* ================= controls ================= */
 $('bPlay').onclick=()=>{
   const s=cur();
@@ -1828,6 +2120,8 @@ document.addEventListener('click',e=>{
   if(g){const t=g.dataset.goto;if(t==='ks'&&g.dataset.round){KS.mode='enc';KS.k=2*(+g.dataset.round)+1;}
     if(t==='e'&&g.dataset.eg!==undefined){EX.k=+g.dataset.eg+1;}
     if(t==='s'&&g.dataset.six){SB.j=+g.dataset.sbj;SB.x=[...g.dataset.six].map(Number);SB.prev=null;SB.k=4;}switchTab(t);window.scrollTo({top:0,behavior:'smooth'});return;}
+  const kp=e.target.closest('[data-kpk]');
+  if(kp){KS.pick=+kp.dataset.kpk;document.querySelectorAll('#svg-ks .kpk').forEach(x=>x.classList.toggle('on',x===kp));$('ksPick').innerHTML=KS.pickLine();return;}
   const zb=e.target.closest('[data-zj]');
   if(zb&&ENG.tab==='f'){const j=+zb.dataset.zj;setPlaying(false);if(ENG.anim)stopAnim(true);FS.zj=j;
     if(FS.k===5){FS.trace=P.findIndex(v=>Math.floor((v-1)/4)===j);FS.level=4;FS.render0();}else FS.render();panel();return;}
@@ -1875,6 +2169,9 @@ $('vp-s').addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
   if(ENG.tab==='des')return;
   if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  // the clickable parts of the pictures answer to Enter and Space like buttons
+  const act=e.target.closest&&e.target.closest('svg [data-goto][tabindex],svg [data-kpk]');
+  if(act&&(e.key==='Enter'||e.key===' ')){e.preventDefault();act.dispatchEvent(new MouseEvent('click',{bubbles:true}));return;}
   if(e.key==='ArrowRight'){e.preventDefault();$('bStep').click();}
   else if(e.key==='ArrowLeft'){e.preventDefault();$('bBack').click();}
   else if(e.key===' '){e.preventDefault();$('bPlay').click();}
@@ -2260,6 +2557,7 @@ document.addEventListener('keydown',e=>{
 loadPreset('hello');
 return{show:()=>{refresh();},IP,FP,X,runDES,pad,unpad,utf8,bytesHex,compute,toDec,toEnc};
 })();
+if(ENG.tab!=='des')docFill();      // the articles use runDES above, so the first one is written now
 </script>
 </body>
 </html>
