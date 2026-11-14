@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const KEY = 'dghub-proto-v3';
+  const KEY = 'dghub-proto-v4';
   const NB = ' ';
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const num = n => (n == null ? '—' : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, NB));
@@ -117,7 +117,7 @@
     s.role = 'steward';
     s.route = { p: 'home' };
     s.ui = { dFilter: 'open', dTab: 'findings', qTab: 'binds', q: '', aq: '', facets: {}, srcNav: null, sel: null, ns: null };
-    s.lg = { focal: 'R-101', up: 2, down: 2, view: 'graph', sens: false, gaps: false, dir: 'down' };
+    s.lg = { focal: 'R-101', up: 4, down: 2, view: 'graph', layer: 'none', dir: 'down' };
     s.drawer = null; s.linkRes = {}; s.manual = {};
     s.findings.forEach(f => {
       f.history = [];
@@ -361,7 +361,7 @@
         pii: fs.filter(f => f.status === 'CONFIRMED').map(f => f.det), cand: fs.filter(f => ['CANDIDATE', 'CONFLICT', 'NEEDS_INVESTIGATION'].includes(f.status)).length,
         cols: t.cols.map(c => c[0]), reports: [...new Set(t.cols.flatMap(c => reportsOf(`${t.id}.${c[0]}`, E).map(x => x.split(':')[0])))] };
     });
-    const reports = S.reports.map(r => ({ id: r.id, kind: 'report', name: r.name, path: ['Hesabat serveri', r.id], desc: `Sorğu ${r.query}, ${r.fields.length} sahə`, owner: r.owner, domain: r.id === 'R-104' ? 'Kartlar' : r.id === 'R-103' ? 'Müştəri' : 'Kredit', src: 'REP', level: null, pii: [], cand: 0, cols: r.fields, reports: [] }));
+    const reports = S.reports.map(r => ({ id: r.id, kind: 'report', name: r.name, path: ['Hesabat serveri', r.id], desc: `Sorğu ${r.query}, ${r.fields.length} sahə`, owner: r.owner, domain: r.domain || 'Kredit', src: 'REP', level: null, pii: [], cand: 0, cols: r.fields, reports: [] }));
     return tables.concat(reports);
   }
   const kindName = k => ({ table: 'Cədvəl', view: 'View', report: 'Hesabat' }[k] || k);
@@ -1035,7 +1035,7 @@
       </div>
       <div class="lg-top">
         <div class="lg-search">${ic('search', 14)}<label class="sr" for="lg-search">Xəritədə axtar</label><input id="lg-search" autocomplete="off" placeholder="Xəritədə cədvəl və ya sütun axtar"><div class="lg-sugg" hidden></div></div>
-        <div class="lg-pill"><span>Yuxarı</span><span class="hops">${[1, 2, 3].map(k => `<button type="button" data-hop="up" data-v="${k}" aria-pressed="${S.lg.up === k}">${k}</button>`).join('')}</span><span style="width:6px"></span><span>Aşağı</span><span class="hops">${[1, 2, 3].map(k => `<button type="button" data-hop="down" data-v="${k}" aria-pressed="${S.lg.down === k}">${k}</button>`).join('')}</span></div>
+        <div class="lg-pill"><span>Yuxarı</span><span class="hops">${[1, 2, 3, 4, 5].map(k => `<button type="button" data-hop="up" data-v="${k}" aria-pressed="${S.lg.up === k}">${k}</button>`).join('')}</span><span style="width:6px"></span><span>Aşağı</span><span class="hops">${[1, 2, 3, 4, 5].map(k => `<button type="button" data-hop="down" data-v="${k}" aria-pressed="${S.lg.down === k}">${k}</button>`).join('')}</span></div>
         <div class="seg" role="group" aria-label="Qat">${[['none', 'Qat yoxdur'], ['sens', 'Həssas data'], ['dq', 'Keyfiyyət'], ['gaps', 'Sübut']].map(([k, l]) => `<button type="button" data-layer="${k}" aria-pressed="${lay === k}">${l}</button>`).join('')}</div>
       </div>
       <div class="lg-zoom"><button type="button" data-lg="zout" aria-label="Kiçilt">−</button><span>100%</span><button type="button" data-lg="zin" aria-label="Böyüt">+</button></div>
@@ -1097,7 +1097,7 @@
       const pn = t.closest('[data-lgnode]'); if (pn) { const k = pn.dataset.lgnode; if (LG.model.byKey.has(k)) lgSelect({ type: 'node', id: k }, true); else ACT.lgFocal({ id: k }); return; }
       const hop = t.closest('[data-hop]'); if (hop) { S.lg[hop.dataset.hop] = +hop.dataset.v; LG.depthChanged = true; render(); return; }
       const ly = t.closest('[data-layer]'); if (ly) { S.lg.layer = ly.dataset.layer; LG.prev = new Map(LG.model.nodes.map(n => [n.key, { x: n.x, y: n.y }])); render(); return; }
-      const more = t.closest('[data-more]'); if (more) { const k = more.dataset.more; S.lg[k] = Math.min(3, S.lg[k] + 1); LG.depthChanged = true; render(); return; }
+      const more = t.closest('[data-more]'); if (more) { const k = more.dataset.more; S.lg[k] = Math.min(5, S.lg[k] + 1); LG.depthChanged = true; render(); return; }
       const tg = t.closest('[data-ntog]'); if (tg) { const k = tg.dataset.ntog; if (LG.open.has(k) || LG.auto.has(k)) { LG.open.delete(k); LG.auto.delete(k); } else LG.open.add(k); lgRelayout(); return; }
       const nm = t.closest('[data-nmore]'); if (nm) { const k = nm.dataset.nmore; LG.more.add(k); LG.model.byKey.get(k).el.querySelectorAll('[data-over]').forEach(r => { r.hidden = false; }); nm.parentElement.remove(); lgRelayout(); return; }
       const a = t.closest('[data-lg]');
@@ -1503,7 +1503,7 @@
 
   /* ================= init ================= */
   try { const th = localStorage.getItem('dghub-theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) { /* ignore */ }
-  load(); if (!S.lg) S.lg = { focal: 'R-101', up: 2, down: 2, view: 'graph', layer: 'none', dir: 'down' };
+  load(); if (!S.lg) S.lg = { focal: 'R-101', up: 4, down: 2, view: 'graph', layer: 'none', dir: 'down' };
   if (location.hash) parseHash(); else S.route = S.route || { p: 'home' };
   S.scans.filter(x => x.status === 'RUNNING').forEach(x => { if (!/yenidən açıldı/.test(x.note || '')) x.note = (x.note || '') + ' Səhifə yenidən açıldı: iş qaldığı yerdən davam edir, təkrar dərc olunmur.'; });
   render();
