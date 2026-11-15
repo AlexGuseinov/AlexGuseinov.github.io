@@ -152,8 +152,8 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 .paper.eve .t1,.paper.alt .t1{opacity:0}.paper.eve .t2,.paper.alt .t2{opacity:1}
 .paper.alt .t2{color:var(--ink)}
 .paper.eve{box-shadow:0 0 0 2.5px var(--xor),0 16px 28px -14px rgba(0,0,0,.45)}
-.paper .car{display:block;width:66px;height:28px;margin:3px 0 0}
-.paper .car path{fill:#f6a9cc;stroke:#c2357a;stroke-width:1.6;stroke-linejoin:round}.paper .car circle{fill:var(--ink)}
+.paper .note{display:block;width:62px;height:27px;margin:4px 0 0}
+.paper .note rect{fill:color-mix(in srgb,var(--pub) 22%,var(--paper));stroke:var(--pub);stroke-width:1.6}.paper .note circle,.paper .note path{fill:none;stroke:var(--pub);stroke-width:1.6;stroke-linecap:round}
 .seal{position:absolute;right:-18px;bottom:-20px;min-width:100px;padding:5px 11px;border-radius:13px;background:radial-gradient(circle at 28% 22%,color-mix(in srgb,#fff 35%,var(--ri)),var(--ri) 72%);color:var(--onC);font:700 12px/1.35 var(--mono);text-align:center;white-space:nowrap;box-shadow:0 9px 16px -7px color-mix(in srgb,var(--ri) 80%,transparent);transform:rotate(-5deg);opacity:0;transition:opacity .3s}
 .seal small{display:block;font:700 9.5px var(--sans);opacity:.85;letter-spacing:.03em}
 .seal .s2{display:none}
@@ -181,7 +181,7 @@ footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24
 .vch.m{--c:var(--rp)}.vch.p{--c:var(--pub)}.vch.k{--c:var(--pri)}.vch.s{--c:var(--ri)}.vch.e{--c:var(--xor)}
 .board{min-width:250px;padding:7px 14px 8px;border-radius:12px;background:var(--panel);border:1.5px solid var(--pub);box-shadow:0 10px 22px -14px rgba(0,0,0,.45);font:12.5px/1.4 var(--mono);text-align:center;white-space:nowrap}
 .board .bt{font:700 11px var(--sans);color:var(--pub);letter-spacing:.03em}
-.bub2{width:max-content;max-width:330px;padding:8px 14px;border-radius:16px;background:var(--panel);border:1.5px solid var(--line2);font:600 13.5px/1.35 var(--sans);text-align:center;box-shadow:0 10px 22px -14px rgba(0,0,0,.45)}
+.bub2{width:max-content;max-width:280px;padding:8px 14px;border-radius:16px;background:var(--panel);border:1.5px solid var(--line2);font:600 13.5px/1.35 var(--sans);text-align:center;box-shadow:0 10px 22px -14px rgba(0,0,0,.45)}
 .bub2.bad{border-color:var(--xor);background:var(--xorBg)}.bub2.ok{border-color:var(--ok);background:var(--okBg)}
 .mark{font:800 28px/1 var(--sans)}.mark.ok{color:var(--ok)}.mark.ok::after{content:'='}.mark.bad{color:var(--xor)}.mark.bad::after{content:'≠'}
 .keyline{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin-top:8px;font-size:12.5px;color:var(--muted)}
@@ -519,6 +519,7 @@ const pc=(good,bad)=>`<ul class="pros">${good.map(x=>`<li class="y">${x}</li>`).
 // a number that fits, or its two ends
 const fmtN=(v,w=14)=>{if(v==null)return'–';const s=v.toString();return s.length<=w?s:`${s.slice(0,6)}…${s.slice(-6)}`};
 const sN=v=>fmtN(v,12);
+const cN=v=>{if(v==null)return'–';const t=v.toString();return t.length<=10?t:`${t.slice(0,5)}…${t.slice(-4)}`};
 const ptS=P=>P?`(${sN(P[0])}, ${sN(P[1])})`:'O';
 const hexShort=h=>`${h.slice(0,8)}…${h.slice(-8)}`;
 const short=(s,n=26)=>s.length>n?s.slice(0,n-1)+'…':s;
@@ -540,7 +541,7 @@ const CLICK=[];
 const PHONE=matchMedia('(max-width:620px)');
 const AVS=`<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="14.5" r="8"/><path d="M4 42c0-12 7.5-16.5 16-16.5S36 30 36 42z"/></svg>`;
 const KEYS=`<svg viewBox="0 0 30 14" aria-hidden="true"><circle cx="6" cy="7" r="4.4"/><path d="M10.4 7H28.5M23 7v5M27.5 7v4"/></svg>`;
-const CAR=`<svg class="car" viewBox="0 0 66 28" aria-hidden="true"><path d="M5 21c-2 0-3-1-3-3v-4c0-2 1-3 3-3.4l9-1.6 7-6.2C22 1.7 23.6 1 25.4 1h14c2 0 3.6.7 4.8 2.1l5.6 6.1 9.2 1.6c2 .4 3 1.5 3 3.5V18c0 2-1 3-3 3z"/><circle cx="17" cy="21" r="5"/><circle cx="50" cy="21" r="5"/></svg>`;
+const NOTE=`<svg class="note" viewBox="0 0 70 30" aria-hidden="true"><rect x="1.5" y="3" width="67" height="24" rx="4"/><circle cx="35" cy="15" r="7"/><path d="M9 10h10M51 20h10"/></svg>`;
 const PT=(id,cls,inner,lab)=>`<div class="pt ${cls}" id="${id}" data-part="${id}" tabindex="0" role="button" aria-label="${lab||id}">${inner}</div>`;
 const avP=(id,who,name,role)=>PT(id,'av '+who,`<span class="fc">${AVS}</span><b>${name}</b>${role?`<small>${role}</small>`:''}`,name);
 const keyP=(id,cls,lab,val)=>PT(id,'kc '+cls,`${KEYS}<span><small>${lab}</small>${val}</span>`,lab);
@@ -555,7 +556,7 @@ function scnBox(W,H,inner,svg=''){return`<div class="scn" id="scn" data-w="${W}"
 // the scene is drawn at its design size and scaled to the card; on a phone the box keeps a readable height and the camera comes closer
 function scnFit(){const s=$('#scn');if(!s)return;const W=+s.dataset.w,H=+s.dataset.h,fit=s.clientWidth/W,HV=PHONE.matches?Math.max(H,360/fit):H;s.style.height=(HV*fit).toFixed(1)+'px';s._l={W,H,HV,fit}}
 // where the camera looks, [x, y, zoom], on a wide screen and on a phone
-const CAMS={A:[[400,212,1.1],[185,208,2.6]],B:[[560,212,1.1],[765,208,2.6]],M:[[480,214,1.03],[480,210,1.5]],J:[[480,206,1.03],[480,250,1.7]],E:[[480,216,1],[730,212,2.2]]};
+const CAMS={A:[[400,212,1.1],[205,208,2.35]],B:[[560,212,1.1],[765,208,2.45]],M:[[480,214,1.03],[480,210,1.5]],J:[[480,245,1.02],[330,262,2]],E:[[480,216,1],[730,212,2.2]]};
 function setCam(c){
   const s=$('#scn'),m=$('#cam');if(!s||!m||!s._l)return;const{W,H,HV,fit}=s._l,[cx,cy,z]=CAMS[c]?CAMS[c][PHONE.matches?1:0]:[W/2,H/2,1];
   m.style.transform=`scale(${fit}) translate(${(W/2-cx*z).toFixed(1)}px,${(HV/2-cy*z).toFixed(1)}px) scale(${z})`;s._cam=c;
@@ -600,13 +601,14 @@ CLICK.push(e=>{
 });
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{if(!ENG.anim&&$('#scn'))show()},150)});
 
-/* ---------- tab 1 · why signatures: an order for a pink car ---------- */
-const OV={avA:[90,72],avB:[870,72],avJ:[480,330],pA:[275,175],pB:[685,175],kA:[90,218],kB:[870,218],kJ:[650,332],bA:[240,300],bJ:[430,246]};
+/* ---------- tab 1 · why signatures: a payment order that Alice later denies ---------- */
+// rows: people at the top, keys under them, the internet in the middle, the judge at the bottom with his words to his left
+const OV={avA:[90,70],avB:[870,70],avJ:[480,402],pA:[318,236],pB:[642,236],kA:[125,152],kB:[862,152],kJ:[660,402],bA:[118,262],bJ:[268,402]};
 function ovParts(){
-  return avP('avA','A','Alice','orders a car')+avP('avB','B','Bob','sells cars')+avP('avJ','J','Judge','decides who wrote it')+
-    keyP('kmA','mac','shared key','K')+keyP('kmB','mac','shared key','K')+keyP('kpA','pri','private key','only Alice has it')+keyP('kpB','pub','Alice’s public key','anyone may have it')+keyP('kpJ','pub','Alice’s public key','the judge has it too')+
-    bubP('bA','','“I never ordered it.”')+bubP('bJ','bad','Bob knows K too: he could have made t himself.')+bubP('bJ2','ok','The signature fits Alice’s public key: only she could make it.')+
-    paperP('paper','order',`1 car, pink${CAR}`,'',`<small>MAC tag</small>t = MAC(K, order)`,`<small>signature</small>made with Alice’s private key`,'the order');
+  return avP('avA','A','Alice','sends an order')+avP('avB','B','Bob','works at her bank')+avP('avJ','J','Judge','decides who wrote it')+
+    keyP('kmA','mac','shared key','K')+keyP('kmB','mac','shared key','K')+keyP('kpA','pri','private key','only Alice has it')+keyP('kpB','pub','Alice’s public key','for everyone')+keyP('kpJ','pub','Alice’s public key','the judge has it too')+
+    bubP('bA','','“I never sent it.”')+bubP('bJ','bad','The bank knows K too: it could have made t itself.')+bubP('bJ2','ok','The signature fits Alice’s public key: only she could make it.')+
+    paperP('paper','payment order',`Pay Carol<br>5 000 manat${NOTE}`,'',`<small>MAC tag</small>t = MAC(K, order)`,`<small>signature</small>by Alice`,'the payment order');
 }
 function ovPose(k){
   const mac=k>=1&&k<=3,sig=k>=4,O=OV;
@@ -626,24 +628,24 @@ function ovPhases(k){
 }
 QZ.ov={q:'Alice and Bob share a MAC key. Later Alice says she never sent a message that carries a valid tag. Can a judge decide?',o:['Yes: the tag proves that Alice made it','No: Bob could have made the same tag','Only if the message is short'],a:1,why:'Both of them know the key, so both can compute the tag. A signature needs a key that only Alice has.'};
 T.ov={n:()=>6,render(k){
-  stage.innerHTML=scnBox(960,400,ovParts(),`<path class="road" d="M150 175H810"/><text class="roadl" x="480" y="150">over the internet</text>`)+
-  `<p class="hint">Click a person, a key or the order.</p><div class="sec"><div class="h3">What each tool gives (click a row)</div><div class="scroll"><table class="svc"><tr><th>Security service</th><th>Means</th><th>MAC</th><th>Signature</th></tr>
+  stage.innerHTML=scnBox(960,470,ovParts(),`<path class="road" d="M232 236H728"/><text class="roadl" x="480" y="226">the internet</text>`)+
+  `<p class="hint">Click a person, a key or the payment order.</p><div class="sec"><div class="h3">What each tool gives (click a row)</div><div class="scroll"><table class="svc"><tr><th>Security service</th><th>Means</th><th>MAC</th><th>Signature</th></tr>
     <tr data-svc="int" tabindex="0" role="button"><td>Integrity</td><td>the message was not changed</td><td class="cy">yes</td><td class="cy">yes</td></tr>
     <tr data-svc="auth" tabindex="0" role="button"><td>Message authentication</td><td>it comes from the person who holds the key</td><td class="cy">yes</td><td class="cy">yes</td></tr>
     <tr data-svc="nrep" tabindex="0" role="button"><td>Non-repudiation</td><td>a third person can check who made it, and the sender cannot deny it</td><td class="cn">no</td><td class="cy">yes</td></tr>
     <tr data-svc="conf" tabindex="0" role="button"><td>Confidentiality</td><td>nobody else can read it</td><td class="cn">no</td><td class="cn">no</td></tr></table></div><div class="pick" id="svcP"></div></div>`;
   scnFit();poseNow(ovPose(k));
-  PARTI={avA:'Alice writes the order.',avB:'Bob sells the car and wants proof of the order.',avJ:'The judge is a third person. He must decide who wrote the order.',
+  PARTI={avA:'Alice writes the payment order.',avB:'Bob works at Alice’s bank. Before the bank pays, it wants proof that the order is Alice’s.',avJ:'The judge is a third person. He must decide who wrote the order.',
     kmA:'The shared key K: Alice and Bob both have it, so both of them can make a tag.',kmB:'The shared key K: Alice and Bob both have it, so both of them can make a tag.',
     kpA:'Alice’s private key: only she has it, so only she can sign.',kpB:'Alice’s public key: anyone may have it. It checks signatures but cannot make them.',kpJ:'Alice’s public key: anyone may have it. It checks signatures but cannot make them.',
     paper:k>=4?'The order with Alice’s signature: anyone with her public key can check it.':k>=1?'The order with a MAC tag: only someone who knows K can check it, and both Alice and Bob know K.':'The order, not sent yet.',
     bA:'Alice denies the order.',bJ:'With a MAC the judge cannot decide.',bJ2:'With a signature the judge can decide.'};
-  $('#explain').innerHTML=[say('The problem','Alice orders a car from Bob’s shop over the internet. Bob wants to be sure that the order is really from Alice, and that nobody changed it.','Press <b>Step</b>.'),
-    say('Step 1 · with a MAC','Alice and Bob share a secret key K. Alice sends the order with a tag t = MAC(K, order). Bob computes the tag again with K: it matches, so the order is from someone who knows K and it was not changed.'),
-    say('Step 2 · Alice changes her mind','The car is pink, and Alice no longer wants it. She says she never ordered it. Bob goes to a judge.'),
-    say('Step 3 · the tag proves nothing','The judge sees the order and a correct tag. But Bob knows K too: he could have written the order and computed t himself. The judge cannot tell who made it.','A MAC convinces Bob, but nobody else.'),
-    say('Step 4 · with a signature','Now Alice has a <b>private key</b> that only she knows, and everyone has her <b>public key</b>. She signs the order with the private key. Bob checks the signature with the public key.'),
-    say('Step 5 · the judge decides','The judge checks the signature with Alice’s public key: it is valid. Only the holder of the private key can make such a signature, and Bob does not have it.','So Alice cannot deny the order. This is called <b>non-repudiation</b>.')][k];
+  $('#explain').innerHTML=[say('The problem','Alice sends her bank a payment order over the internet: pay 5 000 manat to Carol. Bob, at the bank, must be sure that the order is really from Alice, and that nobody changed the name or the amount.','Press <b>Step</b>.'),
+    say('Step 1 · with a MAC','Alice and the bank share a secret key K. Alice sends the order with a tag t = MAC(K, order). Bob computes the tag again with K: it matches, so the order is from someone who knows K, and it was not changed. The bank pays.'),
+    say('Step 2 · Alice wants her money back','A month later Alice says she never sent the order and asks for the 5 000 manat back. The bank goes to a judge.'),
+    say('Step 3 · the tag proves nothing','The judge sees the order and a correct tag. But the bank knows K too: it could have written the order and computed t itself. The judge cannot tell who made it.','A MAC convinces the bank, but nobody else.'),
+    say('Step 4 · with a signature','Now Alice has a <b>private key</b> that only she knows, and everyone has her <b>public key</b>. She signs the order with the private key. The bank checks the signature with the public key.'),
+    say('Step 5 · the judge decides','The judge checks the signature with Alice’s public key: it is valid. Only the holder of the private key can make such a signature, and the bank does not have it.','So Alice cannot deny the order. This is called <b>non-repudiation</b>.')][k];
   $('#extra').innerHTML=`<h3>A signature in one sentence</h3><p>Alice computes a number from the message and her <b>private key</b>; anyone checks it with her <b>public key</b>.</p>${pc(['Anyone can check it, also a judge','The signer cannot deny it later'],['It does not hide the message','The public key must really belong to Alice'])}`+quiz('ov');
 },
 plan(k){return scnPlan(ovPose,k,ovPhases(k),[0,2600,1500,1400,3300,1600][k])},
@@ -658,15 +660,15 @@ CLICK.push(e=>{const r=e.target.closest('[data-svc]');if(!r)return;
 /* ---------- the sign and verify scene, shared by RSA, Elgamal, DSA and ECDSA ---------- */
 const STEPN={rsa:['keys','hash','sign','send','rehash','ver'],eg:['keys','hash','sign','sign','send','rehash','ver'],dsa:['keys','hash','sign','sign','send','rehash','ver','ver'],ec:['keys','hash','sign','sign','send','rehash','ver','ver']};
 const firstOf=(sc,t)=>STEPN[sc].indexOf(t),lastOf=(sc,t)=>STEPN[sc].lastIndexOf(t);
-const SV={avA:[80,64],avB:[880,64],board:[480,40],avE:[480,336],pA:[255,174],pM:[480,174],pB:[700,174],kA:[80,174],kE:[80,236],rA:[80,292],mA:[255,316],fA:[255,388],kB:[880,174],mB:[700,316],fB:[640,392],cmp:[735,392],vB:[846,392]};
-const SVH=432,SVROAD=`<path class="road" d="M352 174H608"/><text class="roadl" x="480" y="148">open network</text>`,SVDUR={keys:900,hash:2000,sign:2300,send:2700,rehash:2000,ver:2400};
+const SV={avA:[86,64],avB:[880,64],board:[480,40],avE:[480,336],pA:[305,174],pM:[480,174],pB:[662,174],kA:[106,174],kE:[106,238],rA:[106,296],mA:[305,316],fA:[305,388],kB:[870,174],mB:[662,316],fB:[640,392],cmp:[735,392],vB:[846,392]};
+const SVH=432,SVROAD=`<path class="road" d="M402 174H578"/><text class="roadl" x="480" y="148">open network</text>`,SVDUR={keys:900,hash:2000,sign:2300,send:2700,rehash:2000,ver:2400};
 const sealOf=(sc,S)=>sc==='rsa'?`<small>signature</small>s = ${sN(S.s)}`:`<small>signature</small>r = ${sN(S.r)}<br>s = ${sN(S.s)}`;
 function svCfg(sc){
   const R=D.R[sc],K=R.K,S=R.S,V=R.V,f=sN,eq=V.ok?'=':'≠';
-  const C=sc==='rsa'?{board:`Alice: n = ${f(K.n)}, e = ${f(K.e)}`,kA:`d = ${f(K.d)}`,kB:`n, e`,fA:`x = ${f(R.h)}`,fB:`x′ = ${f(R.hr)}`,vB:`sᵉ mod n = ${f(V.v)}`}
+  const c=cN,C=sc==='rsa'?{board:`Alice: n = ${f(K.n)}, e = ${f(K.e)}`,kA:`d = ${c(K.d)}`,kB:`n, e`,fA:`x = ${c(R.h)}`,fB:`x′ = ${c(R.hr)}`,vB:`sᵉ mod n = ${c(V.v)}`}
    :sc==='eg'?{board:`Alice: p = ${K.p}, α = ${K.a}, β = ${K.b}`,kA:`d = ${K.d}`,kE:`k = ${S.k}`,rA:`r = ${S.r}`,kB:`p, α, β`,fA:`x = ${R.h}`,fB:`x′ = ${R.hr}`,vB:`βʳ·rˢ = ${V.t} ${eq} αˣ′ = ${V.ax}`}
-   :sc==='dsa'?{board:`Alice: β = ${f(K.b)}`,kA:`d = ${f(K.d)}`,kE:`k = ${f(S.k)}`,rA:`r = ${f(S.r)}`,kB:`p, q, α, β`,fA:`h = ${f(R.h)}`,fB:`h′ = ${f(R.hr)}`,vB:V.range?'out of range':`v = ${f(V.v)} ${eq} r`}
-   :{board:`Alice: B = ${ptS(K.B)}`,kA:`d = ${f(K.d)}`,kE:`k = ${f(S.k)}`,rA:`R = ${ptS(S.R)}`,kB:`A, B`,fA:`h = ${f(R.h)}`,fB:`h′ = ${f(R.hr)}`,vB:V.range||!V.P?'rejected':`x of P = ${f(V.P[0]%K.q)} ${eq} r`};
+   :sc==='dsa'?{board:`Alice: β = ${f(K.b)}`,kA:`d = ${c(K.d)}`,kE:`k = ${c(S.k)}`,rA:`r = ${c(S.r)}`,kB:`p, q, α, β`,fA:`h = ${c(R.h)}`,fB:`h′ = ${c(R.hr)}`,vB:V.range?'out of range':`v = ${c(V.v)} ${eq} r`}
+   :{board:`Alice: B = ${ptS(K.B)}`,kA:`d = ${c(K.d)}`,kE:`k = ${c(S.k)}`,rA:D.small?`R = ${ptS(S.R)}`:`r = ${c(S.r)}`,kB:`A, B`,fA:`h = ${c(R.h)}`,fB:`h′ = ${c(R.hr)}`,vB:V.range||!V.P?'rejected':`x of P = ${c(V.P[0]%K.q)} ${eq} r`};
   C.seal=sealOf(sc,S);C.sealE=sealOf(sc,R.Sr);return C;
 }
 function svParts(sc){
@@ -779,7 +781,7 @@ const sealS=s=>`<small>signature</small>s = ${sN(s)}`;
 const HFB=()=>{const K=D.K.rsa;return avP('avB','B','Bob','checks')+keyP('kB','pub','Alice’s public key','n, e')+boardP('board',`Alice: n = ${sN(K.n)}, e = ${sN(K.e)}`)+markP('cmp')};
 const HF={
 exist:{
-  parts(){const F=D.HF;return avP('avS','E','Eve','has no private key')+HFB()+chipP('fB','m',`x on the sheet = ${sN(F.xE)}`)+chipP('vB','p',`sᵉ mod n = ${sN(F.vE)}`)+bubP('b1','bad','Valid, but nobody chose this x.')+paperP('paper','message','?',`x = ${sN(F.xE)}`,sealS(F.sE),'','Eve’s sheet')},
+  parts(){const F=D.HF;return avP('avS','E','Eve','has no private key')+HFB()+chipP('fB','m',`x = ${cN(F.xE)}`)+chipP('vB','p',`sᵉ mod n = ${cN(F.vE)}`)+bubP('b1','bad','Valid, but nobody chose this x.')+paperP('paper','message','?',`x = ${sN(F.xE)}`,sealS(F.sE),'','Eve’s sheet')},
   pose(k){return{cam:['F','A','A','B','B'][k],avS:{at:SV.avA,o:1},avB:{at:SV.avB,o:1},kB:{at:SV.kB,o:1,c:{glow:false}},board:{at:SV.board,o:1},
     fB:{at:SV.fB,o:k>=3},vB:{at:SV.vB,o:k>=3},cmp:{at:SV.cmp,o:k>=3,c:{ok:1}},b1:{at:[700,300],o:k===4},
     paper:{at:k>=3?SV.pB:SV.pA,o:1,c:{signed:k>=1,alt:k>=2,ok:k>=3,stamp:false}}}},
@@ -794,10 +796,10 @@ exist:{
     {t:'But what does x say?',rows:[{s:`${vM('x')} = ${nc('cm',F.xE)}`,n:`the bytes ${hexBytes(F.xE)}`,f:`x = ${F.xE}`}],note:'Nobody chose this message: it is whatever came out. This is an <b>existential forgery</b>. A hash stops it: see “Hash, then sign”.'}][k]},
   info(){const F=D.HF;return{avS:'Eve has only Alice’s public key.',avB:'Bob checks with Alice’s public key.',kB:'Alice’s public key (n, e).',board:'Alice’s public key, readable by everyone.',paper:`Eve’s sheet: x = ${F.xE} with the seal s = ${F.sE}.`,fB:`x = ${F.xE}`,vB:`sᵉ mod n = ${F.vE}`,cmp:'Equal, so Bob accepts.',b1:'An existential forgery: the message is not chosen.'}}},
 mult:{
-  parts(){const F=D.HF,K=F.K;return avP('avA','A','Alice','signs')+keyP('kA','pri','private key',`d = ${sN(K.d)}`)+avP('avS','E','Eve','multiplies')+HFB()+chipP('fB','m',`x on the sheet = ${sN(F.xM)}`)+chipP('vB','p',`sᵉ mod n = ${sN(F.vM)}`)+
+  parts(){const F=D.HF,K=F.K;return avP('avA','A','Alice','signs')+keyP('kA','pri','private key',`d = ${sN(K.d)}`)+avP('avS','E','Eve','multiplies')+HFB()+chipP('fB','m',`x = ${cN(F.xM)}`)+chipP('vB','p',`sᵉ mod n = ${cN(F.vM)}`)+
     paperP('p1','message',`x₁ = ${F.x1}`,'',sealS(F.s1),'','Alice’s first message')+paperP('p2','message',`x₂ = ${F.x2}`,'',sealS(F.s2),'','Alice’s second message')+paperP('p3','made by Eve',`x = ${sN(F.xM)}`,'',sealS(F.sM),'','Eve’s message')},
-  pose(k){return{cam:['F','A','A','M','B'][k],avA:{at:SV.avA,o:1},kA:{at:SV.kA,o:1,c:{glow:false}},avS:{at:SV.avE,o:1,c:{busy:false}},avB:{at:SV.avB,o:1},kB:{at:SV.kB,o:1,c:{glow:false}},board:{at:SV.board,o:1},
-    p1:{at:[255,128],o:k>=1,c:{signed:k>=1,glow:false,stamp:false}},p2:{at:[255,300],o:k>=2,c:{signed:k>=2,glow:false,stamp:false}},p3:{at:k>=4?SV.pB:SV.pM,o:k>=3,c:{signed:k>=3,ok:k>=4,stamp:false}},
+  pose(k){return{cam:['F','A','A','M','B'][k],avA:{at:SV.avA,o:1},kA:{at:SV.kA,o:1,c:{glow:false}},avS:{at:[518,334],o:1,c:{busy:false}},avB:{at:SV.avB,o:1},kB:{at:SV.kB,o:1,c:{glow:false}},board:{at:SV.board,o:1},
+    p1:{at:[305,128],o:k>=1,c:{signed:k>=1,glow:false,stamp:false}},p2:{at:[305,300],o:k>=2,c:{signed:k>=2,glow:false,stamp:false}},p3:{at:k>=4?SV.pB:[525,174],o:k>=3,c:{signed:k>=3,ok:k>=4,stamp:false}},
     fB:{at:SV.fB,o:k>=4},vB:{at:SV.vB,o:k>=4},cmp:{at:SV.cmp,o:k>=4,c:{ok:1}}}},
   phases(k){const one=p=>[[0,{cam:'A'},.3],[.2,{[p]:{o:1}},.2],[.3,{kA:{c:{glow:1}}},.1],[.72,{[p]:{c:{signed:1,stamp:1}},kA:{c:{glow:0}}},.15]];
     return[[],one('p1'),one('p2'),
@@ -813,13 +815,13 @@ mult:{
   info(){const F=D.HF;return{avA:'Alice signs two harmless numbers.',kA:'Alice’s private key.',avS:'Eve combines the two signatures.',avB:'Bob checks with the public key.',kB:'Alice’s public key (n, e).',board:'Alice’s public key.',
     p1:`x₁ = ${F.x1}, s₁ = ${F.s1}`,p2:`x₂ = ${F.x2}, s₂ = ${F.s2}`,p3:`x = ${F.xM}, s = ${F.sM}: made by Eve`,fB:`x = ${F.xM}`,vB:`sᵉ mod n = ${F.vM}`,cmp:'Equal, so Bob accepts.'}}},
 hash:{
-  parts(){const F=D.HF,K=F.K,R=D.R.rsa,S=ST.hfs;return avP('avA','A','Alice','signs')+keyP('kA','pri','private key',`d = ${sN(K.d)}`)+machP('mA','SHA-256','hash')+chipP('fA','m',`x = ${sN(R.h)}`)+HFB()+machP('mB','SHA-256','hash again')+
-    chipP('fB','m',`x′ = ${sN(R.h)}`)+chipP('vB','p',`sᵉ mod n = ${sN(R.Vh.v)}`)+avP('avS','E','Eve','brings her forged pair')+
-    chipP('fF',S?'m':'e',S?`hash of her text = ${sN(F.xE)}`:`hash of ? = ${sN(F.xE)}`)+chipP('vF','p',`sᵉ mod n = ${sN(F.xE)}`)+markP('cmpF')+bubP('bF','bad',D.small?'Eve needs a text whose hash is x.':'That needs about 2²⁵⁶ tries.')+
+  parts(){const F=D.HF,K=F.K,R=D.R.rsa,S=ST.hfs;return avP('avA','A','Alice','signs')+keyP('kA','pri','private key',`d = ${sN(K.d)}`)+machP('mA','SHA-256','hash')+chipP('fA','m',`x = ${cN(R.h)}`)+HFB()+machP('mB','SHA-256','hash again')+
+    chipP('fB','m',`x′ = ${cN(R.h)}`)+chipP('vB','p',`sᵉ mod n = ${cN(R.Vh.v)}`)+avP('avS','E','Eve','brings her forged pair')+
+    chipP('fF',S?'m':'e',S?`hash = ${cN(F.xE)}`:`needs hash ${cN(F.xE)}`)+chipP('vF','p',`sᵉ mod n = ${cN(F.xE)}`)+markP('cmpF')+bubP('bF','bad',D.small?'Eve needs a text whose hash is x.':'That needs about 2²⁵⁶ tries.')+
     paperP('paper','message',escH(short(D.msg,40)),'',sealS(R.S.s),'')+paperP('pF','Eve’s sheet','?',S?escH(S.m):'',sealS(F.sE),'','Eve’s sheet')},
   pose(k){const S=!!ST.hfs;return{cam:['F','A','A','B','B'][k],avA:{at:SV.avA,o:1},kA:{at:SV.kA,o:1,c:{glow:false}},mA:{at:SV.mA,o:1,c:{busy:false}},fA:{at:SV.fA,o:k>=1,c:{glow:false}},
     avB:{at:SV.avB,o:1},kB:{at:SV.kB,o:1,c:{glow:false}},board:{at:SV.board,o:1},mB:{at:SV.mB,o:k<4,c:{busy:false}},fB:{at:SV.fB,o:k===3},vB:{at:SV.vB,o:k===3},cmp:{at:SV.cmp,o:k===3,c:{ok:1}},
-    paper:{at:k>=3?SV.pB:SV.pA,o:k<4,c:{signed:k>=2,ok:k===3,stamp:false}},avS:{at:SV.avE,o:k===4},pF:{at:SV.pB,o:k===4,c:{signed:1,alt:S,ok:S}},
+    paper:{at:k>=3?SV.pB:SV.pA,o:k<4,c:{signed:k>=2,ok:k===3,stamp:false}},avS:{at:[448,336],o:k===4},pF:{at:SV.pB,o:k===4,c:{signed:1,alt:S,ok:S}},
     fF:{at:SV.fB,o:k===4},vF:{at:SV.vB,o:k===4},cmpF:{at:SV.cmp,o:k===4&&S,c:{ok:1}},bF:{at:[700,300],o:k===4&&!S}}},
   phases(k){const S=!!ST.hfs;return[[],[[0,{cam:'A'},.3],[.24,{mA:{c:{busy:1}}},.1],[.6,{mA:{c:{busy:0}},fA:{o:1}},.15]],
     [[0,{cam:'A'},.25],[.24,{kA:{c:{glow:1}},fA:{c:{glow:1}}},.1],[.78,{paper:{c:{signed:1,stamp:1}},kA:{c:{glow:0}},fA:{c:{glow:0}}},.15]],
@@ -837,7 +839,7 @@ hash:{
 };
 T.hf={n:()=>5,render(k){
   const v=ST.hfv,F=D.HF,K=F.K,H=HF[v];
-  stage.innerHTML=subs(`<span class="flh">Show</span>`,seg('hfv',v,[['exist','Pick s first'],['mult','Multiply two signatures'],['hash','Hash, then sign']]))+scnBox(960,SVH,H.parts(),SVROAD)+keyline()+wbHTML(H.wb(k));
+  stage.innerHTML=subs(`<span class="flh">Show</span>`,seg('hfv',v,[['exist','Pick s first'],['mult','Multiply two signatures'],['hash','Hash, then sign']]))+scnBox(960,SVH,H.parts(),v==="mult"?SVROAD.replace(/<text.*<\/text>/,""):SVROAD)+keyline()+wbHTML(H.wb(k));
   scnFit();poseNow(H.pose(k));PARTI=H.info();
   const ex={exist:[say('Textbook RSA can be forged','In textbook RSA Bob only checks that s<sup>e</sup> mod n = x. Eve does not have the private key. Press <b>Step</b> to see what she can still do.'),
       say('Step 1 · pick the signature','Eve starts at the end: she picks a signature s first, any number she likes.'),
@@ -863,10 +865,10 @@ CLICK.push(e=>{const s=e.target.closest('[data-srch]');if(s){s.disabled=true;s.t
 
 /* ---------- tab 7 · the same k twice ---------- */
 QZ.nr={q:'How do careful implementations avoid using the same k twice?',o:['They always use k = 1','They derive k from the private key and the message (RFC 6979)','They publish k with the signature'],a:1,why:'A k computed with HMAC from d and the hash is different for every message and still secret, and it needs no random number generator at signing time.'};
-const NRP={p1:[255,128],p2:[255,300],avE:[640,64],kC:[640,168],dK:[640,232],board:[640,318],chk:[640,392],p3:[858,190]};
+const NRP={p1:[255,128],p2:[255,300],avE:[612,64],kC:[612,168],dK:[612,232],board:[612,318],chk:[612,392],p3:[836,190]};
 function nrParts(){
   const N=D.NR[ST.nrv],dsa=ST.nrv==='dsa',K=N.K,sl=(S,i)=>`<small>signature ${i}</small>r = <span class="same">${sN(S.r)}</span><br>s = ${sN(S.s)}`;
-  return avP('avA','A','Alice','signs twice with one k')+avP('avE','E','Eve','reads both signatures')+chipP('kC','k',`k = ${sN(N.k)}`)+keyP('dK','pri','Alice’s private key, found',`d = ${sN(N.d)}`)+
+  return avP('avA','A','Alice','signs twice with one k')+avP('avE','E','Eve','reads both signatures')+chipP('kC','k',`k = ${cN(N.k)}`)+keyP('dK','pri','Alice’s private key, found',`d = ${cN(N.d)}`)+
     boardP('board',dsa?`Alice: β = ${sN(K.b)}`:`Alice: B = ${ptS(K.B)}`)+chipP('chk','p',dsa?'αᵈ mod p = β':'d·A = B')+
     paperP('p1','message 1',escH(short(D.msg,40)),'',sl(N.S1,1),'','message 1')+paperP('p2','message 2',escH(N.m2),'',sl(N.S2,2),'','message 2')+
     paperP('p3','made by Eve',N.m3,'',`<small>signature</small>r = ${sN(N.S3.r)}<br>s = ${sN(N.S3.s)}`,'','Eve’s message');
@@ -1082,7 +1084,7 @@ T.ov.doc=()=>{const K=D.K;
   <ul class="pts"><li><b>Integrity</b>: if one bit of the message changes, the signature no longer fits.</li><li><b>Message authentication</b>: the message comes from the holder of the private key.</li><li><b>Non-repudiation</b>: the signer cannot later deny it, because nobody else could have made the signature. A third person, such as a judge, can check this.</li></ul>
   <p>A signature does not give <b>confidentiality</b>. The message travels in the clear next to its signature.</p>
   <h3>Why a MAC is not enough</h3>
-  <p>A message authentication code (MAC) is computed with a key that both sides share. It gives integrity and authentication between the two of them. But a valid tag only shows that one of the two key holders made it. In the story above, Bob could have written the order and its tag himself, so the tag proves nothing to the judge.</p>
+  <p>A message authentication code (MAC) is computed with a key that both sides share. It gives integrity and authentication between the two of them. But a valid tag only shows that one of the two key holders made it. In the story above, the bank could have written the payment order and its tag itself, so the tag proves nothing to the judge.</p>
   <p>A signature separates the two roles. Signing needs the private key, which only Alice has. Checking needs the public key, which everyone may have. This is the same split as in <a href="rsa.html">public-key encryption</a>, used the other way round.</p>
   <h3>Three algorithms</h3>
   <p>Every signature scheme has key generation, a signing algorithm and a verification algorithm. On this page the signed number is always derived from the SHA-256 hash of the message, and each scheme is shown with the current numbers:</p>
