@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digital signatures, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;
+  --pub:#1f7a45;--pri:#7d55c7;--rp:#1d5fa6;--ri:#c2570c;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;
+  --pub:#5fd08f;--pri:#b49aec;--rp:#8ab8ee;--ri:#f0a35e;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0;position:relative}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){.stage{padding:12px 10px}}
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.seg.sm button{padding:3px 10px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);max-width:100%}
+input[type=text]{width:100%}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+#extra a,#explain a{color:var(--accent)}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.mono{font-family:var(--mono)}
+button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+.inbar{display:grid;grid-template-columns:minmax(220px,auto) minmax(0,1fr);gap:10px 14px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.meta{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.meta b{color:var(--ink)}
+@media (max-width:700px){.inbar{grid-template-columns:minmax(0,1fr)}}
+.sec{margin-top:22px}
+.scroll{overflow-x:auto;max-width:100%}
+.subs{margin-bottom:14px}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+.hint.l{text-align:left}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* animation layer: tokens fly over the stage */
+#fx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5}
+.tok text{font-family:var(--mono);font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:3px;stroke-linejoin:round}
+.tok .edge{fill:none;stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.flash{animation:flash .7s ease-out}
+@keyframes flash{from{background:var(--accentBg);box-shadow:0 0 0 4px var(--accent)}}
+.pulse{animation:pz .45s ease-in-out infinite alternate}
+@keyframes pz{to{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 45%,transparent)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* shared pieces */
+.res{--r:var(--accent);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 12px;margin-top:10px;border-radius:8px;background:color-mix(in srgb,var(--r) 8%,transparent);border-left:3px solid var(--r)}
+.res.r-ok{--r:var(--ok)}.res.r-bad{--r:var(--xor)}
+.res .rl{font:600 12.5px var(--sans);color:var(--r);min-width:70px}
+.res .rv{font:13px var(--mono);overflow-wrap:anywhere;flex:1 1 200px;min-width:0}
+.vok{font:600 12.5px var(--sans);color:var(--ok);background:var(--okBg);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.vbad{font:600 12.5px var(--sans);color:var(--xor);background:var(--xorBg);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.pros{list-style:none;margin:8px 0;padding:0;font-size:14px}
+.pros li{padding:2px 0 2px 22px;position:relative}
+.pros li::before{position:absolute;left:3px;font-weight:700}
+.pros .y::before{content:'+';color:var(--ok)}.pros .n::before{content:'−';color:var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.nvs{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.nv{font:600 12.5px var(--mono);padding:2px 8px;border-radius:6px;background:color-mix(in srgb,var(--ink) 7%,transparent);border:0;color:var(--ink);display:inline-flex;gap:6px;align-items:baseline;cursor:pointer}
+.nv small{font:500 11px var(--sans);color:var(--muted)}
+.nv:hover,.nv:focus-visible{outline:1.5px solid var(--accent)}
+.nv.on{outline:2px solid var(--accent)}
+.nv.gh{visibility:hidden}
+.pick{min-height:20px;margin-top:8px;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.pick b{color:var(--ink)}.pick code{font:12.5px var(--mono);color:var(--ink)}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);color:var(--ink);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor);color:var(--ink)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+/* the story of tab 1 */
+.ch{width:100%;height:auto;display:block;margin:0 auto}
+.wd .ch{min-width:620px}
+.chn{stroke:var(--line2);stroke-width:2.2;stroke-dasharray:7 5;fill:none}
+.chl{font:600 12.5px var(--sans);fill:var(--muted);text-anchor:middle}
+.prs circle{fill:var(--panel);stroke:var(--c);stroke-width:2.6}
+.prs text{font:800 24px var(--sans);fill:var(--c);text-anchor:middle}
+.prs .pn{font:700 14px var(--sans)}
+.prs.a{--c:var(--rp)}.prs.b{--c:var(--pub)}.prs.j{--c:var(--ink)}
+.iky circle,.iky path{fill:none;stroke:var(--c);stroke-width:3.6;stroke-linecap:round}
+.iky.mac{--c:var(--ri)}.iky.pri{--c:var(--pri)}.iky.pub{--c:var(--pub)}
+.kl{font:600 12px var(--sans);text-anchor:middle;fill:var(--c)}
+.kl.mac{--c:var(--ri)}.kl.pri{--c:var(--pri)}.kl.pub{--c:var(--pub)}
+.dc rect{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+.dc .t1{font:600 12.5px var(--sans);fill:var(--ink);text-anchor:middle}
+.dc .t2{font:700 12px var(--mono);text-anchor:middle}
+.dc .t2.mac{fill:var(--ri)}.dc .t2.pri{fill:var(--pri)}
+.bub rect{fill:var(--panel);stroke:var(--line2);stroke-width:1.4}
+.bub text{font:600 12.5px var(--sans);fill:var(--ink);text-anchor:middle}
+.bub.bad rect{stroke:var(--xor);fill:var(--xorBg)}.bub.ok rect{stroke:var(--ok);fill:var(--okBg)}
+.mk{font:800 26px var(--sans);text-anchor:middle}.mk.ok{fill:var(--ok)}.mk.bad{fill:var(--xor)}
+#ovS [data-goto]{cursor:pointer;outline:none}
+#ovS [data-goto]:hover,#ovS [data-goto]:focus-visible{filter:drop-shadow(0 0 4px var(--accent))}
+table.svc{border-collapse:collapse;width:100%;font-size:14px}
+table.svc th,table.svc td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.svc th{font-size:13px;color:var(--muted);font-weight:600}
+table.svc tr[data-svc]{cursor:pointer;outline:none}
+table.svc tr[data-svc]:hover td,table.svc tr[data-svc]:focus-visible td{background:var(--accentBg)}
+/* sign and verify: Alice on the left, the open network in the middle, Bob on the right */
+.fwc{container-type:inline-size}
+.fw{display:grid;grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr);grid-template-areas:"a1 . a3" "m1 n1 m3" "h1 . h3" "s1 e s3" "g1 n2 g3" ". . r3";align-items:stretch}
+.fw>.a1{grid-area:a1}.fw>.a3{grid-area:a3}.fw>.m1{grid-area:m1}.fw>.m3{grid-area:m3}.fw>.n1{grid-area:n1}.fw>.n2{grid-area:n2}
+.fw>.h1{grid-area:h1}.fw>.h3{grid-area:h3}.fw>.s1{grid-area:s1}.fw>.s3{grid-area:s3}.fw>.e{grid-area:e}.fw>.g1{grid-area:g1}.fw>.g3{grid-area:g3}.fw>.r3{grid-area:r3}
+.cl{display:flex;flex-direction:column;min-width:0}
+.fw>.who{display:flex;flex-direction:row;align-items:center;gap:6px 8px;flex-wrap:wrap;margin-bottom:8px;font-size:14px}
+.pers{width:30px;height:30px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:800 15px var(--sans);border:2.5px solid var(--c);color:var(--c);background:var(--panel)}
+.pers.a{--c:var(--rp)}.pers.b{--c:var(--pub)}.pers.e{--c:var(--xor)}
+.kchip{font:600 12px var(--mono);padding:2px 8px;border-radius:12px;border:1.5px solid var(--c);color:var(--c);background:color-mix(in srgb,var(--c) 9%,var(--panel));overflow-wrap:anywhere}
+.kchip.pri{--c:var(--pri)}.kchip.pub{--c:var(--pub)}
+.bx{border:1.5px solid var(--line2);border-radius:9px;padding:6px 10px;background:var(--panel);min-width:0;transition:box-shadow .25s}
+.bx>small{display:block;font:600 11.5px var(--sans);color:var(--muted);margin-bottom:1px}
+.bx .ln{font:13px/1.55 var(--mono);overflow-wrap:anywhere}
+.bx .ln sup,.bx .ln sub{font-size:.72em}
+.bx .mt{font:600 13.5px var(--sans);overflow-wrap:anywhere}
+.bx.msg{border-color:var(--rp)}.bx.sig{border-color:var(--ri)}.bx.sg{border-color:var(--pri)}.bx.vf{border-color:var(--pub)}
+.bx.on{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 40%,transparent)}
+.bx.tam{border-color:var(--xor);background:var(--xorBg)}
+.gh{visibility:hidden}
+.ar{display:block;text-align:center;color:var(--faint);font:15px/1 var(--sans);margin:3px 0;font-style:normal}
+.lane{position:relative;align-self:center;height:0;border-top:2px dashed var(--line2);margin:0 10px 0 6px}
+.lane span{position:absolute;left:50%;transform:translateX(-50%);top:-21px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.lane::after{content:'';position:absolute;right:-10px;top:-7px;border:6px solid transparent;border-left:9px solid var(--line2)}
+.mid{align-self:center;text-align:center;font-size:12px;color:var(--muted);padding:0 4px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mid b{color:var(--xor)}
+.rbadge{margin-top:10px;text-align:center;font:700 15px var(--sans);padding:8px;border-radius:9px;transition:opacity .2s}
+.rbadge.ok{background:var(--okBg);color:var(--ok)}.rbadge.bad{background:var(--xorBg);color:var(--xor)}
+.ar.dn2{display:none}
+@container (max-width:560px){
+  .fw{grid-template-columns:minmax(0,1fr);grid-template-areas:"a1" "m1" "h1" "s1" "g1" "e" "a3" "m3" "h3" "g3" "s3" "r3"}
+  .lane{display:none}.ar.up{display:none}.ar.dn2{display:block}
+  .mid{margin:14px 0;padding:8px;border-top:2px dashed var(--line2);border-bottom:2px dashed var(--line2)}
+  .a3{margin-top:4px}
+}
+/* the elliptic curve and the subgroup of DSA */
+.dual{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px 22px;align-items:start}
+@media (max-width:760px){.dual{grid-template-columns:minmax(0,1fr)}}
+.ecp{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
+.ecp .gl{stroke:var(--line);stroke-width:.7}
+.ecp .ax{font:500 8.5px var(--mono);fill:var(--faint);text-anchor:middle;dominant-baseline:central}
+.ecp .axt{font:600 10px var(--sans);fill:var(--muted)}
+.ecp .pt{fill:var(--ink);opacity:.5;cursor:pointer;outline:none}
+.ecp .pt:hover,.ecp .pt:focus-visible{opacity:1;stroke:var(--accent);stroke-width:2}
+.ecp .pt.A{fill:var(--rp);opacity:1}.ecp .pt.B{fill:var(--pub);opacity:1}.ecp .pt.R{fill:var(--ri);opacity:1}
+.ecp .ring{fill:none;stroke:var(--ri);stroke-width:2.2}
+.ecp .lb{font:700 10.5px var(--sans);paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+.ecp .lb.A{fill:var(--rp)}.ecp .lb.B{fill:var(--pub)}.ecp .lb.R{fill:var(--ri)}
+.ecp .chain{fill:none;stroke:var(--ri);stroke-width:1.3;opacity:.45}
+.sgv{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+.sgv i{font:600 12.5px/28px var(--mono);font-style:normal;text-align:center;border-radius:5px;background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--faint);cursor:pointer;outline:none}
+.sgv i.mem{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--ink)}
+.sgv i.pub{background:var(--pub);color:#fff}.sgv i.rk{background:var(--ri);color:#fff}
+.sgv i.vg{outline:2.5px solid var(--ri);outline-offset:-2.5px}
+.sgv i:hover,.sgv i:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.side p{margin:0 0 8px;font-size:14px}
+.big{padding:10px 12px;border-radius:9px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:14px;color:var(--muted)}
+/* rows of an attack: one row per step */
+.eqs{display:flex;flex-direction:column;gap:8px}
+.er{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr);gap:12px;align-items:center;padding:9px 12px;border-radius:9px;background:color-mix(in srgb,var(--ink) 4%,transparent);min-height:52px;transition:opacity .25s;cursor:pointer;outline:none}
+.er:hover,.er:focus-visible{background:color-mix(in srgb,var(--ink) 9%,transparent)}
+.er.off{opacity:.3}.er.off .ev{visibility:hidden}
+.er.cur{box-shadow:inset 3px 0 0 var(--accent)}
+.el{font-size:13.5px;color:var(--muted)}
+.el b{color:var(--ink)}
+.ev{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0;font:13px var(--mono);overflow-wrap:anywhere}
+.ev .same{background:var(--ri);color:#fff;border-radius:5px;padding:0 5px}
+@media (max-width:560px){.er{grid-template-columns:minmax(0,1fr)}}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.mth{font:13.5px/1.7 var(--mono)}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Digital signatures, step by step</h1>
+  <p class="sub">Who wrote this message, and was it changed on the way? RSA, Elgamal, DSA and ECDSA signatures with real numbers, and the mistakes that break them</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="ov" class="on">1 · Why signatures</button>
+    <button data-tab="rsa">2 · RSA signature</button>
+    <button data-tab="hf">3 · Hash first</button>
+    <button data-tab="eg">4 · Elgamal</button>
+    <button data-tab="dsa">5 · DSA</button>
+    <button data-tab="ec">6 · ECDSA</button>
+    <button data-tab="nr">7 · Same k twice</button>
+  </nav>
+</header>
+
+<section class="wrap">
+  <div class="card inbar">
+    <label class="fld"><span class="flh"><b>Numbers</b></span><select id="pre"></select></label>
+    <label class="fld"><span class="flh"><b>Message</b> the text that Alice signs</span><input type="text" id="mI" spellcheck="false" autocomplete="off" maxlength="200"></label>
+    <div class="meta" id="meta"></div>
+  </div>
+</section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stageCard"><div id="stage"></div><svg id="fx" aria-hidden="true"></svg></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label>
+        <label class="inl" id="fWrap" title="Scroll so the moving part stays in view"><input type="checkbox" id="follow" checked> follow</label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: all numbers are computed in this browser. Never use the demo keys for real data.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const hx=b=>b.toString(16).padStart(2,'0'),hexs=a=>[...a].map(hx).join('');
+const SUPS='⁰¹²³⁴⁵⁶⁷⁸⁹',sup_=n=>String(n).split('').map(d=>SUPS[+d]).join('');
+const escH=s=>s.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+
+/* ---------- number theory on BigInt ---------- */
+const mod=(a,m)=>((a%m)+m)%m;
+const modpow=(b,e,n)=>{let r=1n;b=mod(b,n);while(e>0n){if(e&1n)r=r*b%n;b=b*b%n;e>>=1n}return r};
+const gcd=(a,b)=>{while(b)[a,b]=[b,a%b];return a};
+const bitLen=v=>v>0n?v.toString(2).length:0;
+const ones=v=>[...v.toString(2)].filter(c=>c==='1').length;
+function modinv(a,n){let[r0,r1]=[mod(a,n),n],[s0,s1]=[1n,0n];while(r1){const q=r0/r1;[r0,r1]=[r1,r0-q*r1];[s0,s1]=[s1,s0-q*s1]}return r0===1n?mod(s0,n):null}
+const rndB=n=>[...crypto.getRandomValues(new Uint8Array(n))];
+const B2I=b=>b.length?BigInt('0x'+hexs(b)):0n;
+// a uniform random number in [0, n)
+function rndBelow(n){const bits=bitLen(n),by=Math.ceil(bits/8),m=(1n<<BigInt(bits))-1n;for(;;){const v=B2I(rndB(by))&m;if(v<n)return v}}
+
+/* ---------- SHA-256 (FIPS 180-4) ---------- */
+const SHK=[],SHI=[];
+{const fr=x=>Math.floor((x-Math.floor(x))*2**32);for(let n=2;SHK.length<64;n++){let p=true;for(let i=2;i*i<=n;i++)if(n%i===0)p=false;if(p){if(SHI.length<8)SHI.push(fr(Math.sqrt(n)));SHK.push(fr(Math.cbrt(n)))}}}
+function sha256(msg){
+  const m=msg.slice(),l=m.length,rr=(x,n)=>(x>>>n)|(x<<(32-n));m.push(0x80);while(m.length%64!==56)m.push(0);
+  const hi=Math.floor(l/2**29),lo=(l<<3)>>>0;for(let i=3;i>=0;i--)m.push((hi>>>(8*i))&255);for(let i=3;i>=0;i--)m.push((lo>>>(8*i))&255);
+  const H=SHI.slice(),w=new Uint32Array(64);
+  for(let o=0;o<m.length;o+=64){
+    for(let i=0;i<16;i++)w[i]=((m[o+4*i]<<24)|(m[o+4*i+1]<<16)|(m[o+4*i+2]<<8)|m[o+4*i+3])>>>0;
+    for(let i=16;i<64;i++){const a=w[i-15],b=w[i-2];w[i]=(w[i-16]+(rr(a,7)^rr(a,18)^(a>>>3))+w[i-7]+(rr(b,17)^rr(b,19)^(b>>>10)))>>>0}
+    let[a,b,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){const t1=(h+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+SHK[i]+w[i])>>>0,t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0}
+    [a,b,c,d,e,f,g,h].forEach((v,i)=>{H[i]=(H[i]+v)>>>0});
+  }
+  return H.flatMap(v=>[v>>>24,(v>>>16)&255,(v>>>8)&255,v&255]);
+}
+const txtB=s=>[...new TextEncoder().encode(s)];
+const hashOf=s=>B2I(sha256(txtB(s)));
+
+/* ---------- elliptic curves y² = x³ + a·x + b over GF(p); a point is [x, y], null is the point at infinity ---------- */
+function ecAdd(C,P,Q){
+  if(!P)return Q;if(!Q)return P;const p=C.p,[x1,y1]=P,[x2,y2]=Q;let l;
+  if(x1===x2){if(mod(y1+y2,p)===0n)return null;l=mod((3n*x1*x1+C.a)*modinv(2n*y1,p),p)}
+  else l=mod((y2-y1)*modinv(x2-x1,p),p);
+  const x3=mod(l*l-x1-x2,p);return[x3,mod(l*(x1-x3)-y1,p)];
+}
+// k·P by double and add, reading k from its lowest bit
+function ecMul(C,k,P){let R=null;k=mod(k,C.q);for(;k>0n;k>>=1n){if(k&1n)R=ecAdd(C,R,P);P=ecAdd(C,P,P)}return R}
+const ptEq=(P,Q)=>P&&Q?P[0]===Q[0]&&P[1]===Q[1]:P===Q;
+
+/* ---------- the numbers of this page ---------- */
+const HP=0xe0a00d87a6c7169e2083171e05993d3996d46d141c5983e5f17f4b26799c499d18d37f37460caca1805f24faf8db59292b6eef6947d7663b9349738bfa62ba5a97a6c1e1337c29ff4529e364a8cb223960427579ca2f6807e1ec19793cb3522f560c40bbb5c70434c6b09990c5337c95cc631d28a042b7a3051561b10ea2a5d7n,HQ=0xcbbc788880c53f5f9889d66800345cbb34d985b7ef203a0abfd6c28cc23583cf18208605d1f1282377803f45ff0e8a228ebdcef1e6814f61da7a40792f6654900c81a0a453a5348169e7dae993836b143955e9b60710de258cbb63903ca5547991cf0ce16f7eac41f1fbc5e73dc197b2a89bbd725073bf5f997f0a49baa1c3b7n;   // the RSA-2048 demonstration key of the RSA page, made with OpenSSL: public, so never use it
+const DP=0xa8796279729f0896190a96005e98a75917ad6ac1ae9ef07e194e48f30e87f127fa544b5605a7221b5d73e18e36e4e947f14e14d9dc826a8d38967a55743bd5a674def83a9507f8f88e566242657c9c5e7d39ce8ccca4004a5daf88388c29086d416689a31c71417e8c3b006e07915339ca2638c97cc0fcc96be415ffc1c365c29408b5bc01afb8cd7119b6300d8f6bb7de686557012b66c320c866ba821dbf2c985d60df7d174ca9364b5369f92a5158cfbc1dcdcf042a360dda825ec56532a57e02c4c233182284177f4724389479093bcc579af6b552bb0e244a6333252bfa3ebcfeea60ddf623adfa478a7e053d9ff7d0363a330c11bc2b18301746c16c81n,DQ=0xc9077885699fa1213b41b4785c608a38cfdfe523a82b8257005ee4f93be027c9n,DA=0x994a4d92d094975a970d28c3a79ede7331aa4476832a5fa4e40d71977d434816a47561abc82cbc63ac64c9f31901b0c5f04b7d1350a201d6c21a2a1269bb458ae0a3970c7ef616762b2443b9b69ac78be507fdbb94541b9a42a730e1dc15d75c61d752efd1d256dcfc3eda3df6409f6fd377f7f5512ab2f5a9d6a5916f6f7e81d2a3c2378df4f95b7de9b4d352b698fcfef13c2eb32eaa802f04d4a7cea670d18357b81083620bd4c15cae64cb713d7f8b5980dc24f272b5e7453afbad78b1b50f8ac4a775e245817becb744fd53d95f8f2e8419a3b52cd618dac25066a2378c7cebe0ef98ccbe6b09826bab02ff8cb07f20909e17c1bd00497c32135f0365b5n;   // DSA domain parameters (2048-bit p, 256-bit q, α = 2^((p−1)/q) mod p), made for this page
+const K17={name:'y² = x³ + 2x + 2 over GF(17)',p:17n,a:2n,b:2n,G:[5n,1n],q:19n};
+const K256={name:'secp256k1',p:2n**256n-2n**32n-977n,a:0n,b:7n,G:[0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n,0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n],q:0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n};
+// private keys and first nonces of the real-size schemes: random, made when the page opens
+const RD={dsa:1n+rndBelow(DQ-1n),ec:1n+rndBelow(K256.q-1n)},RK={dsa:1n+rndBelow(DQ-1n),ec:1n+rndBelow(K256.q-1n)};
+const K0={eg:5n,dsa:10n,ec:10n};   // the ephemeral keys of the small examples, as in Paar's book
+const PRE=[{id:'small',name:'Small numbers: every step by hand'},{id:'real',name:'Real size: RSA-2048, DSA 2048/256, ECDSA on secp256k1'}];
+const SCH=['rsa','eg','dsa','ec'];
+const D={preset:'small',small:true,msg:'Pay Bob 100 manat',v:0,kp:''};
+const ST={tab:'ov',step:{},tm:'ok',kr:{},hfv:'exist',nrv:'dsa',q:{},pick:null,hfs:null};
+const stage=$('#stage');
+const T={};
+
+function keyOf(sc){
+  const s=D.small;
+  if(sc==='rsa'){const R=s?{p:61n,q:53n,e:17n}:{p:HP,q:HQ,e:65537n},n=R.p*R.q,phi=(R.p-1n)*(R.q-1n);return{...R,n,phi,d:modinv(R.e,phi)}}
+  if(sc==='eg'){const p=29n,a=2n,d=12n;return{p,a,d,b:modpow(a,d,p),m:p-1n}}
+  if(sc==='dsa'){const P=s?{p:59n,q:29n,a:3n,d:7n}:{p:DP,q:DQ,a:DA,d:RD.dsa};return{...P,b:modpow(P.a,P.d,P.p)}}
+  const C=s?K17:K256,d=s?7n:RD.ec;return{C,q:C.q,A:C.G,d,B:ecMul(C,d,C.G)};
+}
+// the number that is signed: the SHA-256 value, reduced into the range the scheme works in.
+// Elgamal uses x only as an exponent, and exponents count modulo p − 1.
+function hOf(sc,K,H){if(sc==='eg')return mod(H,K.m);if(!D.small)return H;return mod(H,sc==='rsa'?K.n:K.q)}
+const kStart=sc=>ST.kr[sc]!=null?ST.kr[sc]:D.small||sc==='eg'?K0[sc]:RK[sc];
+// a signature; for the randomised schemes the first usable k from k0 on (Elgamal needs gcd(k, p − 1) = 1, DSA and ECDSA need r ≠ 0 and s ≠ 0)
+function sign(sc,K,h,k0){
+  if(sc==='rsa')return{s:modpow(h,K.d,K.n)};
+  let k=k0,skip=0;
+  for(let i=0;i<200;i++){
+    if(sc==='eg'){if(k<2n||k>K.m-1n)k=2n;if(gcd(k,K.m)!==1n){k++;skip++;continue}
+      const r=modpow(K.a,k,K.p),ki=modinv(k,K.m);return{k,ki,r,s:mod((h-K.d*r)*ki,K.m),skip}}
+    if(k<1n||k>=K.q)k=1n;
+    const ki=modinv(k,K.q);let r,ak=null,R=null;
+    if(sc==='dsa'){ak=modpow(K.a,k,K.p);r=ak%K.q}else{R=ecMul(K.C,k,K.A);r=R[0]%K.q}
+    const s=r?mod((h+K.d*r)*ki,K.q):0n;
+    if(!r||!s){k++;skip++;continue}
+    return{k,ki,r,s,ak,R,skip};
+  }
+  return null;
+}
+function verify(sc,K,h,S){
+  if(sc==='rsa'){const v=modpow(S.s,K.e,K.n);return{v,ok:v===h}}
+  if(sc==='eg'){const t1=modpow(K.b,S.r,K.p),t2=modpow(S.r,S.s,K.p),t=t1*t2%K.p,ax=modpow(K.a,h,K.p);return{t1,t2,t,ax,ok:S.r>=1n&&S.r<K.p&&t===ax}}
+  const q=K.q;if(!(S.r>0n&&S.r<q&&S.s>0n&&S.s<q))return{ok:false,range:true};
+  const w=modinv(S.s,q),u1=mod(w*h,q),u2=mod(w*S.r,q);
+  if(sc==='dsa'){const g1=modpow(K.a,u1,K.p),g2=modpow(K.b,u2,K.p),g=g1*g2%K.p,v=g%q;return{w,u1,u2,g1,g2,g,v,ok:v===S.r}}
+  const P1=ecMul(K.C,u1,K.A),P2=ecMul(K.C,u2,K.B),P=ecAdd(K.C,P1,P2),v=P?P[0]%q:null;return{w,u1,u2,P1,P2,P,v,ok:v===S.r};
+}
+// Eve's change to the signature: the next value of s that does not verify
+function alter(sc,K,h,S){
+  const M=sc==='rsa'?K.n:sc==='eg'?K.m:K.q;
+  for(let t=1n;t<60n;t++){const s=mod(S.s+t,M);if(!s&&(sc==='dsa'||sc==='ec'))continue;const A={...S,s};if(!verify(sc,K,h,A).ok)return A}
+  return{...S,s:mod(S.s+1n,M)};
+}
+// Eve's change to the message: a number in it made ten times bigger (or a '!' added). With small numbers two hashes can
+// fall on the same value, so the first change whose hash differs for every scheme of the page is taken.
+function eveMsg(m){
+  const re=/\d+/,c=[];let x=m;
+  for(let i=0;i<12;i++){x=re.test(m)?x.replace(re,v=>v+'0'):x+'!';c.push(x)}
+  for(const t of c){const H=hashOf(t);if(SCH.every(sc=>hOf(sc,D.K[sc],H)!==hOf(sc,D.K[sc],D.H)))return{m:t,H}}
+  return{m:c[0],H:hashOf(c[0])};
+}
+function run(sc){
+  const K=D.K[sc],h=hOf(sc,K,D.H),S=sign(sc,K,h,kStart(sc)),tm=ST.tm,mr=tm==='msg'?D.eve.m:D.msg,hr=hOf(sc,K,tm==='msg'?D.eve.H:D.H),Sr=tm==='sig'?alter(sc,K,hr,S):S;
+  return{sc,K,h,S,mr,hr,Sr,V:verify(sc,K,hr,Sr),Vh:verify(sc,K,h,S)};
+}
+// the same k for two messages: Eve computes k and then the private key d
+function nrRun(sc){
+  const K=D.K[sc],q=K.q,h1=hOf(sc,K,D.H),S1=sign(sc,K,h1,kStart(sc));let m2='Another message',h2=0n,S2=null;
+  for(let i=2;i<60;i++){h2=hOf(sc,K,hashOf(m2));if(mod(h2-h1,q)){const S=sign(sc,K,h2,S1.k);if(S&&S.k===S1.k){S2=S;break}}m2='Another message '+i}
+  if(!S2)return null;
+  const ds=mod(S1.s-S2.s,q),dh=mod(h1-h2,q),dsi=modinv(ds,q),k=dh*dsi%q,ri=modinv(S1.r,q),d=mod((S1.s*k-h1)*ri,q);
+  const pub=sc==='dsa'?modpow(K.a,d,K.p):ecMul(K.C,d,K.A),ok=sc==='dsa'?pub===K.b:ptEq(pub,K.B);
+  const m3='Pay Eve 1000 manat',h3=hOf(sc,K,hashOf(m3)),S3=sign(sc,{...K,d},h3,k+1n);
+  return{sc,K,m2,h1,h2,S1,S2,ds,dh,dsi,k,ri,d,pub,ok,m3,h3,S3,V3:verify(sc,K,h3,S3)};
+}
+// the two forgeries of textbook RSA, and the hash that stops them
+function hfRun(){
+  const K=D.K.rsa,n=K.n,sE=D.small?1234n:mod(hashOf('any number Eve likes'),n),xE=modpow(sE,K.e,n);
+  const x1=6n,x2=7n,s1=modpow(x1,K.d,n),s2=modpow(x2,K.d,n),sM=s1*s2%n,xM=x1*x2%n;
+  return{K,n,sE,xE,vE:modpow(sE,K.e,n),x1,x2,s1,s2,sM,xM,vM:modpow(sM,K.e,n),realM:modpow(xM,K.d,n)};
+}
+function hfSearch(){
+  const n=D.K.rsa.n,x=D.HF.xE;
+  for(let i=1;i<=200000;i++){const m=`Pay Eve ${i} manat`;if(hashOf(m)%n===x)return{m,i}}
+  return null;
+}
+function rerun(){D.R={};for(const sc of SCH)D.R[sc]=run(sc);D.NR={dsa:nrRun('dsa'),ec:nrRun('ec')};D.v++}
+function compute(){
+  D.small=D.preset==='small';D.H=hashOf(D.msg);D.Hhex=D.H.toString(16).padStart(64,'0');
+  if(D.kp!==D.preset){D.kp=D.preset;D.K={};for(const sc of SCH)D.K[sc]=keyOf(sc);ST.kr={}}
+  D.eve=eveMsg(D.msg);D.HF=hfRun();ST.hfs=null;rerun();
+}
+function loadPreset(id){D.preset=id;$('#pre').value=id;compute();meta();ST.tab&&show()}
+function onInput(){D.msg=$('#mI').value;compute();show()}
+function meta(){
+  const K=D.K;$('#meta').innerHTML=D.small?`<b>Small numbers</b> · RSA with n = ${K.rsa.n} · Elgamal with p = ${K.eg.p} · DSA with p = ${K.dsa.p}, q = ${K.dsa.q} · ECDSA on ${K.ec.C.name}, ${K.ec.q} points`
+    :`<b>Real size</b> · RSA-${bitLen(K.rsa.n)} · DSA with a ${bitLen(K.dsa.p)}-bit p and ${bitLen(K.dsa.q)}-bit q · ECDSA on secp256k1 · Elgamal stays small · new random keys each time the page opens`;
+}
+
+/* ---------- animation helpers (the same set as on the other demo pages) ---------- */
+const NS='http://www.w3.org/2000/svg';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+let UID=0;
+function along(pts,t){
+  const seg=[];let tot=0;for(let j=1;j<pts.length;j++){const d=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);seg.push(d);tot+=d}
+  if(tot===0)return pts[0];let d=t*tot;
+  for(let j=0;j<seg.length;j++){if(d<=seg[j]||j===seg.length-1){const u=seg[j]?Math.min(1,d/seg[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u]}d-=seg[j]}
+}
+function stripes(x,y,w,h,colors,rx){
+  const id='c'+(++UID);let s=`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><g clip-path="url(#${id})">`;
+  const sw=w/colors.length;colors.forEach((c,j)=>{s+=`<rect x="${(x+j*sw).toFixed(2)}" y="${y}" width="${(sw+.6).toFixed(2)}" height="${h}" style="fill:${c}"/>`});
+  return s+'</g>';
+}
+// a token: a box in the colours of where the value came from, with its value written on it
+function tok(label,w,h,colors){
+  const L=Array.isArray(label)?label:[label],n=Math.max(...L.map(x=>String(x).length)),rx=Math.min(7,h/4);
+  const fs=Math.max(8,Math.min(L.length>1?h*.34:h*.44,w/n*1.5));
+  let t='';L.forEach((x,j)=>{t+=`<text y="${((j-(L.length-1)/2)*fs*1.05+fs*.36).toFixed(1)}" text-anchor="middle" style="font-size:${fs.toFixed(1)}px">${x}</text>`});
+  return stripes(-w/2,-h/2,w,h,colors,rx)+`<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${rx}"/>`+t;
+}
+const FX=$('#fx');
+const fxClear=()=>{FX.innerHTML=''};
+function rectOf(el){const f=FX.getBoundingClientRect(),b=el.getBoundingClientRect();return{x:b.left-f.left+b.width/2,y:b.top-f.top+b.height/2,w:b.width,h:b.height}}
+const xy=r=>[r.x,r.y];
+function svgMap(svg){const m=svg.getScreenCTM(),f=FX.getBoundingClientRect(),pt=svg.createSVGPoint();
+  const g=(x,y)=>{pt.x=x;pt.y=y;const q=pt.matrixTransform(m);return[q.x-f.left,q.y-f.top]};g.s=m.a;return g}
+function fxNode(inner,cls){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;FX.appendChild(g);return g}
+function mover(moves){
+  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0});
+  return p=>{for(const m of moves){
+    const L=m.legs,A=L[0][0],B=L[L.length-1][1];let g=L[0];for(const l of L)if(p>=l[0])g=l;
+    const pt=along(g[2],ease(clamp((p-g[0])/((g[1]-g[0])||1),0,1)));
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
+    const fw=Math.max(.04,(B-A)*.15);let op=p<A?0:1;
+    if(m.fadeIn&&p>=A)op=clamp((p-A)/fw,0,1);
+    if(m.end!=null&&p>=m.end)op=0;
+    m.node.style.opacity=op;
+    if(m.at)while(m.fired<m.at.length&&p>=m.at[m.fired][0]){m.at[m.fired][1](m.node);m.fired++}
+  }};
+}
+function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.length&&p>=list[i][0]){list[i][1]();i++}}}
+const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
+// parts that a step brings in: each is hidden first and fades in from its time t over w of the step
+function bring(items,w=.2){
+  const L=items.filter(x=>x[0]).map(([e,t])=>{e.classList.remove('gh');e.style.opacity=0;return{e,t}});
+  return p=>{for(const o of L){if(p<o.t)continue;const ww=Math.min(w,1-o.t),u=ww>0?clamp((p-o.t)/ww,0,1):1;o.e.style.opacity=u<1?ease(u).toFixed(3):''}};
+}
+const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
+// a token flying from one element to another, its label changing on the way if label2 is given
+function fly(a,b,label,colors,t0,t1,label2,colors2){
+  const A=rectOf(a),B=rectOf(b),w=Math.max(46,Math.min(150,8.2*String(label).length+18)),h=24,w2=label2!=null?Math.max(46,Math.min(150,8.2*String(label2).length+18)):w;
+  return{node:fxNode(tok(label,w,h,colors)),pts:[xy(A),xy(B)],a:t0,b:t1,end:t1+.02,at:label2!=null?[[(t0+t1)/2,retok(label2,w2,h,colors2||colors)]]:[]};
+}
+
+/* ---------- small pieces shared by the tabs ---------- */
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const pc=(good,bad)=>`<ul class="pros">${good.map(x=>`<li class="y">${x}</li>`).join('')}${bad.map(x=>`<li class="n">${x}</li>`).join('')}</ul>`;
+// a number that fits, or its two ends
+const fmtN=(v,w=14)=>{if(v==null)return'–';const s=v.toString();return s.length<=w?s:`${s.slice(0,6)}…${s.slice(-6)}`};
+const sN=v=>fmtN(v,12);
+const ptS=P=>P?`(${sN(P[0])}, ${sN(P[1])})`:'O';
+const hexShort=h=>`${h.slice(0,8)}…${h.slice(-8)}`;
+const short=(s,n=26)=>s.length>n?s.slice(0,n-1)+'…':s;
+// a message on a moving token: from its first digit on, where Eve makes her change, or its end
+const msgTok=m=>{const i=m.search(/\d/),t=i>=0?m.slice(i):m.slice(-12);return'“'+(i>0||(i<0&&m.length>12)?'…':'')+short(t,13)+'”'};
+const seg=(attr,cur,items)=>`<span class="seg sm">${items.map(([v,t])=>`<button data-${attr}="${v}" class="${cur===v?'on':''}">${t}</button>`).join('')}</span>`;
+const subs=(...x)=>`<div class="row subs">${x.join('')}</div>`;
+const wide=s=>`<div class="scroll wd">${s}</div>`;
+const QZ={};
+function quiz(id){
+  const z=QZ[id],p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
+}
+// clickable values: each shows, in one line under the picture, how it was computed
+let HV={};
+// a value is a number or a curve point [x, y]; long ones show their two ends, and the how-line shows every digit
+const vFull=v=>Array.isArray(v)?`(${v[0]}, ${v[1]})`:String(v),vLong=v=>v!=null&&(Array.isArray(v)?v[0].toString().length>12:v.toString().length>14);
+const chip=(id,lab,v,hide,how)=>{HV[id]={lab,v,how};return`<button class="nv${hide?' gh':''}${ST.pick===id?' on':''}" data-hv="${id}" title="How it was computed">${lab} = ${Array.isArray(v)?ptS(v):fmtN(v)}${!Array.isArray(v)&&vLong(v)?`<small>${v.toString().length} digits</small>`:''}</button>`};
+const pickLine=()=>{const p=ST.pick&&HV[ST.pick];return`<div class="pick" id="pick">${p?`<b>${p.lab}</b> ${p.how}${vLong(p.v)?`<br><code>${vFull(p.v)}</code>`:''}`:''}</div>`};
+const CLICK=[];
+
+/* ---------- tab 1 · why signatures: the order for a pink car ---------- */
+const OW=880,OH=330,PA=[100,92],PB=[780,92],PJ=[440,262];
+const person=(x,y,n,c)=>`<g class="prs ${c}" transform="translate(${x} ${y})"><circle r="30"/><text y="8">${n[0]}</text><text class="pn" y="50">${n}</text></g>`;
+const iKey=c=>`<g class="iky ${c}"><circle cx="-11" cy="0" r="7"/><path d="M-4 0 H15 M9 0 V6 M14 0 V5"/></g>`;
+const at=(x,y,inner,id='',extra='')=>`<g${id?` id="${id}"`:''} transform="translate(${x} ${y})"${extra}>${inner}</g>`;
+const keyL=(x,y,c,lab,id)=>at(x,y,iKey(c)+`<text class="kl ${c}" y="24">${lab}</text>`,id);
+const docC=(l2,c)=>`<g class="dc"><rect x="-82" y="-26" width="164" height="52" rx="7"/><text class="t1" y="-6">Order: 1 car, pink</text><text class="t2 ${c}" y="14">${l2}</text></g>`;
+const bub=(x,y,w,txt,c='',id='')=>at(x,y,`<g class="bub ${c}"><rect x="${-w/2}" y="-17" width="${w}" height="34" rx="10"/><text y="5">${txt}</text></g>`,id);
+function ovScene(k){
+  const sig=k>=4;
+  let h=`<svg class="ch" id="ovS" viewBox="0 0 ${OW} ${OH}" role="img" aria-label="Alice orders a car from Bob; later a judge must decide who wrote the order">
+    <path class="chn" d="M${PA[0]+40} ${PA[1]} H${PB[0]-40}"/><text class="chl" x="${OW/2}" y="${PA[1]-12}">over the internet</text>`;
+  h+=person(...PA,'Alice','a')+person(...PB,'Bob','b');
+  h+=`<g id="oJ"${k<2?' style="opacity:0"':''}>${person(...PJ,'Judge','j')}</g>`;
+  if(k===1||k===2||k===3)h+=keyL(PA[0],PA[1]+90,'mac','shared key K','oKa')+keyL(PB[0],PB[1]+90,'mac','shared key K','oKb');
+  if(sig)h+=keyL(PA[0],PA[1]+90,'pri','private key','oKa')+keyL(PB[0],PB[1]+90,'pub','Alice’s public key','oKb')+keyL(PJ[0]+150,PJ[1],'pub','Alice’s public key','oKj');
+  if(k===0)h+=at(PA[0]+150,PA[1]+52,docC('not sent yet',''),'oDa');
+  if(k>=1&&k<=3)h+=at(PB[0]-150,PB[1]+52,docC('tag t = MAC(K, order)','mac'),'oDb');
+  if(sig)h+=`<g data-goto="rsa" tabindex="0" role="button" aria-label="Open the RSA signature tab">${at(PB[0]-150,PB[1]+52,docC('signature s by Alice','pri'),'oDb')}</g>`;
+  if(k===1)h+=at(PB[0]-42,PB[1]-6,`<text class="mk ok">✓</text>`,'oOk');
+  if(k===4)h+=at(PB[0]-42,PB[1]-6,`<text class="mk ok">✓</text>`,'oOk');
+  if(k===2||k===3)h+=bub(PA[0]+112,PA[1]+156,200,'“I never ordered it.”','','oBa');
+  if(k===3)h+=bub(PJ[0],PJ[1]-62,440,'Bob also has K: he could have made t himself.','bad','oBj');
+  if(k===5)h+=`<g data-goto="rsa" tabindex="0" role="button" aria-label="Open the RSA signature tab">${bub(PJ[0],PJ[1]-62,440,'s is valid under Alice’s public key: only she could sign.','ok','oBj')}</g>`;
+  return h+'</svg>';
+}
+QZ.ov={q:'Alice and Bob share a MAC key. Later Alice says she never sent a message that carries a valid tag. Can a judge decide?',o:['Yes: the tag proves that Alice made it','No: Bob could have made the same tag','Only if the message is short'],a:1,why:'Both of them know the key, so both can compute the tag. A signature needs a key that only Alice has.'};
+T.ov={n:()=>6,render(k){
+  stage.innerHTML=wide(ovScene(k))+(k>=4?`<p class="hint">Click the signed order or the judge’s answer to see how an RSA signature is made.</p>`:'')+
+  `<div class="sec"><div class="h3">What each tool gives (click a row)</div><div class="scroll"><table class="svc"><tr><th>Security service</th><th>Means</th><th>MAC</th><th>Signature</th></tr>
+    <tr data-svc="int" tabindex="0" role="button"><td>Integrity</td><td>the message was not changed</td><td class="cy">yes</td><td class="cy">yes</td></tr>
+    <tr data-svc="auth" tabindex="0" role="button"><td>Message authentication</td><td>it comes from the person who holds the key</td><td class="cy">yes</td><td class="cy">yes</td></tr>
+    <tr data-svc="nrep" tabindex="0" role="button"><td>Non-repudiation</td><td>a third person can check who made it, and the sender cannot deny it</td><td class="cn">no</td><td class="cy">yes</td></tr>
+    <tr data-svc="conf" tabindex="0" role="button"><td>Confidentiality</td><td>nobody else can read it</td><td class="cn">no</td><td class="cn">no</td></tr></table></div><div class="pick" id="svcP"></div></div>`;
+  $('#explain').innerHTML=[say('The problem','Alice orders a car from Bob’s shop over the internet. Bob wants to be sure that the order is really from Alice, and that nobody changed it.','Press <b>Step</b>.'),
+    say('Step 1 · with a MAC','Alice and Bob share a secret key K. Alice sends the order with a tag t = MAC(K, order). Bob computes the tag again with K: it matches, so the order is from someone who knows K and it was not changed.'),
+    say('Step 2 · Alice changes her mind','The car is pink, and Alice no longer wants it. She says she never ordered it. Bob goes to a judge.'),
+    say('Step 3 · the tag proves nothing','The judge sees the order and a correct tag. But Bob knows K too: he could have written the order and computed t himself. The judge cannot tell who made it.','A MAC convinces Bob, but nobody else.'),
+    say('Step 4 · with a signature','Now Alice has a <b>private key</b> that only she knows, and everyone has her <b>public key</b>. She signs the order with the private key. Bob checks the signature with the public key.'),
+    say('Step 5 · the judge decides','The judge checks the signature with Alice’s public key: it is valid. Only the holder of the private key can make such a signature, and Bob does not have it.','So Alice cannot deny the order. This is called <b>non-repudiation</b>.')][k];
+  $('#extra').innerHTML=`<h3>A signature in one sentence</h3><p>Alice computes a number from the message and her <b>private key</b>; anyone checks it with her <b>public key</b>.</p>${pc(['Anyone can check it, also a judge','The signer cannot deny it later'],['It does not hide the message','The public key must really belong to Alice'])}`+quiz('ov');
+},
+plan(k){
+  if(k===2)return{dur:1100,start(){return bring([[$('#oJ'),.1],[$('#oBa'),.45]],.3)}};
+  if(k===3||k===5)return{dur:900,start(){return bring([[$('#oBj'),.1]],.4)}};
+  if(k!==1&&k!==4)return null;
+  return{dur:1700,start(){
+    const svg=$('#ovS'),b=$('#oDb');if(!svg||!b)return null;const M=svgMap(svg),s=M.s,ok=$('#oOk');
+    const keys=k===4?[[$('#oKa'),0],[$('#oKb'),.1],[$('#oKj'),.15]]:[[$('#oKa'),0],[$('#oKb'),.1]];
+    b.style.opacity=0;if(ok)ok.style.opacity=0;
+    const n=fxNode(`<g transform="scale(${s})">${docC(k===4?'signature s by Alice':'tag t = MAC(K, order)',k===4?'pri':'mac')}</g>`,'');
+    const mv=mover([{node:n,pts:[M(PA[0]+150,PA[1]+52),M(PB[0]-150,PB[1]+52)],a:.3,b:.85,end:.86}]);
+    return both(bring(keys,.25),mv,cues([[.86,()=>{b.style.opacity=1}],[.9,()=>{if(ok)ok.style.opacity=1}]]));
+  }};
+},
+focus(){follow($('#ovS'))}};
+CLICK.push(e=>{const r=e.target.closest('[data-svc]');if(!r)return;
+  const w={int:'Eve changes the message on the way: Bob’s check fails. <button class="link" data-goto="rsa" data-tmg="msg">See it in the RSA tab</button>.',
+    auth:'Only the holder of the key can make a valid tag or signature. <button class="link" data-goto="rsa" data-tmg="ok">See the RSA signature</button>.',
+    nrep:'Only the signature gives this: the key that signs is not shared. The story above, steps 3 and 5.',
+    conf:'Neither hides the message: it travels in the clear. To keep it secret, encrypt it as well, for example with <a href="rsa.html">RSA</a> or <a href="modes.html">AES</a>.'}[r.dataset.svc];
+  $('#svcP').innerHTML=w;return true});
+
+/* ---------- the sign and verify picture, shared by RSA, Elgamal, DSA and ECDSA ---------- */
+// F: {steps:[type…], keyL, keyR, hash, sign:[[at, html]…], sig:[html…], hashR, sigR:[html…], ver:[[at, html]…]}
+const STEPN={rsa:['keys','hash','sign','send','rehash','ver'],eg:['keys','hash','sign','sign','send','rehash','ver'],dsa:['keys','hash','sign','sign','send','rehash','ver','ver'],ec:['keys','hash','sign','sign','send','rehash','ver','ver']};
+const firstOf=(sc,t)=>STEPN[sc].indexOf(t),lastOf=(sc,t)=>STEPN[sc].lastIndexOf(t);
+function flowH(sc,F,k){
+  const R=D.R[sc],st=STEPN[sc],ty=st[k],sS=firstOf(sc,'sign'),sL=lastOf(sc,'sign'),snd=firstOf(sc,'send'),rh=firstOf(sc,'rehash'),vL=lastOf(sc,'ver');
+  const vis=a=>k>=a?'':' gh',on=c=>c?' on':'';
+  const ln=(a,h,id='')=>`<div class="ln${vis(a)}"${id?` id="${id}"`:''} data-at="${a}">${h}</div>`;
+  const tmM=ST.tm==='msg',tmS=ST.tm==='sig';
+  return`<div class="fwc"><div class="fw" id="fw">
+  <div class="cl a1 who"><span class="pers a">A</span><b>Alice</b> signs <span class="kchip pri" id="fKd">${F.keyL}</span></div>
+  <div class="cl a3 who"><span class="pers b">B</span><b>Bob</b> checks <span class="kchip pub" id="fKp">${F.keyR}</span></div>
+  <div class="cl m1"><div class="bx msg${on(ty==='hash')}" id="fM"><small>message</small><div class="mt">“${escH(short(D.msg,34))}”</div></div></div>
+  <div class="lane n1"><span>message</span></div>
+  <div class="cl m3"><div class="bx msg${on(ty==='rehash')}${tmM&&k>=snd?' tam':''}${vis(snd)}" id="fM2"><small>message Bob receives</small><div class="mt">“${escH(short(R.mr,34))}”</div></div></div>
+  <div class="cl h1"><i class="ar">↓</i><div class="bx${on(ty==='hash')}" id="fH"><small>hash</small>${ln(1,F.hash,'fHl')}</div></div>
+  <div class="cl h3"><i class="ar">↓</i><div class="bx${on(ty==='rehash')}" id="fH2"><small>hash again</small>${ln(rh,F.hashR,'fH2l')}</div></div>
+  <div class="cl s1"><i class="ar">↓</i><div class="bx sg${on(ty==='sign')}" id="fS"><small>sign with the private key</small>${F.sign.map(([a,h],i)=>ln(a,h,'fSl'+i)).join('')}</div></div>
+  <div class="mid e" id="fE">${ST.tm==='ok'?'<span>open network:<br>anyone can read</span>':`<span class="pers e">E</span><span><b>Eve changes the ${tmM?'message':'signature'}</b></span>`}<i class="ar dn2">↓</i></div>
+  <div class="cl s3"><i class="ar dn">↓</i><div class="bx vf${on(ty==='ver')}" id="fV"><small>verify with the public key</small>${F.ver.map(([a,h],i)=>ln(a,h,'fVl'+i)).join('')}</div><i class="ar up">↑</i></div>
+  <div class="cl g1"><i class="ar">↓</i><div class="bx sig${on(k===sL)}" id="fG"><small>signature</small>${F.sig.map(h=>ln(sL,h)).join('')}</div></div>
+  <div class="lane n2"><span>signature</span></div>
+  <div class="cl g3"><div class="bx sig${tmS&&k>=snd?' tam':''}${vis(snd)}" id="fG2"><small>signature Bob receives</small>${F.sigR.map(h=>`<div class="ln">${h}</div>`).join('')}</div></div>
+  <div class="cl r3"><div class="rbadge ${R.V.ok?'ok':'bad'}${vis(vL)}" id="fR">${R.V.ok?'✓ valid signature':'✗ not valid: rejected'}</div></div>
+  </div></div>`;
+}
+// the moving parts of one step of the sign and verify picture
+function flowPlan(sc,k){
+  const st=STEPN[sc],ty=st[k],R=D.R[sc],K=R.K,sL=lastOf(sc,'sign'),vL=lastOf(sc,'ver');
+  const durs={keys:600,hash:1500,sign:1900,send:2100,rehash:1500,ver:2000};
+  return{dur:durs[ty],start(){
+    if(!$('#fw'))return null;
+    const lines=$$(`#fw .ln[data-at="${k}"]`),mv=[],cu=[];const B=lines.map((e,i)=>[e,.5+.12*i]);
+    const msgT=msgTok(D.msg),sigL=sc==='rsa'?sN(R.S.s):`(${sN(R.S.r)}, ${sN(R.S.s)})`,sigLR=sc==='rsa'?sN(R.Sr.s):`(${sN(R.Sr.r)}, ${sN(R.Sr.s)})`;
+    if(ty==='keys')return bring([[$('#fKd'),0],[$('#fKp'),.3]],.4);
+    if(ty==='hash')mv.push(fly($('#fM'),$('#fH'),msgT,['var(--rp)'],0,.45,sN(R.h),['var(--accent)']));
+    if(ty==='sign'){
+      if(k===firstOf(sc,'sign'))mv.push(fly($('#fH'),$('#fS'),sN(R.h),['var(--accent)'],0,.4),fly($('#fKd'),$('#fS'),sc==='rsa'?'d':'d','var(--pri)'.split(),.05,.42));
+      else mv.push(fly($('#fKd'),$('#fS'),'d',['var(--pri)'],0,.4));
+      cu.push([.42,()=>$('#fS').classList.add('pulse')],[.7,()=>$('#fS').classList.remove('pulse')]);
+      if(k===sL){mv.push(fly($('#fS'),$('#fG'),sigL,['var(--ri)'],.62,.92));B.push(...$$('#fG .ln').map(e=>[e,.9]))}
+    }
+    if(ty==='send'){
+      const M2=$('#fM2'),G2=$('#fG2'),E=$('#fE');M2.classList.add('gh');G2.classList.add('gh');
+      const tmM=ST.tm==='msg',tmS=ST.tm==='sig',ev='var(--xor)';
+      mv.push(fly($('#fM'),M2,msgT,['var(--rp)'],0,.8,tmM?msgTok(R.mr):null,tmM?[ev]:null));
+      mv.push(fly($('#fG'),G2,sigL,['var(--ri)'],.08,.88,tmS?sigLR:null,tmS?[ev]:null));
+      if(ST.tm!=='ok')cu.push([.3,()=>E.classList.add('pulse')],[.7,()=>E.classList.remove('pulse')]);
+      cu.push([.8,()=>{M2.classList.remove('gh')}],[.88,()=>{G2.classList.remove('gh')}]);
+    }
+    if(ty==='rehash')mv.push(fly($('#fM2'),$('#fH2'),msgTok(R.mr),[ST.tm==='msg'?'var(--xor)':'var(--rp)'],0,.45,sN(R.hr),['var(--accent)']));
+    if(ty==='ver'){
+      if(k===firstOf(sc,'ver'))mv.push(fly($('#fG2'),$('#fV'),sigLR,['var(--ri)'],0,.4),fly($('#fH2'),$('#fV'),sN(R.hr),['var(--accent)'],.05,.42),fly($('#fKp'),$('#fV'),'pub',['var(--pub)'],.1,.45));
+      cu.push([.45,()=>$('#fV').classList.add('pulse')],[.75,()=>$('#fV').classList.remove('pulse')]);
+      if(k===vL)B.push([$('#fR'),.86]);
+    }
+    return both(mover(mv),bring(B,.18),cues(cu));
+  }};
+}
+// the values of a scheme as clickable chips, each with how it was computed
+const nvRow=(items,k)=>`<div class="sec"><div class="h3">The numbers (click one to see how it was computed)</div><div class="nvs">${items.map(([id,lab,v,a,how])=>chip(id,lab,v,k<a,how)).join('')}</div>${pickLine()}</div>`;
+const tmSeg=()=>subs(`<span class="flh">On the way</span>`,seg('tm',ST.tm,[['ok','nothing changes'],['msg','Eve changes the message'],['sig','Eve changes the signature']]));
+const newK=sc=>`<button data-newk="${sc}" title="Pick a new random ephemeral key and sign again">New random k</button>`;
+const tmNote=(R,what)=>ST.tm==='msg'?`Eve changed the message to “${escH(R.mr)}”.`:ST.tm==='sig'?`Eve changed ${what}.`:'';
+const verdict=R=>R.V.ok?`<span class="vok">valid</span> The message is from the owner of the private key, and it was not changed.`:`<span class="vbad">not valid</span> Bob rejects it: ${ST.tm==='msg'?'the message is not the one Alice signed':'the signature is not the one Alice made'}.`;
+
+/* ---------- tab 2 · the RSA signature ---------- */
+QZ.rsa={q:'Which key does Alice use to sign?',o:['Bob’s public key','Her own private key','Her own public key'],a:1,why:'Signing must be something only Alice can do, so it needs her private key d. Anyone can check with her public key (n, e).'};
+function rsaF(){
+  const R=D.R.rsa,K=R.K,s=D.small;
+  return{keyL:`d = ${sN(K.d)}`,keyR:`(n, e) = (${sN(K.n)}, ${sN(K.e)})`,
+    hash:s?`x = SHA-256 mod n = ${R.h}`:`x = SHA-256(m) = ${sN(R.h)}`,hashR:s?`x = SHA-256 mod n = ${R.hr}`:`x = ${sN(R.hr)}`,
+    sign:[[2,`s = x<sup>d</sup> mod n`],[2,`= ${sN(R.S.s)}`]],sig:[`s = ${sN(R.S.s)}`],sigR:[`s = ${sN(R.Sr.s)}`],
+    ver:[[5,`s<sup>e</sup> mod n = ${sN(R.V.v)}`],[5,`= x ? ${R.V.ok?'yes':'no'}`]]};
+}
+T.rsa={n:()=>6,render(k){
+  const R=D.R.rsa,K=R.K,s=D.small;
+  stage.innerHTML=tmSeg()+flowH('rsa',rsaF(),k)+nvRow([
+    ['n','n',K.n,0,`= p · q = ${fmtN(K.p)} · ${fmtN(K.q)}: part of the public key`],
+    ['e','e',K.e,0,`the public exponent; gcd(e, φ(n)) = ${gcd(K.e,K.phi)}`],
+    ['d','d',K.d,0,`= e⁻¹ mod φ(n), φ(n) = (p − 1)(q − 1) = ${fmtN(K.phi)}; check: e · d mod φ(n) = ${K.e*K.d%K.phi}`],
+    ['x','x',R.h,1,s?`= SHA-256(message) mod n = ${hexShort(D.Hhex)} (hex) mod ${K.n}`:`= SHA-256(message), the 256-bit hash read as one number`],
+    ['s','s',R.S.s,2,`= x<sup>d</sup> mod n${s?` = ${R.h}<sup>${K.d}</sup> mod ${K.n}`:''}`],
+    ['v','sᵉ mod n',R.V.v,5,`= ${fmtN(R.Sr.s)}<sup>${K.e}</sup> mod n; it is compared with Bob’s own hash ${fmtN(R.hr)}`]],k);
+  const sm=D.small;
+  $('#explain').innerHTML=[say('The keys','Alice makes an RSA key pair, exactly as for encryption.',fm(`public key (n, e) = (${fmtN(K.n)}, ${K.e})<br>private key d = ${fmtN(K.d)}`),'She publishes (n, e) and keeps d. Press <b>Step</b>.'),
+    say('Step 1 · hash the message','Alice does not sign the text itself but its SHA-256 hash, a 256-bit number. <button class="link" data-goto="hf">Tab 3</button> shows why.',sm?fm(`SHA-256 = ${hexShort(D.Hhex)}<br>x = SHA-256 mod n = ${R.h}`):fm(`x = SHA-256(m) = ${fmtN(R.h)}`),sm?'With these small numbers the hash is reduced modulo n.':''),
+    say('Step 2 · sign','Only the private key can do this:',fm(`s = x<sup>d</sup> mod n${sm?` = ${R.h}<sup>${K.d}</sup> mod ${K.n}`:''} = ${fmtN(R.S.s)}`),'Signing is the same operation as RSA decryption.'),
+    say('Step 3 · send','Alice sends the message and s. Both travel in the clear: a signature does not hide anything.',tmNote(R,`the signature to s = ${fmtN(R.Sr.s)}`)),
+    say('Step 4 · Bob hashes','Bob computes the hash of the message he received, in the same way.',fm(`x = ${fmtN(R.hr)}`),ST.tm==='msg'?`Alice’s x was ${fmtN(R.h)}.`:''),
+    say('Step 5 · verify','Bob raises s to the public exponent and compares the result with his hash:',fm(`s<sup>e</sup> mod n${sm?` = ${R.Sr.s}<sup>${K.e}</sup> mod ${K.n}`:''} = ${fmtN(R.V.v)}`),verdict(R))][k];
+  $('#extra').innerHTML=`<h3>RSA signatures in two lines</h3>${fm('sign: s = x<sup>d</sup> mod n')}${fm('verify: s<sup>e</sup> mod n = x ?')}<p>It works because (x<sup>d</sup>)<sup>e</sup> = x<sup>de</sup> ≡ x mod n, the same reason RSA decryption works. See <a href="rsa.html">the RSA page</a>.</p>${pc(['Verifying with a small e is fast','The most used signature in certificates'],['Signatures as long as n: '+bitLen(K.n)+' bits here','Without a hash or padding it can be forged: <button class="link" data-goto="hf">tab 3</button>'])}`+quiz('rsa');
+},
+plan(k){return flowPlan('rsa',k)},
+focus(){follow($('#fw'))}};
+
+/* ---------- tab 3 · hash first: the forgeries of textbook RSA ---------- */
+const HFN={exist:5,mult:5,hash:5};
+QZ.hf={q:'Why is the hash of the message signed, and not the message itself?',o:['It makes the signature secret','It allows messages of any length and stops forgeries such as s₁ · s₂','The hash is easier to read'],a:1,why:'One signature covers any message, and Eve can no longer pick a number and find a message for it: she would need a message with exactly that hash.'};
+const erow=(p,i,k,lab,val)=>`<div class="er${i>k?' off':''}${i===k?' cur':''}" id="${p}${i}" data-rk="${i}" tabindex="0" role="button" title="Go to this step"><div class="el">${lab}</div><div class="ev">${val}</div></div>`;
+function hfRows(k){
+  const F=D.HF,K=F.K,v=ST.hfv,c=x=>chip('hf'+x[0],x[1],x[2],false,x[3]);
+  if(v==='exist')return[
+    ['Eve knows only Alice’s <b>public key</b>',c(['n','n',K.n,'Alice’s modulus'])+c(['e','e',K.e,'Alice’s public exponent'])],
+    ['She picks any number as the <b>signature</b>',c(['sE','s',F.sE,`a number Eve chose${D.small?'':' (here the SHA-256 of a phrase, reduced mod n)'}`])],
+    ['and computes the <b>message</b> that fits it',c(['xE','x = sᵉ mod n',F.xE,`= ${fmtN(F.sE)}<sup>${K.e}</sup> mod n`])],
+    ['Bob checks (x, s) with the public key',c(['vE','sᵉ mod n',F.vE,'the same computation as Eve’s'])+(F.vE===F.xE?'<span class="vok">valid</span>':'<span class="vbad">not valid</span>')],
+    ['But what does x say?',`x is a number nobody chose. It is a valid signature on it, made without the private key.`]];
+  if(v==='mult')return[
+    ['Alice signs x₁',c(['x1','x₁',F.x1,'a message, as a number'])+c(['s1','s₁',F.s1,`= x₁<sup>d</sup> mod n, made by Alice`])],
+    ['and x₂',c(['x2','x₂',F.x2,'a second message'])+c(['s2','s₂',F.s2,`= x₂<sup>d</sup> mod n, made by Alice`])],
+    ['Eve multiplies the <b>signatures</b>',c(['sM','s = s₁ · s₂ mod n',F.sM,`= ${fmtN(F.s1)} · ${fmtN(F.s2)} mod n`])],
+    ['and the <b>messages</b>',c(['xM','x = x₁ · x₂ mod n',F.xM,`= ${F.x1} · ${F.x2} mod n`])],
+    ['Bob checks (x, s)',c(['vM','sᵉ mod n',F.vM,'(s₁ s₂)ᵉ = s₁ᵉ · s₂ᵉ = x₁ · x₂ mod n'])+(F.vM===F.xM?'<span class="vok">valid</span>':'<span class="vbad">not valid</span>')+`<span class="flh">Alice’s own signature on ${F.xM} would be the same: ${fmtN(F.realM)}</span>`]];
+  const R=D.R.rsa,S=ST.hfs;
+  return[
+    ['The message, of any length',`“${escH(short(D.msg,40))}”`],
+    ['<b>SHA-256</b> turns it into 256 bits',c(['H','SHA-256',D.H,'the hash of the message bytes'])+`<span class="flh">${hexShort(D.Hhex)}</span>`],
+    ['Alice signs the hash',c(['hx','x',R.h,D.small?'= SHA-256 mod n':'= SHA-256(m)'])+c(['hs','s = xᵈ mod n',R.S.s,'made with the private key'])],
+    ['Bob hashes again and checks',c(['hv','sᵉ mod n',R.Vh.v,'compared with SHA-256 of the message he got'])+(R.Vh.ok?'<span class="vok">valid</span>':'<span class="vbad">not valid</span>')],
+    ['Eve’s forged pair from the first view',`${c(['hxE','x',F.xE,'Eve’s x from “Pick s first”'])} needs a message whose hash is x.`+(D.small?(S?` <span class="flh">Found after ${S.i.toLocaleString('en-US')} tries: “${escH(S.m)}”. Bob accepts s = ${fmtN(F.sE)} as Alice’s signature on it.</span><span class="vok">forged</span>`:` <button data-srch="1">Search for one</button>`):` <span class="flh">With SHA-256 that takes about 2²⁵⁶ tries.</span>`)]];
+}
+T.hf={n:()=>HFN[ST.hfv],render(k){
+  const v=ST.hfv,F=D.HF,K=F.K,rows=hfRows(k);
+  stage.innerHTML=subs(`<span class="flh">Show</span>`,seg('hfv',v,[['exist','Pick s first'],['mult','Multiply two signatures'],['hash','Hash, then sign']]))+
+    `<div class="eqs" id="hfR">${rows.map((r,i)=>erow('hfr',i,k,r[0],r[1])).join('')}</div><p class="hint l">Click a row to jump to it, or a value to see how it was computed.</p>${pickLine()}`;
+  const ex={exist:[say('Textbook RSA can be forged','In textbook RSA Bob only checks that s<sup>e</sup> mod n = x. Eve does not have the private key. Press <b>Step</b> to see what she can still do.'),
+      say('Step 1 · pick the signature',`Eve starts at the end: she picks s = ${fmtN(F.sE)}.`),
+      say('Step 2 · compute the message',`She computes x = s<sup>e</sup> mod n with Alice’s public key:`,fm(`x = ${fmtN(F.sE)}<sup>${K.e}</sup> mod ${fmtN(K.n)} = ${fmtN(F.xE)}`)),
+      say('Step 3 · Bob is fooled','Bob’s check is the same computation, so it passes. The pair (x, s) looks as if Alice signed it.'),
+      say('Step 4 · why this matters','Eve cannot choose x: it comes out of the computation. But if any number is accepted as a valid message, such as an amount or a key, this is a real forgery.','This is called an <b>existential forgery</b>.')],
+    mult:[say('Signatures multiply','RSA has a second weakness: the product of two signatures is a signature of the product. Press <b>Step</b>.'),
+      say('Step 1 · Alice signs x₁',fm(`s₁ = ${F.x1}<sup>d</sup> mod n = ${fmtN(F.s1)}`)),
+      say('Step 2 · Alice signs x₂',fm(`s₂ = ${F.x2}<sup>d</sup> mod n = ${fmtN(F.s2)}`)),
+      say('Step 3 · Eve multiplies','Eve never sees d. She multiplies what Alice gave her:',fm(`s = s₁ · s₂ mod n = ${fmtN(F.sM)}<br>x = x₁ · x₂ mod n = ${F.xM}`)),
+      say('Step 4 · Bob checks',fm(`s<sup>e</sup> mod n = ${fmtN(F.vM)}`),`It equals x = ${F.xM}: a valid signature on a message Alice never signed.`)],
+    hash:[say('Hash, then sign','The fix for both forgeries: Alice signs the SHA-256 hash of the message, and Bob compares with the hash of the message he got. Press <b>Step</b>.'),
+      say('Step 1 · hash','SHA-256 turns a message of any length into 256 bits. A whole file gets one short hash.',fm(`SHA-256 = ${hexShort(D.Hhex)}`)),
+      say('Step 2 · sign the hash',fm(`s = x<sup>d</sup> mod n = ${fmtN(D.R.rsa.S.s)}`)),
+      say('Step 3 · Bob checks','Bob hashes the message himself, so Eve can no longer bring her own x.',fm(`s<sup>e</sup> mod n = ${fmtN(D.R.rsa.Vh.v)}`)),
+      say('Step 4 · the forgery now',`Eve still has a pair (x, s) with s<sup>e</sup> = x. To use it she needs a message whose hash is exactly x.`,D.small?`With n = ${K.n} the hash is reduced to one of only ${K.n} values, so a search finds such a message quickly${ST.hfs?`: here after ${ST.hfs.i.toLocaleString('en-US')} tries`:'. Press <b>Search for one</b>'}. With a real n and SHA-256 that search would need about 2<sup>256</sup> tries.`:'For SHA-256 nobody knows a faster way than trying about 2<sup>256</sup> messages.')]}[v];
+  $('#explain').innerHTML=ex[k];
+  $('#extra').innerHTML=`<h3>Two forgeries, one fix</h3><p><b>Pick s first:</b> any s gives a valid pair (sᵉ mod n, s).</p><p><b>Multiply:</b> s₁ · s₂ signs x₁ · x₂.</p><p class="note">Both need Eve to choose the number that is signed. A hash takes that choice away. Real systems also pad the hash: PKCS #1 v1.5 or PSS.</p>`+quiz('hf');
+},
+plan(k){return rowPlan('hfr',k)},
+focus(k){follow($('#hfr'+k))}};
+// the step of an attack: the value of the row before flies into the new row, which then fades in
+function rowPlan(p,k){
+  return{dur:1300,start(){
+    const a=$(`#${p}${k-1} .ev`),b=$(`#${p}${k}`);if(!a||!b)return null;
+    b.classList.add('off');const t=a.querySelector('.nv'),lab=t?t.textContent.replace(/\d+ digits$/,'').split(' = ').pop():'…';
+    return both(mover([fly(t||a,b.querySelector('.ev'),short(lab,14),['var(--accent)'],0,.55)]),cues([[.56,()=>{b.classList.remove('off');b.classList.add('flash')}]]));
+  }};
+}
+CLICK.push(e=>{
+  const s=e.target.closest('[data-srch]');if(s){s.disabled=true;s.textContent='searching…';setTimeout(()=>{ST.hfs=hfSearch();D.v++;show()},20);return true}
+  const r=e.target.closest('[data-rk]');if(r&&!e.target.closest('[data-hv],[data-srch]')){setPlaying(false);stopAnim(false);ST.step[ST.tab]=+r.dataset.rk;show();return true}
+});
+
+/* ---------- tab 4 · Elgamal ---------- */
+QZ.eg={q:'In the Elgamal signature, which number is computed modulo p − 1?',o:['r','s','β'],a:1,why:'s lives in the exponent: the check computes α to the power d·r + k·s. Exponents of α only matter modulo p − 1, by Fermat’s little theorem.'};
+function egF(){
+  const R=D.R.eg,K=R.K,S=R.S;
+  return{keyL:`d = ${K.d}`,keyR:`(p, α, β) = (${K.p}, ${K.a}, ${K.b})`,hash:`x = SHA-256 mod (p − 1) = ${R.h}`,hashR:`x = ${R.hr}`,
+    sign:[[2,`k = ${S.k}, random and secret`],[2,`r = α<sup>k</sup> mod p = ${S.r}`],[3,`s = (x − d·r)·k⁻¹ mod (p − 1)`],[3,`= ${S.s}`]],
+    sig:[`(r, s) = (${S.r}, ${S.s})`],sigR:[`(r, s) = (${R.Sr.r}, ${R.Sr.s})`],
+    ver:[[6,`β<sup>r</sup> · r<sup>s</sup> mod p = ${R.V.t}`],[6,`α<sup>x</sup> mod p = ${R.V.ax}`],[6,`equal? ${R.V.ok?'yes':'no'}`]]};
+}
+T.eg={n:()=>7,render(k){
+  const R=D.R.eg,K=R.K,S=R.S,V=R.V;
+  stage.innerHTML=tmSeg()+flowH('eg',egF(),k)+nvRow([
+    ['p','p',K.p,0,'a prime; the numbers 1 … p − 1 form a group under multiplication mod p'],
+    ['a','α',K.a,0,`a primitive element: its powers give all ${K.m} numbers 1 … ${K.m}`],
+    ['d','d',K.d,0,'Alice’s private key, a number from 2 to p − 2'],
+    ['b','β',K.b,0,`= α<sup>d</sup> mod p = ${K.a}<sup>${K.d}</sup> mod ${K.p}: the public key`],
+    ['x','x',R.h,1,`= SHA-256(message) mod (p − 1) = ${hexShort(D.Hhex)} (hex) mod ${K.m}`],
+    ['k','k',S.k,2,`the ephemeral key: random, secret, with gcd(k, p − 1) = gcd(${S.k}, ${K.m}) = ${gcd(S.k,K.m)}`],
+    ['r','r',S.r,2,`= α<sup>k</sup> mod p = ${K.a}<sup>${S.k}</sup> mod ${K.p}`],
+    ['ki','k⁻¹',S.ki,3,`the inverse of k modulo p − 1: ${S.k} · ${S.ki} mod ${K.m} = ${S.k*S.ki%K.m}`],
+    ['s','s',S.s,3,`= (x − d·r)·k⁻¹ mod (p − 1) = (${R.h} − ${K.d}·${S.r})·${S.ki} mod ${K.m}`],
+    ['t','βʳ·rˢ',V.t,6,`= ${K.b}<sup>${R.Sr.r}</sup> · ${R.Sr.r}<sup>${R.Sr.s}</sup> mod ${K.p} = ${V.t1} · ${V.t2} mod ${K.p}`],
+    ['ax','αˣ',V.ax,6,`= ${K.a}<sup>${R.hr}</sup> mod ${K.p}, with Bob’s own x`]],k)+
+    `<p class="row" style="margin-top:12px">${newK('eg')}<span class="flh">signs the same message again with another k: (r, s) changes, and it is still valid</span></p>`;
+  $('#explain').innerHTML=[say('The keys',`Alice picks a prime p = ${K.p} and a primitive element α = ${K.a}. Her private key is d = ${K.d}, and her public key is`,fm(`β = α<sup>d</sup> mod p = ${K.a}<sup>${K.d}</sup> mod ${K.p} = ${K.b}`),D.small?'Press <b>Step</b>.':'Elgamal signatures are not used at real size, so this tab keeps the small numbers. Real size is in the DSA tab.'),
+    say('Step 1 · hash',`x is used only as an exponent of α, and exponents count modulo p − 1, so the hash is reduced modulo ${K.m}.`,fm(`x = SHA-256 mod ${K.m} = ${R.h}`)),
+    say('Step 2 · a random ephemeral key',`For every signature Alice picks a new secret k with gcd(k, p − 1) = 1, so that k has an inverse modulo p − 1.`,fm(`k = ${S.k}${S.skip?` (${S.skip} value${S.skip>1?'s':''} before it had a common factor with ${K.m})`:''}<br>r = α<sup>k</sup> mod p = ${K.a}<sup>${S.k}</sup> mod ${K.p} = ${S.r}`)),
+    say('Step 3 · s',fm(`s = (x − d·r)·k⁻¹ mod (p − 1)<br>= (${R.h} − ${K.d}·${S.r})·${S.ki} mod ${K.m} = ${S.s}`),'The signature is the pair (r, s).'),
+    say('Step 4 · send','The message and (r, s) travel in the clear.',tmNote(R,`s to ${R.Sr.s}`)),
+    say('Step 5 · Bob hashes',fm(`x = ${R.hr}`)),
+    say('Step 6 · verify','Bob computes two numbers mod p and compares them:',fm(`β<sup>r</sup> · r<sup>s</sup> = ${K.b}<sup>${R.Sr.r}</sup> · ${R.Sr.r}<sup>${R.Sr.s}</sup> mod ${K.p} = ${V.t}<br>α<sup>x</sup> = ${K.a}<sup>${R.hr}</sup> mod ${K.p} = ${V.ax}`),verdict(R))][k];
+  $('#extra').innerHTML=`<h3>Elgamal signatures</h3>${fm('r = α<sup>k</sup> mod p')}${fm('s = (x − d·r)·k⁻¹ mod (p − 1)')}${fm('check: β<sup>r</sup> · r<sup>s</sup> ≡ α<sup>x</sup> mod p')}<p>Why it works: β<sup>r</sup> r<sup>s</sup> = α<sup>d·r + k·s</sup>, and k·s ≡ x − d·r mod (p − 1).</p><p class="note">The same group as <a href="dlog.html">Diffie–Hellman and Elgamal encryption</a>: security rests on the discrete logarithm.</p>`+quiz('eg');
+},
+plan(k){return flowPlan('eg',k)},
+focus(){follow($('#fw'))}};
+
+/* ---------- tab 5 · DSA ---------- */
+QZ.dsa={q:'DSA works in a subgroup of order q. With a 256-bit q, how long is a signature?',o:['256 bits','512 bits','2048 bits'],a:1,why:'r and s are both numbers modulo q, so 2 × 256 = 512 bits, no matter how long p is.'};
+function dsaF(){
+  const R=D.R.dsa,K=R.K,S=R.S,V=R.V;
+  return{keyL:`d = ${sN(K.d)}`,keyR:`β = ${sN(K.b)}`,hash:D.small?`h = SHA-256 mod q = ${R.h}`:`h = SHA-256(m) = ${sN(R.h)}`,hashR:`h = ${sN(R.hr)}`,
+    sign:[[2,`k = ${sN(S.k)}, random, secret`],[2,`r = (α<sup>k</sup> mod p) mod q`],[2,`= ${sN(S.r)}`],[3,`s = (h + d·r)·k⁻¹ mod q`],[3,`= ${sN(S.s)}`]],
+    sig:[`r = ${sN(S.r)}`,`s = ${sN(S.s)}`],sigR:[`r = ${sN(R.Sr.r)}`,`s = ${sN(R.Sr.s)}`],
+    ver:V.range?[[6,'r or s out of range'],[7,'rejected']]:[[6,`w = s⁻¹ mod q = ${sN(V.w)}`],[6,`u₁ = w·h = ${sN(V.u1)}, u₂ = w·r = ${sN(V.u2)}`],[7,`v = (α<sup>u₁</sup>β<sup>u₂</sup> mod p) mod q`],[7,`= ${sN(V.v)}; v = r ? ${V.ok?'yes':'no'}`]]};
+}
+// the numbers 1 … p − 1 of the small example; the powers of α form the subgroup of order q
+function sgGrid(k){
+  const R=D.R.dsa,K=R.K,p=Number(K.p),mem=new Map();let v=1n;for(let i=0;i<Number(K.q);i++){mem.set(Number(v),i);v=v*K.a%K.p}
+  const ak=Number(R.S.ak),g=R.V.g!=null?Number(R.V.g):-1,b=Number(K.b);
+  let h='';for(let x=1;x<p;x++){const c=[mem.has(x)?'mem':'',x===b?'pub':'',k>=2&&x===ak?'rk':'',k>=7&&x===g?'vg':''].join(' ');h+=`<i class="${c}" data-cell="${x}" tabindex="0" role="button">${x}</i>`}
+  return`<div class="sec"><div class="h3">The numbers 1 … ${p-1} mod p = ${p}, and the subgroup of order q = ${K.q} (click a number)</div><div class="sgv" id="sgv">${h}</div>
+    <div class="leg"><span><i style="background:color-mix(in srgb,var(--accent) 20%,transparent)"></i>a power of α = ${K.a}: ${K.q} of the ${p-1} numbers</span><span><i style="background:var(--pub)"></i>β, the public key</span>${k>=2?`<span><i style="background:var(--ri)"></i>α<sup>k</sup> mod p = ${ak}</span>`:''}${k>=7?`<span><i style="outline:2.5px solid var(--ri);outline-offset:-2.5px"></i>Bob’s α<sup>u₁</sup>β<sup>u₂</sup> mod p</span>`:''}</div><div class="pick" id="cellP"></div></div>`;
+}
+T.dsa={n:()=>8,render(k){
+  const R=D.R.dsa,K=R.K,S=R.S,V=R.V,sm=D.small;
+  stage.innerHTML=tmSeg()+flowH('dsa',dsaF(),k)+nvRow([
+    ['p','p',K.p,0,`a ${bitLen(K.p)}-bit prime`],['q','q',K.q,0,`a ${bitLen(K.q)}-bit prime that divides p − 1: (p − 1) / q = ${fmtN((K.p-1n)/K.q)}`],
+    ['a','α',K.a,0,`an element of order q: α<sup>q</sup> mod p = ${modpow(K.a,K.q,K.p)}${sm?'':'; made as 2<sup>(p−1)/q</sup> mod p'}`],
+    ['d','d',K.d,0,`Alice’s private key, 0 < d < q`],['b','β',K.b,0,`= α<sup>d</sup> mod p: the public key`],
+    ['h','h',R.h,1,sm?`= SHA-256(message) mod q = ${hexShort(D.Hhex)} (hex) mod ${K.q}`:'= SHA-256(message): as long as q, so it is used whole'],
+    ['k','k',S.k,2,`the ephemeral key: random, secret, 0 < k < q`],['ak','αᵏ mod p',S.ak,2,`= ${fmtN(K.a)}<sup>${fmtN(S.k)}</sup> mod p`],
+    ['r','r',S.r,2,`= (α<sup>k</sup> mod p) mod q = ${fmtN(S.ak)} mod ${fmtN(K.q)}`],
+    ['s','s',S.s,3,`= (h + d·r)·k⁻¹ mod q, with k⁻¹ = ${fmtN(S.ki)}`],
+    ...(V.range?[]:[['w','w',V.w,6,`= s⁻¹ mod q: s · w mod q = ${R.Sr.s*V.w%K.q}`],['u1','u₁',V.u1,6,'= w · h mod q (Bob’s own h)'],['u2','u₂',V.u2,6,'= w · r mod q'],
+    ['v','v',V.v,7,`= (α<sup>u₁</sup> · β<sup>u₂</sup> mod p) mod q = ${fmtN(V.g)} mod q`]])],k)+
+    (sm?sgGrid(k):`<div class="sec big">With a ${bitLen(K.p)}-bit p the group has more than 2<sup>${bitLen(K.p)-1}</sup> elements, and the subgroup more than 2<sup>${bitLen(K.q)-1}</sup>: too many to draw. The small numbers show the picture.</div>`)+
+    `<p class="row" style="margin-top:12px">${newK('dsa')}<span class="flh">signs the same message again with another k</span></p>`;
+  $('#explain').innerHTML=[say('The keys',`DSA works in a <b>subgroup</b>: a prime q divides p − 1, and α has order q, so its powers repeat after q steps.`,fm(`p = ${fmtN(K.p)}, q = ${fmtN(K.q)}, α = ${fmtN(K.a)}<br>private d = ${fmtN(K.d)}<br>public β = α<sup>d</sup> mod p = ${fmtN(K.b)}`),'Press <b>Step</b>.'),
+    say('Step 1 · hash',sm?`The hash is reduced modulo q = ${K.q}.`:`SHA-256 gives 256 bits, as long as q.`,fm(`h = ${fmtN(R.h)}`)),
+    say('Step 2 · r',`A new random secret k for this signature. r is computed in the big group and then reduced modulo q:`,fm(`k = ${fmtN(S.k)}<br>α<sup>k</sup> mod p = ${fmtN(S.ak)}<br>r = ${fmtN(S.ak)} mod q = ${fmtN(S.r)}`),S.skip?`(${S.skip} k before gave r = 0 or s = 0, so the next one was taken.)`:''),
+    say('Step 3 · s',fm(`s = (h + d·r)·k⁻¹ mod q = ${fmtN(S.s)}`),`The signature (r, s) is two numbers mod q: ${2*bitLen(K.q)} bits, while p has ${bitLen(K.p)}.`),
+    say('Step 4 · send','The message and (r, s) travel in the clear.',tmNote(R,`s to ${fmtN(R.Sr.s)}`)),
+    say('Step 5 · Bob hashes',fm(`h = ${fmtN(R.hr)}`)),
+    say('Step 6 · two exponents',V.range?'s is out of range: Bob rejects at once.':fm(`w = s⁻¹ mod q = ${fmtN(V.w)}<br>u₁ = w · h mod q = ${fmtN(V.u1)}<br>u₂ = w · r mod q = ${fmtN(V.u2)}`)),
+    say('Step 7 · verify',V.range?'':fm(`v = (α<sup>u₁</sup> · β<sup>u₂</sup> mod p) mod q = ${fmtN(V.v)}`),V.range?'':`Bob compares v with r = ${fmtN(R.Sr.r)}.`,verdict(R))][k];
+  $('#extra').innerHTML=`<h3>DSA in four lines</h3>${fm('r = (α<sup>k</sup> mod p) mod q')}${fm('s = (h + d·r)·k⁻¹ mod q')}${fm('w = s⁻¹, u₁ = w·h, u₂ = w·r (mod q)')}${fm('check: (α<sup>u₁</sup> β<sup>u₂</sup> mod p) mod q = r ?')}<p>Why it works: u₁ + d·u₂ = w·(h + d·r) ≡ k mod q, so α<sup>u₁</sup>β<sup>u₂</sup> = α<sup>k</sup>.</p>`+quiz('dsa');
+},
+plan(k){return flowPlan('dsa',k)},
+focus(){follow($('#fw'))}};
+CLICK.push(e=>{const c=e.target.closest('[data-cell]');if(!c)return;
+  const K=D.K.dsa,x=BigInt(c.dataset.cell);let v=1n,i=0;for(;i<Number(K.q);i++){if(v===x)break;v=v*K.a%K.p}
+  $('#cellP').innerHTML=i<Number(K.q)?`<b>${x}</b> <code>= ${K.a}<sup>${i}</sup> mod ${K.p}</code>: in the subgroup.${x===K.b?' It is β = α<sup>d</sup>, the public key.':''}`:`<b>${x}</b> is not a power of ${K.a} mod ${K.p}: it lies outside the subgroup, and DSA never meets it.`;
+  return true});
+
+/* ---------- tab 6 · ECDSA ---------- */
+QZ.ec={q:'What is the public key in ECDSA?',o:['a number d','a point B = d · A on the curve','the curve itself'],a:1,why:'d is the private key. The public key is the point d · A. Finding d from B is the discrete logarithm problem on the curve.'};
+function ecF(){
+  const R=D.R.ec,K=R.K,S=R.S,V=R.V;
+  return{keyL:`d = ${sN(K.d)}`,keyR:`B = d·A = ${ptS(K.B)}`,hash:D.small?`h = SHA-256 mod q = ${R.h}`:`h = SHA-256(m) = ${sN(R.h)}`,hashR:`h = ${sN(R.hr)}`,
+    sign:[[2,`k = ${sN(S.k)}, random, secret`],[2,`R = k·A = ${ptS(S.R)}`],[2,`r = x of R mod q = ${sN(S.r)}`],[3,`s = (h + d·r)·k⁻¹ mod q`],[3,`= ${sN(S.s)}`]],
+    sig:[`r = ${sN(S.r)}`,`s = ${sN(S.s)}`],sigR:[`r = ${sN(R.Sr.r)}`,`s = ${sN(R.Sr.s)}`],
+    ver:V.range?[[6,'r or s out of range'],[7,'rejected']]:[[6,`w = s⁻¹ mod q = ${sN(V.w)}`],[6,`u₁ = w·h = ${sN(V.u1)}, u₂ = w·r = ${sN(V.u2)}`],[7,`P = u₁·A + u₂·B = ${ptS(V.P)}`],[7,`x of P mod q = r ? ${V.ok?'yes':'no'}`]]};
+}
+// every point of the small curve, with its multiple of A
+function ecPts(){const C=K17,L=[];let P=C.G;for(let i=1;i<Number(C.q);i++){L.push({P,i});P=ecAdd(C,P,C.G)}return L}
+const EC_S=18,EC_O=26;
+const ecXY=P=>[EC_O+Number(P[0])*EC_S,EC_O+(16-Number(P[1]))*EC_S];
+function ecPlot(k){
+  const R=D.R.ec,K=R.K,S=R.S,V=R.V,L=ecPts();let h='';
+  for(let i=0;i<17;i++){const a=EC_O+i*EC_S;h+=`<path class="gl" d="M${a} ${EC_O}V${EC_O+16*EC_S}M${EC_O} ${a}H${EC_O+16*EC_S}"/>`;if(i%2===0)h+=`<text class="ax" x="${a}" y="${EC_O+16*EC_S+12}">${i}</text><text class="ax" x="${EC_O-12}" y="${EC_O+(16-i)*EC_S}">${i}</text>`}
+  h+=`<text class="axt" x="${EC_O+8*EC_S}" y="${EC_O+16*EC_S+26}" text-anchor="middle">x</text><text class="axt" x="${EC_O-12}" y="${EC_O-12}" text-anchor="middle">y</text>`;
+  const sk=Number(S.k),chain=L.slice(0,sk).map(o=>ecXY(o.P));
+  if(k>=2&&chain.length>1)h+=`<path class="chain" id="ecCh" d="M${chain.map(p=>p.join(' ')).join('L')}"/>`;
+  const lab=[];
+  for(const o of L){const[x,y]=ecXY(o.P),c=ptEq(o.P,K.A)?'A':ptEq(o.P,K.B)?'B':k>=2&&ptEq(o.P,S.R)?'R':'';
+    h+=`<circle class="pt ${c}" cx="${x}" cy="${y}" r="${c?6:4.2}" data-pt="${o.i}" tabindex="0" role="button" aria-label="point ${o.i}A"/>`;
+    if(c)lab.push(`<text class="lb ${c}" x="${x+8}" y="${y-8}">${c==='A'?'A':c==='B'?`B = ${K.d}A`:`R = ${sk}A`}</text>`)}
+  if(k>=7&&V.P){const[x,y]=ecXY(V.P);h+=`<circle class="ring" id="ecP" cx="${x}" cy="${y}" r="10"/>`;lab.push(`<text class="lb R" x="${x+12}" y="${y+16}">P</text>`)}
+  const W=EC_O*2+16*EC_S;
+  return`<div class="sec"><div class="dual"><svg class="ecp" id="ecS" viewBox="0 0 ${W} ${W+16}" role="img" aria-label="The ${L.length} points of the curve">${h}${lab.join('')}</svg>
+    <div class="side"><div class="h3">The curve ${K17.name}</div><p>It has ${L.length} points with coordinates from 0 to 16, plus the point at infinity O: ${L.length+1} = q elements. Every point is a multiple of A = (5, 1).</p>
+    <p>${k>=2?`R = ${sk}·A is reached by adding A again and again; the thin line follows A, 2A, 3A, … The points jump around the grid: that is why going back from R to k is hard.`:'Press Step: the line will follow A, 2A, 3A, … up to k·A.'}</p>
+    ${k>=7&&V.P?(V.ok?`<p>Bob gets P = u₁·A + u₂·B = ${ptS(V.P)} = R, because u₁ + d·u₂ ≡ k mod q.</p>`:`<p>Bob gets P = u₁·A + u₂·B = ${ptS(V.P)}, not R = ${ptS(S.R)}: what he received is not what Alice signed, so u₁ + d·u₂ is not k and P lands on another point.</p>`):''}<p class="hint l">Click a point.</p><div class="pick" id="ptP"></div></div></div></div>`;
+}
+T.ec={n:()=>8,render(k){
+  const R=D.R.ec,K=R.K,S=R.S,V=R.V,sm=D.small;
+  stage.innerHTML=tmSeg()+flowH('ec',ecF(),k)+nvRow([
+    ['q','q',K.q,0,`the number of points in the group of A${sm?'':' (a 256-bit prime)'}`],['A','A',K.A,0,'the base point: its multiples form the group'],
+    ['d','d',K.d,0,`Alice’s private key, 0 < d < q`],['B','B',K.B,0,'= d·A: the public key, a point on the curve'],
+    ['h','h',R.h,1,sm?`= SHA-256(message) mod q = ${hexShort(D.Hhex)} (hex) mod ${K.q}`:'= SHA-256(message)'],
+    ['k','k',S.k,2,`the ephemeral key: random, secret, 0 < k < q`],['R','R',S.R,2,`= k·A, computed with ${bitLen(S.k)-1} doublings and ${ones(S.k)-1} additions`],['r','r',S.r,2,`= the x-coordinate of R mod q`],
+    ['s','s',S.s,3,`= (h + d·r)·k⁻¹ mod q, with k⁻¹ = ${fmtN(S.ki)}`],
+    ...(V.range?[]:[['w','w',V.w,6,'= s⁻¹ mod q'],['u1','u₁',V.u1,6,'= w · h mod q'],['u2','u₂',V.u2,6,'= w · r mod q'],['P','P',V.P,7,`= u₁·A + u₂·B = ${ptS(V.P1)} + ${ptS(V.P2)}`]])],k)+
+    (sm?ecPlot(k):`<div class="sec big">secp256k1 has about 2<sup>256</sup> points: too many to draw. The small curve shows the picture.</div>`)+
+    `<p class="row" style="margin-top:12px">${newK('ec')}<span class="flh">signs the same message again with another k</span></p>`;
+  $('#explain').innerHTML=[say('The keys',`ECDSA is DSA with the points of an elliptic curve as the group. A is a fixed point whose multiples A, 2A, 3A, … give a group of prime order q = ${fmtN(K.q)}.`,fm(`private d = ${fmtN(K.d)}<br>public B = d·A = ${ptS(K.B)}`),'Press <b>Step</b>.'),
+    say('Step 1 · hash',fm(`h = ${fmtN(R.h)}`)),
+    say('Step 2 · R and r','A new random secret k. Its point R = k·A gives r, the x-coordinate of R reduced mod q:',fm(`k = ${fmtN(S.k)}<br>R = k·A = ${ptS(S.R)}<br>r = ${fmtN(S.r)}`)),
+    say('Step 3 · s','The same formula as in DSA:',fm(`s = (h + d·r)·k⁻¹ mod q = ${fmtN(S.s)}`),`The signature is ${2*bitLen(K.q)} bits.`),
+    say('Step 4 · send','The message and (r, s) travel in the clear.',tmNote(R,`s to ${fmtN(R.Sr.s)}`)),
+    say('Step 5 · Bob hashes',fm(`h = ${fmtN(R.hr)}`)),
+    say('Step 6 · two multipliers',V.range?'s is out of range: Bob rejects at once.':fm(`w = s⁻¹ mod q = ${fmtN(V.w)}<br>u₁ = w·h mod q = ${fmtN(V.u1)}<br>u₂ = w·r mod q = ${fmtN(V.u2)}`)),
+    say('Step 7 · verify',V.range?'':fm(`P = u₁·A + u₂·B = ${ptS(V.P)}`),V.range?'':`Bob compares the x-coordinate of P, mod q, with r = ${fmtN(R.Sr.r)}.`,verdict(R))][k];
+  $('#extra').innerHTML=`<h3>ECDSA in four lines</h3>${fm('R = k·A, r = x<sub>R</sub> mod q')}${fm('s = (h + d·r)·k⁻¹ mod q')}${fm('P = u₁·A + u₂·B, with u₁ = h/s, u₂ = r/s')}${fm('check: x<sub>P</sub> mod q = r ?')}<p class="note">Bitcoin and Ethereum sign every transaction this way on secp256k1: see <a href="blockchain.html">the blockchain page</a>.</p>`+quiz('ec');
+},
+plan(k){
+  const base=flowPlan('ec',k);
+  if(!D.small||(k!==2&&k!==7))return base;
+  return{dur:k===2?2600:base.dur,start(){
+    const t=base.start(),ch=$('#ecCh'),P=$('#ecP');let f=null;
+    if(k===2&&ch){const L=ch.getTotalLength();ch.style.strokeDasharray=L;ch.style.strokeDashoffset=L;f=p=>{ch.style.strokeDashoffset=L*(1-ease(clamp(p/.9,0,1)))}}
+    if(k===7&&P){P.style.opacity=0;f=p=>{P.style.opacity=p<.8?0:clamp((p-.8)/.15,0,1)}}
+    return both(t,f);
+  }};
+},
+focus(){follow($('#fw'))}};
+CLICK.push(e=>{const c=e.target.closest('[data-pt]');if(!c)return;
+  const C=K17,i=+c.dataset.pt,P=ecMul(C,BigInt(i),C.G),[x,y]=P,l=mod(y*y,C.p),r=mod(x*x*x+C.a*x+C.b,C.p);
+  $('#ptP').innerHTML=`<b>${ptS(P)} = ${i}·A</b> <code>y² mod 17 = ${l}, x³ + 2x + 2 mod 17 = ${r}</code>${ptEq(P,D.K.ec.B)?' This is B, the public key.':''}`;return true});
+
+/* ---------- tab 7 · the same k twice ---------- */
+QZ.nr={q:'How do careful implementations avoid using the same k twice?',o:['They always use k = 1','They derive k from the private key and the message (RFC 6979)','They publish k with the signature'],a:1,why:'A k computed with HMAC from d and the hash is different for every message and still secret, and it needs no random number generator at signing time.'};
+function nrRows(k){
+  const N=D.NR[ST.nrv];if(!N)return[['No second message found','']];
+  const q=N.K.q,c=x=>chip('nr'+x[0],x[1],x[2],false,x[3]),dsa=ST.nrv==='dsa';
+  return[
+    ['Signature on message 1',`<span class="flh">“${escH(short(D.msg,22))}”</span>${c(['h1','h₁',N.h1,'its hash'])}<span>r = <span class="same">${fmtN(N.S1.r)}</span></span>${c(['s1','s₁',N.S1.s,'(h₁ + d·r)·k⁻¹ mod q'])}`],
+    ['Signature on message 2, same k',`<span class="flh">“${escH(N.m2)}”</span>${c(['h2','h₂',N.h2,'its hash'])}<span>r = <span class="same">${fmtN(N.S2.r)}</span></span>${c(['s2','s₂',N.S2.s,'(h₂ + d·r)·k⁻¹ mod q'])}`],
+    ['Eve sees the same r and computes <b>k</b>',c(['k','k = (h₁ − h₂)·(s₁ − s₂)⁻¹ mod q',N.k,`s₁ − s₂ = k⁻¹·(h₁ − h₂), so k = ${fmtN(N.dh)} · ${fmtN(N.dsi)} mod q`])],
+    ['then the private key <b>d</b>',c(['d','d = (s₁·k − h₁)·r⁻¹ mod q',N.d,`from s₁·k = h₁ + d·r; r⁻¹ = ${fmtN(N.ri)}`])],
+    ['She checks it against the public key',c(['pub',dsa?'αᵈ mod p':'d·A',N.pub,dsa?`it equals β = ${fmtN(N.K.b)}`:`and Alice’s B = ${ptS(N.K.B)}`])+(N.ok?'<span class="vok">it is Alice’s key</span>':'<span class="vbad">no match</span>')],
+    ['and signs her own message',`<span class="flh">“${N.m3}”</span>${c(['s3','s',N.S3.s,'made with the stolen d'])}`+(N.V3.ok?'<span class="vok">valid under Alice’s public key</span>':'<span class="vbad">not valid</span>')]];
+}
+T.nr={n:()=>6,render(k){
+  const N=D.NR[ST.nrv],dsa=ST.nrv==='dsa',rows=nrRows(k);
+  stage.innerHTML=subs(`<span class="flh">Scheme</span>`,seg('nrv',ST.nrv,[['dsa','DSA'],['ec','ECDSA']]),`<span class="flh">with the ${D.small?'small':'real-size'} numbers</span>`)+
+    `<div class="eqs" id="nrR">${rows.map((r,i)=>erow('nrr',i,k,r[0],r[1])).join('')}</div><p class="hint l">Click a row to jump to it, or a value to see how it was computed.</p>${pickLine()}`;
+  if(!N){$('#explain').innerHTML=say('No example','No second message with a different hash was found.');$('#extra').innerHTML='';return}
+  const f=fmtN;
+  $('#explain').innerHTML=[say('One k, two messages',`A signer uses the same k = ${f(N.S1.k)} for two different messages. Both signatures look fine and both are valid. Press <b>Step</b>.`),
+    say('Step 1 · two signatures',`The same k gives the same r = ${f(N.S1.r)}, because r depends only on k. Eve notices.`),
+    say('Step 2 · k',`Subtract the two s equations: s₁ − s₂ ≡ k⁻¹·(h₁ − h₂) mod q. Everything but k is public:`,fm(`k = (h₁ − h₂)·(s₁ − s₂)⁻¹ mod q = ${f(N.k)}`)),
+    say('Step 3 · d','Now the first signature has only one unknown left:',fm(`s₁ = (h₁ + d·r)·k⁻¹ → d = (s₁·k − h₁)·r⁻¹ mod q = ${f(N.d)}`)),
+    say('Step 4 · check',dsa?fm(`α<sup>d</sup> mod p = ${f(N.pub)} = β`):fm(`d·A = ${ptS(N.pub)} = B`),`It is Alice’s private key.`),
+    say('Step 5 · forge',`Eve signs “${N.m3}” with d. Bob checks it with Alice’s public key: ${N.V3.ok?'valid':'not valid'}.`,'One repeated k gave away the key for all future signatures.')][k];
+  $('#extra').innerHTML=`<h3>The algebra</h3>${fm('s₁ − s₂ = k⁻¹·(h₁ − h₂) mod q')}${fm('k = (h₁ − h₂)·(s₁ − s₂)⁻¹ mod q')}${fm('d = (s₁·k − h₁)·r⁻¹ mod q')}<p class="note">In December 2010 the group fail0verflow showed that Sony signed PlayStation 3 software with ECDSA and the same k every time, and recovered Sony’s private key.</p>`+quiz('nr');
+},
+plan(k){return rowPlan('nrr',k)},
+focus(k){follow($('#nrr'+k))}};
+
+/* ---------- the longer read under the picture ---------- */
+const dbox=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const DEX=b=>dbox('Example',b),DNO=b=>dbox('Careful',b,'no'),DUSE=b=>dbox('In cryptography',b,'use');
+const DM=s=>`<span class="mth">${s}</span>`;
+// reading references: section numbers from the book's table of contents, page ranges from the course syllabus
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const AZB10=`${AZB}: pp. 522–551, digital signature schemes (lecture 10 of the syllabus).`,AZB11=`${AZB}: pp. 482–496, cryptographic hash functions (lecture 11 of the syllabus).`;
+const RSAREF=[`${PAAR}, chapter 10: section 10.2.3, “Security”, of the RSA signature scheme.`,AZB10],NRREF=[`${PAAR}, chapter 10: section 10.3.3, the security of Elgamal signatures, where a reused ephemeral key is attacked, and the security sections 10.4.3 (DSA) and 10.5.3 (ECDSA).`];
+const REFS={
+  ov:[`${PAAR}, chapter 10: section 10.1, “Introduction”: 10.1.1 on why symmetric cryptography is not enough, 10.1.2 “Principles of Digital Signatures”, 10.1.3 “Security Services” and 10.1.4 “Applications of Digital Signatures”.`,AZB10],
+  rsa:[`${PAAR}, chapter 10: section 10.2, “The RSA Signature Scheme”: 10.2.1 the schoolbook scheme, 10.2.2 computational aspects, 10.2.3 security.`,AZB10],
+  'hf/exist':RSAREF,'hf/mult':RSAREF,
+  'hf/hash':[`${PAAR}, chapter 11: section 11.1, “Motivation: Signing Long Messages”, and section 11.2, “Security Requirements of Hash Functions”.`,AZB11],
+  eg:[`${PAAR}, chapter 10: section 10.3, “The Elgamal Digital Signature Scheme” (10.3.1–10.3.3).`,AZB10],
+  dsa:[`${PAAR}, chapter 10: section 10.4, “The Digital Signature Algorithm (DSA)” (10.4.1–10.4.3).`,AZB10],
+  ec:[`${PAAR}, chapter 10: section 10.5, “The Elliptic Curve Digital Signature Algorithm (ECDSA)” (10.5.1–10.5.3). Computing with points is chapter 9, sections 9.1 and 9.2.`],
+  'nr/dsa':NRREF,'nr/ec':NRREF
+};
+const MORE=id=>REFS[id]&&REFS[id].length?dbox('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+
+T.ov.doc=()=>{const K=D.K;
+  return`<h2>Digital signatures</h2>
+  <p class="lead">A digital signature is a number that only the holder of a private key can compute for a given message, and that anyone can check with the matching public key.</p>
+  <h3>What a signature gives</h3>
+  <ul class="pts"><li><b>Integrity</b>: if one bit of the message changes, the signature no longer fits.</li><li><b>Message authentication</b>: the message comes from the holder of the private key.</li><li><b>Non-repudiation</b>: the signer cannot later deny it, because nobody else could have made the signature. A third person, such as a judge, can check this.</li></ul>
+  <p>A signature does not give <b>confidentiality</b>. The message travels in the clear next to its signature.</p>
+  <h3>Why a MAC is not enough</h3>
+  <p>A message authentication code (MAC) is computed with a key that both sides share. It gives integrity and authentication between the two of them. But a valid tag only shows that one of the two key holders made it. In the story above, Bob could have written the order and its tag himself, so the tag proves nothing to the judge.</p>
+  <p>A signature separates the two roles. Signing needs the private key, which only Alice has. Checking needs the public key, which everyone may have. This is the same split as in <a href="rsa.html">public-key encryption</a>, used the other way round.</p>
+  <h3>Three algorithms</h3>
+  <p>Every signature scheme has key generation, a signing algorithm and a verification algorithm. On this page the signed number is always derived from the SHA-256 hash of the message, and each scheme is shown with the current numbers:</p>
+  <table class="cmp3"><tr><th>Scheme</th><th>Hard problem</th><th>Signature here</th></tr>
+    <tr><td>RSA</td><td>factoring n</td><td>one number below n: ${bitLen(K.rsa.n)} bits</td></tr>
+    <tr><td>Elgamal</td><td>discrete logarithm mod p</td><td>(r, s): ${bitLen(K.eg.p)} + ${bitLen(K.eg.m)} bits</td></tr>
+    <tr><td>DSA</td><td>discrete logarithm in a subgroup</td><td>(r, s) mod q: ${2*bitLen(K.dsa.q)} bits</td></tr>
+    <tr><td>ECDSA</td><td>discrete logarithm on a curve</td><td>(r, s) mod q: ${2*bitLen(K.ec.q)} bits</td></tr></table>
+  ${DNO(`The check only proves that the signer holds the private key that belongs to the public key Bob used. If Eve gives Bob her own public key under Alice’s name, Bob accepts Eve’s signatures as Alice’s. A <b>certificate</b>, a public key signed by someone Bob already trusts, ties the key to a name.`)}
+  ${DUSE(`Certificates in TLS (the padlock of a web site) are signatures by a certificate authority. Software updates and apps are signed so that a phone or a computer installs only code from the real vendor. Every Bitcoin and Ethereum transaction carries an ECDSA signature: see <a href="blockchain.html">the blockchain page</a>.`)}
+  ${MORE('ov')}`};
+
+T.rsa.doc=()=>{const R=D.R.rsa,K=R.K,eS=bitLen(K.e)-1,eM=ones(K.e)-1,dS=bitLen(K.d)-1,dM=ones(K.d)-1;
+  return`<h2>The RSA signature</h2>
+  <p class="lead">Alice signs with her private exponent d, and anyone checks with her public key (n, e). Signing is the RSA decryption operation applied to the message; verifying is the encryption operation.</p>
+  <h3>How it works</h3>
+  <ol class="pts"><li><b>Keys</b>: the same as for <a href="rsa.html">RSA encryption</a>. Two primes p and q, n = p·q, e with gcd(e, φ(n)) = 1, and d = e⁻¹ mod φ(n).</li><li><b>Sign</b>: s = x<sup>d</sup> mod n, where x is the number that represents the message.</li><li><b>Verify</b>: compute x′ = s<sup>e</sup> mod n. The signature is valid if x′ = x.</li></ol>
+  <p>It works for the same reason as decryption: e·d = 1 + t·φ(n) for some whole number t, so s<sup>e</sup> = x<sup>e·d</sup> = x · (x<sup>φ(n)</sup>)<sup>t</sup> ≡ x mod n.</p>
+  ${DEX(`With the numbers on this page:<br>${DM(`x = ${fmtN(R.h)}<br>s = x<sup>d</sup> mod n = ${fmtN(R.S.s)}<br>s<sup>e</sup> mod n = ${fmtN(R.Vh.v)} ${R.Vh.ok?'= x, valid':'≠ x'}<br>e·d mod φ(n) = ${K.e*K.d%K.phi}`)}`)}
+  <h3>Fast to check, slow to sign</h3>
+  <p>With square and multiply, the work depends on the length of the exponent. The public exponent is short: e = ${fmtN(K.e)} needs ${eS} squarings and ${eM} multiplication${eM===1?'':'s'}. The private exponent is as long as n: d needs ${dS} squarings and ${dM} multiplications. So checking a signature is much faster than making one. Signing is usually sped up with the Chinese remainder theorem, as RSA decryption is.</p>
+  ${DNO(`The scheme above is <b>schoolbook RSA</b>. Signed as it is, it can be forged: tab 3 shows how. Real RSA signatures put the hash into a fixed format first, called <b>padding</b>: PKCS #1 v1.5 or the randomised PSS, both in PKCS #1 (RFC 8017). On this page the bare hash is signed so that every step stays visible.`)}
+  ${DUSE(`RSA signatures are the most common kind in the certificates of web sites. TLS 1.3 accepts RSA signatures in the handshake only with PSS padding. The key needs at least 2048 bits.`)}
+  ${MORE('rsa')}`};
+
+const HFDOC={
+exist(){const F=D.HF,K=F.K;
+  return`<h2>Existential forgery</h2>
+  <p class="lead">With schoolbook RSA, anyone can produce a pair (x, s) that passes the check, without the private key. They only have to start from the signature instead of the message.</p>
+  <h3>How it works</h3>
+  <p>Bob accepts (x, s) when s<sup>e</sup> mod n = x. Eve picks any s and computes x = s<sup>e</sup> mod n with the public key. The pair passes by construction.</p>
+  ${DEX(DM(`s = ${fmtN(F.sE)}<br>x = s<sup>e</sup> mod n = ${fmtN(F.sE)}<sup>${K.e}</sup> mod ${fmtN(K.n)} = ${fmtN(F.xE)}<br>Bob: s<sup>e</sup> mod n = ${fmtN(F.vE)}, equal to x`))}
+  <h3>Why it matters</h3>
+  <p>Eve cannot choose the message: x comes out of the computation and is usually meaningless. Such a forgery is called <b>existential</b>: a signed message exists, but not one Eve wanted. It still breaks the scheme, because a system may accept a number as an amount, a key or a random challenge.</p>
+  ${DNO(`Rejecting messages that “look random” is not a defence. The fix is to sign a hash of the message with a fixed format, so that Eve would have to find a message whose hash is exactly x: see the third view.`)}
+  ${DUSE(`A security proof for a signature scheme asks that even this weakest kind of forgery is impossible, while the attacker may ask for signatures on messages of their choice. This goal is called existential unforgeability under chosen-message attack.`)}
+  ${MORE('hf/exist')}`},
+mult(){const F=D.HF,K=F.K;
+  return`<h2>Signatures multiply</h2>
+  <p class="lead">RSA keeps products: the signature of x₁ times the signature of x₂ is the signature of x₁·x₂. Eve can combine signatures she has seen into a new one.</p>
+  <h3>How it works</h3>
+  <p>(x₁·x₂)<sup>d</sup> = x₁<sup>d</sup>·x₂<sup>d</sup> mod n. If Alice signed x₁ and x₂, Eve multiplies the two signatures and gets a valid signature on x₁·x₂ mod n. She never needs d.</p>
+  ${DEX(DM(`s₁ = ${F.x1}<sup>d</sup> mod n = ${fmtN(F.s1)}<br>s₂ = ${F.x2}<sup>d</sup> mod n = ${fmtN(F.s2)}<br>s₁·s₂ mod n = ${fmtN(F.sM)}<br>${F.xM}<sup>d</sup> mod n = ${fmtN(F.realM)} ${F.realM===F.sM?'(the same number)':''}`))}
+  <p>The same idea gives a <b>chosen-message attack</b>: to get Alice’s signature on a message x she would refuse, Eve asks her to sign two harmless-looking numbers whose product is x.</p>
+  ${DNO(`A hash removes the structure: SHA-256(m₁)·SHA-256(m₂) mod n is not the hash of any message Eve knows, so the product of two signatures signs nothing useful.`)}
+  ${DUSE(`The same property is used on purpose in <b>blind signatures</b>, proposed by David Chaum in 1982: the signer signs a number multiplied by a random factor, without seeing the message, and the factor is removed afterwards.`)}
+  ${MORE('hf/mult')}`},
+hash(){const R=D.R.rsa,K=R.K,S=ST.hfs,bytes=txtB(D.msg).length;
+  return`<h2>Hash, then sign</h2>
+  <p class="lead">In practice the message is never signed directly. Alice signs its hash, a short fixed-length fingerprint, and Bob hashes the message himself before checking.</p>
+  <h3>Three reasons</h3>
+  <ul class="pts"><li><b>Length</b>: RSA can only sign a number below n. A long message would have to be cut into blocks and each signed, which is slow and lets Eve drop or reorder blocks. One hash covers a message of any length: here ${bytes} byte${bytes===1?'':'s'} become 32.</li><li><b>Speed</b>: one slow public-key operation per message, and hashing is fast.</li><li><b>Security</b>: the two forgeries before need Eve to choose the number that is signed. With a hash she would need a message with that exact hash.</li></ul>
+  ${DEX(DM(`SHA-256(“${escH(short(D.msg,30))}”) =<br>${D.Hhex}<br>x = ${D.small?'that number mod n = ':''}${fmtN(R.h)}<br>s = x<sup>d</sup> mod n = ${fmtN(R.S.s)}`))}
+  <h3>What the hash must give</h3>
+  <ul class="pts"><li><b>Preimage resistance</b>: from x, nobody can find a message with hash x. Otherwise the existential forgery becomes a real one.</li><li><b>Second preimage resistance</b>: from a signed message, nobody can find a second message with the same hash. Otherwise the signature fits the second message too.</li><li><b>Collision resistance</b>: nobody can find any two messages with the same hash. Otherwise Eve prepares two of them, gets one signed, and uses the signature for the other.</li></ul>
+  ${D.small?DNO(`The small example has only n = ${K.n} possible values of x, because the hash is reduced mod n. Eve then finds a message for her forged x by trying about n messages${S?`: the search above needed ${S.i.toLocaleString('en-US')} tries and found “${escH(S.m)}”`:''}. Real keys avoid this: n has 2048 bits or more, and the whole 256-bit hash fits.`):DNO(`On this page the bare hash is signed. Real RSA signatures also put the hash into a padding format (PKCS #1 v1.5 or PSS) that fills the whole length of n.`)}
+  ${DUSE(`Weak hashes have broken signatures in practice. In 2008 researchers used MD5 collisions to make a fake certificate authority certificate that browsers accepted, and in 2017 the first SHA-1 collision was published. Certificates are signed with SHA-256 or stronger today.`)}
+  ${MORE('hf/hash')}`}};
+T.hf.doc=()=>HFDOC[ST.hfv]();
+
+T.eg.doc=()=>{const R=D.R.eg,K=R.K,S=R.S,e1=mod(K.d*S.r+S.k*S.s,K.m);
+  return`<h2>The Elgamal signature</h2>
+  <p class="lead">The Elgamal signature works in the multiplicative group modulo a prime p, the same group as Diffie–Hellman. Every signature uses a fresh random number k, so signing the same message twice gives two different signatures.</p>
+  <h3>How it works</h3>
+  <ol class="pts"><li><b>Keys</b>: a prime p, a primitive element α, a private d from {2, …, p − 2}, and the public β = α<sup>d</sup> mod p.</li><li><b>Sign</b>: pick a secret k with gcd(k, p − 1) = 1. Compute r = α<sup>k</sup> mod p and s = (x − d·r)·k⁻¹ mod (p − 1). The signature is (r, s).</li><li><b>Verify</b>: compute t = β<sup>r</sup>·r<sup>s</sup> mod p. The signature is valid if t = α<sup>x</sup> mod p.</li></ol>
+  <p>Why it works: β<sup>r</sup>·r<sup>s</sup> = α<sup>d·r</sup>·α<sup>k·s</sup> = α<sup>d·r + k·s</sup>. By the definition of s, k·s ≡ x − d·r mod (p − 1), so the exponent is x modulo p − 1, and α<sup>p−1</sup> = 1 by Fermat’s little theorem.</p>
+  ${DEX(DM(`k = ${S.k}, k⁻¹ mod ${K.m} = ${S.ki}<br>r = ${K.a}<sup>${S.k}</sup> mod ${K.p} = ${S.r}<br>s = (${R.h} − ${K.d}·${S.r})·${S.ki} mod ${K.m} = ${S.s}<br>d·r + k·s mod ${K.m} = ${K.d}·${S.r} + ${S.k}·${S.s} mod ${K.m} = ${e1} = x`))}
+  ${DNO(`k must be secret and new for every signature. If Eve learns k, then d = (x − k·s)·r⁻¹ mod (p − 1), up to a few candidates when r has a common factor with p − 1. If k is used twice, Eve can compute it from the two signatures: tab 7 shows this for DSA and ECDSA. Schoolbook Elgamal, without a hash, also allows existential forgeries.`)}
+  ${DUSE(`Taher Elgamal published the scheme in 1985. It is rarely used as it is: its signature is twice as long as p. DSA (tab 5) is a variant that works in a small subgroup and gives much shorter signatures.`)}
+  ${MORE('eg')}`};
+
+T.dsa.doc=()=>{const R=D.R.dsa,K=R.K,S=R.S,V=R.Vh,c=K.p/K.q;
+  return`<h2>The Digital Signature Algorithm</h2>
+  <p class="lead">DSA is a variant of the Elgamal signature that works in a subgroup of prime order q inside the group mod p. Then r and s are numbers modulo q, and the signature is short even when p is long.</p>
+  <h3>Domain parameters and keys</h3>
+  <p>A prime p, a prime q that divides p − 1, and an element α of order q, so α<sup>q</sup> ≡ 1 mod p. A common way to get α is h<sup>(p−1)/q</sup> mod p for some h, as long as the result is not 1. Alice picks d with 0 &lt; d &lt; q and publishes β = α<sup>d</sup> mod p.</p>
+  ${DEX(DM(`p = ${fmtN(K.p)} (${bitLen(K.p)} bits), q = ${fmtN(K.q)} (${bitLen(K.q)} bits)<br>(p − 1) mod q = ${(K.p-1n)%K.q}, α<sup>q</sup> mod p = ${modpow(K.a,K.q,K.p)}<br>d = ${fmtN(K.d)}, β = ${fmtN(K.b)}`))}
+  <h3>Sign and verify</h3>
+  <p>Signing: a new secret k with 0 &lt; k &lt; q, r = (α<sup>k</sup> mod p) mod q and s = (h + d·r)·k⁻¹ mod q, where h is the hash of the message. If r or s is 0, Alice picks another k.</p>
+  <p>Verifying: w = s⁻¹ mod q, u₁ = w·h mod q, u₂ = w·r mod q and v = (α<sup>u₁</sup>·β<sup>u₂</sup> mod p) mod q. The signature is valid if v = r. It works because u₁ + d·u₂ = w·(h + d·r) ≡ k mod q, so α<sup>u₁</sup>·β<sup>u₂</sup> = α<sup>k</sup>.</p>
+  ${DEX(DM(`r = ${fmtN(S.r)}, s = ${fmtN(S.s)}<br>u₁ + d·u₂ mod q = ${fmtN(mod(V.u1+K.d*V.u2,K.q))}, and k = ${fmtN(S.k)}<br>v = ${fmtN(V.v)} ${V.ok?'= r':'≠ r'}`))}
+  <h3>Why the subgroup</h3>
+  <p>The best attacks on the discrete logarithm in the large group need a long p, here ${bitLen(K.p)} bits. Inside the subgroup, generic attacks such as Pollard’s rho need about √q steps, so a ${bitLen(K.q)}-bit q is enough there. The signature is two numbers mod q: ${2*bitLen(K.q)} bits instead of ${2*bitLen(K.p)} for Elgamal with the same p. The subgroup has ${fmtN(K.q)} elements, about 1 in ${fmtN(c)} of the whole group.</p>
+  ${DNO(`k must be random, secret and never repeated, exactly as in Elgamal: tab 7. The hash is cut to the length of q; with the small numbers of this page it is reduced mod q, so different messages often get the same h.`)}
+  ${DUSE(`NIST proposed DSA in 1991 and made it the federal standard FIPS 186 in 1994. Common sizes of p and q were 1024/160, 2048/224, 2048/256 and 3072/256 bits. FIPS 186-5 (2023) no longer approves DSA for new signatures; it may only be used to check old ones. ECDSA (tab 6), EdDSA and RSA are used instead.`)}
+  ${MORE('dsa')}`};
+
+T.ec.doc=()=>{const R=D.R.ec,K=R.K,S=R.S,sm=D.small,kb=bitLen(S.k),kd=kb-1,ka=ones(S.k)-1;
+  return`<h2>ECDSA</h2>
+  <p class="lead">ECDSA is DSA with a different group: the points of an elliptic curve. The private key is a number d, the public key is the point B = d·A, and a signature is still two numbers (r, s) modulo q.</p>
+  <h3>Points as a group</h3>
+  <p>An elliptic curve over GF(p) is the set of points (x, y) with y² ≡ x³ + a·x + b mod p, plus one extra point O, the point at infinity. Two points can be added by a fixed rule with lines through them, and O is the neutral element. k·A means A added to itself k times. Going from A and k·A back to k is the elliptic-curve discrete logarithm problem.</p>
+  ${sm?DEX(`The small curve y² = x³ + 2x + 2 over GF(17) has 18 points plus O, so 19 elements, and 19 is prime. Every point is a multiple of A = (5, 1). Alice’s key: d = ${K.d}, B = ${K.d}·A = ${ptS(K.B)}.`):DEX(`secp256k1 is y² = x³ + 7 over the prime p = 2²⁵⁶ − 2³² − 977. Its base point A has the 256-bit prime order q = ${fmtN(K.q)}. Alice’s public key B = d·A has two 256-bit coordinates.`)}
+  <h3>Sign and verify</h3>
+  <p>Signing: a new secret k, R = k·A, r = x<sub>R</sub> mod q, s = (h + d·r)·k⁻¹ mod q. Verifying: w = s⁻¹ mod q, u₁ = w·h, u₂ = w·r (mod q), P = u₁·A + u₂·B. The signature is valid if x<sub>P</sub> ≡ r mod q. As in DSA, u₁ + d·u₂ ≡ k mod q, so P = k·A = R.</p>
+  <p>k·A is not computed by adding A k times. <b>Double and add</b> reads the bits of k: here k = ${fmtN(S.k)} has ${kb} bits, so R takes ${kd} doublings and ${ka} additions${sm?'':', instead of about 2²⁵⁵ additions'}.</p>
+  <h3>Why curves</h3>
+  <p>For good curves no attack is known that is much faster than the generic ones, which need about √q steps. A 256-bit q therefore gives about 128-bit security. RSA and DSA need a 3072-bit modulus for the same level. So ECDSA keys and signatures are short: a 256-bit private key, a public key of two 256-bit coordinates, and a 512-bit signature.</p>
+  ${DNO(`ECDSA needs a fresh secret k exactly like DSA. Bob must also check that r and s lie between 1 and q − 1 before he computes anything.`)}
+  ${DUSE(`ECDSA on the NIST curve P-256 is common in TLS certificates. Bitcoin and Ethereum use ECDSA on secp256k1: see <a href="blockchain.html">the blockchain page</a>. EdDSA, for example Ed25519 (RFC 8032), is a newer curve signature that computes k from the key and the message.`)}
+  ${MORE('ec')}`};
+
+T.nr.doc=()=>{const N=D.NR[ST.nrv];if(!N)return'';const dsa=ST.nrv==='dsa',f=fmtN;
+  return`<h2>The same k twice</h2>
+  <p class="lead">In Elgamal, DSA and ECDSA every signature needs its own secret random number k. If a signer ever uses the same k for two different messages, anyone who sees both signatures can compute the private key.</p>
+  <h3>How the attack works</h3>
+  <p>r depends only on k, so both signatures have the same r: that is how Eve notices. The two s values are</p>
+  <p>${DM('s₁ = (h₁ + d·r)·k⁻¹ mod q<br>s₂ = (h₂ + d·r)·k⁻¹ mod q')}</p>
+  <p>Subtracting removes d: s₁ − s₂ ≡ (h₁ − h₂)·k⁻¹ mod q, so k = (h₁ − h₂)·(s₁ − s₂)⁻¹ mod q. With k known, the first equation has one unknown left, d = (s₁·k − h₁)·r⁻¹ mod q. Everything Eve needs is public: the messages, their hashes and the signatures.</p>
+  ${DEX(DM(`h₁ − h₂ mod q = ${f(N.dh)}<br>s₁ − s₂ mod q = ${f(N.ds)}<br>k = ${f(N.dh)}·${f(N.dsi)} mod q = ${f(N.k)} (the signer used ${f(N.S1.k)})<br>d = ${f(N.d)} (Alice’s d is ${f(N.K.d)})`))}
+  <h3>Not only the same k</h3>
+  <p>A k that is merely predictable is just as bad: one signature with a known k gives d at once, from d = (s·k − h)·r⁻¹ mod q. Even a k with a few known or biased bits can leak d when an attacker collects many signatures.</p>
+  ${DNO(`Testing the signature does not help: both signatures with the repeated k are perfectly valid. The mistake is invisible until someone compares two of them.`)}
+  ${DUSE(`In December 2010 the group fail0verflow showed that Sony used the same k in the ECDSA signatures of PlayStation 3 software, and computed Sony’s private signing key. The usual protection is to compute k from the private key and the hash of the message with HMAC, as RFC 6979 specifies for DSA and ECDSA. EdDSA does the same by design.`)}
+  ${MORE('nr/'+ST.nrv)}`};
+
+// the card is rebuilt only when the tab, sub-view or numbers change, and written only when its text changes
+let DOCK='',DOCH='';
+function fillDoc(){
+  const t=T[ST.tab],sv={hf:ST.hfv,nr:ST.nrv}[ST.tab]||'',ck=[ST.tab,sv,D.v].join('|');
+  if(ck===DOCK)return;DOCK=ck;
+  const h=t.doc?t.doc():'',dc=$('#doc');dc.hidden=!h;if(h!==DOCH){DOCH=h;dc.innerHTML=h}
+}
+
+/* ---------- step engine: one animation at a time ----------
+   Each tab: n() = number of states, render(k) = static picture after step k,
+   plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
+const ENG={playing:false,anim:null,playT:null};
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const speed=()=>+$('#spd').value;
+function curN(){return T[ST.tab].n()}
+// room is kept for the longest text of a walkthrough, so the picture does not move from step to step
+const ROOM={k:'',h:0},NARROW=matchMedia('(max-width:1000px)');
+function drawStep(t,k){
+  const ex=$('#explain'),n=t.n();ex.style.minHeight=ex.style.marginBottom='';
+  HV={};
+  if(n<2){t.render(k);return}
+  const sig=Object.entries(ST).filter(([,v])=>v===null||typeof v!=='object').map(([a,v])=>a+'='+v).join(','),ck=`${n}|${ex.clientWidth}|${D.v}|${sig}`;
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){t.render(j);h=Math.max(h,ex.offsetHeight)}ROOM.k=ck;ROOM.h=h}
+  HV={};t.render(k);
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function controls(k){
+  const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
+  $('#prog').textContent=stepped?`Step ${k} of ${n-1}`:'';
+  $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
+  $('#fWrap').hidden=!t.focus;
+  fillDoc();
+}
+function show(){
+  if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
+  const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
+  fxClear();drawStep(t,k);controls(k);
+}
+function startStage(to){
+  stopAnim(true);
+  const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
+  ST.step[tab]=to;fxClear();drawStep(t,to);
+  const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
+  if(!tick){fxClear();drawStep(t,to);controls(to);next();return}
+  const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
+  ENG.anim=a;controls(to);tick(0);
+  if(t.focus&&$('#follow').checked)t.focus(to);
+  requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
+}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();drawStep(T[a.tab],a.to);controls(a.to);next()}
+function next(){
+  if(!ENG.playing)return;const k=ST.step[ST.tab];
+  if(k<curN()-1)ENG.playT=setTimeout(()=>{ENG.playT=null;startStage(k+1)},(RM.matches?60:380)/speed());else setPlaying(false);
+}
+function stopAnim(complete){
+  if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
+  const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
+  if(a.tab===ST.tab){drawStep(T[a.tab],ST.step[a.tab]);controls(ST.step[a.tab])}
+}
+function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
+function follow(el){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
+  if(r.top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+}
+function setTab(id){
+  setPlaying(false);stopAnim(true);ST.tab=id;ST.pick=null;
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  show();
+  try{localStorage.setItem('sig-tab',id)}catch(e){}
+}
+const redo=()=>{setPlaying(false);stopAnim(false);ST.pick=null};
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(true);return}startStage((ST.step[ST.tab]||0)+1)};
+$('#bBack').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(false);return}const k=ST.step[ST.tab]||0;if(k>0){ST.step[ST.tab]=k-1;show()}};
+$('#bReset').onclick=()=>{setPlaying(false);stopAnim(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{
+  if(ENG.playing){setPlaying(false);return}
+  const n=curN();if(n<2)return;
+  if((ST.step[ST.tab]||0)>=n-1&&!ENG.anim){ST.step[ST.tab]=0;show()}
+  setPlaying(true);if(!ENG.anim)startStage(ST.step[ST.tab]+1);
+};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');
+  if(g){if(g.dataset.tmg){ST.tm=g.dataset.tmg;rerun()}setTab(g.dataset.goto);if(g.dataset.tmg){ST.step[ST.tab]=T[ST.tab].n()-1;show()}window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  const tm=e.target.closest('[data-tm]');if(tm){redo();ST.tm=tm.dataset.tm;rerun();show();return}
+  const nk=e.target.closest('[data-newk]');if(nk){redo();const sc=nk.dataset.newk,K=D.K[sc],m=sc==='eg'?K.m:K.q;ST.kr[sc]=(sc==='eg'?2n:1n)+rndBelow(m-(sc==='eg'?3n:1n));rerun();show();return}
+  const hv=e.target.closest('[data-hfv]');if(hv){redo();ST.hfv=hv.dataset.hfv;ST.step.hf=0;show();return}
+  const nv=e.target.closest('[data-nrv]');if(nv){redo();ST.nrv=nv.dataset.nrv;ST.step.nr=0;show();return}
+  const pk=e.target.closest('[data-hv]');if(pk){const id=pk.dataset.hv,p=HV[id];if(!p)return;ST.pick=ST.pick===id?null:id;$$('[data-hv]').forEach(b=>b.classList.toggle('on',b.dataset.hv===ST.pick));const pl=$('#pick');if(pl)pl.outerHTML=pickLine();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+  for(const h of CLICK)if(h(e))return;
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  // clickable parts of a picture answer to Enter and Space like buttons
+  const act=e.target.closest&&e.target.closest('svg [data-goto],[data-svc],[data-rk],[data-cell],[data-pt]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
+  if(e.target.closest&&e.target.closest('button')&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
+});
+$('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+$('#pre').onchange=e=>{redo();loadPreset(e.target.value)};
+$('#mI').value=D.msg;
+let mT=0;$('#mI').oninput=()=>{clearTimeout(mT);mT=setTimeout(()=>{redo();onInput()},D.small?60:250)};
+let startTab='ov';try{const t=localStorage.getItem('sig-tab');if(t&&T[t])startTab=t}catch(e){}
+ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
+loadPreset('small');
+</script>
+</body>
+</html>
