@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protocols and authentication, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;
+  --pub:#1f7a45;--pri:#7d55c7;--rp:#1d5fa6;--ri:#c2570c;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;
+  --pub:#5fd08f;--pri:#b49aec;--rp:#8ab8ee;--ri:#f0a35e;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0;position:relative}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){.stage{padding:12px 10px}}
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.seg.sm button{padding:3px 10px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);max-width:100%}
+input[type=text]{width:100%}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+#extra a,#explain a{color:var(--accent)}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.mono{font-family:var(--mono)}
+button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+.inbar{display:grid;grid-template-columns:minmax(220px,auto) minmax(0,1fr);gap:10px 14px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.meta{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.meta b{color:var(--ink)}
+@media (max-width:700px){.inbar{grid-template-columns:minmax(0,1fr)}}
+.sec{margin-top:22px}
+.scroll{overflow-x:auto;max-width:100%}
+.subs{margin-bottom:14px}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+.hint.l{text-align:left}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* animation layer: tokens fly over the stage */
+#fx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5}
+.tok text{font-family:var(--mono);font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:3px;stroke-linejoin:round}
+.tok .edge{fill:none;stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.flash{animation:flash .7s ease-out}
+@keyframes flash{from{background:var(--accentBg);box-shadow:0 0 0 4px var(--accent)}}
+.pulse{animation:pz .45s ease-in-out infinite alternate}
+@keyframes pz{to{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 45%,transparent)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* shared pieces */
+.res{--r:var(--accent);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 12px;margin-top:10px;border-radius:8px;background:color-mix(in srgb,var(--r) 8%,transparent);border-left:3px solid var(--r)}
+.res.r-ok{--r:var(--ok)}.res.r-bad{--r:var(--xor)}
+.res .rl{font:600 12.5px var(--sans);color:var(--r);min-width:70px}
+.res .rv{font:13px var(--mono);overflow-wrap:anywhere;flex:1 1 200px;min-width:0}
+.vok{font:600 12.5px var(--sans);color:var(--ok);background:var(--okBg);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.vbad{font:600 12.5px var(--sans);color:var(--xor);background:var(--xorBg);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.pros{list-style:none;margin:8px 0;padding:0;font-size:14px}
+.pros li{padding:2px 0 2px 22px;position:relative}
+.pros li::before{position:absolute;left:3px;font-weight:700}
+.pros .y::before{content:'+';color:var(--ok)}.pros .n::before{content:'−';color:var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.nvs{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.nv{font:600 12.5px var(--mono);padding:2px 8px;border-radius:6px;background:color-mix(in srgb,var(--ink) 7%,transparent);border:0;color:var(--ink);display:inline-flex;gap:6px;align-items:baseline;cursor:pointer}
+.nv small{font:500 11px var(--sans);color:var(--muted)}
+.nv:hover,.nv:focus-visible{outline:1.5px solid var(--accent)}
+.nv.on{outline:2px solid var(--accent)}
+.nv.gh{visibility:hidden}
+.pick{min-height:20px;margin-top:8px;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.pick b{color:var(--ink)}.pick code{font:12.5px var(--mono);color:var(--ink)}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);color:var(--ink);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor);color:var(--ink)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+/* the scene: things standing on a soft floor, seen through a camera that moves between steps */
+:root{--paper:#fffdf8;--grid:rgba(28,27,25,.055);--floor1:#edf2f8;--floor2:#fbfaf6;--onC:#ffffff;--mac:#9a6b2f}
+@media (prefers-color-scheme:dark){:root{--paper:#2b2b31;--grid:rgba(236,235,230,.05);--floor1:#1a2130;--floor2:#18181b;--onC:#121214;--mac:#d6a86c}}
+.scn{position:relative;width:100%;height:380px;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:linear-gradient(180deg,var(--floor1),var(--floor2) 72%);--dur:600ms}
+.cam{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform var(--dur) cubic-bezier(.45,.05,.3,1)}
+.world{position:relative;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:40px 40px}
+.wl{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.wl .road{stroke:var(--line2);stroke-width:3;stroke-dasharray:10 9;fill:none;stroke-linecap:round}
+.wl .roadl{font:600 13px var(--sans);fill:var(--muted);text-anchor:middle}
+.pt{position:absolute;left:0;top:0;transform:translate(calc(var(--x,0)*1px),calc(var(--y,0)*1px)) translate(-50%,-50%);transition:transform var(--dur) cubic-bezier(.45,.05,.3,1),opacity calc(var(--dur)*.7) ease;cursor:pointer;outline:none}
+.pt.hid{opacity:0;pointer-events:none}
+.pt:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:12px}
+.scn.snap .cam,.scn.snap .pt,.scn.snap .pt *{transition:none!important;animation:none!important}
+/* people */
+.av{display:flex;flex-direction:column;align-items:center;width:120px;text-align:center}
+.av .fc{width:58px;height:58px;border-radius:50%;border:2.5px solid var(--c);background:linear-gradient(165deg,color-mix(in srgb,var(--c) 26%,var(--panel)),color-mix(in srgb,var(--c) 7%,var(--panel)));box-shadow:0 9px 18px -9px color-mix(in srgb,var(--c) 80%,transparent);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.av .fc svg{width:46px;height:46px;fill:var(--c);opacity:.9}
+.av b{font:700 14.5px var(--sans);margin-top:4px}
+.av small{font:12px/1.3 var(--sans);color:var(--muted)}
+.av.A{--c:var(--rp)}.av.B{--c:var(--pub)}.av.E{--c:var(--xor)}.av.J{--c:var(--ink)}
+.av.busy .fc{animation:pz .4s ease-in-out infinite alternate}
+/* a sheet of paper; a signature is a seal stamped on it */
+.paper{width:178px;min-height:100px;padding:10px 14px 28px;background:var(--paper);border-radius:4px 16px 4px 4px;box-shadow:0 1px 0 var(--line2),0 16px 28px -14px rgba(0,0,0,.45)}
+.paper::before{content:'';position:absolute;right:0;top:0;width:16px;height:16px;border-radius:0 0 0 4px;background:linear-gradient(225deg,transparent 50%,color-mix(in srgb,var(--ink) 14%,var(--paper)) 50%)}
+.paper .ph{font:700 10.5px var(--sans);color:var(--faint);letter-spacing:.04em}
+.paper .tx{position:relative;font:600 15px/1.35 var(--sans);margin-top:2px;overflow-wrap:anywhere}
+.paper .tx>span{display:block;transition:opacity .35s}
+.paper .t2{position:absolute;left:0;top:0;right:0;opacity:0;color:var(--xor)}
+.paper.eve .t1,.paper.alt .t1{opacity:0}.paper.eve .t2,.paper.alt .t2{opacity:1}
+.paper.alt .t2{color:var(--ink)}
+.paper.eve{box-shadow:0 0 0 2.5px var(--xor),0 16px 28px -14px rgba(0,0,0,.45)}
+.paper .note{display:block;width:62px;height:27px;margin:4px 0 0}
+.paper .note rect{fill:color-mix(in srgb,var(--pub) 22%,var(--paper));stroke:var(--pub);stroke-width:1.6}.paper .note circle,.paper .note path{fill:none;stroke:var(--pub);stroke-width:1.6;stroke-linecap:round}
+.seal{position:absolute;right:-18px;bottom:-20px;min-width:100px;padding:5px 11px;border-radius:13px;background:radial-gradient(circle at 28% 22%,color-mix(in srgb,#fff 35%,var(--ri)),var(--ri) 72%);color:var(--onC);font:700 12px/1.35 var(--mono);text-align:center;white-space:nowrap;box-shadow:0 9px 16px -7px color-mix(in srgb,var(--ri) 80%,transparent);transform:rotate(-5deg);opacity:0;transition:opacity .3s}
+.seal small{display:block;font:700 9.5px var(--sans);opacity:.85;letter-spacing:.03em}
+.seal .s2{display:none}
+.paper.signed .seal{opacity:1}
+.paper.stamp .seal{animation:stamp .55s cubic-bezier(.3,1.5,.5,1)}
+@keyframes stamp{0%{transform:rotate(-5deg) scale(2.4);opacity:0}55%{opacity:1}100%{transform:rotate(-5deg) scale(1);opacity:1}}
+.paper.sigeve .seal{background:radial-gradient(circle at 28% 22%,color-mix(in srgb,#fff 35%,var(--xor)),var(--xor) 72%);box-shadow:0 9px 16px -7px color-mix(in srgb,var(--xor) 80%,transparent)}
+.paper.sigeve .seal .s1,.paper.alt2 .seal .s1{display:none}.paper.sigeve .seal .s2,.paper.alt2 .seal .s2{display:inline}
+.paper.tag .seal{background:radial-gradient(circle at 28% 22%,color-mix(in srgb,#fff 35%,var(--mac)),var(--mac) 75%);box-shadow:0 9px 16px -7px color-mix(in srgb,var(--mac) 80%,transparent)}
+.seal .same{display:inline-block;background:var(--onC);color:var(--ri);border-radius:4px;padding:0 3px}
+.paper.glow .seal{animation:sglow .45s ease-in-out infinite alternate}
+@keyframes sglow{to{box-shadow:0 0 0 6px color-mix(in srgb,var(--ri) 40%,transparent)}}
+.paper .badge{position:absolute;left:-15px;top:-15px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 19px var(--sans);color:var(--onC);opacity:0;transform:scale(.3);transition:opacity .3s,transform .4s cubic-bezier(.3,1.6,.5,1);font-style:normal}
+.paper.ok .badge{opacity:1;transform:none;background:var(--ok)}.paper.ok .badge::after{content:'✓'}
+.paper.bad .badge{opacity:1;transform:none;background:var(--xor)}.paper.bad .badge::after{content:'✗'}
+/* machines, keys, values, the public directory, speech */
+.mach{min-width:138px;padding:8px 14px;border-radius:12px;background:var(--panel);border:1.5px solid var(--accent);box-shadow:0 10px 20px -12px rgba(0,0,0,.45);text-align:center;font:700 13.5px var(--sans);color:var(--accent)}
+.mach small{display:block;font:500 11px var(--sans);color:var(--muted)}
+.mach.busy,.kc.glow,.vch.glow,.board.glow{animation:pz .4s ease-in-out infinite alternate}
+.kc{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:11px;background:color-mix(in srgb,var(--c) 11%,var(--panel));border:1.5px solid var(--c);color:var(--c);font:700 12.5px var(--mono);white-space:nowrap;box-shadow:0 8px 16px -10px color-mix(in srgb,var(--c) 75%,transparent)}
+.kc svg{width:30px;height:14px;fill:none;stroke:var(--c);stroke-width:2.6;stroke-linecap:round;flex:none}
+.kc span{display:flex;flex-direction:column;line-height:1.25;text-align:left}.kc small{font:600 10.5px var(--sans);opacity:.85}
+.kc.pri{--c:var(--pri)}.kc.pub{--c:var(--pub)}.kc.mac{--c:var(--mac)}
+.vch{padding:5px 12px;border-radius:999px;background:var(--c);color:var(--onC);font:700 12.5px var(--mono);white-space:nowrap;box-shadow:0 7px 14px -7px color-mix(in srgb,var(--c) 85%,transparent)}
+.vch.m{--c:var(--rp)}.vch.p{--c:var(--pub)}.vch.k{--c:var(--pri)}.vch.s{--c:var(--ri)}.vch.e{--c:var(--xor)}
+.board{min-width:250px;padding:7px 14px 8px;border-radius:12px;background:var(--panel);border:1.5px solid var(--pub);box-shadow:0 10px 22px -14px rgba(0,0,0,.45);font:12.5px/1.4 var(--mono);text-align:center;white-space:nowrap}
+.board .bt{font:700 11px var(--sans);color:var(--pub);letter-spacing:.03em}
+.bub2{width:max-content;max-width:280px;padding:8px 14px;border-radius:16px;background:var(--panel);border:1.5px solid var(--line2);font:600 13.5px/1.35 var(--sans);text-align:center;box-shadow:0 10px 22px -14px rgba(0,0,0,.45)}
+.bub2.bad{border-color:var(--xor);background:var(--xorBg)}.bub2.ok{border-color:var(--ok);background:var(--okBg)}
+.mark{font:800 28px/1 var(--sans)}.mark.ok{color:var(--ok)}.mark.ok::after{content:'='}.mark.bad{color:var(--xor)}.mark.bad::after{content:'≠'}
+.keyline{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.keyline span{display:inline-flex;align-items:center;gap:6px}
+.keyline i{width:11px;height:11px;border-radius:50%;display:inline-block;background:var(--c)}
+#ppick{text-align:center}
+/* the bench under the scene: this step's computation, symbols first, then the numbers, then the result */
+.wb{margin-top:12px;padding:12px 16px 10px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 2.5%,var(--panel))}
+.wbt{font:700 13px var(--sans);color:var(--muted);margin-bottom:4px;text-align:center}
+.eq{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:2px 12px;padding:4px 8px;border-radius:9px;font:23px/1.45 var(--math);cursor:pointer;outline:none}
+.eq:hover,.eq:focus-visible{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.eq sup{font-size:.6em}.eq sub{font-size:.6em}
+.eq>span{overflow-wrap:anywhere;min-width:0}
+.eq .e3 b{padding:0 8px;border-radius:8px;background:color-mix(in srgb,currentColor 12%,transparent)}
+.eq .e4{font:700 15px var(--sans);padding:3px 12px;border-radius:999px;align-self:center}
+.eq .e4.ok{background:var(--okBg);color:var(--ok)}.eq .e4.bad{background:var(--xorBg);color:var(--xor)}
+.eq.txt{font:600 16px/1.5 var(--sans)}
+.cm{color:var(--rp)}.ck{color:var(--pri)}.cp{color:var(--pub)}.cs{color:var(--ri)}.ce{color:var(--xor)}
+.wbn{margin:6px auto 2px;text-align:center;font-size:13.5px;color:var(--muted);max-width:70ch}
+.wb .pick{text-align:center}
+@media (max-width:620px){.eq{font-size:19px}.wb{padding:10px 8px}}
+table.svc{border-collapse:collapse;width:100%;font-size:14px}
+table.svc th,table.svc td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.svc th{font-size:13px;color:var(--muted);font-weight:600}
+table.svc tr[data-svc]{cursor:pointer;outline:none}
+table.svc tr[data-svc]:hover td,table.svc tr[data-svc]:focus-visible td{background:var(--accentBg)}
+/* the elliptic curve and the subgroup of DSA */
+.dual{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px 22px;align-items:start}
+@media (max-width:760px){.dual{grid-template-columns:minmax(0,1fr)}}
+.ecp{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
+.ecp .gl{stroke:var(--line);stroke-width:.7}
+.ecp .ax{font:500 8.5px var(--mono);fill:var(--faint);text-anchor:middle;dominant-baseline:central}
+.ecp .axt{font:600 10px var(--sans);fill:var(--muted)}
+.ecp .pt{fill:var(--ink);opacity:.5;cursor:pointer;outline:none}
+.ecp .pt:hover,.ecp .pt:focus-visible{opacity:1;stroke:var(--accent);stroke-width:2}
+.ecp .pt.A{fill:var(--rp);opacity:1}.ecp .pt.B{fill:var(--pub);opacity:1}.ecp .pt.R{fill:var(--ri);opacity:1}
+.ecp .ring{fill:none;stroke:var(--ri);stroke-width:2.2}
+.ecp .lb{font:700 10.5px var(--sans);paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+.ecp .lb.A{fill:var(--rp)}.ecp .lb.B{fill:var(--pub)}.ecp .lb.R{fill:var(--ri)}
+.ecp .chain{fill:none;stroke:var(--ri);stroke-width:1.3;opacity:.45}
+.sgv{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+.sgv i{font:600 12.5px/28px var(--mono);font-style:normal;text-align:center;border-radius:5px;background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--faint);cursor:pointer;outline:none}
+.sgv i.mem{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--ink)}
+.sgv i.pub{background:var(--pub);color:#fff}.sgv i.rk{background:var(--ri);color:#fff}
+.sgv i.vg{outline:2.5px solid var(--ri);outline-offset:-2.5px}
+.sgv i:hover,.sgv i:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.side p{margin:0 0 8px;font-size:14px}
+.big{padding:10px 12px;border-radius:9px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:14px;color:var(--muted)}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.mth{font:13.5px/1.7 var(--mono)}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+/* ---------- the protocols page ---------- */
+.wl .sq{stroke:var(--line2);stroke-width:2.2;fill:none;transition:opacity calc(var(--dur)*.7) ease}
+.wl .hid{opacity:0}
+.wl .ahp{fill:var(--line2)}
+.wl .life{stroke:var(--line2);stroke-width:1.5;stroke-dasharray:3 7;fill:none}
+.wl .lbl{font:600 12px var(--sans);fill:var(--muted);text-anchor:middle}
+.wl .lbl.big{font:800 15px var(--sans);fill:var(--ink)}
+.wl .flab{font:italic 600 13px var(--math);fill:var(--muted);text-anchor:middle}
+.scn.snap .wl *{transition:none!important}
+.mach.ok{border-color:var(--ok);background:var(--okBg);color:var(--ok)}
+.mach.bad{border-color:var(--xor);background:var(--xorBg);color:var(--xor)}
+.vch.eve{box-shadow:0 0 0 2.5px var(--xor),0 7px 14px -8px rgba(0,0,0,.45)}
+.bub2.nw{max-width:240px}
+.board .hid{opacity:0}
+.board div{transition:opacity .4s}
+.board.glow2{box-shadow:0 0 0 3px color-mix(in srgb,var(--pub) 35%,transparent),0 10px 22px -14px rgba(0,0,0,.45)}
+.av.dim{opacity:.28}
+.pt.gone{opacity:0;pointer-events:none}
+/* the server's table of password hashes */
+.db{width:272px;padding:8px 12px 9px;border-radius:12px;background:var(--panel);border:1.5px solid var(--ink);box-shadow:0 10px 22px -14px rgba(0,0,0,.45);transition:box-shadow .4s,border-color .4s}
+.db .dbt{font:700 11px var(--sans);color:var(--muted);letter-spacing:.03em;margin-bottom:3px;text-align:center}
+.db table{border-collapse:collapse;width:100%}
+.db td{padding:3px 4px;border-top:1px solid var(--line);font:600 12px var(--mono);white-space:nowrap;transition:background .4s}
+.db td:first-child{font:700 12px var(--sans)}
+.db tr.hit td{background:color-mix(in srgb,var(--rp) 16%,transparent)}
+.db tr.miss td{background:var(--xorBg)}
+.db .ck{color:var(--xor);font:700 12px var(--sans);opacity:0;transition:opacity .4s}
+.db tr.cracked .ck{opacity:1}
+.db tr.cracked td:nth-child(2){color:var(--xor)}
+.db.leak{border-color:var(--xor);box-shadow:0 0 0 3px var(--xorBg),0 10px 22px -14px rgba(0,0,0,.45)}
+/* a link of the hash chain */
+.lk{width:96px;padding:5px 6px;border-radius:10px;text-align:center;background:color-mix(in srgb,var(--pri) 12%,var(--panel));border:1.5px solid var(--pri);box-shadow:0 8px 16px -10px rgba(0,0,0,.45);transition:background .4s,border-color .4s}
+.lk b{display:block;font:700 14px var(--sans);color:var(--pri);transition:color .4s}
+.lk span{font:600 11px var(--mono);color:var(--muted)}
+.lk.pub{border-color:var(--pub);background:color-mix(in srgb,var(--pub) 12%,var(--panel))}.lk.pub b{color:var(--pub)}
+.lk.used{background:var(--panel);border-style:dashed}.lk.used span{text-decoration:line-through}
+.lk.glow{animation:pz .4s ease-in-out infinite alternate}
+.lk.dots{width:36px;padding:0;border:none;background:none;box-shadow:none;font:800 20px var(--sans);color:var(--muted)}
+/* a value that changes: the old one fades out, the new one in */
+.stv{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:11px;background:color-mix(in srgb,var(--pub) 11%,var(--panel));border:1.5px solid var(--pub);color:var(--pub);box-shadow:0 8px 16px -10px rgba(0,0,0,.45)}
+.stv svg{width:30px;height:14px;fill:none;stroke:var(--pub);stroke-width:2.6;stroke-linecap:round;flex:none}
+.stv small{display:block;font:600 10.5px var(--sans);opacity:.85}
+.stv .vv{position:relative;font:700 12.5px var(--mono);white-space:nowrap}
+.stv .v2{position:absolute;left:0;top:0;opacity:0}
+.stv .v1,.stv .v2{transition:opacity .35s}
+.stv.alt .v1{opacity:0}.stv.alt .v2{opacity:1}
+.stv.glow{animation:pz .4s ease-in-out infinite alternate}
+/* the cave */
+.wl .rock{fill:color-mix(in srgb,var(--ink) 10%,transparent);stroke:var(--line2);stroke-width:1.5}
+.wl .pass{fill:none;stroke:var(--floor2);stroke-width:60}
+.wl .pass2{fill:var(--floor2);stroke:none}
+.wl .pedge{fill:none;stroke:var(--line2);stroke-width:1.5}
+.tk{width:58px;display:flex;flex-direction:column;align-items:center}
+.tk b{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 17px var(--sans);color:var(--onC);background:radial-gradient(circle at 30% 25%,color-mix(in srgb,#fff 30%,var(--c)),var(--c) 72%);box-shadow:0 8px 14px -6px rgba(0,0,0,.45);transition:box-shadow .3s}
+.tk small{font:700 11px var(--sans);color:var(--muted);margin-top:2px}
+.tk.A{--c:var(--rp)}.tk.B{--c:var(--pub)}
+.tk.bad b{box-shadow:0 0 0 3px var(--xor),0 8px 14px -6px rgba(0,0,0,.45)}
+.tk.ok b{box-shadow:0 0 0 3px var(--ok),0 8px 14px -6px rgba(0,0,0,.45)}
+.tk.walk{transition-timing-function:linear,ease}
+.door{width:18px;height:66px;display:flex;justify-content:center}
+.door i{display:block;width:14px;height:66px;border-radius:4px;background:repeating-linear-gradient(0deg,var(--ri) 0 9px,color-mix(in srgb,var(--ri) 70%,#000) 9px 11px);box-shadow:0 6px 12px -6px rgba(0,0,0,.5);transition:opacity .25s,transform .25s}
+.door.open i{opacity:.18;transform:scaleY(.2)}
+.door.deny i{animation:shk .14s ease-in-out 4 alternate}
+@keyframes shk{from{transform:translateX(-3px)}to{transform:translateX(3px)}}
+/* a record of rounds */
+.rds{width:250px;padding:8px 12px 9px;border-radius:12px;background:var(--panel);border:1px solid var(--line2);box-shadow:0 10px 22px -14px rgba(0,0,0,.45)}
+.rds .rt{font:700 12px var(--sans);color:var(--muted);margin-bottom:5px;text-align:center}
+.rg{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
+.rg i{height:18px;border-radius:4px;font:700 10px/18px var(--sans);text-align:center;font-style:normal;color:var(--onC);background:var(--ok)}
+.rg i.no{background:var(--xor)}.rg i.na{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--faint)}
+.rds p{margin:6px 0 0;font:12.5px/1.35 var(--sans);color:var(--muted);text-align:center}
+.eq .rg{display:inline-grid;grid-template-columns:repeat(20,14px);gap:2px;vertical-align:middle}
+.eq .rg i{height:16px;font-size:9px;line-height:16px}
+@media (max-width:620px){.scnwrap{overflow-x:auto;margin:0 -4px;padding:0 4px 6px}.scnwrap .scn{min-width:640px}.eq .rg{grid-template-columns:repeat(10,14px)}}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Protocols and authentication, step by step</h1>
+  <p class="sub">Steps that two or more parties take in turn: what a protocol is, who takes part, passwords, Lamport’s one-time passwords, zero-knowledge proofs and the Fiat–Shamir protocol</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="ov" class="on">1 · What a protocol is</button>
+    <button data-tab="kinds">2 · Who takes part</button>
+    <button data-tab="pw">3 · Passwords</button>
+    <button data-tab="lam">4 · One-time passwords</button>
+    <button data-tab="zk">5 · Zero knowledge</button>
+    <button data-tab="fs">6 · Fiat–Shamir</button>
+  </nav>
+</header>
+
+<main class="wrap layout">
+  <div class="card stage" id="stageCard"><div id="stage"></div><svg id="fx" aria-hidden="true"></svg></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label>
+        <label class="inl" id="fWrap" title="Scroll so the moving part stays in view"><input type="checkbox" id="follow" checked> follow</label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: every hash and number is computed in this browser.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const hx=b=>b.toString(16).padStart(2,'0'),hexs=a=>[...a].map(hx).join('');
+const SUPS='⁰¹²³⁴⁵⁶⁷⁸⁹',sup_=n=>String(n).split('').map(d=>SUPS[+d]).join('');
+const escH=s=>s.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+
+/* ---------- number theory on BigInt ---------- */
+const mod=(a,m)=>((a%m)+m)%m;
+const modpow=(b,e,n)=>{let r=1n;b=mod(b,n);while(e>0n){if(e&1n)r=r*b%n;b=b*b%n;e>>=1n}return r};
+const gcd=(a,b)=>{while(b)[a,b]=[b,a%b];return a};
+const bitLen=v=>v>0n?v.toString(2).length:0;
+const ones=v=>[...v.toString(2)].filter(c=>c==='1').length;
+function modinv(a,n){let[r0,r1]=[mod(a,n),n],[s0,s1]=[1n,0n];while(r1){const q=r0/r1;[r0,r1]=[r1,r0-q*r1];[s0,s1]=[s1,s0-q*s1]}return r0===1n?mod(s0,n):null}
+const rndB=n=>[...crypto.getRandomValues(new Uint8Array(n))];
+const B2I=b=>b.length?BigInt('0x'+hexs(b)):0n;
+// a uniform random number in [0, n)
+function rndBelow(n){const bits=bitLen(n),by=Math.ceil(bits/8),m=(1n<<BigInt(bits))-1n;for(;;){const v=B2I(rndB(by))&m;if(v<n)return v}}
+
+/* ---------- SHA-256 (FIPS 180-4) ---------- */
+const SHK=[],SHI=[];
+{const fr=x=>Math.floor((x-Math.floor(x))*2**32);for(let n=2;SHK.length<64;n++){let p=true;for(let i=2;i*i<=n;i++)if(n%i===0)p=false;if(p){if(SHI.length<8)SHI.push(fr(Math.sqrt(n)));SHK.push(fr(Math.cbrt(n)))}}}
+function sha256(msg){
+  const m=msg.slice(),l=m.length,rr=(x,n)=>(x>>>n)|(x<<(32-n));m.push(0x80);while(m.length%64!==56)m.push(0);
+  const hi=Math.floor(l/2**29),lo=(l<<3)>>>0;for(let i=3;i>=0;i--)m.push((hi>>>(8*i))&255);for(let i=3;i>=0;i--)m.push((lo>>>(8*i))&255);
+  const H=SHI.slice(),w=new Uint32Array(64);
+  for(let o=0;o<m.length;o+=64){
+    for(let i=0;i<16;i++)w[i]=((m[o+4*i]<<24)|(m[o+4*i+1]<<16)|(m[o+4*i+2]<<8)|m[o+4*i+3])>>>0;
+    for(let i=16;i<64;i++){const a=w[i-15],b=w[i-2];w[i]=(w[i-16]+(rr(a,7)^rr(a,18)^(a>>>3))+w[i-7]+(rr(b,17)^rr(b,19)^(b>>>10)))>>>0}
+    let[a,b,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){const t1=(h+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+SHK[i]+w[i])>>>0,t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0}
+    [a,b,c,d,e,f,g,h].forEach((v,i)=>{H[i]=(H[i]+v)>>>0});
+  }
+  return H.flatMap(v=>[v>>>24,(v>>>16)&255,(v>>>8)&255,v&255]);
+}
+const txtB=s=>[...new TextEncoder().encode(s)];
+const hashOf=s=>B2I(sha256(txtB(s)));
+
+/* ---------- animation helpers (the same set as on the other demo pages) ---------- */
+const NS='http://www.w3.org/2000/svg';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+let UID=0;
+function along(pts,t){
+  const seg=[];let tot=0;for(let j=1;j<pts.length;j++){const d=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);seg.push(d);tot+=d}
+  if(tot===0)return pts[0];let d=t*tot;
+  for(let j=0;j<seg.length;j++){if(d<=seg[j]||j===seg.length-1){const u=seg[j]?Math.min(1,d/seg[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u]}d-=seg[j]}
+}
+function stripes(x,y,w,h,colors,rx){
+  const id='c'+(++UID);let s=`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><g clip-path="url(#${id})">`;
+  const sw=w/colors.length;colors.forEach((c,j)=>{s+=`<rect x="${(x+j*sw).toFixed(2)}" y="${y}" width="${(sw+.6).toFixed(2)}" height="${h}" style="fill:${c}"/>`});
+  return s+'</g>';
+}
+// a token: a box in the colours of where the value came from, with its value written on it
+function tok(label,w,h,colors){
+  const L=Array.isArray(label)?label:[label],n=Math.max(...L.map(x=>String(x).length)),rx=Math.min(7,h/4);
+  const fs=Math.max(8,Math.min(L.length>1?h*.34:h*.44,w/n*1.5));
+  let t='';L.forEach((x,j)=>{t+=`<text y="${((j-(L.length-1)/2)*fs*1.05+fs*.36).toFixed(1)}" text-anchor="middle" style="font-size:${fs.toFixed(1)}px">${x}</text>`});
+  return stripes(-w/2,-h/2,w,h,colors,rx)+`<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${rx}"/>`+t;
+}
+const FX=$('#fx');
+const fxClear=()=>{FX.innerHTML=''};
+function rectOf(el){const f=FX.getBoundingClientRect(),b=el.getBoundingClientRect();return{x:b.left-f.left+b.width/2,y:b.top-f.top+b.height/2,w:b.width,h:b.height}}
+const xy=r=>[r.x,r.y];
+function svgMap(svg){const m=svg.getScreenCTM(),f=FX.getBoundingClientRect(),pt=svg.createSVGPoint();
+  const g=(x,y)=>{pt.x=x;pt.y=y;const q=pt.matrixTransform(m);return[q.x-f.left,q.y-f.top]};g.s=m.a;return g}
+function fxNode(inner,cls){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;FX.appendChild(g);return g}
+function mover(moves){
+  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0});
+  return p=>{for(const m of moves){
+    const L=m.legs,A=L[0][0],B=L[L.length-1][1];let g=L[0];for(const l of L)if(p>=l[0])g=l;
+    const pt=along(g[2],ease(clamp((p-g[0])/((g[1]-g[0])||1),0,1)));
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
+    const fw=Math.max(.04,(B-A)*.15);let op=p<A?0:1;
+    if(m.fadeIn&&p>=A)op=clamp((p-A)/fw,0,1);
+    if(m.end!=null&&p>=m.end)op=0;
+    m.node.style.opacity=op;
+    if(m.at)while(m.fired<m.at.length&&p>=m.at[m.fired][0]){m.at[m.fired][1](m.node);m.fired++}
+  }};
+}
+function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.length&&p>=list[i][0]){list[i][1]();i++}}}
+const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
+// parts that a step brings in: each is hidden first and fades in from its time t over w of the step
+function bring(items,w=.2){
+  const L=items.filter(x=>x[0]).map(([e,t])=>{e.classList.remove('gh');e.style.opacity=0;return{e,t}});
+  return p=>{for(const o of L){if(p<o.t)continue;const ww=Math.min(w,1-o.t),u=ww>0?clamp((p-o.t)/ww,0,1):1;o.e.style.opacity=u<1?ease(u).toFixed(3):''}};
+}
+const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
+// a token flying from one element to another, its label changing on the way if label2 is given
+function fly(a,b,label,colors,t0,t1,label2,colors2){
+  const A=rectOf(a),B=rectOf(b),w=Math.max(46,Math.min(150,8.2*String(label).length+18)),h=24,w2=label2!=null?Math.max(46,Math.min(150,8.2*String(label2).length+18)):w;
+  return{node:fxNode(tok(label,w,h,colors)),pts:[xy(A),xy(B)],a:t0,b:t1,end:t1+.02,at:label2!=null?[[(t0+t1)/2,retok(label2,w2,h,colors2||colors)]]:[]};
+}
+
+/* ---------- small pieces shared by the tabs ---------- */
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const pc=(good,bad)=>`<ul class="pros">${good.map(x=>`<li class="y">${x}</li>`).join('')}${bad.map(x=>`<li class="n">${x}</li>`).join('')}</ul>`;
+// a number that fits, or its two ends
+const fmtN=(v,w=14)=>{if(v==null)return'–';const s=v.toString();return s.length<=w?s:`${s.slice(0,6)}…${s.slice(-6)}`};
+const sN=v=>fmtN(v,12);
+const cN=v=>{if(v==null)return'–';const t=v.toString();return t.length<=10?t:`${t.slice(0,5)}…${t.slice(-4)}`};
+const ptS=P=>P?`(${sN(P[0])}, ${sN(P[1])})`:'O';
+const hexShort=h=>`${h.slice(0,8)}…${h.slice(-8)}`;
+const short=(s,n=26)=>s.length>n?s.slice(0,n-1)+'…':s;
+// a message on a moving token: from its first digit on, where Eve makes her change, or its end
+const msgTok=m=>{const i=m.search(/\d/),t=i>=0?m.slice(i):m.slice(-12);return'“'+(i>0||(i<0&&m.length>12)?'…':'')+short(t,13)+'”'};
+const seg=(attr,cur,items)=>`<span class="seg sm">${items.map(([v,t])=>`<button data-${attr}="${v}" class="${cur===v?'on':''}">${t}</button>`).join('')}</span>`;
+const subs=(...x)=>`<div class="row subs">${x.join('')}</div>`;
+const wide=s=>`<div class="scroll wd">${s}</div>`;
+const QZ={};
+function quiz(id){
+  const z=QZ[id],p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
+}
+// the pick lines: one sentence about the part of the scene or the row of the bench that the reader clicked
+let PARTI={},WBF=[];
+const CLICK=[];
+
+/* ---------- the scene: things on a soft floor, a camera, and CSS that moves them ---------- */
+const PHONE=matchMedia('(max-width:620px)');
+const AVS=`<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="14.5" r="8"/><path d="M4 42c0-12 7.5-16.5 16-16.5S36 30 36 42z"/></svg>`;
+const KEYS=`<svg viewBox="0 0 30 14" aria-hidden="true"><circle cx="6" cy="7" r="4.4"/><path d="M10.4 7H28.5M23 7v5M27.5 7v4"/></svg>`;
+const NOTE=`<svg class="note" viewBox="0 0 70 30" aria-hidden="true"><rect x="1.5" y="3" width="67" height="24" rx="4"/><circle cx="35" cy="15" r="7"/><path d="M9 10h10M51 20h10"/></svg>`;
+const PT=(id,cls,inner,lab)=>`<div class="pt ${cls}" id="${id}" data-part="${id}" tabindex="0" role="button" aria-label="${lab||id}">${inner}</div>`;
+const avP=(id,who,name,role)=>PT(id,'av '+who,`<span class="fc">${AVS}</span><b>${name}</b>${role?`<small>${role}</small>`:''}`,name);
+const keyP=(id,cls,lab,val)=>PT(id,'kc '+cls,`${KEYS}<span><small>${lab}</small>${val}</span>`,lab);
+const chipP=(id,cls,html)=>PT(id,'vch '+cls,html,'a value');
+const machP=(id,title,sub)=>PT(id,'mach',`${title}${sub?`<small>${sub}</small>`:''}`,title);
+const boardP=(id,html)=>PT(id,'board',`<div class="bt">public directory</div>${html}`,'public directory');
+const bubP=(id,cls,html)=>PT(id,'bub2 '+cls,html,'a note');
+const markP=id=>PT(id,'mark','','the comparison');
+const paperP=(id,head,t1,t2,s1,s2,lab='the message')=>PT(id,'paper',`<div class="ph">${head}</div><div class="tx"><span class="t1">${t1}</span><span class="t2">${t2||''}</span></div><div class="seal"><span class="s1">${s1||''}</span><span class="s2">${s2||''}</span></div><i class="badge"></i>`,lab);
+function scnBox(W,H,inner,svg=''){return`<div class="scnwrap"><div class="scn" id="scn" data-w="${W}" data-h="${H}"><div class="cam" id="cam"><div class="world" style="width:${W}px;height:${H}px"><svg class="wl" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">${svg}</svg>${inner}</div></div></div></div><div class="pick" id="ppick"></div>`}
+// the scene is drawn at its design size and scaled to the card; on a phone the box keeps a readable height and the camera comes closer
+function scnFit(){const s=$('#scn');if(!s)return;const W=+s.dataset.w,H=+s.dataset.h,fit=s.clientWidth/W,HV=H;s.style.height=(HV*fit).toFixed(1)+'px';s._l={W,H,HV,fit}}
+// where the camera looks, [x, y, zoom], on a wide screen and on a phone
+const CAMS={};
+function setCam(c){
+  const s=$('#scn'),m=$('#cam');if(!s||!m||!s._l)return;const{W,H,HV,fit}=s._l,[cx,cy,z]=CAMS[c]?CAMS[c][PHONE.matches?1:0]:[W/2,H/2,1];
+  m.style.transform=`scale(${fit}) translate(${(W/2-cx*z).toFixed(1)}px,${(HV/2-cy*z).toFixed(1)}px) scale(${z})`;s._cam=c;
+}
+// a pose says where each part stands and which classes it has: {cam, id: {at: [x, y], o: shown, c: {class: on}}}
+function applyPose(P,ms){
+  const s=$('#scn');if(!s||!P)return;if(ms!=null)s.style.setProperty('--dur',Math.max(0,Math.round(ms))+'ms');
+  for(const id in P){if(id==='cam')continue;const e=document.getElementById(id),q=P[id];if(!e||!q)continue;
+    if(q.at){e.style.setProperty('--x',q.at[0]);e.style.setProperty('--y',q.at[1])}
+    if(q.o!=null)e.classList.toggle('hid',!q.o);
+    if(q.c)for(const c in q.c)e.classList.toggle(c,!!q.c[c])}
+  if(P.cam)setCam(P.cam);
+}
+function poseNow(P){const s=$('#scn');if(!s)return;s.classList.add('snap');applyPose(P,0);void s.offsetWidth;s.classList.remove('snap')}
+// one step of a scene: back to the picture of step k−1, then the phases of step k, each [start, part of a pose, length]
+function scnPlan(pose,k,phases,dur,extra){
+  return{dur,start(){
+    if(!$('#scn'))return null;
+    poseNow(pose(k-1));
+    const T_=(RM.matches?Math.min(dur,180):dur)/speed(),L=phases.map(([t,P,len])=>[t,()=>applyPose(P,len*T_)]);
+    L.push([.97,()=>applyPose(pose(k),.03*T_)]);
+    return both(cues(L),wbBring(),extra?extra():null);
+  }};
+}
+// the bench: rows {s: symbols, n: the numbers put in, r: the result, v: a verdict, f: every digit, shown on a click}
+function wbHTML(W){
+  WBF=W.rows.map(r=>r.f||'');
+  return`<div class="wb" id="wb"><div class="wbt">${W.t}</div>${W.rows.map((r,i)=>`<div class="eq${r.txt?' txt':''}" data-eq="${i}" tabindex="0" role="button" title="Show every digit"><span class="e1">${r.s}</span>${r.n!=null?`<span class="e2">= ${r.n}</span>`:''}${r.r!=null?`<span class="e3">= ${r.r}</span>`:''}${r.v?`<span class="e4 ${r.ok?'ok':'bad'}">${r.v}</span>`:''}</div>`).join('')}${W.note?`<p class="wbn">${W.note}</p>`:''}<div class="pick" id="pick"></div></div>`;
+}
+// a step brings its bench in: the symbols, then the numbers, then the result
+function wbBring(){
+  const L=[];$$('#wb .eq').forEach((e,i)=>{const t=Math.min(.66,.3+.14*i);[['.e1',0],['.e2',.07],['.e3',.14],['.e4',.2]].forEach(([q,d])=>{const x=e.querySelector(q);if(x)L.push([x,t+d])})});
+  const n=$('#wb .wbn');if(n)L.push([n,.74]);return bring(L,.1);
+}
+const iv=(c,t)=>`<i class="${c}">${t}</i>`,vM=t=>iv('cm',t),vK=t=>iv('ck',t),vP=t=>iv('cp',t),vS=t=>iv('cs',t),vE=t=>iv('ce',t),vN=t=>`<i>${t}</i>`;
+const nc=(c,v)=>`<span class="${c}">${Array.isArray(v)?ptS(v):fmtN(v)}</span>`,rb=(c,v)=>`<b class="${c}">${Array.isArray(v)?ptS(v):fmtN(v)}</b>`;
+const fullV=v=>v==null?'O':Array.isArray(v)?`(${v[0]}, ${v[1]})`:String(v);
+const hexBytes=v=>{let h=v.toString(16);if(h.length%2)h='0'+h;const b=h.match(/../g);return b.length<=8?b.join(' '):`${b.slice(0,6).join(' ')} … (${b.length} bytes)`};
+CLICK.push(e=>{
+  const q=e.target.closest('[data-eq]');if(q){const p=$('#pick'),f=WBF[+q.dataset.eq];if(p)p.innerHTML=f?`<code>${f}</code>`:'';return true}
+  const pt=e.target.closest('[data-part]');if(pt){const p=$('#ppick');if(p)p.innerHTML=PARTI[pt.dataset.part]||'';return true}
+});
+addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{if(!ENG.anim&&$('#scn'))show()},150)});
+
+/* ---------- numbers of this page: drawn from SHA-256 of a label, so a picture is the same every time it is drawn ---------- */
+const SUBS='₀₁₂₃₄₅₆₇₈₉',sb=n=>String(n).split('').map(d=>SUBS[+d]).join('');
+const HB=s=>sha256(txtB(s)),HH=s=>hexs(HB(s));
+const h8s=h=>h.slice(0,8)+'…',shH=h=>`${h.slice(0,4)}…${h.slice(-4)}`;
+const popc=(x,y)=>{let c=0;for(let i=0;i<x.length;i+=2){let v=parseInt(x.substr(i,2),16)^parseInt(y.substr(i,2),16);while(v){c+=v&1;v>>=1}}return c};
+// a number below n, and one with no common factor with n
+function hnum(label,n){const by=Math.ceil(bitLen(n)/8)+8;let b=[];for(let j=0;b.length<by;j++)b=b.concat(HB(label+'/'+j));return B2I(b.slice(0,by))%n}
+function unitOf(label,n){for(let j=0;;j++){const r=hnum(label+'#'+j,n);if(r>1n&&gcd(r,n)===1n)return r}}
+const D={v:0};
+const ST={tab:'ov',step:{},q:{},ovm:'fair',flip:1,zkm:'know',zr:1,fsm:'know',fsp:'small',fr:1};
+const stage=$('#stage');
+const T={};
+let CUR=0;   // the step being drawn; poses use it for parts that belong to one step only
+// pieces of a message chart: the arrows are in the scene's SVG and the poses show them like parts
+const AH='<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ahp" d="M0 0L10 5L0 10z"/></marker></defs>';
+const arw=(id,x1,x2,y)=>`<path id="${id}" class="sq hid" d="M${x1} ${y}H${x2}" marker-end="url(#ah)"/>`;
+const life=(x,y1,y2)=>`<path class="life" d="M${x} ${y1}V${y2}"/>`;
+const tkP=(id,who,l,name)=>PT(id,'tk walk '+who,`<b>${l}</b><small>${name}</small>`,name);
+const stP=(id,lab,v1,v2)=>PT(id,'stv',`${KEYS}<span><small>${lab}</small><span class="vv"><span class="v1">${v1}</span><span class="v2">${v2}</span></span></span>`,lab);
+const sg=(key,cur,items)=>`<span class="seg sm">${items.map(([v,t])=>`<button data-set="${key}:${v}" class="${cur===v?'on':''}">${t}</button>`).join('')}</span>`;
+const nb=(key,t)=>`<button data-new="${key}">${t}</button>`;
+// a bubble that belongs to step k only: it starts hidden and a phase brings it in
+const stepBub=(k,B,x,y)=>B[k]?bubP('bq'+k,B[k][0]+' nw hid',B[k][1]):'';
+const bubAt=(P,j,B,x,y)=>{if(j===CUR&&B[j])P['bq'+j]={at:[x,y],o:1};return P};
+// a value sent from one side to the other: hide it, put it back at the start, show it, move it
+const send=(id,from,to,t=.08,len=.42)=>[[Math.max(0,t-.08),{[id]:{o:0}},.05],[t-.02,{[id]:{at:from}},0],[t,{[id]:{o:1}},.08],[t+.06,{[id]:{at:to}},len]];
+const sq=(ok,t)=>`<i class="${ok==null?'na':ok?'':'no'}">${t}</i>`;
+const fmtB=v=>v<1e-3?`1/${Math.round(1/v).toLocaleString('en-US')}`:String(+v.toFixed(4));
+
+/* ---------- tab 1 · what a protocol is: a coin tossed over the phone ---------- */
+const SIDE=x=>x?'heads':'tails';
+let FV;
+function flipVals(){
+  const i=ST.flip,a=HB('coin '+i)[0]&1,b=HB('call '+i)[0]&1,w=HH('nonce '+i).slice(0,16),open=`${SIDE(a)}|${w}`,c=HH(open);
+  const cheat=ST.ovm==='cheat',a2=cheat?1-a:a,open2=`${SIDE(a2)}|${w}`,c2=HH(open2);
+  return{a,b,w,open,c,cheat,a2,open2,c2,ok:c2===c,win:b===a?'Bob':'Alice'};
+}
+QZ.ov={q:'In the coin toss, why does Alice hash her coin together with a random string w?',o:['To make the hash longer','So that Bob cannot find the coin by hashing “heads” and “tails” himself','So that Alice can change the coin later'],a:1,why:'With only two possible messages, Bob could simply hash both and compare. The random w makes the hashed message impossible to guess.'};
+const OVR=[176,262,348,420];
+function ovParts(){const F=FV;
+  return avP('avA','A','Alice','tosses the coin')+avP('avB','B','Bob','calls it')+
+    chipP('ca','k',`a = ${SIDE(F.a)}`)+chipP('cw','k',`w = ${F.w.slice(0,8)}…`)+chipP('cc','m',`c = ${shH(F.c)}`)+
+    chipP('cb','s',`b = ${SIDE(F.b)}`)+chipP('co','m',`a = ${SIDE(F.a2)}, w = ${F.w.slice(0,8)}…`)+
+    machP('mB','SHA-256(a‖w) = c ?','Bob checks')+bubP('res',(F.ok?'ok':'bad')+' nw',F.ok?`It matches. ${F.win} wins the toss.`:'It does not match: Alice changed her coin.');
+}
+const ovSvg=()=>AH+life(130,118,452)+life(830,118,388)+arw('a1',232,728,OVR[0])+arw('a2',728,232,OVR[1])+arw('a3',232,728,OVR[2]);
+function ovPose(k){const F=FV;return{cam:'F',avA:{at:[130,62],o:1},avB:{at:[830,62],o:1},
+  ca:{at:[130,165],o:k>=1},cw:{at:[130,206],o:k>=1},a1:{o:k>=1},cc:{at:k>=1?[480,OVR[0]]:[300,OVR[0]],o:k>=1,c:{glow:k===5}},
+  a2:{o:k>=2},cb:{at:k>=2?[480,OVR[1]]:[690,OVR[1]],o:k>=2,c:{glow:k===5}},
+  a3:{o:k>=3},co:{at:k>=3?[480,OVR[2]]:[300,OVR[2]],o:k>=3,c:{eve:F.cheat,glow:k===5}},
+  mB:{at:[830,OVR[3]],o:k>=4,c:{busy:false,ok:k>=4&&F.ok,bad:k>=4&&!F.ok}},res:{at:[480,OVR[3]],o:k>=4}}}
+const ovPhases=k=>[[],
+  [[0,{ca:{o:1},cw:{o:1}},.2],[.25,{cc:{o:1}},.1],[.3,{cc:{at:[480,OVR[0]]},a1:{o:1}},.55]],
+  [[.05,{cb:{o:1}},.1],[.12,{cb:{at:[480,OVR[1]]},a2:{o:1}},.6]],
+  [[.05,{co:{o:1}},.1],[.12,{co:{at:[480,OVR[2]]},a3:{o:1}},.6]],
+  [[0,{mB:{o:1,c:{busy:1}}},.15],[.5,{mB:{c:{busy:0,ok:FV.ok,bad:!FV.ok}}},.1],[.62,{res:{o:1}},.25]],
+  [[.08,{cc:{c:{glow:1}}},.1],[.33,{cb:{c:{glow:1}}},.1],[.58,{co:{c:{glow:1}}},.1]]][k];
+function wbOV(k){const F=FV,w8=F.w.slice(0,8);return[
+  {t:'A protocol: steps that two or more parties take in turn',rows:[{s:'an algorithm: one party computes',txt:1},{s:'a protocol: several parties compute and send messages to each other',txt:1}],note:'From the lecture: a cryptographic protocol is a sequence of steps by two or more parties that solves a cryptographic task.'},
+  {t:'Step 1 · Alice fixes her coin without showing it',rows:[{s:`${vK('a')} = ${SIDE(F.a)},  ${vK('w')} = random`,txt:1,f:`w = ${F.w}`},{s:`${vM('c')} = SHA-256(${vK('a')}‖${vK('w')})`,n:`SHA-256(“${SIDE(F.a)}|${w8}…”)`,r:`<b class="cm hx">${shH(F.c)}</b>`,f:`SHA-256("${F.open}") = ${F.c}`}],note:'Without w, Bob would hash “heads” and “tails” himself and compare with c: only two tries.'},
+  {t:'Step 2 · Bob calls before he sees the coin',rows:[{s:`${vS('b')} = ${SIDE(F.b)}`,txt:1},{s:`from ${vM('c')} alone Bob learns nothing about ${vK('a')}`,txt:1}],note:'Getting a and w back from c would be a preimage attack on SHA-256.'},
+  {t:'Step 3 · Alice opens what she fixed',rows:[{s:`she sends ${vK('a')} = ${SIDE(F.a2)} and ${vK('w')} = ${w8}…`,txt:1,f:`"${F.open2}"`,v:F.cheat?'changed':null,ok:false}],note:F.cheat?'Alice keeps w but claims the other side of the coin.':''},
+  {t:'Step 4 · Bob checks the opening against c',rows:[{s:`SHA-256(“${SIDE(F.a2)}|${w8}…”)`,r:`<b class="cm hx">${shH(F.c2)}</b>`,f:F.c2},{s:`${vM('c')} from step 1`,r:`<b class="cm hx">${shH(F.c)}</b>`,v:F.ok?'equal':'different',ok:F.ok,f:F.c},
+    F.ok?{s:`${vK('a')} = ${SIDE(F.a)},  ${vS('b')} = ${SIDE(F.b)}`,txt:1,v:`${F.win} wins`,ok:true}:{s:'Bob stops: the opening is false',txt:1,v:'rejected',ok:false}],
+    note:F.ok?'':`To get away with it, Alice would need a w′ with SHA-256(“${SIDE(F.a2)}|w′”) = c: a second preimage of SHA-256.`},
+  {t:'What every protocol needs (from the lecture)',rows:[{s:'1 · everyone knows all the steps in advance',txt:1},{s:'2 · everyone agrees to follow them',txt:1},{s:'3 · every step is exact and has one meaning',txt:1},{s:'4 · it is complete: every situation has a rule',txt:1}],note:'Rule 4 here: what Bob does when the check in step 4 fails.'}][k]}
+T.ov={n:()=>6,render(k){CUR=k;const F=FV;
+  stage.innerHTML=subs(`<span class="flh">Alice</span>`,sg('ovm',ST.ovm,[['fair','plays fair'],['cheat','cheats']]),nb('flip','Toss again'))+scnBox(960,460,ovParts(),ovSvg())+wbHTML(wbOV(k));
+  scnFit();poseNow(ovPose(k));
+  PARTI={avA:'Alice tosses the coin. She could lie about it, so Bob will not simply believe her.',avB:'Bob calls heads or tails. He does not trust Alice.',ca:`Alice’s coin: ${SIDE(F.a)}. She keeps it to herself until step 3.`,cw:`A random string: ${F.w}`,
+    cc:`c = SHA-256("${F.open}") = ${F.c}`,cb:`Bob’s call, sent in the open: ${SIDE(F.b)}`,co:`What Alice sends: "${F.open2}"`,mB:'Bob hashes what Alice sent and compares with c from step 1.',res:F.ok?`The coin is ${SIDE(F.a)} and Bob called ${SIDE(F.b)}.`:'The protocol says what to do now: Bob rejects the result.'};
+  $('#explain').innerHTML=[say('Tossing a coin over the phone','Alice and Bob do not trust each other and want to decide by a coin toss who presents first. If Alice tosses and tells Bob the result, he has to believe her. A <b>protocol</b>, a fixed sequence of steps by both, solves this. Press <b>Step</b>.'),
+    say('Step 1 · Alice commits',`Alice tosses <b>${SIDE(F.a)}</b>. She adds a random string w, hashes the two and sends only the hash c. c fixes her coin, but Bob cannot read it.`),
+    say('Step 2 · Bob calls',`Bob calls <b>${SIDE(F.b)}</b> in the open. He has only c, which shows nothing about the coin.`),
+    say('Step 3 · Alice opens',F.cheat?`Alice wants to win, so she claims <b>${SIDE(F.a2)}</b> with the same w.`:'Alice sends her coin and the string w.'),
+    say('Step 4 · Bob checks',F.ok?`Bob hashes what he got and finds c again, so this is the coin Alice fixed in step 1. ${F.win==='Bob'?'Bob called it right: <b>Bob wins</b>.':'Bob called it wrong: <b>Alice wins</b>.'}`:'The hash is not c. Bob sees that Alice changed her coin after hearing his call, and rejects the result.'),
+    say('Step 5 · what makes it a protocol','Two parties, a fixed order of messages, and a rule for every situation, including a failed check. No judge is needed: the protocol itself catches the cheat. Such a protocol is called <b>self-enforcing</b> (tab 2).')][k];
+  $('#extra').innerHTML=`<h3>Algorithm or protocol?</h3><p>An <b>algorithm</b> is carried out by one party. A <b>protocol</b> is carried out by two or more parties together: every step is either a computation by one of them or a message from one to another.</p><p class="note">Try <b>Alice cheats</b>: she cannot change her coin after step 1 without breaking SHA-256.</p>`+quiz('ov');
+},
+plan(k){return scnPlan(ovPose,k,ovPhases(k),[0,1700,1300,1300,1600,1500][k])},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 2 · who takes part: two parties, an arbitrator, an adjudicator, or nobody else ---------- */
+QZ.kinds={q:'In which kind of protocol is the third party called only when there is a dispute?',o:['Arbitrated','Adjudicated','Self-enforcing'],a:1,why:'An arbitrator takes part in every run. An adjudicator is called only when the parties disagree, and decides from the evidence they kept.'};
+const KP={A:[110,64],B:[850,64],T:[480,64],rA:[150,250],pB:[810,250],rT:[370,250],pT:[590,250]};
+const KB={1:['bad','Fine while both are honest. Nothing stops one of them from keeping back his part.'],2:['','Trent checks both parts before he passes anything on.'],3:['ok','Each gets what was agreed, or nobody gets anything.'],
+  4:['bad','Trent takes part in every run: a bottleneck and a target.'],5:['','Only if there is a dispute does Trent read the signed papers and decide.'],6:['ok','No Trent: the steps themselves show any cheating at once.']};
+function kindsParts(){
+  return avP('avA','A','Alice','sells a report')+avP('avB','B','Bob','pays 100 manat')+avP('avT','J','Trent','a trusted third party')+
+    paperP('rp','REPORT','Market study','','signed: Alice','','the report')+paperP('py','PAYMENT ORDER',`Pay Alice 100 manat${NOTE}`,'','signed: Bob','','the payment')+stepBub(CUR,KB);
+}
+function kindsPose(k){
+  const atT=k===2,swap=k===1||k>=3;
+  return bubAt({cam:'F',avA:{at:KP.A,o:1},avB:{at:KP.B,o:1},avT:{at:KP.T,o:k!==6,c:{dim:k===1,busy:k===2||k===5}},
+    rp:{at:atT?KP.rT:swap?KP.pB:KP.rA,o:k<6,c:{signed:k===5,ok:k===2||k===3}},
+    py:{at:atT?KP.pT:swap?KP.rA:KP.pB,o:k<6,c:{signed:k===5,ok:k===2||k===3}}},k,KB,480,394);
+}
+function kindsPhases(k){
+  const home=[[0,{rp:{o:0},py:{o:0}},.08],[.09,{rp:{at:KP.rA},py:{at:KP.pB}},0],[.1,{rp:{o:1},py:{o:1}},.08]],bq={['bq'+k]:{o:1}};
+  return[[],
+    [[0,{avT:{c:{dim:1}}},.15],[.15,{rp:{at:KP.pB},py:{at:KP.rA}},.5],[.72,bq,.2]],
+    [...home,[0,{avT:{c:{dim:0}}},.1],[.22,{rp:{at:KP.rT},py:{at:KP.pT}},.38],[.62,{avT:{c:{busy:1}}},.1],[.75,{rp:{c:{ok:1}},py:{c:{ok:1}}},.1],[.82,bq,.15]],
+    [[.05,{avT:{c:{busy:0}}},.1],[.12,{rp:{at:KP.pB},py:{at:KP.rA}},.5],[.72,bq,.2]],
+    [[.05,{rp:{c:{ok:0}},py:{c:{ok:0}}},.1],[.2,{avT:{c:{busy:1}}},.1],[.55,bq,.2],[.8,{avT:{c:{busy:0}}},.1]],
+    [...home,[.2,{rp:{c:{signed:1,stamp:1}},py:{c:{signed:1,stamp:1}}},.1],[.38,{rp:{at:KP.pB},py:{at:KP.rA}},.35],[.76,{avT:{c:{busy:1}}},.1],[.8,bq,.15]],
+    [[0,{rp:{o:0},py:{o:0}},.2],[.15,{avT:{o:0}},.25],[.55,bq,.2]]][k];
+}
+function wbKinds(k){return[
+  {t:'Alice sells Bob a report for 100 manat',rows:[{s:'Who gives first?',txt:1},{s:'Alice fears that Bob will not pay; Bob fears that the report is empty.',txt:1}],note:'The lecture sorts protocols by who else takes part.'},
+  {t:'Two parties who trust each other',rows:[{s:'Alice → Bob: the report',txt:1},{s:'Bob → Alice: 100 manat',txt:1}],note:'A two-party protocol, with nobody in between.'},
+  {t:'With an arbitrator: both give their part to Trent',rows:[{s:'Alice → Trent: the report',txt:1},{s:'Bob → Trent: the payment order',txt:1},{s:'Trent checks both',txt:1,v:'both valid',ok:true}]},
+  {t:'Trent passes them on',rows:[{s:'Trent → Bob: the report',txt:1},{s:'Trent → Alice: the payment order',txt:1}],note:'Trent takes part in every run: an <b>arbitrated</b> protocol.'},
+  {t:'The price of an arbitrator (from the lecture)',rows:['Parties who distrust each other may distrust Trent too.','The network must bear the cost of running Trent.','Every run waits for Trent.','Trent takes part in every transaction: a bottleneck.','Everyone trusts Trent, so he is the first target of an attack.'].map(s=>({s,txt:1}))},
+  {t:'With an adjudicator: Trent only in a dispute',rows:[{s:'Alice → Bob: the report, signed by Alice',txt:1},{s:'Bob → Alice: the payment, signed by Bob',txt:1},{s:'Dispute? Both show Trent what they kept, and Trent decides.',txt:1,v:'adjudicated',ok:true}],note:'Cheating is not prevented, but it is found afterwards and can be proved.'},
+  {t:'Self-enforcing: no third party at all',rows:[{s:'the steps themselves show any cheating at once',txt:1},{s:'such a protocol does not exist for every task',txt:1}],note:'The coin toss of tab 1 is one. <button data-goto="ov">Open it</button>'}][k]}
+T.kinds={n:()=>7,render(k){CUR=k;
+  stage.innerHTML=scnBox(960,440,kindsParts(),'')+wbHTML(wbKinds(k));
+  scnFit();poseNow(kindsPose(k));
+  PARTI={avA:'Alice has the report.',avB:'Bob has the money.',avT:'Trent is a third party with no interest in the deal, whom both trust.',rp:'The report: information that Alice sells.',py:'Bob’s payment order for 100 manat.'};
+  $('#explain').innerHTML=[say('Who takes part?','Alice sells Bob a report for 100 manat, and neither wants to give first. The lecture names four kinds of protocols, by who else takes part. Press <b>Step</b>.'),
+    say('Two parties','If Alice and Bob trust each other, they simply exchange. No one else is needed, but nothing stops one of them from keeping back his part.'),
+    say('An arbitrator · step 1','Trent is a disinterested third party whom both trust. Both give him their part, and he checks that the report is the one agreed and that the payment is valid.'),
+    say('An arbitrator · step 2','Only then does Trent pass the report to Bob and the payment to Alice. Nobody can cheat, because Trent takes part in every run. This is an <b>arbitrated</b> protocol.'),
+    say('The price of an arbitrator','A third party in every run costs time and trust, and is one place where the whole system can be stopped or attacked.'),
+    say('An adjudicator','Alice and Bob exchange directly, but each signs what he gives. Trent is called only if there is a dispute, and decides from the signed papers. This is an <b>adjudicated</b> protocol.'),
+    say('Self-enforcing','The best kind needs no third party: the protocol itself shows any cheating, like the coin toss of tab 1. Such protocols do not exist for every task.')][k];
+  $('#extra').innerHTML=`<h3>Four kinds</h3><p><b>Two-party:</b> the parties trust each other.</p><p><b>Arbitrated:</b> a trusted third party takes part in every run.</p><p><b>Adjudicated:</b> the third party is called only in a dispute.</p><p><b>Self-enforcing:</b> the protocol itself catches cheating.</p>`+quiz('kinds');
+},
+plan(k){return scnPlan(kindsPose,k,kindsPhases(k),[0,1500,2000,1500,1500,2200,1300][k])},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 3 · passwords ---------- */
+QZ.pw={q:'Why does a server store SHA-256(password) and not the password?',o:['The hash makes the login faster','A stolen table then shows only hashes, not the passwords','The hash is shorter than the password'],a:1,why:'The server can still check a password by hashing it. A stolen table shows only hashes, although weak passwords can still be found by hashing guesses.'};
+const PWA='Gold7-Rain-Kite',PWX='Gold7-Rain-kite',PWC='123456',DICT=['123456','password','qwerty','hello','111111','iloveyou'];
+const PWV=(()=>{const u=[['alice',PWA],['bob',PWC],['carol',PWC]].map(([u,p])=>({u,p,h:HH(p)}));return{a:HH(PWA),x:HH(PWX),u,dict:DICT.map(p=>({p,h:HH(p),who:u.filter(r=>r.p===p).map(r=>r.u)}))}})();
+const PWB={1:['','The server keeps only the hash. The password itself is never stored.'],2:['ok','Same password, same hash: access granted.'],3:['bad','One letter differs, so the hash is completely different: access denied.'],
+  4:['bad','The password crosses the wire at every login. Eve copies it.'],5:['bad','Eve sends the copy, and the server cannot tell her from Alice.'],6:['bad','The table leaks. Bob and Carol have the same hash, so one guess opens both.']};
+const PW={A:[120,64],S:[800,64],E:[130,392],pk:[140,170],m0:[340,170],m1:[540,170],ec:[340,392],db:[790,322],dc:[430,322]};
+const dbP=id=>PT(id,'db',`<div class="dbt">SERVER · STORED PASSWORD HASHES</div><table>${PWV.u.map(r=>`<tr id="db-${r.u}"><td>${r.u}</td><td>${r.h.slice(0,10)}…</td><td class="ck">= ${r.p}</td></tr>`).join('')}</table>`,'the table of password hashes');
+function pwParts(){
+  return avP('avA','A','Alice','P: proves who she is')+avP('avS','J','Server','V: checks the password')+avP('avE','E','Eve','listens on the wire')+
+    chipP('pk','k',`password: ${PWA}`)+chipP('pm','m',`“${PWA}”`)+chipP('px','m',`“${PWX}”`)+chipP('ec','e',`copied: “${PWA}”`)+
+    machP('mS','SHA-256','then compare')+dbP('db')+chipP('dc','e','6 common passwords, hashed')+stepBub(CUR,PWB);
+}
+const pwSvg=()=>AH+arw('a1',262,700,170)+`<path id="tap" class="sq hid" d="M340 184V346" stroke-dasharray="4 5"/>`;
+function pwPose(j){const live=[1,2,4].includes(j);
+  return bubAt({cam:'F',avA:{at:PW.A,o:1},avS:{at:PW.S,o:1},avE:{at:PW.E,o:j>=4},pk:{at:PW.pk,o:j>=1},a1:{o:j>=1},tap:{o:j===4||j===5},
+    pm:{at:live?PW.m1:PW.m0,o:live},px:{at:j===3?PW.m1:PW.m0,o:j===3},ec:{at:j===5?PW.m1:PW.ec,o:j===4||j===5},
+    mS:{at:[800,170],o:j>=1,c:{busy:false,ok:[1,2,5].includes(j),bad:j===3}},db:{at:PW.db,o:j>=1,c:{leak:j===6}},
+    'db-alice':{c:{hit:[1,2,5].includes(j),miss:j===3}},'db-bob':{c:{cracked:j===6}},'db-carol':{c:{cracked:j===6}},dc:{at:PW.dc,o:j===6}},j,PWB,470,252);
+}
+function pwPhases(k){const bq={['bq'+k]:{o:1}},chk=(t,ok)=>[[t,{mS:{c:{busy:1}}},.08],[t+.16,{mS:{c:{busy:0,ok,bad:!ok}},'db-alice':{c:{hit:ok,miss:!ok}}},.1],[t+.24,bq,.14]];
+  return[[],
+    [[0,{pk:{o:1}},.12],[.1,{a1:{o:1},mS:{o:1}},.15],...send('pm',PW.m0,PW.m1,.2,.34),[.62,{db:{o:1}},.12],...chk(.66,true)],
+    [[0,{mS:{c:{ok:0}},'db-alice':{c:{hit:0}}},.08],...send('pm',PW.m0,PW.m1,.1,.4),...chk(.58,true)],
+    [[0,{pm:{o:0},mS:{c:{ok:0}},'db-alice':{c:{hit:0}}},.08],...send('px',PW.m0,PW.m1,.1,.4),...chk(.58,false)],
+    [[0,{px:{o:0},mS:{c:{bad:0}},'db-alice':{c:{miss:0}}},.08],[.06,{avE:{o:1}},.15],[.2,{tap:{o:1}},.1],...send('pm',PW.m0,PW.m1,.28,.36),[.5,{ec:{o:1}},.12],[.78,bq,.15]],
+    [[0,{pm:{o:0}},.1],[.12,{ec:{at:PW.m1}},.42],...chk(.6,true)],
+    [[0,{ec:{o:0},tap:{o:0},mS:{c:{ok:0}},'db-alice':{c:{hit:0}}},.1],[.12,{db:{c:{leak:1}}},.12],[.28,{dc:{o:1}},.12],[.5,{'db-bob':{c:{cracked:1}},'db-carol':{c:{cracked:1}}},.12],[.7,bq,.15]]][k];
+}
+function wbPw(k){const hA=`<b class="cm hx">${h8s(PWV.a)}</b>`,hS=`<b class="cp hx">${h8s(PWV.a)}</b>`;return[
+  {t:'Authentication: P proves to V who she is',rows:[{s:'P, the prover: Alice',txt:1},{s:'V, the verifier: the server',txt:1}],note:'The oldest proof is a secret that both know: a password.'},
+  {t:'Registration: the server stores a hash',rows:[{s:`${vK('pw')} = “${PWA}”`,txt:1},{s:`${vP('h')} = SHA-256(${vK('pw')})`,r:hS,f:PWV.a}],note:'Stored: “alice” and h. Not stored: the password.'},
+  {t:'Login: hash what came in and compare',rows:[{s:`SHA-256(“${PWA}”)`,r:hA,f:PWV.a},{s:`stored ${vP('h')}`,r:hS,v:'equal',ok:true,f:PWV.a}]},
+  {t:'A wrong password',rows:[{s:`SHA-256(“${PWX}”)`,r:`<b class="cm hx">${h8s(PWV.x)}</b>`,f:PWV.x},{s:`stored ${vP('h')}`,r:hS,v:'different',ok:false,f:PWV.a}],note:`One letter changed (K → k), and ${popc(PWV.a,PWV.x)} of the 256 hash bits changed.`},
+  {t:'Eve listens on the wire',rows:[{s:`on the wire: “${PWA}”`,txt:1,v:'copied',ok:false}],note:'The same secret crosses the wire at every login, so one copy is enough.'},
+  {t:'Eve sends the copy',rows:[{s:`SHA-256(“${PWA}”)`,r:`<b class="ce hx">${h8s(PWV.a)}</b>`,f:PWV.a},{s:`stored ${vP('h')}`,r:hS,v:'equal',ok:true,f:PWV.a}],note:'The server sees the right password and lets Eve in. A password that works only once stops this: tab 4.'},
+  {t:'The table leaks: Eve hashes common passwords',rows:PWV.dict.slice(0,3).map(d=>({s:`SHA-256(“${d.p}”)`,r:`<b class="ce hx">${h8s(d.h)}</b>`,v:d.who.length?`= ${d.who.join(', ')}`:'no match',ok:!d.who.length,f:d.h})),
+    note:'Alice’s password is on no list, so it stays hidden. A random salt for each user would also give Bob and Carol different hashes.'}][k]}
+T.pw={n:()=>7,render(k){CUR=k;
+  stage.innerHTML=scnBox(960,460,pwParts(),pwSvg())+wbHTML(wbPw(k));
+  scnFit();poseNow(pwPose(k));
+  PARTI={avA:'Alice, the prover (P).',avS:'The server, the verifier (V).',avE:'Eve can read everything on the wire.',pk:`Alice’s password: ${PWA}`,pm:`What crosses the wire: “${PWA}”`,px:`A wrong password: “${PWX}”`,ec:'Eve keeps a copy of what she saw.',
+    mS:'The server hashes what it received and compares the result with the stored hash.',db:'One row per user: the name and SHA-256 of the password.',dc:`Eve’s list: ${DICT.join(', ')}`};
+  $('#explain').innerHTML=[say('Passwords','In an authentication protocol, P (the prover) shows V (the verifier) who she is. The simplest proof is a password. Press <b>Step</b>.'),
+    say('Step 1 · registration','Alice chooses a password. The server stores only its SHA-256 hash, so a stolen table does not show the password.'),
+    say('Step 2 · login','Alice sends her password. The server hashes it and compares with the stored hash: they are equal.'),
+    say('Step 3 · a wrong password','One letter is different. Its hash has nothing in common with the stored one, and the server refuses.'),
+    say('Step 4 · Eve on the wire','At every login the same password crosses the wire. Eve only has to listen once.'),
+    say('Step 5 · Eve logs in','Eve sends the copied password. For the server it is the right password, so Eve is in as Alice.'),
+    say('Step 6 · the table leaks','Eve hashes a list of common passwords and compares. Bob and Carol used “123456” and fall at once. Alice’s password is on no list.')][k];
+  $('#extra').innerHTML=`<h3>Two weak points</h3>${pc(['The table holds only hashes','A wrong password gives a completely different hash'],['The same secret crosses the wire at every login','Weak passwords fall to a list of guesses'])}<p class="note">The first weak point leads to one-time passwords (tab 4), the second to salts and slow hashes.</p>`+quiz('pw');
+},
+plan(k){return scnPlan(pwPose,k,pwPhases(k),[0,2000,1600,1600,1900,1600,1700][k])},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 4 · Lamport’s one-time passwords: a hash chain used backwards ---------- */
+QZ.lam={q:'Eve has copied x₉₉₉ from Alice’s first login. Can she log in later?',o:['Yes, by sending x₉₉₉ again','No: the server now expects x₉₉₈, and getting it from x₉₉₉ means inverting f','Yes, by sending f(x₉₉₉)'],a:1,why:'Each value is accepted only once. The next valid value is a preimage of the stored one under the one-way function f.'};
+const LN=1000,LAM=(()=>{const x=[HB('x0 of Alice, kept secret')];for(let i=1;i<=LN;i++)x.push(sha256(x[i-1]));return x.map(hexs)})();
+const LSL=[[0,120],[1,240],[-1,360],[997,480],[998,600],[999,720],[1000,840]],LY=178;
+const LID=i=>i<0?'Ldots':'L'+i;
+const lkP=i=>i<0?PT('Ldots','lk dots','…','the links in between'):PT('L'+i,'lk',`<b>x${sb(i)}</b><span>${LAM[i].slice(0,6)}…</span>`,'x'+i);
+const yAt=j=>j<3?null:j===3?1000:j===4?999:998;   // the value the server stores after step j
+const mAt=j=>j===3?1000:j===4?999:j===5?998:null;  // the value Alice sends in step j
+const LB={6:['bad','x₉₉₉ worked once. f(x₉₉₉) is x₁₀₀₀, not the stored x₉₉₈: refused.'],7:['bad','The next valid value is x₉₉₇. Eve would have to undo SHA-256 to get it from x₉₉₈.'],8:['','After 1000 logins the chain is used up, and Alice starts a new one.']};
+const LM={A:[100,64],S:[860,64],E:[110,400],m0:[220,290],m1:[520,290],ev:[320,400],st:[820,290],mc:[820,380]};
+const xv=i=>`x${sb(i)} = ${h8s(LAM[i])}`;
+function lamParts(){const a=mAt(CUR-1),b=mAt(CUR),y0=yAt(CUR-1),y1=yAt(CUR);
+  return avP('avA','A','Alice','P: keeps x₀ secret')+avP('avS','J','Server','V: stores one value')+avP('avE','E','Eve','listens on the wire')+
+    LSL.map(([i])=>lkP(i)).join('')+chipP('mgA','m',a?xv(a):'')+chipP('mgB','m',b?xv(b):'')+chipP('ev','e',`copied ${xv(999)}`)+
+    stP('st','the server stores y',y0?xv(y0):'–',y1?xv(y1):'–')+machP('mc','f(x) = y ?','SHA-256 of what came in')+stepBub(CUR,LB);
+}
+function lamSvg(){let s=AH;for(let i=1;i<LSL.length;i++){const[a,x1]=LSL[i-1],[b,x2]=LSL[i],l=x1+(a<0?18:48)+4,r=x2-(b<0?18:48)-4;s+=`<g id="f${i}" class="hid"><path class="sq" d="M${l} ${LY}H${r}" marker-end="url(#ah)"/><text class="flab" x="${(l+r)/2}" y="${LY-10}">f</text></g>`}
+  return s+arw('a1',172,690,290)+`<path id="tap" class="sq hid" d="M320 304V382" stroke-dasharray="4 5"/>`;}
+function lamPose(j){
+  const P={cam:'F',avA:{at:LM.A,o:1},avS:{at:LM.S,o:1},avE:{at:LM.E,o:j>=4},a1:{o:j>=3},tap:{o:j===4||j===5},
+    ev:{at:j===6?LM.m1:LM.ev,o:j>=4&&j<=6},st:{at:LM.st,o:j>=3,c:{alt:j>=CUR,glow:false}},mc:{at:LM.mc,o:j>=4,c:{busy:false,ok:j===4||j===5,bad:j===6}},
+    mgA:{at:LM.m1,o:j===CUR-1&&!!mAt(j)},mgB:{at:j>=CUR?LM.m1:LM.m0,o:j>=CUR&&!!mAt(CUR)}};
+  LSL.forEach(([i,x],n)=>{const used=i>=1000-Math.max(0,(j>=5?2:j>=4?1:0))&&i>0&&j>=4&&i>yAt(j),pub=i>0&&yAt(j)!=null&&i>=yAt(j);
+    P[LID(i)]={at:[x,LY],o:n===0?j>=1:j>=2,c:{pub,used,glow:(i===997&&j===7)||(i===0&&j===1)}};if(n>0)P['f'+n]={o:j>=2}});
+  return bubAt(P,j,LB,600,400);
+}
+function lamPhases(k){const bq={['bq'+k]:{o:1}},fade=[[0,{mgA:{o:0}},.1]];
+  const login=i=>[...fade,[.04,{['L'+i]:{c:{glow:1}}},.1],...send('mgB',LM.m0,LM.m1,.12,.36),[.56,{mc:{o:1,c:{busy:1}}},.08],[.72,{mc:{c:{busy:0,ok:1}},['L'+i]:{c:{glow:0,pub:1}},['L'+(i+1)]:{c:{used:1}}},.1],[.8,{st:{c:{alt:1}}},.12]];
+  if(k===1)return[[.1,{L0:{o:1,c:{glow:1}}},.25]];
+  if(k===2)return[[0,{L0:{c:{glow:0}}},.1],...LSL.slice(1).map(([i],n)=>[.06+.13*n,{[LID(i)]:{o:1},['f'+(n+1)]:{o:1}},.14])];
+  if(k===3)return[[.02,{a1:{o:1},L1000:{c:{glow:1}}},.12],...send('mgB',LM.m0,LM.m1,.14,.4),[.62,{st:{o:1}},.12],[.66,{L1000:{c:{glow:0,pub:1}}},.12],[.75,{st:{c:{alt:1}}},.1]];
+  if(k===4)return[...login(999),[.3,{avE:{o:1},tap:{o:1}},.15],[.48,{ev:{o:1}},.12]];
+  if(k===5)return login(998);
+  if(k===6)return[...fade,[0,{mc:{c:{ok:0}}},.1],[.12,{ev:{at:LM.m1}},.4],[.56,{mc:{c:{busy:1}}},.08],[.72,{mc:{c:{busy:0,bad:1}}},.1],[.8,bq,.14]];
+  if(k===7)return[[0,{ev:{o:0},tap:{o:0},mc:{c:{bad:0}}},.12],[.18,{L997:{c:{glow:1}}},.12],[.45,bq,.18]];
+  return[[0,{L997:{c:{glow:0}}},.1],[.3,bq,.2]];
+}
+function wbLam(k){const X=(i,c='cm')=>`<b class="${c} hx">${h8s(LAM[i])}</b>`;return[
+  {t:'A password that works only once',rows:[{s:'every login sends a new value',txt:1},{s:'a value that was used is worth nothing afterwards',txt:1}],note:'Leslie Lamport’s scheme. The lecture builds it from a one-way function f; here f = SHA-256.'},
+  {t:'Setup 1 · Alice chooses a secret starting value',rows:[{s:`${vK('x')}${sb(0)} = random`,r:X(0,'ck'),f:LAM[0]}],note:'On this page x₀ is SHA-256 of a fixed text, so the numbers stay the same.'},
+  {t:'Setup 2 · and applies f again and again',rows:[{s:`${vK('x')}${sb(1)} = f(${vK('x')}${sb(0)})`,r:X(1,'ck'),f:LAM[1]},{s:`${vK('x')}${sb(2)} = f(${vK('x')}${sb(1)})`,r:X(2,'ck'),f:LAM[2]},{s:'…',txt:1},{s:`${vK('x')}${sb(1000)} = f(${vK('x')}${sb(999)})`,r:X(1000,'ck'),f:LAM[1000]}],note:'1000 hashes take Alice a moment. Going back to the left would mean inverting SHA-256.'},
+  {t:'Setup 3 · the server stores the last value',rows:[{s:`${vP('y')} = ${vP('x')}${sb(1000)}`,r:X(1000,'cp'),f:LAM[1000]}],note:'x₁₀₀₀ is no secret: anyone may know it.'},
+  {t:'Login 1 · Alice sends x₉₉₉',rows:[{s:`f(${vM('x')}${sb(999)})`,n:`SHA-256(${h8s(LAM[999])})`,r:X(1000),f:LAM[1000]},{s:`stored ${vP('y')}`,r:X(1000,'cp'),v:'equal',ok:true,f:LAM[1000]},{s:`${vP('y')} ← ${vM('x')}${sb(999)}`,txt:1}],note:'The server keeps x₉₉₉ for the next login.'},
+  {t:'Login 2 · Alice sends x₉₉₈',rows:[{s:`f(${vM('x')}${sb(998)})`,n:`SHA-256(${h8s(LAM[998])})`,r:X(999),f:LAM[999]},{s:`stored ${vP('y')}`,r:X(999,'cp'),v:'equal',ok:true,f:LAM[999]},{s:`${vP('y')} ← ${vM('x')}${sb(998)}`,txt:1}]},
+  {t:'Eve sends the x₉₉₉ she copied',rows:[{s:`f(${vE('x')}${sb(999)})`,r:X(1000,'ce'),f:LAM[1000]},{s:`stored ${vP('y')} = x${sb(998)}`,r:X(998,'cp'),v:'different',ok:false,f:LAM[998]}],note:'An old value never opens the server again.'},
+  {t:'The next valid value is out of Eve’s reach',rows:[{s:`f(${vE('x')}${sb(997)}) = ${vP('x')}${sb(998)}`,r:'<b class="ce">x₉₉₇ = ?</b>'},{s:'finding it is a preimage attack on SHA-256',r:'<b>about 2<sup>256</sup> tries</b>'}],note:'Eve knows x₉₉₈ and x₉₉₉, but only Alice can move left in the chain.'},
+  {t:'Limits of the scheme (from the lecture)',rows:[{s:'after 1000 logins the chain is used up: a new x₀, a new registration',txt:1},{s:'pre-play: whoever poses as the server can ask Alice for her next value and use it first',txt:1}]}][k]}
+T.lam={n:()=>9,render(k){CUR=k;
+  stage.innerHTML=scnBox(960,460,lamParts(),lamSvg())+wbHTML(wbLam(k));
+  scnFit();poseNow(lamPose(k));
+  PARTI={avA:'Alice keeps x₀ and can compute every value of the chain.',avS:'The server stores one value of the chain at a time.',avE:'Eve can read everything on the wire.',Ldots:'x₃ to x₉₉₆, each the hash of the one before.',st:'The value that the next login must hash to.',mc:'The server hashes what came in and compares it with the stored value.',ev:`Eve’s copy of x₉₉₉: ${LAM[999]}`};
+  LSL.forEach(([i])=>{if(i>=0)PARTI['L'+i]=`x${sb(i)} = ${LAM[i]}`});
+  $('#explain').innerHTML=[say('One-time passwords','A copied password works again and again (tab 3). Lamport’s protocol sends a different value at every login, and a value that was used is worthless. Press <b>Step</b>.'),
+    say('Setup 1 · a secret start','Alice chooses a random value x₀ and keeps it secret.'),
+    say('Setup 2 · the chain','She applies the one-way function f a thousand times: x₁ = f(x₀), x₂ = f(x₁), and so on up to x₁₀₀₀.'),
+    say('Setup 3 · registration','Alice gives the server x₁₀₀₀. The server stores it as y. It is no secret.'),
+    say('Login 1','Alice sends x₉₉₉. The server checks that f(x₉₉₉) equals the stored y, lets her in and stores x₉₉₉ instead. Eve copies the value.'),
+    say('Login 2','Next time Alice sends x₉₉₈, and the server checks it against x₉₉₉. The chain is used from right to left.'),
+    say('Eve replays',`Eve sends her copy of x₉₉₉. f(x₉₉₉) is x₁₀₀₀, but the server now stores x₉₉₈: refused.`),
+    say('Eve cannot move left','To log in, Eve needs x₉₉₇, the value whose hash is x₉₉₈. That is a preimage of SHA-256: only Alice, who knows x₀, can compute it.'),
+    say('The limits','The chain lasts for 1000 logins, then Alice needs a new x₀ and a new registration. And Alice must send her next value only to the real server.')][k];
+  $('#extra').innerHTML=`<h3>Why it works</h3><p>The server only ever learns values that it will never accept again. The value it will accept next is a <b>preimage</b> of the one it stores, and only Alice can compute preimages, because she knows x₀.</p>`+quiz('lam');
+},
+plan(k){return scnPlan(lamPose,k,lamPhases(k),[0,900,1900,1700,2200,1900,1800,1300,1100][k])},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 5 · zero knowledge: the cave ---------- */
+QZ.zk={q:'Peggy does not know the word. What is her chance to pass 10 rounds?',o:['1/2','1/10','1/1024'],a:2,why:'In each round she must guess Victor’s request in advance, with chance 1/2. Ten independent rounds: (1/2)¹⁰ = 1/1024.'};
+const CV=[480,200],CRAD=120,cp=d=>[Math.round(CV[0]+CRAD*Math.cos(d*Math.PI/180)),Math.round(CV[1]+CRAD*Math.sin(d*Math.PI/180))];
+const ring=(a,b,st=30)=>{const P=[],n=Math.max(1,Math.round(Math.abs(b-a)/st));for(let i=0;i<=n;i++)P.push(cp(a+(b-a)*i/n));return P};
+const ZP={PA:[410,432],VA:[480,432],VB:[480,360],door:[480,80]};
+const SDEEP=[200,340],SEXIT=[130,50],SN=['C','D'];
+let ZV;
+function zkVals(){const R=[];for(let i=0;i<20;i++){const j=ST.zr+i,h=HB('cave hide 1 '+j)[0]&1,a=HB('cave ask 1 '+j)[0]&1;R.push({j,h,a})}
+  const know=ST.zkm==='know';let alive=true;R.forEach(r=>{r.ok=alive?(know||r.h===r.a):null;if(r.ok===false)alive=false});return{R,cur:R[0],know}}
+// the way Peggy walks in each step, as points of the cave
+function zkIn(h){return[ZP.PA,[480,398],cp(90),...ring(90,h?60:120,30).slice(1),...ring(h?60:120,h?-20:200,30).slice(1)]}
+function zkOut(h,a,know){
+  if(h===a)return h?ring(-20,50,25):ring(200,130,25);
+  if(!know)return[cp(SDEEP[h]),cp(h?300:240),cp(SDEEP[h])];
+  return h?ring(-20,-90,25).concat(ring(-90,-230,25).slice(1)):ring(200,270,25).concat(ring(270,410,25).slice(1));
+}
+function walk(id,pts,t0,t1){const L=[0];for(let i=1;i<pts.length;i++)L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const tot=L[L.length-1]||1;
+  return{ph:pts.slice(1).map((p,i)=>[t0+(t1-t0)*L[i]/tot,{[id]:{at:p}},(t1-t0)*(L[i+1]-L[i])/tot]),at:i=>t0+(t1-t0)*L[i]/tot}}
+function zkSvg(){
+  return`<rect class="rock" x="300" y="14" width="360" height="380" rx="140"/><circle class="pass" cx="${CV[0]}" cy="${CV[1]}" r="${CRAD}"/><rect class="pass2" x="451" y="300" width="58" height="96"/>
+    <circle class="pedge" cx="${CV[0]}" cy="${CV[1]}" r="${CRAD+30}"/><circle class="pedge" cx="${CV[0]}" cy="${CV[1]}" r="${CRAD-30}"/><path class="pedge" d="M451 346V394M509 346V394"/>
+    <text class="lbl big" x="312" y="205">C</text><text class="lbl big" x="648" y="205">D</text><text class="lbl" x="480" y="34">the magic door</text>
+    <text class="lbl big" x="538" y="437">A</text><text class="lbl big" x="528" y="327">B</text><text class="lbl" x="480" y="412">entrance</text>`;
+}
+function zkParts(){const Z=ZV.cur,know=ZV.know,pass=Z.ok,ask=SN[Z.a],side=SN[Z.h];
+  const rec=`<div class="rt">20 rounds, ${know?'Peggy knows the word':'Peggy only guesses'}</div><div class="rg">${ZV.R.map((r,i)=>sq(r.ok,i+1)).join('')}</div><p>${know?'She passes every round.':(()=>{const f=ZV.R.findIndex(r=>r.ok===false);return f<0?`She was lucky 20 times: chance ${fmtB(2**-20)}.`:`Caught in round ${f+1}.`})()} A bluffer passes t rounds with chance (1/2)<sup>t</sup>.</p>`;
+  return tkP('tP','A','P','Peggy')+tkP('tV','B','V','Victor')+PT('door','door','<i></i>','the magic door')+
+    bubP('lg','nw',know?'Peggy: “I know the word that opens the door, and I will not tell it.”':'Peggy says she knows the word, but she does not.')+
+    bubP('sh','nw',`Victor: “Come out on the ${ask} side!”`)+bubP('vd',(pass?'ok':'bad')+' nw',pass?`Peggy comes out on the ${ask} side.`:`Peggy is on the ${side} side and cannot pass the door.`)+
+    PT('rds','rds',rec,'the rounds');
+}
+function zkPose(k){const Z=ZV.cur,know=ZV.know,pass=Z.ok;
+  const pP=k<1?ZP.PA:k<4?cp(SDEEP[Z.h]):pass?cp(SEXIT[Z.a]):cp(SDEEP[Z.h]);
+  return{cam:'F',tP:{at:pP,o:1,c:{bad:k>=4&&!pass,ok:k>=4&&pass}},tV:{at:k<2?ZP.VA:ZP.VB,o:1},door:{at:ZP.door,o:1,c:{open:false,deny:false}},
+    lg:{at:[150,200],o:1},sh:{at:[660,410],o:k>=3},vd:{at:[790,300],o:k>=4},rds:{at:[815,140],o:k>=5}};
+}
+function zkPhases(k){const Z=ZV.cur,know=ZV.know;
+  if(k===1){const w=walk('tP',zkIn(Z.h),.04,.95);return w.ph}
+  if(k===2)return walk('tV',[ZP.VA,ZP.VB],.1,.75).ph;
+  if(k===3)return[[.15,{sh:{o:1}},.25]];
+  if(k===4){const pts=zkOut(Z.h,Z.a,know),w=walk('tP',pts,.04,.86),L=[...w.ph];
+    if(Z.h!==Z.a){const di=pts.findIndex(p=>p[0]===ZP.door[0]&&p[1]===ZP.door[1]);
+      if(know&&di>0){const t=w.at(di);L.push([t-.08,{door:{c:{open:1}}},.06],[t+.06,{door:{c:{open:0}}},.08])}
+      if(!know){const t=w.at(1);L.push([t,{door:{c:{deny:1}}},.05],[t+.2,{door:{c:{deny:0}}},.02])}}
+    L.push([.88,{vd:{o:1},tP:{c:{ok:Z.ok,bad:!Z.ok}}},.1]);return L}
+  return[[.15,{rds:{o:1}},.3]];
+}
+function wbZk(k){const Z=ZV.cur,know=ZV.know,ask=SN[Z.a],side=SN[Z.h];return[
+  {t:'Proving a secret without showing it',rows:[{s:'Peggy (P) claims she knows the word that opens the door between C and D',txt:1},{s:'Victor (V) wants to be sure, but Peggy will not tell him the word',txt:1}],note:'The model from Quisquater and Guillou’s talk at Crypto ’89, as in the lecture.'},
+  {t:'Step 1 · Peggy hides',rows:[{s:`Victor waits outside at A. Peggy goes in and at B turns to the ${side} side.`,txt:1}],note:'Victor cannot see which way she went.'},
+  {t:'Step 2 · Victor comes in',rows:[{s:'Victor walks to the fork B.',txt:1}]},
+  {t:'Step 3 · Victor’s request',rows:[{s:`Victor flips a coin and asks for the ${ask} side`,txt:1,v:Z.h===Z.a?'same side':'other side',ok:Z.h===Z.a}],note:Z.h===Z.a?'Peggy can come back the way she went in.':'Peggy must pass the door.'},
+  {t:'Step 4 · Peggy comes out',rows:[{s:Z.h===Z.a?'She walks back the way she came.':know?'She says the word, the door opens, and she walks through.':'She does not know the word: the door stays shut.',txt:1,v:Z.ok?'passed':'caught',ok:Z.ok}],note:know?'Victor saw nothing but Peggy coming out on the side he asked for.':Z.h===Z.a?'Lucky: Victor asked for the side she was on. This happens in half of the rounds.':'A bluffer is caught whenever Victor asks for the other side.'},
+  {t:'Step 5 · many rounds',rows:[{s:'chance that a bluffer passes one round',r:'<b>1/2</b>'},{s:'chance that a bluffer passes t rounds',r:'<b>(1/2)<sup>t</sup></b>'},{s:'t = 20',r:`<b>${fmtB(2**-20)}</b>`}],note:'After 20 rounds Victor is convinced, and he still does not know the word.'}][k]}
+T.zk={n:()=>6,render(k){CUR=k;
+  stage.innerHTML=subs(`<span class="flh">Peggy</span>`,sg('zkm',ST.zkm,[['know','knows the word'],['guess','only guesses']]),nb('zr','Next round'))+scnBox(960,470,zkParts(),zkSvg())+wbHTML(wbZk(k));
+  scnFit();poseNow(zkPose(k));{const w=$('.scnwrap');if(w&&PHONE.matches)w.scrollLeft=(w.scrollWidth-w.clientWidth)/2}
+  const Z=ZV.cur;
+  PARTI={tP:'Peggy (P), the prover.',tV:'Victor (V), the verifier.',door:'The door between the C side and the D side opens only with the magic word.',lg:'What Peggy claims.',sh:'Victor chooses the side at random, after Peggy has hidden.',vd:'What Victor sees.',rds:'Each square is one round, with a new hiding side and a new request.'};
+  $('#explain').innerHTML=[say('Zero knowledge: the cave','Peggy claims she knows the magic word that opens the door inside a ring-shaped cave. She wants to convince Victor without telling him the word. Press <b>Step</b>.'),
+    say('Step 1 · Peggy goes in',`Victor stays at A. Peggy goes in and at the fork B turns to the <b>${SN[Z.h]}</b> side. Victor cannot see which way.`),
+    say('Step 2 · Victor goes to B','Victor walks to the fork.'),
+    say('Step 3 · the request',`Victor flips a coin and shouts which side Peggy must come out on: <b>${SN[Z.a]}</b>.`),
+    say('Step 4 · Peggy comes out',Z.h===Z.a?'She is on that side already and walks back.':ZV.know?'She is on the other side, so she says the word, passes the door and comes out where Victor asked.':'She is on the other side and cannot open the door: Victor catches her.'),
+    say('Step 5 · repeat',ZV.know?'One round could be luck. After t rounds, a bluffer would have had to guess t coin flips. Peggy passes them all.':'A bluffer guesses each request with chance 1/2, and is caught sooner or later.')][k];
+  $('#extra').innerHTML=`<h3>What Victor learns</h3><p>That Peggy can open the door, and nothing else: he never hears the word. A video of the rounds would not convince anyone else, because Victor and Peggy could have agreed beforehand on which sides to film.</p><p class="note">Press <b>Next round</b> for a new hiding side and a new request.</p>`+quiz('zk');
+},
+plan(k){return scnPlan(zkPose,k,zkPhases(k),[0,2600,1300,1000,2900,1300][k])},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 6 · the Fiat–Shamir protocol ---------- */
+QZ.fs={q:'Why must Victor choose e only after Peggy has sent x?',o:['Otherwise someone without s could prepare an x for that e and pass','Because e is a secret key','Because x is computed from e'],a:0,why:'Knowing e in advance, a cheater picks y at random and sends x = y²·v⁻ᵉ mod n. The check y² = x·vᵉ then holds without s.'};
+// the real-size numbers are the primes of the RSA-2048 demonstration key of the RSA page: public, so never use them
+const HP=0xe0a00d87a6c7169e2083171e05993d3996d46d141c5983e5f17f4b26799c499d18d37f37460caca1805f24faf8db59292b6eef6947d7663b9349738bfa62ba5a97a6c1e1337c29ff4529e364a8cb223960427579ca2f6807e1ec19793cb3522f560c40bbb5c70434c6b09990c5337c95cc631d28a042b7a3051561b10ea2a5d7n,HQ=0xcbbc788880c53f5f9889d66800345cbb34d985b7ef203a0abfd6c28cc23583cf18208605d1f1282377803f45ff0e8a228ebdcef1e6814f61da7a40792f6654900c81a0a453a5348169e7dae993836b143955e9b60710de258cbb63903ca5547991cf0ce16f7eac41f1fbc5e73dc197b2a89bbd725073bf5f997f0a49baa1c3b7n;
+const FSP={small:{p:19n,q:23n,s:123n},real:{p:HP,q:HQ,s:null}};
+let FSV;
+function fsVals(){
+  const P=FSP[ST.fsp],n=P.p*P.q,s=P.s??unitOf('Fiat-Shamir secret s',n),v=s*s%n,vi=modinv(v,n),eve=ST.fsm==='eve',R=[];let alive=true;
+  for(let i=0;i<20;i++){const j=ST.fr+i,r=unitOf(`Fiat-Shamir r ${ST.fsp} ${j}`,n),e=HB(`Fiat-Shamir e 1 ${j}`)[0]&1,g=HB(`Fiat-Shamir guess 1 ${j}`)[0]&1;
+    const x=eve?(g?r*r%n*vi%n:r*r%n):r*r%n,y=eve?r:(e?r*s%n:r),lhs=y*y%n,rhs=e?x*v%n:x,ok=lhs===rhs;
+    R.push({j,r,e,g,x,y,lhs,rhs,ok,run:alive});if(!ok)alive=false}
+  return{n,p:P.p,q:P.q,s,v,vi,eve,R,cur:R[0],small:ST.fsp==='small'};
+}
+const FSX={T:[480,62],P:[110,70],V:[860,70],p:[322,62],q:[638,62],bd:[480,176],s:[110,180],r:[110,265],g:[110,340],x0:[250,265],x1:[480,265],e0:[720,340],e1:[480,340],y0:[250,415],y1:[480,415],mv:[835,415]};
+const FR=[265,340,415];
+function fsParts(){const F=FSV,C=F.cur,c=v=>cN(v);
+  return avP('avT','J','Center','trusted, publishes n')+(F.eve?avP('avP','E','Eve','does not know s'):avP('avP','A','Peggy','P: knows s'))+avP('avV','B','Victor','V: checks')+
+    chipP('cp1','k',`p = ${c(F.p)}`)+chipP('cq1','k',`q = ${c(F.q)}`)+boardP('bd',`<div id="bn">n = ${c(F.n)}</div><div id="bv">v = ${c(F.v)} (Peggy)</div>`)+
+    (F.eve?chipP('cs','e','s = ?'):chipP('cs','k',`s = ${c(F.s)}`))+chipP('cr','k',`r = ${c(C.r)}`)+chipP('cg','e',`guess: e = ${C.g}`)+
+    chipP('cx','m',`x = ${c(C.x)}`)+chipP('ce','s',`e = ${C.e}`)+chipP('cy','m',`y = ${c(C.y)}`)+machP('mv','y² = x·vᵉ ?','mod n');
+}
+const fsSvg=()=>AH+life(110,122,452)+life(860,122,388)+arw('a1',192,770,FR[0])+arw('a2',770,192,FR[1])+arw('a3',192,770,FR[2]);
+function fsPose(k){const F=FSV,C=F.cur;
+  return{cam:'F',avT:{at:FSX.T,o:1},avP:{at:FSX.P,o:1},avV:{at:FSX.V,o:1},cp1:{at:FSX.p,o:k>=1},cq1:{at:FSX.q,o:k>=1},bd:{at:FSX.bd,o:k>=1,c:{glow:false}},bn:{o:k>=1},bv:{o:k>=2},
+    cs:{at:FSX.s,o:k>=2},cr:{at:FSX.r,o:k>=3},cg:{at:FSX.g,o:F.eve&&k>=3},a1:{o:k>=3},cx:{at:k>=3?FSX.x1:FSX.x0,o:k>=3},a2:{o:k>=4},ce:{at:k>=4?FSX.e1:FSX.e0,o:k>=4},
+    a3:{o:k>=5},cy:{at:k>=5?FSX.y1:FSX.y0,o:k>=5},mv:{at:FSX.mv,o:k>=6,c:{busy:false,ok:k>=6&&C.ok,bad:k>=6&&!C.ok}}};
+}
+function fsPhases(k){const C=FSV.cur;return[[],
+  [[0,{cp1:{o:1},cq1:{o:1}},.2],[.3,{bd:{o:1}},.15],[.38,{bn:{o:1}},.15]],
+  [[0,{cs:{o:1}},.15],[.3,{bv:{o:1},bd:{c:{glow:1}}},.15],[.7,{bd:{c:{glow:0}}},.1]],
+  [[0,{cr:{o:1},cg:{o:FSV.eve}},.15],...send('cx',FSX.x0,FSX.x1,.3,.45),[.3,{a1:{o:1}},.4]],
+  [...send('ce',FSX.e0,FSX.e1,.12,.5),[.12,{a2:{o:1}},.45]],
+  [...send('cy',FSX.y0,FSX.y1,.12,.5),[.12,{a3:{o:1}},.45]],
+  [[0,{mv:{o:1,c:{busy:1}}},.15],[.55,{mv:{c:{busy:0,ok:C.ok,bad:!C.ok}}},.12]],
+  [[.1,{bd:{c:{glow:1}}},.1],[.6,{bd:{c:{glow:0}}},.1]]][k]}
+function wbFs(k){const F=FSV,C=F.cur,N=v=>fmtN(v),eye=F.eve;
+  const rq=`<span class="rg">${F.R.map((r,i)=>sq(r.run?r.ok:null,i+1)).join('')}</span>`,fail=F.R.findIndex(r=>!r.ok);
+  return[
+  {t:'Identification: Peggy proves she knows a secret s',rows:[{s:'three parties: the Center, Peggy (P) and Victor (V)',txt:1},{s:'one round: commitment, challenge, response, check',txt:1}],note:'The simplest zero-knowledge identification protocol, used for example in smart cards.'},
+  {t:'Setup 1 · the Center makes the modulus',rows:[{s:`${vK('p')}, ${vK('q')} secret primes`,n:`${N(F.p)}, ${N(F.q)}`,txt:0,f:`p = ${F.p}\nq = ${F.q}`},{s:`${vP('n')} = ${vK('p')}·${vK('q')}`,n:`${N(F.p)} · ${N(F.q)}`,r:rb('cp',F.n),f:`n = ${F.n}`}],note:'n is published, p and q are kept secret. Square roots mod n are as hard to find as the factors of n.'},
+  {t:'Setup 2 · Peggy’s keys',rows:[{s:`${vK('s')}, gcd(${vK('s')}, ${vP('n')}) = 1`,r:eye?'<b class="ce">only Peggy knows it</b>':rb('ck',F.s),f:eye?'':`s = ${F.s}`},{s:`${vP('v')} = ${vK('s')}² mod ${vP('n')}`,n:eye?null:`${N(F.s)}² mod ${N(F.n)}`,r:rb('cp',F.v),f:`v = ${F.v}`}],note:'The Center registers v as Peggy’s public key.'},
+  {t:'Step 1 · commitment',rows:eye?[{s:`Eve guesses the challenge: ${vE('e')} = ${C.g}`,txt:1},{s:`${vK('r')} random`,r:rb('ck',C.r),f:`r = ${C.r}`},{s:C.g?`${vM('x')} = ${vK('r')}²·${vP('v')}⁻¹ mod ${vP('n')}`:`${vM('x')} = ${vK('r')}² mod ${vP('n')}`,r:rb('cm',C.x),f:`x = ${C.x}`}]:
+    [{s:`${vK('r')} random in ℤ<sub>n</sub>*`,r:rb('ck',C.r),f:`r = ${C.r}`},{s:`${vM('x')} = ${vK('r')}² mod ${vP('n')}`,n:`${N(C.r)}² mod ${N(F.n)}`,r:rb('cm',C.x),f:`x = ${C.x}`}],note:eye?(C.g?'Prepared for e = 1: then y = r will pass.':'Prepared for e = 0: then y = r will pass.'):'Peggy sends x and keeps r.'},
+  {t:'Step 2 · challenge',rows:[{s:`${vS('e')} ∈ {0, 1}, random`,r:`<b class="cs">${C.e}</b>`}],note:'Victor chooses e only after he has x.'},
+  {t:'Step 3 · response',rows:eye?[{s:`Eve sends ${vM('y')} = ${vK('r')}`,r:rb('cm',C.y),f:`y = ${C.y}`}]:[{s:`${vM('y')} = ${vK('r')}·${vK('s')}${C.e?'':'⁰'} mod ${vP('n')}`,n:C.e?`${N(C.r)} · ${N(F.s)} mod ${N(F.n)}`:N(C.r),r:rb('cm',C.y),f:`y = ${C.y}`}],note:eye?(C.g===C.e?'Her guess was right.':'Her guess was wrong: she would need √(x·v) mod n.'):C.e?'With e = 1 the answer uses s, but r hides it.':'With e = 0 the answer is r itself.'},
+  {t:'Step 4 · Victor checks',rows:[{s:`${vM('y')}² mod ${vP('n')}`,n:`${N(C.y)}² mod ${N(F.n)}`,r:rb('cm',C.lhs),f:`${C.lhs}`},{s:C.e?`${vM('x')}·${vP('v')} mod ${vP('n')}`:`${vM('x')}·${vP('v')}⁰ = ${vM('x')}`,n:C.e?`${N(C.x)} · ${N(F.v)} mod ${N(F.n)}`:null,r:rb('cm',C.rhs),v:C.ok?'equal':'different',ok:C.ok,f:`${C.rhs}`}],
+    note:eye?'':`Why it works: y² = r²·s²ᵉ = x·vᵉ (mod n).`},
+  {t:'Repeat the round t times',rows:[{s:'20 rounds',r:rq,v:eye?(fail<0?'lucky 20 times':`caught in round ${fail+1}`):'all passed',ok:!eye||fail<0},{s:'chance that someone without s passes t rounds',r:'<b>(1/2)<sup>t</sup></b>'},{s:'t = 20',r:`<b>${fmtB(2**-20)}</b>`}],note:'Each round uses a new r and a new e.'}][k]}
+T.fs={n:()=>8,render(k){CUR=k;const F=FSV,C=F.cur;
+  stage.innerHTML=subs(`<span class="flh">Numbers</span>`,sg('fsp',ST.fsp,[['small','small'],['real','RSA-2048 size']]),`<span class="flh">Prover</span>`,sg('fsm',ST.fsm,[['know','Peggy, knows s'],['eve','Eve, without s']]),nb('fr','Next round'))+scnBox(960,470,fsParts(),fsSvg())+wbHTML(wbFs(k));
+  scnFit();poseNow(fsPose(k));
+  PARTI={avT:'The Center is trusted: it makes n = p·q and registers public keys.',avP:F.eve?'Eve knows n and v, which are public, but not s.':'Peggy knows the secret s.',avV:'Victor checks the answers.',cp1:`p = ${F.p}`,cq1:`q = ${F.q}`,bd:`n = ${F.n}, v = ${F.v}`,
+    cs:F.eve?'Eve does not know s.':`s = ${F.s}`,cr:`r = ${C.r}`,cg:'Eve guesses the challenge before she sends x.',cx:`x = ${C.x}`,ce:`e = ${C.e}`,cy:`y = ${C.y}`,mv:'Victor compares y² with x·vᵉ mod n.'};
+  $('#explain').innerHTML=[say('The Fiat–Shamir protocol','Peggy proves that she knows a square root s of her public key v modulo n, and shows nothing about s. Press <b>Step</b>.'),
+    say('Setup 1 · the Center','The Center picks two primes p and q, publishes n = p·q and keeps p and q secret.'),
+    say('Setup 2 · Peggy’s keys',F.eve?'Peggy’s public key v = s² mod n is registered. Eve wants to pass as Peggy, but she does not know s.':'Peggy picks a secret s with no common factor with n and computes v = s² mod n. The Center registers v as her public key.'),
+    say('Step 1 · commitment',F.eve?`Eve guesses that Victor will ask e = ${C.g} and prepares x for it.`:'Peggy picks a random r and sends x = r² mod n.'),
+    say('Step 2 · challenge',`Victor picks e = ${C.e} at random and sends it.`),
+    say('Step 3 · response',F.eve?(C.g===C.e?'Eve guessed right and sends y = r.':'Eve guessed wrong. The right answer would be a square root mod n, which she cannot compute without s or the factors of n.'):`Peggy sends y = r·sᵉ mod n${C.e?', that is r·s':', that is r'}.`),
+    say('Step 4 · check',C.ok?'Victor finds y² = x·vᵉ mod n and accepts this round.':'The two sides differ: Victor rejects Eve.'),
+    say('Repeat',F.eve?'Each round Eve passes only if her guess of e was right: chance 1/2.':'One round could be luck. Twenty rounds leave a cheater a chance of about one in a million.')][k];
+  $('#extra').innerHTML=`<h3>Why it is zero knowledge</h3><p>For e = 0 Victor sees r, a random number. For e = 1 he sees r·s, also a random-looking number. He could make such (x, e, y) triples himself without Peggy, so they teach him nothing about s.</p>`+quiz('fs');
+},
+plan(k){return scnPlan(fsPose,k,fsPhases(k),[0,1400,1400,1700,1300,1300,1500,1000][k])},
+focus(){follow($('#scn'))}};
+
+function compute(){FV=flipVals();ZV=zkVals();FSV=fsVals();D.v++}
+
+/* ---------- the longer read under the picture ---------- */
+const dbox=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const DEX=b=>dbox('Example',b),DNO=b=>dbox('Careful',b,'no'),DUSE=b=>dbox('In cryptography',b,'use');
+const DM=s=>`<span class="mth">${s}</span>`;
+// reading references, checked against the publishers' records; course-textbook pages from the course syllabus
+const AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const AZB13=`${AZB}: pp. 555–576, cryptographic protocols (lecture 13 of the syllabus).`,AZB14=`${AZB}: pp. 580–599, authentication protocols (lecture 14 of the syllabus).`;
+const SCH='B. Schneier, <cite>Applied Cryptography</cite>, 2nd ed. (Wiley, 1996), section 2.1, “Introduction to Protocols”.';
+const HAC='Menezes, van Oorschot, Vanstone, <cite>Handbook of Applied Cryptography</cite> (CRC Press, 1996), chapter 10, “Identification and Entity Authentication”, free at <a href="https://cacr.uwaterloo.ca/hac/" target="_blank" rel="noopener">cacr.uwaterloo.ca/hac</a>';
+const REFS={
+  ov:[SCH,AZB13],
+  kinds:[`${SCH} Arbitrated, adjudicated and self-enforcing protocols, and the drawbacks of an arbitrator, are all there.`,AZB13],
+  pw:[`${HAC}: section 10.2, “Passwords (weak authentication)”, with 10.2.1–10.2.3 on fixed passwords, their attacks and UNIX passwords.`,'N. Provos, D. Mazières, “A Future-Adaptable Password Scheme” (bcrypt), USENIX Annual Technical Conference, FREENIX track, 1999.',AZB14],
+  lam:['L. Lamport, “Password authentication with insecure communication”, <cite>Communications of the ACM</cite> 24(11), pp. 770–772, November 1981.',`${HAC}: section 10.2.5, “One-time passwords”, Protocol 10.6 and Note 10.7 (the pre-play attack).`,'RFC 1760, “The S/KEY One-Time Password System” (1995), and RFC 2289, “A One-Time Password System” (1998).',AZB14],
+  zk:['J.-J. Quisquater, L. Guillou and their families, with T. Berson, “How to Explain Zero-Knowledge Protocols to Your Children”, CRYPTO ’89, LNCS 435, pp. 628–631 (Springer, 1990).','S. Goldwasser, S. Micali, C. Rackoff, “The knowledge complexity of interactive proof-systems”, STOC 1985.',`${HAC}: section 10.4.1, “Overview of zero-knowledge concepts”.`,AZB14],
+  fs:['A. Fiat, A. Shamir, “How to Prove Yourself: Practical Solutions to Identification and Signature Problems”, CRYPTO ’86, LNCS 263, pp. 186–194 (Springer, 1987).',`${HAC}: Protocol 10.24, “Fiat-Shamir identification protocol (basic version)”, in section 10.4.1, and Note 10.30 on turning an identification protocol into a signature.`,AZB14]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?dbox('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+
+T.ov.doc=()=>{const F=FV,h0=HH('heads'),h1=HH('tails');
+  return`<h2>Cryptographic protocols</h2>
+  <p class="lead">A cryptographic protocol is a sequence of steps that two or more parties carry out to solve a cryptographic task. Each step is either a computation by one party or a message from one party to another.</p>
+  <h3>Protocol and algorithm</h3>
+  <p>An algorithm is carried out by one party alone. A protocol needs several parties acting in turn, and the parties may not trust each other: the steps must give each of them what he needs even if the other one cheats.</p>
+  <h3>What every protocol must have</h3>
+  <ol class="pts"><li>Every party knows the protocol and all of its steps in advance.</li><li>Every party agrees to follow it.</li><li>It is exact: every step has one meaning.</li><li>It is complete: there is a rule for every situation, including a failed check.</li></ol>
+  <h3>Tasks that need a protocol (from the lecture)</h3>
+  <ul class="pts"><li>Two parties who distrust each other want to sign a contract.</li><li>Two parties who distrust each other want to draw lots: the coin toss above.</li><li>A bank customer wants to prove to the bank that she is herself and not an attacker: tabs 3 to 6.</li><li>Distant parties take orders from a center, and some of them, the center included, may be enemies (known as the Byzantine generals problem).</li></ul>
+  ${DEX(`Toss number ${ST.flip}: the coin is ${SIDE(F.a)} and w = ${F.w}.<br>${DM(`c = SHA-256(“${F.open}”) = ${F.c}`)}<br>Bob calls ${SIDE(F.b)}. Alice opens “${F.open2}”, and Bob gets ${DM(F.c2)}, ${F.ok?`which is c: ${F.win} wins.`:'which is not c: Bob rejects.'}`)}
+  ${DNO(`Without the random w, Alice would send ${DM(`SHA-256(“heads”) = ${h8s(h0)}`)} or ${DM(`SHA-256(“tails”) = ${h8s(h1)}`)}, and Bob would recognise the coin at once. A commitment to a value with few possibilities always needs a random part.`)}
+  ${DUSE(`Fixing a value now and showing it later is called a <b>commitment</b>. The value x that Peggy sends first in the Fiat–Shamir protocol (tab 6) is one.`)}
+  ${MORE('ov')}`};
+
+T.kinds.doc=()=>`<h2>Who takes part in a protocol</h2>
+  <p class="lead">Protocols differ in whether a third party is needed and when. The lecture follows Schneier’s classification.</p>
+  <h3>Four kinds</h3>
+  <ul class="pts"><li><b>Two-party protocols</b>: the parties trust each other and solve the task together, with nobody in between.</li>
+  <li><b>Arbitrated protocols</b>: an arbitrator, a disinterested third party whom everybody trusts, takes part in every run and makes sure that it is completed.</li>
+  <li><b>Adjudicated protocols</b>: the protocol is split in two. A part without a third party runs every time; a second part, with an adjudicator, runs only if there is a dispute. The adjudicator decides whether the protocol was carried out fairly.</li>
+  <li><b>Self-enforcing protocols</b>: no arbitrator and no adjudicator. The protocol itself guarantees fairness: any cheating shows at once and the protocol stops.</li></ul>
+  ${DNO(`The lecture’s Azerbaijani names: the arbitrator, who takes part in every run, is the <b>vasitəçi</b>, and the adjudicator, called only to check the protocol, is the <b>hakim</b>. In English the arbitrator gives an <b>arbitrated</b> protocol and the adjudicator an <b>adjudicated</b> one.`)}
+  <h3>Why not always an arbitrator</h3>
+  <ul class="pts"><li>Parties who distrust each other will also distrust an arbitrator they cannot see.</li><li>The network must bear the cost of running the arbitrator.</li><li>Every arbitrated protocol has a built-in delay.</li><li>The arbitrator takes part in every transaction, so he becomes a bottleneck when the system grows.</li><li>Everyone trusts him, so he is the first target of anyone who wants to break the system.</li></ul>
+  ${DEX(`Alice sells Bob a report for 100 manat. With an arbitrator, Trent receives both, checks them and passes them on. With an adjudicator, Alice and Bob exchange directly and keep signed papers, and Trent reads them only if Bob says the report was empty or Alice says the payment did not come.`)}
+  ${DUSE(`Trusted third parties are everywhere in cryptography: the Center of the Fiat–Shamir protocol (tab 6) registers public keys, and a certificate authority vouches that a public key belongs to a web site. Self-enforcing protocols are rarer; the coin toss of tab 1 is one.`)}
+  ${MORE('kinds')}`;
+
+T.pw.doc=()=>{const s1=HH('x7Q2|'+PWC),s2=HH('Lp9d|'+PWC);
+  return`<h2>Authentication with a password</h2>
+  <p class="lead">An authentication protocol has two parties: P, the prover, who wants to show who she is, and V, the verifier, who checks it. With a password, P shows that she knows a secret that V can check.</p>
+  <h3>How a server should store passwords</h3>
+  <p>The server stores a hash of each password, not the password. At a login it hashes what it receives and compares. A stolen table then shows only hashes, and SHA-256 cannot be undone.</p>
+  ${DEX(`${DM(`SHA-256(“${PWA}”) = ${PWV.a}`)}<br>${DM(`SHA-256(“${PWX}”) = ${PWV.x}`)}<br>One letter differs, and ${popc(PWV.a,PWV.x)} of the 256 bits differ.`)}
+  <h3>Two attacks</h3>
+  <ul class="pts"><li><b>Replay:</b> the same password crosses the wire at every login, so whoever reads it once can log in again and again. One-time passwords (tab 4) and zero-knowledge proofs (tabs 5 and 6) avoid this.</li><li><b>Guessing:</b> whoever gets the table hashes common passwords and compares. Bob and Carol both used “${PWC}” and have the same hash ${DM(h8s(PWV.u[1].h))}, so one guess finds both.</li></ul>
+  ${DNO(`Add a random <b>salt</b> for every user and store it next to the hash: h = SHA-256(salt‖password). The same password then gives different hashes, for example ${DM(`SHA-256(“x7Q2|${PWC}”) = ${h8s(s1)}`)} and ${DM(`SHA-256(“Lp9d|${PWC}”) = ${h8s(s2)}`)}, and a list of guesses must be hashed again for every user. Real systems also use a deliberately slow hash, such as bcrypt (1999) or Argon2, the winner of the Password Hashing Competition in 2015.`)}
+  ${DUSE(`A fixed password is called <b>weak authentication</b>: the secret itself crosses the line. Challenge-response protocols send an answer that is new every time, and zero-knowledge protocols prove knowledge of a secret without showing anything about it.`)}
+  ${MORE('pw')}`};
+
+T.lam.doc=()=>`<h2>Lamport’s one-time passwords</h2>
+  <p class="lead">Leslie Lamport proposed in 1981 to send a different password at every login, taken from a hash chain used backwards. A value that the server has accepted is never accepted again.</p>
+  <h3>Setup</h3>
+  <ol class="pts"><li>Alice chooses a secret x₀ and keeps it.</li><li>She computes x₁ = f(x₀), x₂ = f(x₁), …, x₁₀₀₀ = f(x₉₉₉), where f is a one-way function.</li><li>She gives the server y = x₁₀₀₀. The server stores the pair (Alice, y).</li></ol>
+  <h3>Login</h3>
+  <ol class="pts"><li>Alice sends x = x₉₉₉. The server checks f(x) = y, lets her in, and stores y = x.</li><li>Next time she sends x₉₉₈, then x₉₉₇, and so on. Only she can compute these values, because f is one-way.</li></ol>
+  ${DEX(`With f = SHA-256 on this page:<br>${DM(`x₀ = ${LAM[0]}<br>x₉₉₉ = ${LAM[999]}<br>x₁₀₀₀ = ${LAM[1000]}`)}<br>SHA-256(x₉₉₉) is x₁₀₀₀, so the first login is accepted.`)}
+  <h3>Limits</h3>
+  <ul class="pts"><li>After 1000 logins the chain is used up: Alice needs a new x₀ and a new registration.</li><li>An attacker who poses as the server can ask Alice for her next value and use it before she does. So Alice must send a value only to the real server (the Handbook calls this a pre-play attack).</li><li>A chain belongs to one server: if two servers stored the same chain, a value sent to one could be used at the other.</li></ul>
+  ${DUSE(`S/KEY (RFC 1760, 1995, using MD4) and its successor OTP (RFC 2289, 1998, where MD5 must be supported and SHA-1 should be) are exactly this chain, with the output folded to 64 bits. They were used for logins over unencrypted connections.`)}
+  ${MORE('lam')}`;
+
+T.zk.doc=()=>{const Z=ZV,f=Z.R.findIndex(r=>r.ok===false);
+  return`<h2>Zero-knowledge proofs</h2>
+  <p class="lead">A zero-knowledge proof convinces the verifier that a statement is true, for example “I know the secret”, and gives him no other information. The idea comes from Goldwasser, Micali and Rackoff (1985).</p>
+  <h3>Three properties</h3>
+  <ul class="pts"><li><b>Completeness:</b> an honest prover who knows the secret always convinces the verifier.</li><li><b>Soundness:</b> a prover who does not know it is caught, except with a small probability, here (1/2)<sup>t</sup> after t rounds.</li><li><b>Zero knowledge:</b> the verifier learns nothing except that the statement is true.</li></ul>
+  <h3>The cave</h3>
+  <p>The picture comes from the talk “How to Explain Zero-Knowledge Protocols to Your Children” by Quisquater, Guillou and their families at Crypto ’89. The paper calls it the strange cave of Ali Baba; the lecture tells it as Aladdin’s cave.</p>
+  ${DEX(`Rounds ${Z.R[0].j} to ${Z.R[19].j}, hiding side and Victor’s request: ${Z.R.slice(0,8).map(r=>SN[r.h]+'/'+SN[r.a]).join(', ')}, … ${Z.know?'Peggy knows the word and passes all 20.':f<0?`A bluffer would have passed all 20: that happens with chance ${fmtB(2**-20)}.`:`A bluffer passes while the two letters agree and is caught in round ${f+1}.`}`)}
+  ${DNO(`Why a film of the rounds proves nothing to others: Victor and a bluffing Peggy could cut out every round in which she failed, or agree on the requests beforehand. The film would look the same. Only Victor, who chose the requests himself at random, is convinced.`)}
+  ${DUSE(`Zero-knowledge identification protocols such as Fiat–Shamir (tab 6) suit smart cards: the card proves that it knows its secret and never sends it. Far more general zero-knowledge proofs are used today, for example in cryptocurrencies such as Zcash.`)}
+  ${MORE('zk')}`};
+
+T.fs.doc=()=>{const F=FSV,C=F.cur,n=F.n,N=v=>F.small?String(v):fmtN(v,24);
+  const r0=C.r,y0=r0,y1=r0*F.s%n,ex=y1*modinv(y0,n)%n;
+  const sy=hnum('simulated y '+ST.fr,n)||2n,se=HB('simulated e '+ST.fr)[0]&1,sx=se?sy*sy%n*F.vi%n:sy*sy%n,sok=sy*sy%n===(se?sx*F.v%n:sx);
+  return`<h2>The Fiat–Shamir protocol</h2>
+  <p class="lead">Amos Fiat and Adi Shamir proposed it at CRYPTO ’86. Peggy proves that she knows a square root s of her public number v modulo n. It is the simplest zero-knowledge identification protocol.</p>
+  <h3>Setup</h3>
+  <ol class="pts"><li>A trusted Center chooses two primes p and q, publishes n = p·q and keeps p and q secret.</li><li>Peggy chooses a secret s with gcd(s, n) = 1 and computes v = s² mod n.</li><li>The Center registers v as Peggy’s public key.</li></ol>
+  <h3>One round</h3>
+  <ol class="pts"><li><b>Commitment:</b> Peggy picks a random r and sends x = r² mod n.</li><li><b>Challenge:</b> Victor picks a random e ∈ {0, 1} and sends it.</li><li><b>Response:</b> Peggy sends y = r·sᵉ mod n.</li><li><b>Check:</b> Victor accepts if y² ≡ x·vᵉ (mod n).</li></ol>
+  <p>It works because y² = r²·s²ᵉ = x·vᵉ. After t rounds, someone without s is accepted only with probability (1/2)<sup>t</sup>.</p>
+  ${DEX(`${F.small?`n = ${F.p}·${F.q} = ${n}, s = ${F.s}, v = ${F.s}² mod ${n} = ${F.v}.`:`n has ${bitLen(n)} bits; s and v are numbers of the same size.`}<br>Round ${C.j}: ${DM(`r = ${N(C.r)}, x = ${N(C.x)}, e = ${C.e}, y = ${N(C.y)}`)}<br>${DM(`y² mod n = ${N(C.lhs)},  x·vᵉ mod n = ${N(C.rhs)}`)}: ${C.ok?'equal.':'different.'}`)}
+  <h3>Why a cheater has only one chance in two</h3>
+  <p>Without s, Eve can prepare for one challenge only. For e = 0 she sends x = r² and later y = r. For e = 1 she sends x = r²·v⁻¹ and later y = r, since then y² = x·v. To be ready for both she would need answers y₀ and y₁ to the same x, and then ${DM('y₁·y₀⁻¹ = s (mod n)')}: she would know s.</p>
+  ${DEX(`If Peggy answered both challenges for the same r: y₀ = ${N(y0)} and y₁ = ${N(y1)}, then ${DM(`y₁·y₀⁻¹ mod n = ${N(ex)}`)}, which is s${ex===F.s?'':' (check failed)'}. So Peggy must never use the same r twice.`)}
+  <h3>Why Victor learns nothing</h3>
+  <p>Victor can produce rounds that look exactly like real ones without Peggy: he picks y and e first and sets x = y²·v⁻ᵉ mod n.</p>
+  ${DEX(`${DM(`y = ${N(sy)}, e = ${se}, x = ${N(sx)}`)}: the check y² ≡ x·vᵉ ${sok?'holds':'fails'}, and nobody needed s. Real rounds, where x comes before e, therefore show Victor nothing he could not make himself.`)}
+  ${DNO(`The order matters. If Victor told e before receiving x, anyone could make a round as above and pass without s.`)}
+  ${DUSE(`The <b>Fiat–Shamir transform</b> replaces Victor’s random challenge by a hash of the commitment and a message, e = H(x‖m), and turns an identification protocol into a signature scheme. Schnorr signatures are made this way from Schnorr’s identification protocol, and EdDSA (RFC 8032), used for example in SSH keys, is a variant of Schnorr signatures.`)}
+  ${MORE('fs')}`};
+
+// the card is rebuilt only when the tab, a choice or the numbers change, and written only when its text changes
+let DOCK='',DOCH='';
+function fillDoc(){
+  const t=T[ST.tab],ck=[ST.tab,ST.ovm,ST.flip,ST.zkm,ST.zr,ST.fsm,ST.fsp,ST.fr,D.v].join('|');
+  if(ck===DOCK)return;DOCK=ck;
+  const h=t.doc?t.doc():'',dc=$('#doc');dc.hidden=!h;if(h!==DOCH){DOCH=h;dc.innerHTML=h}
+}
+
+/* ---------- step engine: one animation at a time ----------
+   Each tab: n() = number of states, render(k) = static picture after step k,
+   plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
+const ENG={playing:false,anim:null,playT:null};
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const speed=()=>+$('#spd').value;
+function curN(){return T[ST.tab].n()}
+// room is kept for the longest text of a walkthrough, so the picture does not move from step to step
+const ROOM={k:'',h:0},NARROW=matchMedia('(max-width:1000px)');
+function drawStep(t,k){
+  const ex=$('#explain'),n=t.n();ex.style.minHeight=ex.style.marginBottom='';
+  PARTI={};
+  if(n<2){t.render(k);return}
+  const sig=Object.entries(ST).filter(([,v])=>v===null||typeof v!=='object').map(([a,v])=>a+'='+v).join(','),ck=`${n}|${ex.clientWidth}|${D.v}|${sig}`;
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){t.render(j);h=Math.max(h,ex.offsetHeight)}ROOM.k=ck;ROOM.h=h}
+  PARTI={};t.render(k);
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function controls(k){
+  const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
+  $('#prog').textContent=stepped?`Step ${k} of ${n-1}`:'';
+  $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
+  $('#fWrap').hidden=!t.focus;
+  fillDoc();
+}
+function show(){
+  if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
+  const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
+  fxClear();drawStep(t,k);controls(k);
+}
+function startStage(to){
+  stopAnim(true);
+  const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
+  ST.step[tab]=to;fxClear();drawStep(t,to);
+  const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
+  if(!tick){fxClear();drawStep(t,to);controls(to);next();return}
+  const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
+  ENG.anim=a;controls(to);tick(0);
+  if(t.focus&&$('#follow').checked)t.focus(to);
+  requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
+}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();drawStep(T[a.tab],a.to);controls(a.to);next()}
+function next(){
+  if(!ENG.playing)return;const k=ST.step[ST.tab];
+  if(k<curN()-1)ENG.playT=setTimeout(()=>{ENG.playT=null;startStage(k+1)},(RM.matches?60:380)/speed());else setPlaying(false);
+}
+function stopAnim(complete){
+  if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
+  const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
+  if(a.tab===ST.tab){drawStep(T[a.tab],ST.step[a.tab]);controls(ST.step[a.tab])}
+}
+function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
+function follow(el){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
+  if(r.top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+}
+function setTab(id){
+  setPlaying(false);stopAnim(true);ST.tab=id;ST.pick=null;
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  show();
+  try{localStorage.setItem('prot-tab',id)}catch(e){}
+}
+const redo=()=>{setPlaying(false);stopAnim(false);ST.pick=null};
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(true);return}startStage((ST.step[ST.tab]||0)+1)};
+$('#bBack').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(false);return}const k=ST.step[ST.tab]||0;if(k>0){ST.step[ST.tab]=k-1;show()}};
+$('#bReset').onclick=()=>{setPlaying(false);stopAnim(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{
+  if(ENG.playing){setPlaying(false);return}
+  const n=curN();if(n<2)return;
+  if((ST.step[ST.tab]||0)>=n-1&&!ENG.anim){ST.step[ST.tab]=0;show()}
+  setPlaying(true);if(!ENG.anim)startStage(ST.step[ST.tab]+1);
+};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');if(g){setTab(g.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  // a choice above the scene keeps the step; a new round starts the walkthrough again
+  const st=e.target.closest('[data-set]');if(st){redo();const[k,v]=st.dataset.set.split(':');ST[k]=v;compute();show();return}
+  const nw=e.target.closest('[data-new]');if(nw){redo();ST[nw.dataset.new]++;ST.step[ST.tab]=0;compute();show();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+  for(const h of CLICK)if(h(e))return;
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  // clickable parts of a picture answer to Enter and Space like buttons
+  const act=e.target.closest&&e.target.closest('[data-part],[data-eq]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
+  if(e.target.closest&&e.target.closest('button')&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
+});
+let startTab='ov';try{const t=localStorage.getItem('prot-tab');if(t&&T[t])startTab=t}catch(e){}
+ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
+compute();show();
+</script>
+</body>
+</html>
