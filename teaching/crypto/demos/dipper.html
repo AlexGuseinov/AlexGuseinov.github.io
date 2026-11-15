@@ -1201,11 +1201,15 @@ plan(k){const r=ST.round.ark,o=findOp('ark',r),K=D.KS.RK[r-1],cur=16-k;
   }};
 }};
 
-/* 7 · key schedule: RK_r = k3 ‖ k2 ‖ k1 ‖ k0 (the lower 64 bits); then the words move (two of them rotate right), S-boxes on top nibbles, a 5-bit round constant */
+/* 7 · key schedule: RK_r = k3 ‖ k2 ‖ k1 ‖ k0 (the lower 64 bits); then the words move (two of them rotate right), S-boxes on 4 or 3 nibbles (st.pos), a 5-bit round constant */
 const KFROM=kb=>kb===96?[4,5,0,1,2,3]:[0,1,4,5,6,7,2,3];        // new k_j = old k_KFROM[j] …
 const KROT=kb=>kb===96?{2:12,3:2}:{0:12,1:2};                    // … rotated right by this much
 const kwv=(K,j)=>Number((K>>B(16*j))&0xFFFFn);
 const b5=v=>v.toString(2).padStart(5,'0');
+const ksNb=p=>(p>>2)&3;                                          // nibble 0 … 3 of its word (3 = the top one)
+const andL=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+// which nibbles get the S-box, in words: "the top nibble of k5 and k2, and nibble 1 of k4 and k1"
+const sbTxt=st=>[3,2,1,0].map(m=>[m,st.pos.filter(p=>ksNb(p)===m).map(p=>'k'+(p>>4))]).filter(g=>g[1].length).map(([m,w])=>`${m===3?'the top nibble':'nibble '+m} of ${andL(w)}`).join(', and ');
 // the register as words: top row k(n−1) … k4, bottom row k3 … k0 (the round key)
 function kregH(K,n,o={}){
   const box=j=>`<div class="kw${j<4?' rk':''}${ST.kw===j?' pk':''}" id="kw${j}" data-kw="${j}" tabindex="0" role="button" title="Where k${j} came from"><b>k${j}</b>${nibs(m=>Number((K>>B(16*j+4*m))&15n),{n:4,id:'kn'+j,cls:m=>o.cls?o.cls(j,m)||'':''})}${o.src?`<span class="ksrc" id="ks${j}">${o.src(j)}</span>`:''}</div>`;
@@ -1215,11 +1219,11 @@ function kregH(K,n,o={}){
 }
 T.ks={n:()=>4,rounds:()=>rng(1,27),render(k){
   const r=ST.round.ks,st=D.KS.st[r-1],kb=D.kb,n=kb/16,val=[st.reg,st.K1,st.K2,st.K3][k],F=KFROM(kb),RT=KROT(kb);
-  const sbW=st.pos.map(p=>p>>4),rcW=st.rcs>>4;
-  const cap=[`The ${kb}-bit key register at round ${r}`,'1 · the words move; two of them also rotate right',`2 · GIFT S-box on the top nibble of ${sbW.map(j=>'k'+j).join(', ')}`,`3 · round constant RC${r} = ${b5(st.rc)} XORed into k${rcW}`][k];
+  const rcW=st.rcs>>4,loN=[...new Set(st.pos.map(ksNb).filter(m=>m!==3))];
+  const cap=[`The ${kb}-bit key register at round ${r}`,'1 · the words move; two of them also rotate right',`2 · GIFT S-box on ${sbTxt(st)}`,`3 · round constant RC${r} = ${b5(st.rc)} XORed into k${rcW}`][k];
   let h=`<div class="klab" style="text-align:center;margin-bottom:12px"><b>${cap}</b></div><div id="kReg">`+kregH(val,n,{
     src:k===1?j=>`← k${F[j]}${RT[j]?' ⋙ '+RT[j]:''}`:null,
-    cls:(j,m)=>k===1&&RT[j]?'chg':k===2&&sbW.includes(j)&&m===3?'chg':k===3&&j===rcW&&m<2?'hi':''})+'</div>'
+    cls:(j,m)=>k===1&&RT[j]?'chg':k===2&&st.pos.includes(16*j+4*m)?'chg':k===3&&j===rcW&&m<2?'hi':''})+'</div>'
     +`<p class="pickline">${ksLine(st,k,r)}</p><p class="hint">Click a word of the register to see where it came from.</p>`;
   if(k===0)h+=`<div class="sec"><div class="h3">Round key RK${r} = k3 ‖ k2 ‖ k1 ‖ k0</div><p class="mono k" style="text-align:center;font-size:16px;margin:0">${hex(D.KS.RK[r-1])}</p></div>`;
   if(k===1)h+=`<div class="sec"><p class="mono" style="font-size:13px;margin:0;text-align:center">${kb===96?'(k5, k4, k3, k2, k1, k0) ← (k3, k2, k1 ⋙ 2, k0 ⋙ 12, k5, k4)':'(k7, …, k0) ← (k3, k2, k7, k6, k5, k4, k1 ⋙ 2, k0 ⋙ 12)'}</p></div>`;
@@ -1232,7 +1236,7 @@ T.ks={n:()=>4,rounds:()=>rng(1,27),render(k){
   stage.innerHTML=h;
   const ex=[`<p>Dipper-64/${kb} keeps the key in a ${kb}-bit register of ${n} words k${n-1} … k0 (16 bits each). The round key RK${r} is the <b>lower 64 bits</b>: k3 ‖ k2 ‖ k1 ‖ k0 (purple).</p><p>Then the register is updated in 3 steps for the next round. Press <b>Step</b>.</p>`,
     `<p><b>Step 1, the words move.</b> The words change places, and two of them are also rotated right: k1 by 2 bits and k0 by 12 bits (the same idea as in GIFT).</p><p>The small text under each word says where it came from.</p>`,
-    `<p><b>Step 2, S-boxes.</b> The top nibble of ${sbW.map(j=>'k'+j).join(', ')} goes through the GIFT S-box. This makes the key schedule non-linear.</p><p>${kb===96?'The 96-bit version uses 4 S-boxes.':'The 128-bit version uses 3 S-boxes, to keep the hardware small.'}</p>`,
+    `<p><b>Step 2, S-boxes.</b> The GIFT S-box is applied to ${sbTxt(st)}.${loN.map(m=>` Nibble ${m} is bits ${4*m+3} … ${4*m} of its word (the small number in each cell).`).join('')} This makes the key schedule non-linear.</p><p>${kb===96?'The 96-bit version uses 4 S-boxes.':'The 128-bit version uses 3 S-boxes, to keep the hardware small.'}</p>`,
     `<p><b>Step 3, round constant.</b> The 5-bit constant RC${r} = ${b5(st.rc)} is XORed into bits ${st.rcs+4} … ${st.rcs}: the lowest 5 bits of k${rcW}. This makes every round different.</p><p>The register is now ready for round ${r+1}.</p>`][k];
   $('#explain').innerHTML=`<div class="step">Key schedule · round ${r} · step ${k} of 3</div>${ex}`;
   const nb=((st.rc>>4)^(st.rc>>1))&1;
@@ -1253,7 +1257,7 @@ plan(k){const r=ST.round.ks,st=D.KS.st[r-1],kb=D.kb,n=kb/16,rcW=st.rcs>>4;
         cu.push([t+.55,()=>{els[j].style.opacity=1;const s=$('#ks'+j);if(s)s.style.opacity=1}])}
       return both(mover(mv),cues(cu))}
     if(k===2){const Sx=$('#ksS');if(!Sx)return null;const SR=rectOf(Sx);cu.push([0,()=>Sx.classList.add('pulse')],[.88,()=>Sx.classList.remove('pulse')]);
-      st.pos.forEach((p,q)=>{const el=$(`#kn${p>>4} [data-n="3"]`),A=rectOf(el),x=Number((st.K1>>B(p))&15n),y=Number((st.K2>>B(p))&15n),t=.12*q;hide([el]);
+      st.pos.forEach((p,q)=>{const el=$(`#kn${p>>4} [data-n="${ksNb(p)}"]`),A=rectOf(el),x=Number((st.K1>>B(p))&15n),y=Number((st.K2>>B(p))&15n),t=.12*q;hide([el]);
         mv.push({node:fxNode(tok(h1(x),A.w,A.h,[ncol(x)])),legs:[[t,t+.22,[xy(A),xy(SR)]],[t+.3,t+.5,[xy(SR),xy(A)]]],at:[[t+.26,retok(h1(y),A.w,A.h,[ncol(y)])]],end:t+.5});
         cu.push([t+.5,()=>{el.style.opacity=1;el.classList.add('flash')}])});
       return both(mover(mv),cues(cu))}
