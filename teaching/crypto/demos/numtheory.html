@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Number theory for public key, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --key:#7d55c7;--keyBg:#f0eafb;--xor:#c8372d;--xorBg:#fbe9e7;
+  --pub:#1f7a45;--pri:#7d55c7;--rp:#1d5fa6;--ri:#c2570c;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --key:#b49aec;--keyBg:#272036;--xor:#f07a70;--xorBg:#3a1f1d;
+  --pub:#5fd08f;--pri:#b49aec;--rp:#8ab8ee;--ri:#f0a35e;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0;position:relative}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){.stage{padding:12px 10px}}
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.seg.sm button{padding:3px 10px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);max-width:100%}
+input[type=text]{width:100%}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+#extra a,#explain a{color:var(--accent)}
+.note{padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px}
+.mono{font-family:var(--mono)}
+button.link{border:0;background:none;padding:0;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+.inbar{display:grid;grid-template-columns:minmax(220px,auto) minmax(0,1fr);gap:10px 14px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.meta{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.meta b{color:var(--ink)}
+@media (max-width:700px){.inbar{grid-template-columns:minmax(0,1fr)}}
+.sec{margin-top:22px}
+.scroll{overflow-x:auto;max-width:100%}
+.subs{margin-bottom:14px}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+.hint.l{text-align:left}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+/* animation layer: tokens fly over the stage */
+#fx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5}
+.tok text{font-family:var(--mono);font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:3px;stroke-linejoin:round}
+.tok .edge{fill:none;stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.flash{animation:flash .7s ease-out}
+@keyframes flash{from{background:var(--accentBg);box-shadow:0 0 0 4px var(--accent)}}
+.pulse{animation:pz .45s ease-in-out infinite alternate}
+@keyframes pz{to{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 45%,transparent)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* shared pieces */
+.res{--r:var(--accent);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 12px;margin-top:10px;border-radius:8px;background:color-mix(in srgb,var(--r) 8%,transparent);border-left:3px solid var(--r)}
+.res.r-ok{--r:var(--ok)}.res.r-bad{--r:var(--xor)}
+.res .rl{font:600 12.5px var(--sans);color:var(--r);min-width:70px}
+.res .rv{font:13px var(--mono);overflow-wrap:anywhere;flex:1 1 200px;min-width:0}
+.vok{font:600 12.5px var(--sans);color:var(--ok);background:var(--okBg);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.vbad{font:600 12.5px var(--sans);color:var(--xor);background:var(--xorBg);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.pros{list-style:none;margin:8px 0;padding:0;font-size:14px}
+.pros li{padding:2px 0 2px 22px;position:relative}
+.pros li::before{position:absolute;left:3px;font-weight:700}
+.pros .y::before{content:'+';color:var(--ok)}.pros .n::before{content:'−';color:var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.nvs{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.nv{font:600 12.5px var(--mono);padding:2px 8px;border-radius:6px;background:color-mix(in srgb,var(--ink) 7%,transparent);border:0;color:var(--ink);display:inline-flex;gap:6px;align-items:baseline;cursor:pointer}
+.nv small{font:500 11px var(--sans);color:var(--muted)}
+.nv:hover,.nv:focus-visible{outline:1.5px solid var(--accent)}
+.nv.on{outline:2px solid var(--accent)}
+.nv.gh{visibility:hidden}
+.pick{min-height:20px;margin-top:8px;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.pick b{color:var(--ink)}.pick code{font:12.5px var(--mono);color:var(--ink)}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);color:var(--ink);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor);color:var(--ink)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+/* the scene: things standing on a soft floor, seen through a camera that moves between steps */
+:root{--paper:#fffdf8;--grid:rgba(28,27,25,.055);--floor1:#edf2f8;--floor2:#fbfaf6;--onC:#ffffff;--mac:#9a6b2f}
+@media (prefers-color-scheme:dark){:root{--paper:#2b2b31;--grid:rgba(236,235,230,.05);--floor1:#1a2130;--floor2:#18181b;--onC:#121214;--mac:#d6a86c}}
+.scn{position:relative;width:100%;height:380px;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:linear-gradient(180deg,var(--floor1),var(--floor2) 72%);--dur:600ms}
+.cam{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform var(--dur) cubic-bezier(.45,.05,.3,1)}
+.world{position:relative;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:40px 40px}
+.wl{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.wl .road{stroke:var(--line2);stroke-width:3;stroke-dasharray:10 9;fill:none;stroke-linecap:round}
+.wl .roadl{font:600 13px var(--sans);fill:var(--muted);text-anchor:middle}
+.pt{position:absolute;left:0;top:0;transform:translate(calc(var(--x,0)*1px),calc(var(--y,0)*1px)) translate(-50%,-50%);transition:transform var(--dur) cubic-bezier(.45,.05,.3,1),opacity calc(var(--dur)*.7) ease;cursor:pointer;outline:none}
+.pt.hid{opacity:0;pointer-events:none}
+.pt:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:12px}
+.scn.snap .cam,.scn.snap .pt,.scn.snap .pt *{transition:none!important;animation:none!important}
+/* people */
+.av{display:flex;flex-direction:column;align-items:center;width:120px;text-align:center}
+.av .fc{width:58px;height:58px;border-radius:50%;border:2.5px solid var(--c);background:linear-gradient(165deg,color-mix(in srgb,var(--c) 26%,var(--panel)),color-mix(in srgb,var(--c) 7%,var(--panel)));box-shadow:0 9px 18px -9px color-mix(in srgb,var(--c) 80%,transparent);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.av .fc svg{width:46px;height:46px;fill:var(--c);opacity:.9}
+.av b{font:700 14.5px var(--sans);margin-top:4px}
+.av small{font:12px/1.3 var(--sans);color:var(--muted)}
+.av.A{--c:var(--rp)}.av.B{--c:var(--pub)}.av.E{--c:var(--xor)}.av.J{--c:var(--ink)}
+.av.busy .fc{animation:pz .4s ease-in-out infinite alternate}
+/* a sheet of paper; a signature is a seal stamped on it */
+.paper{width:178px;min-height:100px;padding:10px 14px 28px;background:var(--paper);border-radius:4px 16px 4px 4px;box-shadow:0 1px 0 var(--line2),0 16px 28px -14px rgba(0,0,0,.45)}
+.paper::before{content:'';position:absolute;right:0;top:0;width:16px;height:16px;border-radius:0 0 0 4px;background:linear-gradient(225deg,transparent 50%,color-mix(in srgb,var(--ink) 14%,var(--paper)) 50%)}
+.paper .ph{font:700 10.5px var(--sans);color:var(--faint);letter-spacing:.04em}
+.paper .tx{position:relative;font:600 15px/1.35 var(--sans);margin-top:2px;overflow-wrap:anywhere}
+.paper .tx>span{display:block;transition:opacity .35s}
+.paper .t2{position:absolute;left:0;top:0;right:0;opacity:0;color:var(--xor)}
+.paper.eve .t1,.paper.alt .t1{opacity:0}.paper.eve .t2,.paper.alt .t2{opacity:1}
+.paper.alt .t2{color:var(--ink)}
+.paper.eve{box-shadow:0 0 0 2.5px var(--xor),0 16px 28px -14px rgba(0,0,0,.45)}
+.paper .note{display:block;width:62px;height:27px;margin:4px 0 0}
+.paper .note rect{fill:color-mix(in srgb,var(--pub) 22%,var(--paper));stroke:var(--pub);stroke-width:1.6}.paper .note circle,.paper .note path{fill:none;stroke:var(--pub);stroke-width:1.6;stroke-linecap:round}
+.seal{position:absolute;right:-18px;bottom:-20px;min-width:100px;padding:5px 11px;border-radius:13px;background:radial-gradient(circle at 28% 22%,color-mix(in srgb,#fff 35%,var(--ri)),var(--ri) 72%);color:var(--onC);font:700 12px/1.35 var(--mono);text-align:center;white-space:nowrap;box-shadow:0 9px 16px -7px color-mix(in srgb,var(--ri) 80%,transparent);transform:rotate(-5deg);opacity:0;transition:opacity .3s}
+.seal small{display:block;font:700 9.5px var(--sans);opacity:.85;letter-spacing:.03em}
+.seal .s2{display:none}
+.paper.signed .seal{opacity:1}
+.paper.stamp .seal{animation:stamp .55s cubic-bezier(.3,1.5,.5,1)}
+@keyframes stamp{0%{transform:rotate(-5deg) scale(2.4);opacity:0}55%{opacity:1}100%{transform:rotate(-5deg) scale(1);opacity:1}}
+.paper.sigeve .seal{background:radial-gradient(circle at 28% 22%,color-mix(in srgb,#fff 35%,var(--xor)),var(--xor) 72%);box-shadow:0 9px 16px -7px color-mix(in srgb,var(--xor) 80%,transparent)}
+.paper.sigeve .seal .s1,.paper.alt2 .seal .s1{display:none}.paper.sigeve .seal .s2,.paper.alt2 .seal .s2{display:inline}
+.paper.tag .seal{background:radial-gradient(circle at 28% 22%,color-mix(in srgb,#fff 35%,var(--mac)),var(--mac) 75%);box-shadow:0 9px 16px -7px color-mix(in srgb,var(--mac) 80%,transparent)}
+.seal .same{display:inline-block;background:var(--onC);color:var(--ri);border-radius:4px;padding:0 3px}
+.paper.glow .seal{animation:sglow .45s ease-in-out infinite alternate}
+@keyframes sglow{to{box-shadow:0 0 0 6px color-mix(in srgb,var(--ri) 40%,transparent)}}
+.paper .badge{position:absolute;left:-15px;top:-15px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 19px var(--sans);color:var(--onC);opacity:0;transform:scale(.3);transition:opacity .3s,transform .4s cubic-bezier(.3,1.6,.5,1);font-style:normal}
+.paper.ok .badge{opacity:1;transform:none;background:var(--ok)}.paper.ok .badge::after{content:'✓'}
+.paper.bad .badge{opacity:1;transform:none;background:var(--xor)}.paper.bad .badge::after{content:'✗'}
+/* machines, keys, values, the public directory, speech */
+.mach{min-width:138px;padding:8px 14px;border-radius:12px;background:var(--panel);border:1.5px solid var(--accent);box-shadow:0 10px 20px -12px rgba(0,0,0,.45);text-align:center;font:700 13.5px var(--sans);color:var(--accent)}
+.mach small{display:block;font:500 11px var(--sans);color:var(--muted)}
+.mach.busy,.kc.glow,.vch.glow,.board.glow{animation:pz .4s ease-in-out infinite alternate}
+.kc{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:11px;background:color-mix(in srgb,var(--c) 11%,var(--panel));border:1.5px solid var(--c);color:var(--c);font:700 12.5px var(--mono);white-space:nowrap;box-shadow:0 8px 16px -10px color-mix(in srgb,var(--c) 75%,transparent)}
+.kc svg{width:30px;height:14px;fill:none;stroke:var(--c);stroke-width:2.6;stroke-linecap:round;flex:none}
+.kc span{display:flex;flex-direction:column;line-height:1.25;text-align:left}.kc small{font:600 10.5px var(--sans);opacity:.85}
+.kc.pri{--c:var(--pri)}.kc.pub{--c:var(--pub)}.kc.mac{--c:var(--mac)}
+.vch{padding:5px 12px;border-radius:999px;background:var(--c);color:var(--onC);font:700 12.5px var(--mono);white-space:nowrap;box-shadow:0 7px 14px -7px color-mix(in srgb,var(--c) 85%,transparent)}
+.vch.m{--c:var(--rp)}.vch.p{--c:var(--pub)}.vch.k{--c:var(--pri)}.vch.s{--c:var(--ri)}.vch.e{--c:var(--xor)}
+.board{min-width:250px;padding:7px 14px 8px;border-radius:12px;background:var(--panel);border:1.5px solid var(--pub);box-shadow:0 10px 22px -14px rgba(0,0,0,.45);font:12.5px/1.4 var(--mono);text-align:center;white-space:nowrap}
+.board .bt{font:700 11px var(--sans);color:var(--pub);letter-spacing:.03em}
+.bub2{width:max-content;max-width:280px;padding:8px 14px;border-radius:16px;background:var(--panel);border:1.5px solid var(--line2);font:600 13.5px/1.35 var(--sans);text-align:center;box-shadow:0 10px 22px -14px rgba(0,0,0,.45)}
+.bub2.bad{border-color:var(--xor);background:var(--xorBg)}.bub2.ok{border-color:var(--ok);background:var(--okBg)}
+.mark{font:800 28px/1 var(--sans)}.mark.ok{color:var(--ok)}.mark.ok::after{content:'='}.mark.bad{color:var(--xor)}.mark.bad::after{content:'≠'}
+.keyline{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.keyline span{display:inline-flex;align-items:center;gap:6px}
+.keyline i{width:11px;height:11px;border-radius:50%;display:inline-block;background:var(--c)}
+#ppick{text-align:center}
+/* the bench under the scene: this step's computation, symbols first, then the numbers, then the result */
+.wb{margin-top:12px;padding:12px 16px 10px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 2.5%,var(--panel))}
+.wbt{font:700 13px var(--sans);color:var(--muted);margin-bottom:4px;text-align:center}
+.eq{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:2px 12px;padding:4px 8px;border-radius:9px;font:23px/1.45 var(--math);cursor:pointer;outline:none}
+.eq:hover,.eq:focus-visible{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.eq sup{font-size:.6em}.eq sub{font-size:.6em}
+.eq>span{overflow-wrap:anywhere;min-width:0}
+.eq .e3 b{padding:0 8px;border-radius:8px;background:color-mix(in srgb,currentColor 12%,transparent)}
+.eq .e4{font:700 15px var(--sans);padding:3px 12px;border-radius:999px;align-self:center}
+.eq .e4.ok{background:var(--okBg);color:var(--ok)}.eq .e4.bad{background:var(--xorBg);color:var(--xor)}
+.eq.txt{font:600 16px/1.5 var(--sans)}
+.cm{color:var(--rp)}.ck{color:var(--pri)}.cp{color:var(--pub)}.cs{color:var(--ri)}.ce{color:var(--xor)}
+.wbn{margin:6px auto 2px;text-align:center;font-size:13.5px;color:var(--muted);max-width:70ch}
+.wb .pick{text-align:center}
+@media (max-width:620px){.eq{font-size:19px}.wb{padding:10px 8px}}
+table.svc{border-collapse:collapse;width:100%;font-size:14px}
+table.svc th,table.svc td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.svc th{font-size:13px;color:var(--muted);font-weight:600}
+table.svc tr[data-svc]{cursor:pointer;outline:none}
+table.svc tr[data-svc]:hover td,table.svc tr[data-svc]:focus-visible td{background:var(--accentBg)}
+/* the elliptic curve and the subgroup of DSA */
+.dual{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px 22px;align-items:start}
+@media (max-width:760px){.dual{grid-template-columns:minmax(0,1fr)}}
+.ecp{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
+.ecp .gl{stroke:var(--line);stroke-width:.7}
+.ecp .ax{font:500 8.5px var(--mono);fill:var(--faint);text-anchor:middle;dominant-baseline:central}
+.ecp .axt{font:600 10px var(--sans);fill:var(--muted)}
+.ecp .pt{fill:var(--ink);opacity:.5;cursor:pointer;outline:none}
+.ecp .pt:hover,.ecp .pt:focus-visible{opacity:1;stroke:var(--accent);stroke-width:2}
+.ecp .pt.A{fill:var(--rp);opacity:1}.ecp .pt.B{fill:var(--pub);opacity:1}.ecp .pt.R{fill:var(--ri);opacity:1}
+.ecp .ring{fill:none;stroke:var(--ri);stroke-width:2.2}
+.ecp .lb{font:700 10.5px var(--sans);paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+.ecp .lb.A{fill:var(--rp)}.ecp .lb.B{fill:var(--pub)}.ecp .lb.R{fill:var(--ri)}
+.ecp .chain{fill:none;stroke:var(--ri);stroke-width:1.3;opacity:.45}
+.sgv{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+.sgv i{font:600 12.5px/28px var(--mono);font-style:normal;text-align:center;border-radius:5px;background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--faint);cursor:pointer;outline:none}
+.sgv i.mem{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--ink)}
+.sgv i.pub{background:var(--pub);color:#fff}.sgv i.rk{background:var(--ri);color:#fff}
+.sgv i.vg{outline:2.5px solid var(--ri);outline-offset:-2.5px}
+.sgv i:hover,.sgv i:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.side p{margin:0 0 8px;font-size:14px}
+.big{padding:10px 12px;border-radius:9px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:14px;color:var(--muted)}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.doc a{color:var(--accent)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.exb.bk{border-color:#7d55c7;background:color-mix(in srgb,#7d55c7 10%,var(--panel))}.exb.bk>b{color:#7d55c7}
+@media (prefers-color-scheme:dark){.exb.bk{border-color:#b49aec;background:color-mix(in srgb,#b49aec 12%,var(--panel))}.exb.bk>b{color:#b49aec}}
+.exb ul{margin:4px 0 0;padding-left:20px}.exb li{margin:0 0 4px}
+.mth{font:13.5px/1.7 var(--mono)}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+/* ---------- the number theory page ---------- */
+.wl .hid{opacity:0}
+.wl .ring{fill:none;stroke:var(--line2);stroke-width:2}
+.wl .lbl{font:600 12px var(--sans);fill:var(--muted);text-anchor:middle}
+.wl .hl{stroke:var(--line);stroke-width:1.2}
+.scn.snap .wl *,.scn.snap .arm,.scn.snap .arm *{transition:none!important;animation:none!important}
+.pt.gone{opacity:0;pointer-events:none}
+/* inputs above the walkthrough and the calculator */
+select,input[type=text]{font:14px var(--sans);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{font-family:var(--mono);width:100%}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.cbar .fld{flex:1 1 200px}
+.cbar .fld.sm{flex:0 1 150px}
+.cbar .err{flex-basis:100%;margin:0}
+.cbar .ex{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.cbar .ex button{padding:4px 9px;font-size:13px}
+.cbar .ex button small{color:var(--muted);margin-left:3px}
+.cbar .bn{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+.err{color:var(--xor);font-size:13px}
+.err:empty{display:none}
+#calc h3{margin:0 0 8px;font-size:15px}
+#calc .fld{margin-bottom:8px}
+#calc .flh small{font-weight:400}
+.cres{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:2px 0 8px}
+.cres div{padding:6px 10px;border-radius:8px;background:var(--accentBg);min-width:0}
+.cres small{display:block;font:600 11.5px var(--sans);color:var(--muted)}
+.cres b{display:block;font:700 16px var(--mono);color:var(--accent);overflow-wrap:anywhere}
+#calc p{margin:5px 0;font-size:14px;overflow-wrap:anywhere}
+#calc p b{font-family:var(--mono);font-size:13.5px}
+#calc .fine{font-size:12.5px;color:var(--muted)}
+@media (max-width:1000px){#calc{order:5}#extra{order:6}}
+/* tab 1: a bar for each division */
+.gtk{height:34px;border-radius:7px;border:1.5px dashed var(--line2);background:color-mix(in srgb,var(--ink) 3%,var(--panel))}
+.gcp{height:34px}
+.gcp .in{height:100%;display:flex;transform:scaleX(0);transform-origin:left center;transition:transform var(--dur) cubic-bezier(.45,.05,.3,1);border-radius:7px 0 0 7px;overflow:hidden;background:var(--rp)}
+.gcp.on .in{transform:scaleX(1)}
+.gcp .in span{flex:1;min-width:0;border-right:1.5px solid var(--panel);color:var(--onC);font:700 12px/34px var(--mono);text-align:center;overflow:hidden;white-space:nowrap}
+.gcp .in.str{background:repeating-linear-gradient(90deg,var(--rp) 0 calc(var(--pw) - 1.2px),var(--panel) calc(var(--pw) - 1.2px) var(--pw))}
+.grm{height:34px;border-radius:0 7px 7px 0;background:var(--ri);transition:opacity calc(var(--dur)*.7) ease,box-shadow .3s}
+.grm.all{border-radius:7px}
+.gk{height:7px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--ok) 0 2px,transparent 2px var(--tp));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ok) 40%,transparent)}
+.cap{font:600 17px var(--math);white-space:nowrap;color:var(--ink)}
+.cap b{color:var(--ri)}
+.sml{font:600 12px var(--sans);color:var(--muted);white-space:nowrap}
+.sml.r{color:var(--ri)}.sml.q{color:var(--rp)}
+.vch.glow,.bub2.glow{animation:pz .4s ease-in-out infinite alternate}
+.vch.dk{--c:var(--ink)}
+.bub2.ok{border-color:var(--ok);background:var(--okBg)}
+.bub2.bad{border-color:var(--xor);background:var(--xorBg)}
+.bub2 .m{font-family:var(--mono);font-size:13px}
+/* tab 2: a clock of n numbers and a token that adds a each time */
+.rdot{width:16px;height:16px;display:flex;align-items:center;justify-content:center}
+.rdot i{width:10px;height:10px;border-radius:50%;background:var(--line2);transition:transform .3s,background .3s,box-shadow .3s}
+.rdot.hit i{background:var(--rp);transform:scale(1.35)}
+.rdot.cur i{box-shadow:0 0 0 4px color-mix(in srgb,var(--rp) 30%,transparent)}
+.rdot.one i{background:var(--ok);transform:scale(1.6);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 30%,transparent)}
+.rdot.miss i{background:var(--panel);box-shadow:0 0 0 2px var(--xor);transform:scale(1.4)}
+.rdot.unit i{background:var(--ok);transform:scale(1.35)}
+.rlb{font:600 11.5px var(--mono);color:var(--faint);transition:color .3s}
+.rlb.hit{color:var(--rp);font-weight:800}
+.rlb.one,.rlb.unit{color:var(--ok);font-weight:800}
+.rlb.miss{color:var(--xor);font-weight:800}
+.rlb.sm{font-size:10px}
+.arm{position:absolute;left:0;top:0;width:0;height:0;transform:translate(calc(var(--cx)*1px),calc(var(--cy)*1px)) rotate(calc(var(--ang,0)*1deg));transition:transform var(--dur) cubic-bezier(.45,.05,.3,1),opacity .3s}
+.arm.hid{opacity:0}
+.arm i{position:absolute;left:-12px;top:calc(var(--R)*-1px - 12px);width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 32% 28%,color-mix(in srgb,#fff 35%,var(--pri)),var(--pri) 72%);box-shadow:0 6px 12px -5px rgba(0,0,0,.5),0 0 0 2px var(--panel)}
+.arm.dim{opacity:.35}
+.ctr{text-align:center;font:600 13px var(--sans);color:var(--muted)}
+.ctr b{display:block;font:700 22px var(--math);color:var(--ink)}
+.hch{width:64px;padding:3px 0;border-radius:7px;text-align:center;font:700 13px var(--mono);background:color-mix(in srgb,var(--rp) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--rp) 45%,transparent);color:var(--ink);transition:opacity calc(var(--dur)*.7) ease,background .3s}
+.hch small{color:var(--muted);font-weight:600}
+.hch.one{background:var(--okBg);border-color:var(--ok);color:var(--ok)}
+.hch.zero{background:var(--xorBg);border-color:var(--xor);color:var(--xor)}
+.hch.pr{background:var(--okBg);border-color:color-mix(in srgb,var(--ok) 55%,transparent)}
+.hhd{font:700 12px var(--sans);color:var(--muted);white-space:nowrap}
+/* tabs 3, 4 and 5: tables of numbers */
+.cl{display:flex;align-items:center;justify-content:center;height:34px;font:600 16px var(--mono);color:var(--ink);white-space:nowrap;transition:opacity calc(var(--dur)*.7) ease,color .3s,background .3s,box-shadow .3s;border-radius:7px}
+.cl.hd{font:700 14px var(--sans);color:var(--muted)}
+.cl.hd sub,.cl.hd sup{font-size:.75em}
+.cl.q{color:var(--rp)}.cl.ck{color:var(--ok);font-size:14px}
+.cl.glow{background:var(--okBg);box-shadow:0 0 0 2px var(--ok);color:var(--ok);font-weight:800;animation:pz .4s ease-in-out infinite alternate}
+.rbg{height:40px;border-radius:9px;background:transparent;transition:background .35s,box-shadow .35s,opacity calc(var(--dur)*.7) ease}
+.rbg.src{background:color-mix(in srgb,var(--rp) 10%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--rp) 35%,transparent)}
+.rbg.new{background:color-mix(in srgb,var(--ri) 12%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ri) 45%,transparent)}
+.rbg.gl{background:var(--okBg);box-shadow:inset 0 0 0 1.5px var(--ok)}
+.ce{width:54px;height:28px;font-size:15px;border-radius:6px;background:color-mix(in srgb,var(--ink) 4%,var(--panel));border:1px solid var(--line)}
+.ce.w2{width:27px;font-size:12.5px;border-radius:5px}
+.ce.x{color:var(--faint);background:transparent;border-color:transparent;text-decoration:line-through;text-decoration-color:var(--xor);text-decoration-thickness:2px}
+.ce.tw{box-shadow:0 0 0 2px var(--ri)}
+.ce.u{background:var(--okBg);border-color:var(--ok);color:var(--ok);font-weight:800}
+.ce.hot{background:color-mix(in srgb,var(--xor) 14%,var(--panel));border-color:var(--xor)}
+.fcl{border-radius:6px;background:color-mix(in srgb,var(--ink) 4%,var(--panel));border:1px solid var(--line)}
+.fcl.one{background:var(--okBg);border-color:var(--ok);color:var(--ok);font-weight:800}
+.fcl.nc{opacity:.32}
+.fcl.lab{background:transparent;border-color:transparent;font-family:var(--sans);font-weight:700;color:var(--muted)}
+.fcl.lab.me{color:var(--pri)}
+.fcl.me{box-shadow:0 0 0 2px var(--pri)}
+.fcl.glow{box-shadow:0 0 0 2px var(--ok);animation:pz .4s ease-in-out infinite alternate}
+.fcl.pk{background:var(--pri);border-color:var(--pri);color:var(--onC);font-weight:800;animation:pz .4s ease-in-out infinite alternate}
+.fcl.colg{box-shadow:0 0 0 2px var(--ok)}
+@media (max-width:620px){.scnwrap{overflow-x:auto;margin:0 -4px;padding:0 4px 6px}.scnwrap .scn{min-width:640px}}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Number theory for public key, step by step</h1>
+  <p class="sub">The greatest common divisor, the inverse modulo n, the extended Euclidean algorithm, Euler’s φ function, and the theorems of Fermat and Euler, with every number computed in the browser</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="gcd" class="on">1 · gcd (Euclid)</button>
+    <button data-tab="inv">2 · Inverse mod n</button>
+    <button data-tab="eea">3 · Extended Euclid</button>
+    <button data-tab="phi">4 · Euler’s φ(n)</button>
+    <button data-tab="fe">5 · Fermat and Euler</button>
+  </nav>
+</header>
+
+<section class="wrap"><div class="card" id="inbar" style="margin-bottom:12px"></div></section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stageCard"><div id="stage"></div><svg id="fx" aria-hidden="true"></svg></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label>
+        <label class="inl" id="fWrap" title="Scroll so the moving part stays in view"><input type="checkbox" id="follow" checked> follow</label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="calc">
+      <h3>Division with remainder</h3>
+      <div class="fld"><div class="flh"><b>Dividend</b> <small>a</small></div><input type="text" id="cA" value="1180" spellcheck="false" autocomplete="off" inputmode="numeric"></div>
+      <div class="fld"><div class="flh"><b>Divisor</b> <small>b</small></div><input type="text" id="cB" value="482" spellcheck="false" autocomplete="off" inputmode="numeric"></div>
+      <div class="err" id="cE"></div>
+      <div class="cres"><div><small>Quotient q</small><b id="cQ"></b></div><div><small>Remainder r</small><b id="cR"></b></div></div>
+      <p id="cL1"></p>
+      <p id="cL2"></p>
+      <p class="fine">A negative dividend works too: the remainder is always from 0 to b − 1, as in a mod b. For example −11 = −1 × 26 + 15, so −11 mod 26 = 15.</p>
+    </div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: every number is computed in this browser.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const hx=b=>b.toString(16).padStart(2,'0'),hexs=a=>[...a].map(hx).join('');
+const SUPS='⁰¹²³⁴⁵⁶⁷⁸⁹',sup_=n=>String(n).split('').map(d=>SUPS[+d]).join('');
+const escH=s=>s.replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+
+/* ---------- number theory on BigInt ---------- */
+const mod=(a,m)=>((a%m)+m)%m;
+const modpow=(b,e,n)=>{let r=1n;b=mod(b,n);while(e>0n){if(e&1n)r=r*b%n;b=b*b%n;e>>=1n}return r};
+const gcd=(a,b)=>{while(b)[a,b]=[b,a%b];return a};
+const bitLen=v=>v>0n?v.toString(2).length:0;
+const ones=v=>[...v.toString(2)].filter(c=>c==='1').length;
+function modinv(a,n){let[r0,r1]=[mod(a,n),n],[s0,s1]=[1n,0n];while(r1){const q=r0/r1;[r0,r1]=[r1,r0-q*r1];[s0,s1]=[s1,s0-q*s1]}return r0===1n?mod(s0,n):null}
+const rndB=n=>[...crypto.getRandomValues(new Uint8Array(n))];
+const B2I=b=>b.length?BigInt('0x'+hexs(b)):0n;
+// a uniform random number in [0, n)
+function rndBelow(n){const bits=bitLen(n),by=Math.ceil(bits/8),m=(1n<<BigInt(bits))-1n;for(;;){const v=B2I(rndB(by))&m;if(v<n)return v}}
+
+/* ---------- SHA-256 (FIPS 180-4) ---------- */
+const SHK=[],SHI=[];
+{const fr=x=>Math.floor((x-Math.floor(x))*2**32);for(let n=2;SHK.length<64;n++){let p=true;for(let i=2;i*i<=n;i++)if(n%i===0)p=false;if(p){if(SHI.length<8)SHI.push(fr(Math.sqrt(n)));SHK.push(fr(Math.cbrt(n)))}}}
+function sha256(msg){
+  const m=msg.slice(),l=m.length,rr=(x,n)=>(x>>>n)|(x<<(32-n));m.push(0x80);while(m.length%64!==56)m.push(0);
+  const hi=Math.floor(l/2**29),lo=(l<<3)>>>0;for(let i=3;i>=0;i--)m.push((hi>>>(8*i))&255);for(let i=3;i>=0;i--)m.push((lo>>>(8*i))&255);
+  const H=SHI.slice(),w=new Uint32Array(64);
+  for(let o=0;o<m.length;o+=64){
+    for(let i=0;i<16;i++)w[i]=((m[o+4*i]<<24)|(m[o+4*i+1]<<16)|(m[o+4*i+2]<<8)|m[o+4*i+3])>>>0;
+    for(let i=16;i<64;i++){const a=w[i-15],b=w[i-2];w[i]=(w[i-16]+(rr(a,7)^rr(a,18)^(a>>>3))+w[i-7]+(rr(b,17)^rr(b,19)^(b>>>10)))>>>0}
+    let[a,b,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){const t1=(h+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+SHK[i]+w[i])>>>0,t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0}
+    [a,b,c,d,e,f,g,h].forEach((v,i)=>{H[i]=(H[i]+v)>>>0});
+  }
+  return H.flatMap(v=>[v>>>24,(v>>>16)&255,(v>>>8)&255,v&255]);
+}
+const txtB=s=>[...new TextEncoder().encode(s)];
+const hashOf=s=>B2I(sha256(txtB(s)));
+
+/* ---------- animation helpers (the same set as on the other demo pages) ---------- */
+const NS='http://www.w3.org/2000/svg';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+let UID=0;
+function along(pts,t){
+  const seg=[];let tot=0;for(let j=1;j<pts.length;j++){const d=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);seg.push(d);tot+=d}
+  if(tot===0)return pts[0];let d=t*tot;
+  for(let j=0;j<seg.length;j++){if(d<=seg[j]||j===seg.length-1){const u=seg[j]?Math.min(1,d/seg[j]):1;return[pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u]}d-=seg[j]}
+}
+function stripes(x,y,w,h,colors,rx){
+  const id='c'+(++UID);let s=`<clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath><g clip-path="url(#${id})">`;
+  const sw=w/colors.length;colors.forEach((c,j)=>{s+=`<rect x="${(x+j*sw).toFixed(2)}" y="${y}" width="${(sw+.6).toFixed(2)}" height="${h}" style="fill:${c}"/>`});
+  return s+'</g>';
+}
+// a token: a box in the colours of where the value came from, with its value written on it
+function tok(label,w,h,colors){
+  const L=Array.isArray(label)?label:[label],n=Math.max(...L.map(x=>String(x).length)),rx=Math.min(7,h/4);
+  const fs=Math.max(8,Math.min(L.length>1?h*.34:h*.44,w/n*1.5));
+  let t='';L.forEach((x,j)=>{t+=`<text y="${((j-(L.length-1)/2)*fs*1.05+fs*.36).toFixed(1)}" text-anchor="middle" style="font-size:${fs.toFixed(1)}px">${x}</text>`});
+  return stripes(-w/2,-h/2,w,h,colors,rx)+`<rect class="edge" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${rx}"/>`+t;
+}
+const FX=$('#fx');
+const fxClear=()=>{FX.innerHTML=''};
+function rectOf(el){const f=FX.getBoundingClientRect(),b=el.getBoundingClientRect();return{x:b.left-f.left+b.width/2,y:b.top-f.top+b.height/2,w:b.width,h:b.height}}
+const xy=r=>[r.x,r.y];
+function svgMap(svg){const m=svg.getScreenCTM(),f=FX.getBoundingClientRect(),pt=svg.createSVGPoint();
+  const g=(x,y)=>{pt.x=x;pt.y=y;const q=pt.matrixTransform(m);return[q.x-f.left,q.y-f.top]};g.s=m.a;return g}
+function fxNode(inner,cls){const g=document.createElementNS(NS,'g');g.setAttribute('class',cls||'tok');g.innerHTML=inner;g.style.opacity=0;FX.appendChild(g);return g}
+function mover(moves){
+  moves.forEach(m=>{if(!m.legs)m.legs=[[m.a||0,m.b==null?1:m.b,m.pts]];m.fired=0});
+  return p=>{for(const m of moves){
+    const L=m.legs,A=L[0][0],B=L[L.length-1][1];let g=L[0];for(const l of L)if(p>=l[0])g=l;
+    const pt=along(g[2],ease(clamp((p-g[0])/((g[1]-g[0])||1),0,1)));
+    m.node.setAttribute('transform',`translate(${pt[0].toFixed(1)},${pt[1].toFixed(1)})`);
+    const fw=Math.max(.04,(B-A)*.15);let op=p<A?0:1;
+    if(m.fadeIn&&p>=A)op=clamp((p-A)/fw,0,1);
+    if(m.end!=null&&p>=m.end)op=0;
+    m.node.style.opacity=op;
+    if(m.at)while(m.fired<m.at.length&&p>=m.at[m.fired][0]){m.at[m.fired][1](m.node);m.fired++}
+  }};
+}
+function cues(list){list.sort((a,b)=>a[0]-b[0]);let i=0;return p=>{while(i<list.length&&p>=list[i][0]){list[i][1]();i++}}}
+const both=(...ts)=>p=>ts.forEach(t=>t&&t(p));
+// parts that a step brings in: each is hidden first and fades in from its time t over w of the step
+function bring(items,w=.2){
+  const L=items.filter(x=>x[0]).map(([e,t])=>{e.classList.remove('gh');e.style.opacity=0;return{e,t}});
+  return p=>{for(const o of L){if(p<o.t)continue;const ww=Math.min(w,1-o.t),u=ww>0?clamp((p-o.t)/ww,0,1):1;o.e.style.opacity=u<1?ease(u).toFixed(3):''}};
+}
+const retok=(label,w,h,colors)=>n=>{n.innerHTML=tok(label,w,h,colors)};
+// a token flying from one element to another, its label changing on the way if label2 is given
+function fly(a,b,label,colors,t0,t1,label2,colors2){
+  const A=rectOf(a),B=rectOf(b),w=Math.max(46,Math.min(150,8.2*String(label).length+18)),h=24,w2=label2!=null?Math.max(46,Math.min(150,8.2*String(label2).length+18)):w;
+  return{node:fxNode(tok(label,w,h,colors)),pts:[xy(A),xy(B)],a:t0,b:t1,end:t1+.02,at:label2!=null?[[(t0+t1)/2,retok(label2,w2,h,colors2||colors)]]:[]};
+}
+
+/* ---------- small pieces shared by the tabs ---------- */
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const pc=(good,bad)=>`<ul class="pros">${good.map(x=>`<li class="y">${x}</li>`).join('')}${bad.map(x=>`<li class="n">${x}</li>`).join('')}</ul>`;
+// a number that fits, or its two ends
+const fmtN=(v,w=14)=>{if(v==null)return'–';const s=v.toString();return s.length<=w?s:`${s.slice(0,6)}…${s.slice(-6)}`};
+const sN=v=>fmtN(v,12);
+const cN=v=>{if(v==null)return'–';const t=v.toString();return t.length<=10?t:`${t.slice(0,5)}…${t.slice(-4)}`};
+const ptS=P=>P?`(${sN(P[0])}, ${sN(P[1])})`:'O';
+const hexShort=h=>`${h.slice(0,8)}…${h.slice(-8)}`;
+const short=(s,n=26)=>s.length>n?s.slice(0,n-1)+'…':s;
+// a message on a moving token: from its first digit on, where Eve makes her change, or its end
+const msgTok=m=>{const i=m.search(/\d/),t=i>=0?m.slice(i):m.slice(-12);return'“'+(i>0||(i<0&&m.length>12)?'…':'')+short(t,13)+'”'};
+const seg=(attr,cur,items)=>`<span class="seg sm">${items.map(([v,t])=>`<button data-${attr}="${v}" class="${cur===v?'on':''}">${t}</button>`).join('')}</span>`;
+const subs=(...x)=>`<div class="row subs">${x.join('')}</div>`;
+const wide=s=>`<div class="scroll wd">${s}</div>`;
+const QZ={};
+function quiz(id){
+  const z=QZ[id],p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
+}
+// the pick lines: one sentence about the part of the scene or the row of the bench that the reader clicked
+let PARTI={},WBF=[];
+const CLICK=[];
+
+/* ---------- the scene: things on a soft floor, a camera, and CSS that moves them ---------- */
+const PHONE=matchMedia('(max-width:620px)');
+const AVS=`<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="14.5" r="8"/><path d="M4 42c0-12 7.5-16.5 16-16.5S36 30 36 42z"/></svg>`;
+const KEYS=`<svg viewBox="0 0 30 14" aria-hidden="true"><circle cx="6" cy="7" r="4.4"/><path d="M10.4 7H28.5M23 7v5M27.5 7v4"/></svg>`;
+const NOTE=`<svg class="note" viewBox="0 0 70 30" aria-hidden="true"><rect x="1.5" y="3" width="67" height="24" rx="4"/><circle cx="35" cy="15" r="7"/><path d="M9 10h10M51 20h10"/></svg>`;
+const PT=(id,cls,inner,lab)=>`<div class="pt ${cls}" id="${id}" data-part="${id}" tabindex="0" role="button" aria-label="${lab||id}">${inner}</div>`;
+const avP=(id,who,name,role)=>PT(id,'av '+who,`<span class="fc">${AVS}</span><b>${name}</b>${role?`<small>${role}</small>`:''}`,name);
+const keyP=(id,cls,lab,val)=>PT(id,'kc '+cls,`${KEYS}<span><small>${lab}</small>${val}</span>`,lab);
+const chipP=(id,cls,html)=>PT(id,'vch '+cls,html,'a value');
+const machP=(id,title,sub)=>PT(id,'mach',`${title}${sub?`<small>${sub}</small>`:''}`,title);
+const boardP=(id,html)=>PT(id,'board',`<div class="bt">public directory</div>${html}`,'public directory');
+const bubP=(id,cls,html)=>PT(id,'bub2 '+cls,html,'a note');
+const markP=id=>PT(id,'mark','','the comparison');
+const paperP=(id,head,t1,t2,s1,s2,lab='the message')=>PT(id,'paper',`<div class="ph">${head}</div><div class="tx"><span class="t1">${t1}</span><span class="t2">${t2||''}</span></div><div class="seal"><span class="s1">${s1||''}</span><span class="s2">${s2||''}</span></div><i class="badge"></i>`,lab);
+function scnBox(W,H,inner,svg=''){return`<div class="scnwrap"><div class="scn" id="scn" data-w="${W}" data-h="${H}"><div class="cam" id="cam"><div class="world" style="width:${W}px;height:${H}px"><svg class="wl" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">${svg}</svg>${inner}</div></div></div></div><div class="pick" id="ppick"></div>`}
+// the scene is drawn at its design size and scaled to the card; on a phone the box keeps a readable height and the camera comes closer
+function scnFit(){const s=$('#scn');if(!s)return;const W=+s.dataset.w,H=+s.dataset.h,fit=s.clientWidth/W,HV=H;s.style.height=(HV*fit).toFixed(1)+'px';s._l={W,H,HV,fit}}
+// where the camera looks, [x, y, zoom], on a wide screen and on a phone
+const CAMS={};
+function setCam(c){
+  const s=$('#scn'),m=$('#cam');if(!s||!m||!s._l)return;const{W,H,HV,fit}=s._l,[cx,cy,z]=CAMS[c]?CAMS[c][PHONE.matches?1:0]:[W/2,H/2,1];
+  m.style.transform=`scale(${fit}) translate(${(W/2-cx*z).toFixed(1)}px,${(HV/2-cy*z).toFixed(1)}px) scale(${z})`;s._cam=c;
+}
+// a pose says where each part stands and which classes it has: {cam, id: {at: [x, y], o: shown, c: {class: on}}}
+function applyPose(P,ms){
+  const s=$('#scn');if(!s||!P)return;if(ms!=null)s.style.setProperty('--dur',Math.max(0,Math.round(ms))+'ms');
+  for(const id in P){if(id==='cam')continue;const e=document.getElementById(id),q=P[id];if(!e||!q)continue;
+    if(q.at){e.style.setProperty('--x',q.at[0]);e.style.setProperty('--y',q.at[1])}
+    if(q.v)for(const k in q.v)e.style.setProperty('--'+k,q.v[k]);
+    if(q.o!=null)e.classList.toggle('hid',!q.o);
+    if(q.c)for(const c in q.c)e.classList.toggle(c,!!q.c[c])}
+  if(P.cam)setCam(P.cam);
+}
+function poseNow(P){const s=$('#scn');if(!s)return;s.classList.add('snap');applyPose(P,0);void s.offsetWidth;s.classList.remove('snap')}
+// one step of a scene: back to the picture of step k−1, then the phases of step k, each [start, part of a pose, length]
+function scnPlan(pose,k,phases,dur,extra){
+  return{dur,start(){
+    if(!$('#scn'))return null;
+    poseNow(pose(k-1));
+    const T_=(RM.matches?Math.min(dur,180):dur)/speed(),L=phases.map(([t,P,len])=>[t,()=>applyPose(P,len*T_)]);
+    L.push([.97,()=>applyPose(pose(k),.03*T_)]);
+    return both(cues(L),wbBring(),extra?extra():null);
+  }};
+}
+// the bench: rows {s: symbols, n: the numbers put in, r: the result, v: a verdict, f: every digit, shown on a click}
+function wbHTML(W){
+  WBF=W.rows.map(r=>r.f||'');
+  return`<div class="wb" id="wb"><div class="wbt">${W.t}</div>${W.rows.map((r,i)=>`<div class="eq${r.txt?' txt':''}" data-eq="${i}" tabindex="0" role="button" title="Show every digit"><span class="e1">${r.s}</span>${r.n!=null?`<span class="e2">= ${r.n}</span>`:''}${r.r!=null?`<span class="e3">= ${r.r}</span>`:''}${r.v?`<span class="e4 ${r.ok?'ok':'bad'}">${r.v}</span>`:''}</div>`).join('')}${W.note?`<p class="wbn">${W.note}</p>`:''}<div class="pick" id="pick"></div></div>`;
+}
+// a step brings its bench in: the symbols, then the numbers, then the result
+function wbBring(){
+  const L=[];$$('#wb .eq').forEach((e,i)=>{const t=Math.min(.66,.3+.14*i);[['.e1',0],['.e2',.07],['.e3',.14],['.e4',.2]].forEach(([q,d])=>{const x=e.querySelector(q);if(x)L.push([x,t+d])})});
+  const n=$('#wb .wbn');if(n)L.push([n,.74]);return bring(L,.1);
+}
+const iv=(c,t)=>`<i class="${c}">${t}</i>`,vM=t=>iv('cm',t),vK=t=>iv('ck',t),vP=t=>iv('cp',t),vS=t=>iv('cs',t),vE=t=>iv('ce',t),vN=t=>`<i>${t}</i>`;
+const nc=(c,v)=>`<span class="${c}">${Array.isArray(v)?ptS(v):fmtN(v)}</span>`,rb=(c,v)=>`<b class="${c}">${Array.isArray(v)?ptS(v):fmtN(v)}</b>`;
+const fullV=v=>v==null?'O':Array.isArray(v)?`(${v[0]}, ${v[1]})`:String(v);
+const hexBytes=v=>{let h=v.toString(16);if(h.length%2)h='0'+h;const b=h.match(/../g);return b.length<=8?b.join(' '):`${b.slice(0,6).join(' ')} … (${b.length} bytes)`};
+CLICK.push(e=>{
+  const q=e.target.closest('[data-eq]');if(q){const p=$('#pick'),f=WBF[+q.dataset.eq];if(p)p.innerHTML=f?`<code>${f}</code>`:'';return true}
+  const pt=e.target.closest('[data-part]');if(pt){const p=$('#ppick');if(p)p.innerHTML=PARTI[pt.dataset.part]||'';return true}
+});
+addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{if(!ENG.anim&&$('#scn'))show()},150)});
+
+/* ---------- helpers of this page ---------- */
+const SUBS='₀₁₂₃₄₅₆₇₈₉',sb=n=>String(n).split('').map(d=>SUBS[+d]).join('');
+const sp=n=>String(n).split('').map(d=>SUPS[+d]).join('');
+// a number with a true minus sign, shortened in the middle when it is long
+const nm=(v,w=14)=>{const ng=v<0,s=(ng?-v:v).toString(),t=s.length<=w?s:`${s.slice(0,5)}…${s.slice(-5)}`;return(ng?'−':'')+t};
+const nf=v=>(v<0?'−':'')+(v<0?-v:v).toString();
+const pn=v=>v<0?`(${nm(v)})`:nm(v);
+const gN=(a,b)=>{while(b){[a,b]=[b,a%b]}return a};
+const D={v:0};
+const ST={tab:'gcd',step:{},q:{},ga:1180n,gb:482n,in:26,ia:5,ea:67n,eb:12n,pn:26,fm:'fer',fp:7,fn:12};
+const stage=$('#stage');
+const T={};
+let CUR=0;
+const sg=(key,cur,items)=>`<span class="seg sm">${items.map(([v,t])=>`<button data-set="${key}:${v}" class="${String(cur)===String(v)?'on':''}">${t}</button>`).join('')}</span>`;
+// a scene taller than its window: the window keeps the height HV and the camera moves down the rows
+const scnV=(W,H,HV,inner,svg)=>scnBox(W,H,inner,svg).replace(`data-h="${H}"`,`data-h="${H}" data-hv="${HV}"`);
+function fitV(){scnFit();const s=$('#scn');if(!s||!s._l||!s.dataset.hv)return;const HV=+s.dataset.hv;s._l.HV=HV;s.style.height=(HV*s._l.fit).toFixed(1)+'px'}
+function camY(y,W,H,HV){const cy=Math.round(clamp(y,HV/2,Math.max(HV/2,H-HV/2))),id='y'+cy;CAMS[id]=[[W/2,cy,1],[W/2,cy,1]];return id}
+// a part with its own size
+const PS=(id,cls,inner,lab,sty)=>PT(id,cls,inner,lab).replace('tabindex','style="'+sty+'" tabindex');
+
+/* ---------- tab 1 · the greatest common divisor: Euclid's algorithm ---------- */
+const G1={X0:262,L:650,Y0:84,RG:106,HV:440,W:960};
+let GV;
+function euclid(a,b){const R=[];while(b>0n){const q=a/b,r=a%b;R.push({a,b,q,r});[a,b]=[b,r]}return{R,g:a}}
+function gcdVals(){let a=ST.ga,b=ST.gb;const sw=a<b;if(sw)[a,b]=[b,a];const E=euclid(a,b);return{A:a,B:b,sw,R:E.R,g:E.g,m:E.R.length}}
+const gY=i=>G1.Y0+i*G1.RG;
+const gH=()=>Math.max(G1.HV,gY(GV.m)+70);
+const frac=(x,y)=>Number(x*1000000n/y)/1e6;
+function divisorsOf(n){if(n>10000000n)return null;const L=[],H=[];for(let d=1n;d*d<=n;d++)if(n%d===0n){L.push(d);if(d*d!==n)H.unshift(n/d)}return L.concat(H)}
+QZ.gcd={q:'Euclid’s algorithm divides 1180 by 482 and gets the remainder 216. Which gcd does it compute next?',o:['gcd(1180, 216)','gcd(482, 216)','gcd(216, 2)'],a:1,why:'The divisor and the remainder make the next pair: gcd(1180, 482) = gcd(482, 216). Every number that divides 1180 and 482 also divides 216 = 1180 − 2·482.'};
+function gParts(){
+  const{R,g,m}=GV,{X0,L}=G1;let h='';
+  R.forEach((d,i)=>{
+    const y=gY(i),wq=L*frac(d.q*d.b,d.a),wr=L-wq,pw=wq/Number(d.q>0n?d.q:1n),dg=d.b.toString().length;
+    const inner=d.q<=40n?`<div class="in">${Array.from({length:Number(d.q)},()=>`<span>${pw>=dg*7.6+8?d.b:''}</span>`).join('')}</div>`:`<div class="in str" style="--pw:${Math.max(2.4,pw).toFixed(2)}px"></div>`;
+    h+=PS('gt'+i,'gtk','','the number '+d.a,`width:${L}px`);
+    h+=PS('gq'+i,'gcp',inner,`${d.q} copies of ${d.b}`,`width:${wq.toFixed(2)}px`);
+    if(d.r>0n)h+=PS('gr'+i,'grm'+(d.q===0n?' all':''),'',`the remainder ${d.r}`,`width:${Math.max(3,wr).toFixed(2)}px`);
+    h+=PT('ge'+i,'cap',`${nm(d.a)} = ${nm(d.q)} · ${nm(d.b)} + <b>${nm(d.r)}</b>`,'the division');
+    h+=PT('gql'+i,'sml q',`${nm(d.q)} × ${nm(d.b,10)}`,'the copies');
+    if(d.r>0n)h+=PT('grl'+i,'sml r',`remainder ${nm(d.r,10)}`,'the remainder');
+    const tp=L*frac(g,d.a);if(tp>=4)h+=PS('gk'+i,'gk','',`${g} fits ${d.a/g} times`,`width:${L}px;--tp:${tp.toFixed(3)}px`);
+  });
+  for(let i=0;i<=m;i++){const a=i<m?R[i].a:g,b=i<m?R[i].b:0n;h+=chipP('gc'+i,i===m?'p':'m',`gcd(${nm(a,8)}, ${nm(b,8)})${i===m?` = ${nm(g,8)}`:''}`)}
+  h+=bubP('gres','ok',`The last remainder that is not 0:<br><b class="m">gcd(${nm(GV.A,12)}, ${nm(GV.B,12)}) = ${nm(g,12)}</b>`);
+  return h;
+}
+function gPose(k){
+  const{R,m}=GV,{X0,L}=G1,P={cam:camY(gY(Math.min(k,m))-40,G1.W,gH(),G1.HV)};
+  for(let i=0;i<=m;i++){
+    P['gc'+i]={at:[128,gY(i)],o:i<=k,c:{glow:k===m+1}};
+    if(i===m)continue;
+    const d=R[i],y=gY(i),wq=L*frac(d.q*d.b,d.a),wr=L-wq,done=i<k;
+    P['gt'+i]={at:[X0+L/2,y],o:i<=k};
+    P['gq'+i]={at:[X0+wq/2,y],o:i<=k,c:{on:done}};
+    P['gr'+i]={at:[X0+wq+wr/2,y],o:done};
+    P['ge'+i]={at:[X0+L/2,y-34],o:done};
+    P['gql'+i]={at:[clamp(X0+wq/2,X0+60,X0+L-200),y+38],o:done&&d.q>0n};
+    P['grl'+i]={at:[clamp(X0+wq+wr/2,X0+200,X0+L-60),y+38],o:done};
+    P['gk'+i]={at:[X0+L/2,y+23],o:k===m+1};
+  }
+  P.gres={at:[X0+L/2,gY(m)+8],o:k===m+1};
+  return P;
+}
+function gPhases(k){
+  const{m}=GV,cam={cam:gPose(k).cam};
+  if(k<=m){const i=k-1;return[[0,cam,.3],[.04,{['gq'+i]:{c:{on:1}}},.44],[.48,{['gr'+i]:{o:1}},.12],[.55,{['gql'+i]:{o:1},['grl'+i]:{o:1}},.12],[.63,{['ge'+i]:{o:1}},.14],[.8,{['gc'+k]:{o:1},['gt'+k]:{o:1},['gq'+k]:{o:1}},.16]]}
+  const tk={},gl={};for(let i=0;i<m;i++)tk['gk'+i]={o:1};for(let i=0;i<=m;i++)gl['gc'+i]={c:{glow:1}};
+  return[[0,cam,.3],[.08,tk,.3],[.42,gl,.1],[.58,{gres:{o:1}},.22]];
+}
+function wbG(k){
+  const{R,g,m,A,B}=GV;
+  if(k===0){const da=divisorsOf(A),db=divisorsOf(B);
+    if(!da)return{t:`gcd(${nm(A)}, ${nm(B)}): the largest number that divides both`,rows:[{s:'Listing the divisors of numbers this large would take far too long.',txt:1},{s:'Euclid: divide, keep the remainder, divide again',txt:1}],note:'Euclid’s algorithm needs only divisions with remainder, and only a few of them.'};
+    const cm=da.filter(x=>B%x===0n),sh=L=>L.length<=14?L.join(', '):`${L.slice(0,12).join(', ')}, … (${L.length} divisors)`;
+    return{t:`gcd(${A}, ${B}): the largest number that divides both`,rows:[{s:`divisors of ${A}: ${sh(da)}`,txt:1},{s:`divisors of ${B}: ${sh(db)}`,txt:1},{s:`common: ${sh(cm)}`,txt:1,v:`gcd = ${g}`,ok:true}],note:'Listing divisors works for small numbers only. Euclid’s algorithm needs only divisions with remainder.'};
+  }
+  if(k<=m){const d=R[k-1];return{t:`Step ${k} · divide ${nm(d.a)} by ${nm(d.b)}`,rows:[
+    {s:`${nm(d.a)} ÷ ${nm(d.b)}`,r:`<b class="cp">${nm(d.q)}</b>, remainder <b class="cs">${nm(d.r)}</b>`,f:`${nf(d.a)} = ${nf(d.q)} · ${nf(d.b)} + ${nf(d.r)}`},
+    {s:`${nm(d.a)} = ${nm(d.q)} · ${nm(d.b)} + ${nm(d.r)}`,v:'check',ok:d.q*d.b+d.r===d.a,f:`${nf(d.q)} · ${nf(d.b)} = ${nf(d.q*d.b)}, plus ${nf(d.r)} gives ${nf(d.a)}`},
+    d.r>0n?{s:`gcd(${nm(d.a)}, ${nm(d.b)}) = gcd(${nm(d.b)}, ${nm(d.r)})`,txt:1}:{s:`remainder 0: ${nm(d.b)} divides ${nm(d.a)} exactly`,txt:1,v:'stop',ok:true}],
+    note:k===1&&d.r>0n?`A number that divides ${nm(d.a)} and ${nm(d.b)} also divides ${nm(d.r)} = ${nm(d.a)} − ${nm(d.q)}·${nm(d.b)}. So the pair (${nm(d.b)}, ${nm(d.r)}) has the same common divisors, and it is smaller.`:''}}
+  return{t:'The result',rows:[{s:`gcd(${nm(A)}, ${nm(B)})`,r:`<b class="cs">${nm(g)}</b>`,f:`gcd = ${nf(g)}`},{s:`${nm(A)} = ${nm(A/g)} · ${nm(g)}`,txt:1,f:`${nf(A)} = ${nf(A/g)} · ${nf(g)}`},{s:`${nm(B)} = ${nm(B/g)} · ${nm(g)}`,txt:1,f:`${nf(B)} = ${nf(B/g)} · ${nf(g)}`}],
+    note:`${m} division${m>1?'s':''}. Lamé showed that the number of divisions is never more than five times the number of digits of the smaller number: here at most ${5*B.toString().length}.`};
+}
+T.gcd={n:()=>GV.m+2,render(k){CUR=k;const{R,g,m,A,B,sw}=GV;
+  stage.innerHTML=scnV(G1.W,gH(),G1.HV,gParts(),'')+wbHTML(wbG(k));
+  fitV();poseNow(gPose(k));
+  PARTI={gres:`gcd(${nf(A)}, ${nf(B)}) = ${nf(g)}`};
+  R.forEach((d,i)=>{Object.assign(PARTI,{['gt'+i]:`The bar is ${nf(d.a)} long.`,['gq'+i]:`${nf(d.q)} copies of ${nf(d.b)} fit into ${nf(d.a)}: ${nf(d.q)} · ${nf(d.b)} = ${nf(d.q*d.b)}.`,['gr'+i]:`What is left: ${nf(d.a)} − ${nf(d.q*d.b)} = ${nf(d.r)}.`,
+    ['gk'+i]:`${nf(g)} fits exactly ${nf(d.a/g)} times into ${nf(d.a)}.`,['gc'+i]:`gcd(${nf(d.a)}, ${nf(d.b)}) = ${nf(g)}: every pair in this column has the same gcd.`})});
+  PARTI['gc'+m]=`gcd(${nf(g)}, 0) = ${nf(g)}: every number divides 0, so the gcd is ${nf(g)} itself.`;
+  const last=R[m-1];
+  $('#explain').innerHTML=[say('Greatest common divisor',`gcd(a, b) is the largest number that divides both a and b. Here a = ${nm(A)} and b = ${nm(B)}${sw?' (the larger number is written first)':''}. Euclid’s algorithm finds it with divisions only: divide, keep the remainder, and divide again. Press <b>Step</b>.`),
+    ...R.map((d,i)=>say(`Step ${i+1} · ${nm(d.a)} ÷ ${nm(d.b)}`,`${nm(d.b)} fits <b>${nm(d.q)}</b> time${d.q===1n?'':'s'} into ${nm(d.a)}, and <b>${nm(d.r)}</b> is left: ${nm(d.a)} = ${nm(d.q)}·${nm(d.b)} + ${nm(d.r)}.`,
+      d.r>0n?`Every number that divides ${nm(d.a)} and ${nm(d.b)} also divides ${nm(d.r)}, so gcd(${nm(d.a)}, ${nm(d.b)}) = gcd(${nm(d.b)}, ${nm(d.r)}). The next step works with this smaller pair.`:`The remainder is 0: ${nm(d.b)} divides ${nm(d.a)} exactly, and the algorithm stops.`)),
+    say('The result',`The last remainder that is not 0 is <b>${nm(g)}</b>, so gcd(${nm(A)}, ${nm(B)}) = ${nm(g)}. The green marks under each bar show ${nm(g)} fitting exactly into every number of the chain.`,g===1n?'gcd = 1: the two numbers have no common factor. They are called <b>coprime</b>, and then each has an inverse modulo the other (tabs 2 and 3).':'')][k];
+  $('#extra').innerHTML=`<h3>The rule behind it</h3><p>If a = q·b + r, then gcd(a, b) = gcd(b, r): a common divisor of a and b divides r = a − q·b, and a common divisor of b and r divides a = q·b + r. Each step makes the pair smaller, and when the remainder is 0 the divisor is the gcd.</p><p class="note">Type your own numbers in the boxes above the picture. The lecture example is gcd(1180, 482).</p>`+quiz('gcd');
+},
+plan(k){return scnPlan(gPose,k,gPhases(k),k<=GV.m?2000:1600)},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 2 · the inverse modulo n: a clock and a token that adds a each time ---------- */
+const RC={cx:300,cy:242,R:172,W:960,H:480};
+const AFB=8,AFX=7;   // the affine key b of the classical-ciphers page, and the letter H
+let IV;
+const ringXY=(j,n,r)=>{const t=2*Math.PI*j/n;return[RC.cx+r*Math.sin(t),RC.cy-r*Math.cos(t)]};
+function invVals(){
+  const n=ST.in,a=ST.ia,g=gN(a,n),inv=g===1?Number(modinv(BigInt(a),BigInt(n))):null,H=inv??n/g,hops=[];
+  for(let x=1;x<=H;x++)hops.push(a*x%n);
+  let S=H<=3?H:Math.max(3,Math.ceil(H/10));const per=Math.ceil(H/S);S=Math.ceil(H/per);
+  const end=[0];for(let s=1;s<=S;s++)end.push(Math.min(H,s*per));
+  const units=[];for(let x=1;x<n;x++)if(gN(x,n)===1)units.push([x,Number(modinv(BigInt(x),BigInt(n)))]);
+  return{n,a,g,inv,H,hops,S,end,units,af:n===26};
+}
+const LET=x=>String.fromCharCode(65+x);
+QZ.inv={q:'Which key a of the affine cipher has no inverse modulo 26?',o:['a = 5','a = 13','a = 21'],a:1,why:'gcd(13, 26) = 13, so 13·x mod 26 is always 0 or 13 and never 1. The inverses of 5 and 21 are 21 and 5: 5·21 = 105 = 4·26 + 1.'};
+const hcXY=x=>[628+((x-1)%5)*68,96+Math.floor((x-1)/5)*26];
+function iParts(){
+  const{n,a,hops,units}=IV;let h='';
+  for(let j=0;j<n;j++){h+=PT('rd'+j,'rdot','<i></i>','the number '+j)+PT('rl'+j,'rlb'+(n>48?' sm':''),String(j),'the number '+j)}
+  h+=`<div class="arm" id="arm" style="--cx:${RC.cx};--cy:${RC.cy};--R:${RC.R}"><i></i></div>`;
+  h+=PT('ictr','ctr',`<b>${a} · x mod ${n}</b>add ${a} each time`,'the rule');
+  hops.forEach((v,i)=>{const x=i+1;h+=PT('hc'+x,'hch',`<small>${x}·${a}</small> ${v}`,`x = ${x}`)});
+  units.forEach(([u,w],i)=>{h+=PT('up'+u,'hch pr',`${u}<small>↔</small>${w}`,`${u} and its inverse`)});
+  h+=PT('hhd','hhd',`x · ${a} mod ${n}, for x = 1, 2, 3, …`,'the list')+PT('uhd','hhd',`a ↔ a⁻¹ mod ${n}: all ${units.length} pairs`,'the list');
+  return h;
+}
+const angOf=h=>IV.a*h*360/IV.n;
+function iDone(k){const{S,end,H}=IV;return k===0?0:k<=S?end[k]:H}
+function iPose(k){
+  const{n,hops,S,inv,units,g}=IV,h=iDone(k),P={cam:'F',arm:{v:{ang:angOf(h)},o:1,c:{dim:k===S+3}},ictr:{at:[RC.cx,RC.cy],o:1},hhd:{at:[628+136,66],o:k<S+3},uhd:{at:[628+136,66],o:k===S+3}};
+  const hit=new Set(hops.slice(0,h)),U=new Set(units.map(u=>u[0]));
+  for(let j=0;j<n;j++){
+    const f=k<S+3,c={hit:f&&hit.has(j),cur:f&&h>0&&j===hops[h-1],one:k>S&&f&&inv!=null&&j===1,miss:k>S&&f&&inv==null&&j===1,unit:k===S+3&&U.has(j)};
+    P['rd'+j]={at:ringXY(j,n,RC.R),o:1,c};P['rl'+j]={at:ringXY(j,n,RC.R+21),o:1,c:{hit:c.hit,one:c.one,miss:c.miss,unit:c.unit}};
+  }
+  hops.forEach((v,i)=>{const x=i+1;P['hc'+x]={at:hcXY(x),o:x<=h&&k<S+3,c:{one:v===1,zero:v===0&&g>1}}});
+  units.forEach(([u],i)=>{P['up'+u]={at:hcXY(i+1),o:k===S+3}});
+  return P;
+}
+function iPhases(k){
+  const{S,end,hops,n,inv,units}=IV;
+  if(k<=S){const h0=end[k-1],h1=end[k],c=h1-h0,sp_=.9/c,L=[];
+    for(let j=h0+1;j<=h1;j++){const t=.04+(j-h0-1)*sp_,v=hops[j-1],pv=j>1?hops[j-2]:null,cur={['rd'+v]:{c:{hit:1,cur:1}},['rl'+v]:{c:{hit:1}},['hc'+j]:{o:1}};if(pv!=null&&pv!==v)cur['rd'+pv]={c:{cur:0}};
+      L.push([t,{arm:{v:{ang:angOf(j)}}},sp_*.78],[t+sp_*.8,cur,sp_*.18])}
+    return L}
+  if(k===S+1)return[[.1,{rd1:{c:inv!=null?{one:1}:{miss:1}},rl1:{c:inv!=null?{one:1}:{miss:1}}},.25]];
+  if(k===S+2)return[];
+  const P={arm:{c:{dim:1}},hhd:{o:0},uhd:{o:1}};hops.forEach((v,i)=>{P['hc'+(i+1)]={o:0}});
+  const Q={};for(let j=0;j<n;j++)Q['rd'+j]={c:{hit:0,cur:0,one:0,miss:0}},Q['rl'+j]={c:{hit:0,one:0,miss:0}};
+  const L=[[0,P,.2],[.15,Q,.15]];units.forEach(([u],i)=>{const t=.3+.5*i/units.length;L.push([t,{['up'+u]:{o:1},['rd'+u]:{c:{unit:1}},['rl'+u]:{c:{unit:1}}},.12])});
+  return L;
+}
+function wbI(k){
+  const{n,a,g,inv,H,hops,S,end,units,af}=IV;
+  if(k===0)return{t:`The inverse of ${a} modulo ${n}`,rows:[{s:`find x with ${a} · x ≡ 1 (mod ${n})`,txt:1},{s:`try x = 1, 2, 3, … and look at ${a} · x mod ${n}`,txt:1}],note:af?`The affine cipher encrypts with y = (a·x + b) mod 26. To decrypt it needs a number that undoes “times a”: the inverse a⁻¹.`:'On a clock of n numbers, “times x” means: add a, x times, and wrap around after n − 1.'};
+  if(k<=S){const h0=end[k-1],h1=end[k];
+    const xs=[h0+1,Math.floor((h0+1+h1)/2),h1].filter((x,i,A)=>A.indexOf(x)===i);
+    return{t:`x = ${h0+1} to ${h1}`,rows:xs.map(x=>({s:`${a} · ${x} mod ${n}`,n:a*x>=n?`${a*x} − ${Math.floor(a*x/n)}·${n}`:null,r:`<b class="cm">${a*x%n}</b>`,v:a*x%n===1?'found 1':null,ok:true,f:`${a} · ${x} = ${a*x} = ${Math.floor(a*x/n)} · ${n} + ${a*x%n}`})),
+      note:`Each jump adds ${a}; passing ${n} wraps around to 0, which is what “mod ${n}” does.`}}
+  if(k===S+1)return inv!=null?{t:`${a}⁻¹ mod ${n} = ${inv}`,rows:[{s:`${a} · ${inv} = ${a*inv}`,n:`${Math.floor(a*inv/n)} · ${n} + 1`,r:'1 (mod '+n+')',v:'found',ok:true,f:`${a*inv} − ${Math.floor(a*inv/n)}·${n} = 1`}],note:`Found after ${H} tries. The inverse is unique: no other x below ${n} gives 1.`}
+    :{t:`${a} has no inverse modulo ${n}`,rows:[{s:`gcd(${a}, ${n}) = ${g}`,txt:1},{s:`${a} · x mod ${n} ∈ {${[...new Set(hops)].sort((x,y)=>x-y).join(', ')}}`,txt:1,v:'never 1',ok:false}],note:`Every value of ${a}·x mod ${n} is a multiple of ${g}, and 1 is not. After ${H} jumps the token is back at 0, and the same values repeat.`};
+  if(k===S+2){
+    if(inv!=null&&af){const y=(a*AFX+AFB)%26,b2=((inv*((y-AFB)%26+26))%26);
+      return{t:`Decrypting the affine cipher with key a = ${a}, b = ${AFB}`,rows:[{s:`encrypt “${LET(AFX)}” = ${AFX}: (${a} · ${AFX} + ${AFB}) mod 26`,r:`${y} = “${LET(y)}”`,f:`${a}·${AFX} + ${AFB} = ${a*AFX+AFB} = ${Math.floor((a*AFX+AFB)/26)}·26 + ${y}`},{s:`decrypt: x = a⁻¹ · (y − b) mod 26 = ${inv} · (${y} − ${AFB}) mod 26`,r:`${b2} = “${LET(b2)}”`,v:'back',ok:b2===AFX,f:`${inv} · ${y-AFB} = ${inv*(y-AFB)}, and ${inv*(y-AFB)} mod 26 = ${b2}`}],note:`Multiplying by ${inv} undoes multiplying by ${a}, because ${a}·${inv} ≡ 1. The key b = ${AFB} is the one of the affine demo on the classical-ciphers page.`}}
+    if(inv!=null)return{t:'Checking the inverse',rows:[{s:`${a} · ${inv} mod ${n}`,r:'1',v:'check',ok:a*inv%n===1,f:`${a}·${inv} = ${a*inv} = ${Math.floor(a*inv/n)}·${n} + ${a*inv%n}`},{s:`${inv} · ${a} mod ${n}`,r:'1',txt:0}],note:'The inverse works on both sides, and it is unique below n.'};
+    const x2=n/g,y1=AFB%n,ok=(a*x2+AFB)%n===y1;
+    return af?{t:`Why the key a = ${a} is not allowed`,rows:[{s:`E(${LET(0)}) = (${a}·0 + ${AFB}) mod 26`,r:`${y1} = “${LET(y1)}”`},{s:`E(${LET(x2)}) = (${a}·${x2} + ${AFB}) mod 26`,r:`${(a*x2+AFB)%26} = “${LET((a*x2+AFB)%26)}”`,v:ok?'same letter':'',ok:false,f:`${a}·${x2} + ${AFB} = ${a*x2+AFB} = ${Math.floor((a*x2+AFB)/26)}·26 + ${(a*x2+AFB)%26}`}],note:`Two different letters give the same ciphertext letter, so the receiver cannot tell which one was sent. This happens for every a with gcd(a, 26) > 1.`}
+      :{t:`${a} · x mod ${n} repeats too early`,rows:[{s:`${a} · 0 mod ${n}`,r:'0'},{s:`${a} · ${x2} mod ${n}`,r:`${a*x2%n}`,v:'same',ok:false,f:`${a}·${x2} = ${a*x2} = ${a*x2/n}·${n}`}],note:`Multiplying by ${a} sends two different numbers to the same place, so it cannot be undone.`};
+  }
+  return{t:`The numbers that have an inverse modulo ${n}`,rows:[{s:`a has an inverse mod ${n} exactly when gcd(a, ${n}) = 1`,txt:1},{s:`here: ${units.length} numbers`,txt:1,v:`φ(${n}) = ${units.length}`,ok:true}],note:af?'For the affine cipher these are the 12 allowed keys a. Counting them is Euler’s φ function (tab 4).':'Counting them is Euler’s φ function (tab 4).'};
+}
+T.inv={n:()=>IV.S+4,render(k){CUR=k;const{n,a,g,inv,H,S,end,units,af}=IV;
+  stage.innerHTML=scnBox(RC.W,RC.H,iParts(),`<circle class="ring" cx="${RC.cx}" cy="${RC.cy}" r="${RC.R}"/>`)+wbHTML(wbI(k));
+  scnFit();poseNow(iPose(k));
+  PARTI={arm:'',ictr:`Each jump adds ${a}. After x jumps the token stands at ${a}·x mod ${n}.`};
+  for(let j=0;j<n;j++){PARTI['rd'+j]=PARTI['rl'+j]=`${j}: ${gN(j,n)===1?`has an inverse, ${j}⁻¹ = ${modinv(BigInt(j),BigInt(n))}`:`no inverse, since gcd(${j}, ${n}) = ${gN(j,n)}`}.`}
+  IV.hops.forEach((v,i)=>{PARTI['hc'+(i+1)]=`${a} · ${i+1} = ${a*(i+1)} = ${Math.floor(a*(i+1)/n)} · ${n} + ${v}`});
+  units.forEach(([u,w])=>{PARTI['up'+u]=`${u} · ${w} = ${u*w} = ${Math.floor(u*w/n)} · ${n} + 1`});
+  const hs=s=>`${end[s-1]+1}${end[s]>end[s-1]+1?`–${end[s]}`:''}`;
+  $('#explain').innerHTML=[say('The inverse modulo n',`The inverse of ${a} modulo ${n} is the number x with ${a}·x ≡ 1 (mod ${n}): multiplying by x undoes multiplying by ${a}. The simplest way to find it is to try x = 1, 2, 3, … on a clock of ${n} numbers. Press <b>Step</b>.`),
+    ...Array.from({length:S},(_,i)=>say(`Step ${i+1} · x = ${hs(i+1)}`,`For each x the token jumps ${a} places on. Its position is ${a}·x mod ${n}: after ${n-1} it wraps around to 0.`+(i+1===S?(inv!=null?` At x = <b>${inv}</b> it lands on <b>1</b>.`:` After ${H} jumps it is back at 0.`):''))),
+    inv!=null?say('Found',`${a}·${inv} = ${a*inv} = ${Math.floor(a*inv/n)}·${n} + 1, so <b>${a}⁻¹ ≡ ${inv} (mod ${n})</b>. It took ${H} tries.`):say('No inverse',`The token only visits multiples of ${g} = gcd(${a}, ${n}) and never lands on 1, so <b>${a} has no inverse modulo ${n}</b>.`),
+    inv!=null?(af?say('Using it',`In the affine cipher with key a = ${a}, b = ${AFB}, decryption multiplies by ${inv} and gets every letter back.`):say('Checking it',`${a}·${inv} mod ${n} = 1. The inverse is unique below ${n}.`)):(af?say('A key that does not work',`With a = ${a} two different letters encrypt to the same letter, so the receiver cannot decrypt. That is why the affine cipher needs gcd(a, 26) = 1.`):say('Why it fails',`${a} sends 0 and ${n/g} to the same place, so “times ${a}” cannot be undone.`)),
+    say('All the inverses',`The green numbers are those with gcd(a, ${n}) = 1, and each has an inverse; the list shows the pairs. There are ${units.length} of them: this count is <b>Euler’s φ(${n})</b> (tab 4). For a large n, trying x = 1, 2, 3, … is far too slow; tab 3 finds the inverse with a few divisions.`)][k];
+  $('#extra').innerHTML=`<h3>When does an inverse exist?</h3><p>a has an inverse modulo n exactly when gcd(a, n) = 1. If g = gcd(a, n) is larger than 1, then every a·x − k·n is a multiple of g, so a·x mod n can never be 1.</p><p class="note">Try a = 13: it has no inverse modulo 26. The lecture example is 12 modulo 67.</p>`+quiz('inv');
+},
+plan(k){const{S,end}=IV;return scnPlan(iPose,k,iPhases(k),k<=S?Math.min(6500,560*(end[k]-end[k-1])+300):k===S+3?1700:900)},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 3 · the extended Euclidean algorithm: the table ---------- */
+// the primes of the RSA-2048 demonstration key of the RSA page: public, so never use them
+const HP=0xe0a00d87a6c7169e2083171e05993d3996d46d141c5983e5f17f4b26799c499d18d37f37460caca1805f24faf8db59292b6eef6947d7663b9349738bfa62ba5a97a6c1e1337c29ff4529e364a8cb223960427579ca2f6807e1ec19793cb3522f560c40bbb5c70434c6b09990c5337c95cc631d28a042b7a3051561b10ea2a5d7n,HQ=0xcbbc788880c53f5f9889d66800345cbb34d985b7ef203a0abfd6c28cc23583cf18208605d1f1282377803f45ff0e8a228ebdcef1e6814f61da7a40792f6654900c81a0a453a5348169e7dae993836b143955e9b60710de258cbb63903ca5547991cf0ce16f7eac41f1fbc5e73dc197b2a89bbd725073bf5f997f0a49baa1c3b7n;
+const E3={Y0:100,RG:48,HV:440,W:960,X:{i:58,q:178,r:338,s:508,t:668,c:852},CW:{i:44,q:130,r:170,s:150,t:150,c:190}};
+let EV;
+function eeaVals(){
+  let a=ST.ea,b=ST.eb;const sw=a<b;if(sw)[a,b]=[b,a];
+  const R=[{i:0,r:a,s:1n,t:0n,q:null},{i:1,r:b,s:0n,t:1n,q:null}];
+  while(R[R.length-1].r!==0n){const p=R[R.length-2],c=R[R.length-1],q=p.r/c.r;R.push({i:R.length,q,r:p.r-q*c.r,s:p.s-q*c.s,t:p.t-q*c.t})}
+  const L=R[R.length-2],g=L.r,inv=g===1n?mod(L.t,a):null;
+  return{a,b,sw,R,m:R.length-2,g,L,inv};
+}
+const eY=i=>E3.Y0+i*E3.RG;
+const eH=()=>Math.max(E3.HV,eY(EV.R.length)+120);
+QZ.eea={q:'The table ends with 1 = (−5)·67 + 28·12. What is 12⁻¹ mod 67?',o:['−5','28','67 − 28 = 39'],a:1,why:'Reduce the equation mod 67: the term (−5)·67 is 0, so 28·12 ≡ 1. The number next to the one you invert (t, next to 12) is its inverse.'};
+function eParts(){
+  const{R,a,b,g,L,inv}=EV,{X,CW}=E3;let h='';
+  const hd={i:'i',q:'q<sub>i−1</sub>',r:'r<sub>i</sub>',s:'s<sub>i</sub>',t:'t<sub>i</sub>',c:'s<sub>i</sub>·r₀ + t<sub>i</sub>·r₁'};
+  for(const c in hd)h+=PS('eh'+c,'cl hd',hd[c],'the column '+c,`width:${CW[c]}px`);
+  R.forEach(w=>{const i=w.i,ck=w.s*a+w.t*b;
+    h+=PS('eb'+i,'rbg','','row '+i,'width:900px');
+    h+=PS(`e${i}i`,'cl',String(i),'the row number',`width:${CW.i}px`);
+    h+=PS(`e${i}q`,'cl q',w.q==null?'':nm(w.q,11),'the quotient',`width:${CW.q}px`);
+    h+=PS(`e${i}r`,'cl',nm(w.r,13),'r',`width:${CW.r}px`);
+    h+=PS(`e${i}s`,'cl',nm(w.s,12),'s',`width:${CW.s}px`);
+    h+=PS(`e${i}t`,'cl',nm(w.t,12),'t',`width:${CW.t}px`);
+    h+=PS(`e${i}c`,'cl ck',`= ${nm(ck,9)} ${ck===w.r?'✓':'✗'}`,'the check',`width:${CW.c}px`);
+  });
+  h+=bubP('ebz','',`<b class="m">${nm(g,14)} = ${pn(L.s)}·${nm(a,12)} + ${pn(L.t)}·${nm(b,12)}</b>`);
+  h+=bubP('eres',inv!=null?'ok':'bad',inv!=null?`<b class="m">${nm(b,12)}⁻¹ mod ${nm(a,12)} = ${nm(inv,14)}</b>`:`gcd = ${nm(g)} ≠ 1: ${nm(b,12)} has no inverse modulo ${nm(a,12)}`);
+  return h;
+}
+function ePose(k){
+  const{R,m,L}=EV,{X}=E3,last=R.length-1,P={};
+  P.cam=camY(k<=m?eY(k+1)-70:eY(last)+10,E3.W,eH(),E3.HV);
+  for(const c in X)P['eh'+c]={at:[X[c],48],o:1};
+  R.forEach(w=>{const i=w.i,y=eY(i),vis=i<=k+1;
+    P['eb'+i]={at:[478,y],o:vis,c:{src:k>=1&&k<=m&&(i===k-1||i===k),new:k>=1&&k<=m&&i===k+1,gl:k>m&&i===L.i}};
+    for(const c in X)P[`e${i}${c}`]={at:[X[c],y],o:vis,c:c==='t'?{glow:k===m+2&&i===L.i}:undefined};
+  });
+  P.ebz={at:[478,eY(last)+56],o:k>m};
+  P.eres={at:[478,eY(last)+112],o:k===m+2};
+  return P;
+}
+function ePhases(k){
+  const{m,L,R}=EV,cam=ePose(k).cam;
+  if(k<=m){const i=k+1,c0={};if(k>=2)c0['eb'+(k-2)]={c:{src:0}};c0['eb'+(k-1)]={c:{src:1}};c0['eb'+k]={c:{src:1,new:0}};
+    return[[0,{cam},.25],[0,c0,.15],[.12,{['eb'+i]:{o:1,c:{new:1}},[`e${i}i`]:{o:1}},.1],[.2,{[`e${i}q`]:{o:1}},.12],[.36,{[`e${i}r`]:{o:1}},.12],[.5,{[`e${i}s`]:{o:1}},.12],[.64,{[`e${i}t`]:{o:1}},.12],[.8,{[`e${i}c`]:{o:1}},.12]]}
+  if(k===m+1){const last=R.length-1,c0={['eb'+(last-1)]:{c:{src:0}},['eb'+last]:{c:{new:0}}};c0['eb'+L.i]={c:{src:0,gl:1}};return[[0,{cam},.3],[.05,c0,.2],[.45,{ebz:{o:1}},.2]]}
+  return[[0,{cam},.2],[.12,{[`e${L.i}t`]:{c:{glow:1}}},.15],[.45,{eres:{o:1}},.2]];
+}
+function wbE(k){
+  const{R,a,b,m,g,L,inv}=EV;
+  if(k===0)return{t:'Start: two rows for r₀ and r₁',rows:[{s:`r₀ = ${nm(a)} = 1·${nm(a)} + 0·${nm(b)}`,txt:1,f:nf(a)},{s:`r₁ = ${nm(b)} = 0·${nm(a)} + 1·${nm(b)}`,txt:1,f:nf(b)}],note:'Every row keeps r = s·r₀ + t·r₁. Each new row is made from the two rows above it, with the same quotient for r, s and t.'};
+  if(k<=m){const i=k+1,w=R[i],p=R[i-2],c=R[i-1],q=w.q;
+    const rows=[{s:`q${sb(i-1)} = ${nm(p.r)} div ${nm(c.r)}`,r:`<b class="cp">${nm(q)}</b>`,f:`${nf(p.r)} = ${nf(q)}·${nf(c.r)} + ${nf(w.r)}`},
+      {s:`r${sb(i)} = r${sb(i-2)} − q·r${sb(i-1)}`,n:`${nm(p.r)} − ${nm(q)}·${nm(c.r)}`,r:`<b class="cs">${nm(w.r)}</b>`,f:`${nf(p.r)} − ${nf(q)}·${nf(c.r)} = ${nf(w.r)}`}];
+    if(w.r===0n)return{t:`Row ${i} · the remainder is 0`,rows:rows.concat([{s:'stop: the row above holds the gcd',txt:1,v:`gcd = ${nm(g)}`,ok:true}]),note:'The r column is exactly Euclid’s algorithm of tab 1; the s and t columns ride along.'};
+    rows.push({s:`s${sb(i)} = s${sb(i-2)} − q·s${sb(i-1)}`,n:`${nm(p.s)} − ${nm(q)}·${pn(c.s)}`,r:nm(w.s),f:`${nf(p.s)} − ${nf(q)}·(${nf(c.s)}) = ${nf(w.s)}`},
+      {s:`t${sb(i)} = t${sb(i-2)} − q·t${sb(i-1)}`,n:`${nm(p.t)} − ${nm(q)}·${pn(c.t)}`,r:nm(w.t),f:`${nf(p.t)} − ${nf(q)}·(${nf(c.t)}) = ${nf(w.t)}`},
+      {s:`check: ${pn(w.s)}·${nm(a)} + ${pn(w.t)}·${nm(b)}`,r:nm(w.s*a+w.t*b),v:'= r',ok:w.s*a+w.t*b===w.r,f:`${nf(w.s*a)} + ${nf(w.t*b)} = ${nf(w.s*a+w.t*b)}`});
+    return{t:`Row ${i} · from rows ${i-2} and ${i-1}`,rows,note:k===1?'The quotient comes from the r column; then r, s and t all take “two rows up minus q times one row up”.':''}}
+  if(k===m+1)return{t:'The gcd, written with a and b',rows:[{s:`gcd(${nm(a)}, ${nm(b)}) = r${sb(L.i)}`,r:`<b class="cs">${nm(g)}</b>`,f:nf(g)},{s:`${nm(g)} = ${pn(L.s)}·${nm(a)} + ${pn(L.t)}·${nm(b)}`,v:'check',ok:L.s*a+L.t*b===g,f:`${nf(L.s)}·${nf(a)} + ${nf(L.t)}·${nf(b)} = ${nf(L.s*a)} + ${nf(L.t*b)} = ${nf(g)}`}],note:'This is Bézout’s identity: the gcd is a combination s·a + t·b of the two numbers, and s and t are called the Bézout coefficients.'};
+  if(inv==null)return{t:'No inverse',rows:[{s:`gcd(${nm(a)}, ${nm(b)}) = ${nm(g)} ≠ 1`,txt:1,v:'no inverse',ok:false},{s:`${pn(L.s)}·${nm(a)} + ${pn(L.t)}·${nm(b)} = ${nm(g)}`,txt:1}],note:`Every s·${nm(a)} + t·${nm(b)} is a multiple of ${nm(g)}, so no combination gives 1: ${nm(b)} has no inverse modulo ${nm(a)}.`};
+  return{t:`The inverse of ${nm(b)} modulo ${nm(a)}`,rows:[{s:`${pn(L.t)}·${nm(b)} = 1 − ${pn(L.s)}·${nm(a)}`,txt:1,f:`${nf(L.t)}·${nf(b)} = ${nf(L.t*b)}`},{s:`so ${pn(L.t)}·${nm(b)} ≡ 1 (mod ${nm(a)})`,txt:1},
+    {s:`${nm(b)}⁻¹ mod ${nm(a)} = ${nm(L.t)} mod ${nm(a)}`,r:`<b class="cs">${nm(inv)}</b>`,f:`${nf(L.t)} mod ${nf(a)} = ${nf(inv)}`},{s:`check: ${nm(b)} · ${nm(inv)} mod ${nm(a)}`,r:'1',v:'✓',ok:b*inv%a===1n,f:`${nf(b)}·${nf(inv)} = ${nf(b*inv)} = ${nf(b*inv/a)}·${nf(a)} + ${nf(b*inv%a)}`}],
+    note:L.t<0n?`t is negative, so ${nm(a)} is added once to bring it into 0, …, ${nm(a)} − 1.`:''};
+}
+T.eea={n:()=>EV.m+3,render(k){CUR=k;const{R,a,b,m,g,L,inv,sw}=EV;
+  stage.innerHTML=scnV(E3.W,eH(),E3.HV,eParts(),'')+wbHTML(wbE(k));
+  fitV();poseNow(ePose(k));
+  PARTI={ebz:`${nf(g)} = ${nf(L.s)}·${nf(a)} + ${nf(L.t)}·${nf(b)}`,eres:inv!=null?`${nf(b)}⁻¹ mod ${nf(a)} = ${nf(inv)}`:'No inverse.'};
+  R.forEach(w=>{const i=w.i;Object.assign(PARTI,{[`e${i}r`]:`r${sb(i)} = ${nf(w.r)}`,[`e${i}s`]:`s${sb(i)} = ${nf(w.s)}`,[`e${i}t`]:`t${sb(i)} = ${nf(w.t)}`,[`e${i}q`]:w.q==null?'':`q${sb(i-1)} = ${nf(w.q)}`,
+    [`e${i}c`]:`${nf(w.s)}·${nf(a)} + ${nf(w.t)}·${nf(b)} = ${nf(w.s*a+w.t*b)}`,['eb'+i]:`Row ${i}: ${nf(w.r)} = ${nf(w.s)}·${nf(a)} + ${nf(w.t)}·${nf(b)}`})});
+  const big=a.toString().length>12;
+  $('#explain').innerHTML=[say('The extended Euclidean algorithm',`Trying x = 1, 2, 3, … (tab 2) is hopeless for large numbers${big?`: here r₀ has ${a.toString().length} digits`:''}. The extended algorithm runs Euclid’s divisions on r₀ = ${nm(a)} and r₁ = ${nm(b)}${sw?' (the larger number first)':''} and carries two more numbers, s and t, in every row, so that r = s·r₀ + t·r₁ always holds. At the end it gives the gcd together with its Bézout coefficients: gcd = s·r₀ + t·r₁. Press <b>Step</b>.`),
+    ...R.slice(2).map(w=>{const i=w.i,p=R[i-2],c=R[i-1];return w.r===0n?say(`Row ${i} · remainder 0`,`${nm(p.r)} ÷ ${nm(c.r)} = ${nm(w.q)} with remainder 0. Euclid stops here, and the row above holds the gcd.`)
+      :say(`Row ${i}`,`q = ${nm(p.r)} div ${nm(c.r)} = <b>${nm(w.q)}</b>. Each of r, s and t is “two rows up minus ${nm(w.q)} times one row up”: r${sb(i)} = ${nm(w.r)}, s${sb(i)} = ${nm(w.s)}, t${sb(i)} = ${nm(w.t)}.`,`Check: ${pn(w.s)}·${nm(a)} + ${pn(w.t)}·${nm(b)} = ${nm(w.r)}.`)}),
+    say('gcd and Bézout',`The last r that is not 0 is the gcd, <b>${nm(g)}</b>, and its row gives ${nm(g)} = ${pn(L.s)}·${nm(a)} + ${pn(L.t)}·${nm(b)}. The two numbers s = ${nm(L.s)} and t = ${nm(L.t)} are the <b>Bézout coefficients</b> of ${nm(a)} and ${nm(b)}.`),
+    inv!=null?say('The inverse',`Read the equation modulo ${nm(a)}: the term with ${nm(a)} disappears, so ${pn(L.t)}·${nm(b)} ≡ 1. Hence <b>${nm(b)}⁻¹ mod ${nm(a)} = ${nm(inv)}</b>${L.t<0n?` (t = ${nm(L.t)} is negative, so add ${nm(a)})`:''}. ${m} division${m>1?'s':''} instead of up to ${nm(a)} tries.`)
+      :say('No inverse',`gcd = ${nm(g)} is not 1, so ${nm(b)} has no inverse modulo ${nm(a)}. The equation still holds; it just cannot give 1.`)][k];
+  $('#extra').innerHTML=`<h3>How to read the table</h3><p>Row i says r<sub>i</sub> = s<sub>i</sub>·r₀ + t<sub>i</sub>·r₁. The first two rows are trivially true, and a new row is “two rows up minus q times one row up”, so it stays true. The r column is Euclid’s algorithm of tab 1.</p><p class="note">The lecture’s example, 12⁻¹ mod 67 = 28, is the first one above. The second one completes the lecture’s table for 240 and 46.</p>`+quiz('eea');
+},
+plan(k){return scnPlan(ePose,k,ePhases(k),k<=EV.m?1700:1300)},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 4 · Euler's phi function: crossing out the numbers that share a factor ---------- */
+let PV;
+function factor(n){const F=[];for(let p=2;p*p<=n;p++)if(n%p===0){let e=0;while(n%p===0){n/=p;e++}F.push([p,e])}if(n>1)F.push([n,1]);return F}
+const fStr=F=>F.map(([p,e])=>e>1?`${p}${sp(e)}`:String(p)).join(' · ');
+function phiVals(){
+  const n=ST.pn,F=factor(n),cols=n-1<=100?10:20,cross={},twice={},newc=F.map(()=>0),allc=F.map(()=>0);
+  F.forEach(([p],j)=>{for(let x=p;x<n;x+=p){allc[j]++;if(cross[x]==null){cross[x]=j;newc[j]++}else twice[x]=j}});
+  const units=[];for(let x=1;x<n;x++)if(cross[x]==null)units.push(x);
+  return{n,F,cols,cross,twice,newc,allc,units,phi:units.length,K:F.length};
+}
+const pH=()=>{const{n,cols,K}=PV,ph=cols===10?34:32;return Math.max(300,58+(Math.ceil((n-1)/cols)-1)*ph+34,254+K*36+48)};
+const pXY=x=>{const{cols}=PV,c=(x-1)%cols,r=Math.floor((x-1)/cols),pw=cols===10?58:29,ph=cols===10?34:32;return[89+c*pw,58+r*ph]};
+QZ.phi={q:'What is φ(35)?',o:['24','34','12'],a:0,why:'35 = 5·7, so φ(35) = (5 − 1)·(7 − 1) = 24: the 6 multiples of 5 and the 4 multiples of 7 below 35 are crossed out of 34 numbers.'};
+function phiFormula(){const{F,n}=PV;
+  const t1=F.map(([p,e])=>e>1?`(${p}${sp(e)} − ${p}${sp(e-1)})`:`(${p} − 1)`).join('·'),t2=F.map(([p,e])=>p**e-p**(e-1)).join('·'),v=F.reduce((s,[p,e])=>s*(p**e-p**(e-1)),1);
+  return{t1,t2,v,one:F.length===1&&F[0][1]===1}}
+function pParts(){
+  const{n,F,cols,newc,phi}=PV,fm=phiFormula();let h='';
+  for(let x=1;x<n;x++)h+=PT('pc'+x,'cl ce'+(cols===20?' w2':''),String(x),'the number '+x);
+  h+=chipP('pf','dk',`${n} = ${fStr(F)}`);
+  F.forEach(([p],j)=>{h+=chipP('pp'+j,'s',`multiples of ${p}: ${newc[j]} more crossed`)});
+  h+=chipP('pcnt','p',`left: φ(${n}) = ${phi}`);
+  h+=bubP('pfm','',fm.one?`prime: φ(${n}) = ${n} − 1 = ${phi}`:`φ(${n}) = ${fm.t1}<br>= ${fm.t2} = ${fm.v}`);
+  h+=bubP('pmn','ok',`These ${phi} numbers are exactly the ones with an inverse modulo ${n}.`);
+  return h;
+}
+function pPose(k){
+  const{n,F,K,cross,twice,units}=PV,P={cam:'F',pf:{at:[815,64],o:k>=1}};
+  for(let x=1;x<n;x++){const j=cross[x],t=twice[x],X=j!=null&&k>=j+2;P['pc'+x]={at:pXY(x),o:1,c:{x:X,tw:t!=null&&k>=t+2&&k<K+2,u:k>=K+2&&j==null}}}
+  F.forEach((_,j)=>{P['pp'+j]={at:[815,108+j*36],o:k>=j+2}});
+  P.pcnt={at:[815,114+K*36],o:k>=K+2,c:{glow:k===K+2}};
+  P.pfm={at:[815,178+K*36],o:k>=K+3};
+  P.pmn={at:[815,254+K*36],o:k>=K+4};
+  return P;
+}
+function pPhases(k){
+  const{n,F,K,cross,twice,units}=PV;
+  if(k===1)return[[.15,{pf:{o:1}},.25]];
+  if(k>=2&&k<K+2){const j=k-2,p=F[j][0],L=[],xs=[];for(let x=p;x<n;x+=p)xs.push(x);
+    xs.forEach((x,i)=>{const t=.06+.66*i/Math.max(1,xs.length);L.push([t,{['pc'+x]:cross[x]===j?{c:{x:1}}:{c:{tw:1}}},.1])});
+    L.push([.8,{['pp'+j]:{o:1}},.15]);return L}
+  if(k===K+2){const L=[[0,Object.fromEntries(Object.keys(twice).map(x=>['pc'+x,{c:{tw:0}}])),.15]];units.forEach((x,i)=>L.push([.08+.62*i/Math.max(1,units.length),{['pc'+x]:{c:{u:1}}},.1]));L.push([.78,{pcnt:{o:1,c:{glow:1}}},.15]);return L}
+  if(k===K+3)return[[0,{pcnt:{c:{glow:0}}},.1],[.15,{pfm:{o:1}},.25]];
+  return[[.15,{pmn:{o:1}},.25]];
+}
+function wbP(k){
+  const{n,F,K,newc,allc,units,phi}=PV,fm=phiFormula();
+  if(k===0)return{t:`φ(${n}): how many of 1, 2, …, ${n-1} have no common factor with ${n}`,rows:[{s:'φ(n) = the number of positive integers below n that are coprime to n',txt:1},{s:'coprime: gcd(x, n) = 1',txt:1}],note:'Lecture 7 uses the same definition, with φ(1) = 1 by convention.'};
+  if(k===1)return{t:`Step 1 · the prime factors of ${n}`,rows:[{s:`${n} = ${fStr(F)}`,v:fm.one?'prime':`${K} prime${K>1?'s':''}`,ok:true}],note:'A number shares a factor with n exactly when one of these primes divides it. So only the multiples of these primes are crossed out.'};
+  if(k<K+2){const j=k-2,p=F[j][0],last=Math.floor((n-1)/p)*p,tw=allc[j]-newc[j];
+    return{t:`Step ${k} · cross out the multiples of ${p}`,rows:[{s:`multiples of ${p} below ${n}: ${allc[j]?(allc[j]<=3?Array.from({length:allc[j]},(_,i)=>p*(i+1)).join(', '):`${p}, ${2*p}, …, ${last}`):'none'}`,txt:1,v:`${allc[j]} number${allc[j]===1?'':'s'}`,ok:true},
+      tw?{s:`${tw} of them ${tw>1?'were':'was'} crossed already`,txt:1,v:'counted twice',ok:false}:null].filter(Boolean),note:allc[j]?`⌊${n-1} / ${p}⌋ = ${allc[j]}.`:`${p} itself is not below ${n}.`}}
+  if(k===K+2){const cr=n-1-phi;return{t:'Count what is left',rows:[{s:`${n-1} numbers − ${cr} crossed out`,r:`<b class="cs">${phi}</b>`,v:`φ(${n}) = ${phi}`,ok:true}],note:'The green numbers are the ones coprime to n.'}}
+  if(k===K+3)return{t:'The same number from the formula',rows:fm.one?[{s:`φ(p) = p − 1 for a prime p`,n:`${n} − 1`,r:`${phi}`,v:'check',ok:phi===n-1}]
+    :[{s:`φ(${n}) = ${fm.t1}`,n:fm.t2,r:`${fm.v}`,v:'check',ok:fm.v===phi},{s:'φ(p) = p − 1,  φ(pᵉ) = pᵉ − pᵉ⁻¹,  φ(a·b) = φ(a)·φ(b) if gcd(a, b) = 1',txt:1}],note:F.length===2&&F.every(([,e])=>e===1)?`For n = p·q this is (p − 1)(q − 1): exactly the RSA case, with n = ${n}.`:'These are the rules of lecture 7, slides 26–28.'};
+  return{t:'What φ(n) counts',rows:[{s:`the ${phi} green numbers have an inverse modulo ${n}`,txt:1},n===26?{s:'for the affine cipher: the 12 allowed keys a',txt:1}:{s:'RSA: φ(n) = (p − 1)(q − 1) for n = p·q',txt:1}],note:'Tab 2 shows why: x has an inverse modulo n exactly when gcd(x, n) = 1.'};
+}
+T.phi={n:()=>PV.K+5,render(k){CUR=k;const{n,F,K,newc,allc,units,phi}=PV,fm=phiFormula();
+  stage.innerHTML=scnBox(960,pH(),pParts(),'')+wbHTML(wbP(k));
+  scnFit();poseNow(pPose(k));
+  PARTI={pf:`${n} = ${fStr(F)}`,pcnt:`φ(${n}) = ${phi}`};
+  for(let x=1;x<n;x++){const g=gN(x,n);PARTI['pc'+x]=g===1?`gcd(${x}, ${n}) = 1: ${x} is coprime to ${n}.`:`gcd(${x}, ${n}) = ${g}: ${x} shares the factor ${g} with ${n}.`}
+  $('#explain').innerHTML=[say('Euler’s φ function',`φ(${n}) counts the numbers 1, 2, …, ${n-1} that have no common factor with ${n}. We find them by crossing out every number that shares a prime factor with ${n}. Press <b>Step</b>.`),
+    say('Step 1 · the prime factors',fm.one?`${n} is prime: it has no factor except 1 and itself, so no number below it shares a factor with it.`:`${n} = ${fStr(F)}. A number shares a factor with ${n} exactly when ${K>1?'one of these primes divides it':`${F[0][0]} divides it`}.`),
+    ...F.map(([p],j)=>say(`Step ${j+2} · multiples of ${p}`,allc[j]?`Cross out ${allc[j]<=3?Array.from({length:allc[j]},(_,i)=>p*(i+1)).join(', '):`${p}, ${2*p}, ${3*p}, …`}: ${allc[j]} number${allc[j]===1?'':'s'}.${allc[j]>newc[j]?` ${allc[j]-newc[j]} of them ${allc[j]-newc[j]>1?'were':'was'} already crossed (orange ring): ${allc[j]-newc[j]>1?'they are':'it is'} multiples of both primes.`:''}`:`No multiple of ${p} is below ${n}, so nothing is crossed out.`)),
+    say('Count what is left',`${phi} numbers are left, so <b>φ(${n}) = ${phi}</b>.`),
+    say('The formula',fm.one?`For a prime p, every number below p is coprime to it: φ(p) = p − 1 = ${phi}.`:`Lecture 7 gives the rules φ(pᵉ) = pᵉ − pᵉ⁻¹ and φ(a·b) = φ(a)·φ(b) for coprime a and b. Here φ(${n}) = ${fm.t1} = ${fm.v}: the same count, without crossing anything out.`),
+    say('What it counts',`The ${phi} green numbers are exactly those with an inverse modulo ${n} (tab 2).${n===26?' For the affine cipher, these are the 12 allowed keys a.':''} In RSA, φ(n) for n = p·q is (p − 1)(q − 1), and the key d is the inverse of e modulo φ(n).`)][k];
+  $('#extra').innerHTML=`<h3>Why the formula works for n = p·q</h3><p>Below n there are n − 1 numbers. The multiples of p among them are q − 1 numbers, and the multiples of q are p − 1 numbers, with none counted twice. So φ(p·q) = (p·q − 1) − (q − 1) − (p − 1) = (p − 1)(q − 1).</p><p class="note">Try the lecture’s examples: 17, 25, 35 and 240.</p>`+quiz('phi');
+},
+plan(k){const K=PV.K;return scnPlan(pPose,k,pPhases(k),k>=2&&k<=K+2?1700:900)},
+focus(){follow($('#scn'))}};
+
+/* ---------- tab 5 · Fermat's little theorem and Euler's theorem: a table of powers ---------- */
+let FE;
+const phiOf=n=>{let r=0;for(let x=1;x<n;x++)if(gN(x,n)===1)r++;return r};
+function feVals(){
+  const fer=ST.fm==='fer',n=fer?ST.fp:ST.fn,K=fer?n-1:phiOf(n);
+  const A=fer?3:[...Array(n).keys()].find(x=>x>1&&gN(x,n)===1);
+  const rows=[];for(let a=1;a<n;a++){const v=[];let c=1;for(let k=1;k<=K;k++){c=c*a%n;v.push(c)}rows.push({a,v,co:gN(a,n)===1})}
+  const e=100%K,ek=e===0?K:e,p100=Number(modpow(BigInt(A),100n,BigInt(n))),inv=Number(modpow(BigInt(A),BigInt(K-1),BigInt(n)));
+  const cw=Math.min(62,Math.floor(540/K)),rh=Math.min(38,Math.floor(372/(n-1)));
+  return{fer,n,K,A,rows,e,ek,p100,inv,nc:rows.filter(r=>!r.co).map(r=>r.a),cw,rh,H:Math.max(380,62+(n-1)*rh+24)};
+}
+const fXY=(a,k)=>[116+FE.cw/2+(k-1)*FE.cw,62+FE.rh/2+(a-1)*FE.rh];
+const fSty=(lab)=>`width:${lab?Math.min(44,FE.cw-6):FE.cw-6}px;height:${FE.rh-5}px;font-size:${FE.rh>=32?16:FE.rh>=27?14.5:13}px`;
+{const v=Number(modpow(2n,100n,7n));QZ.fe={q:'By Fermat’s little theorem, what is 2¹⁰⁰ mod 7?',o:['1',String(v),'4'],a:1,why:`2⁶ ≡ 1 (mod 7), and 100 = 16·6 + 4, so 2¹⁰⁰ ≡ 2⁴ = 16 ≡ ${v}.`}}
+const SUPP=(b,e)=>`${b}<sup>${e}</sup>`;
+function fParts(){
+  const{fer,n,K,A,rows,ek,p100,inv}=FE;let h='';
+  h+=PS('fhh','cl hd','a \\ k','the table','width:48px;height:28px');
+  for(let k=1;k<=K;k++)h+=PS('fh'+k,'cl hd',`a<sup>${k}</sup>`,'the column a to the power '+k,`width:${FE.cw-4}px;height:28px`);
+  rows.forEach(r=>{h+=PS('fr'+r.a,'cl fcl lab'+(r.a===A?' me':''),String(r.a),'the row a = '+r.a,fSty(1));
+    r.v.forEach((v,i)=>{h+=PS(`f${r.a}_${i+1}`,'cl fcl'+(v===1?' one':'')+(r.a===A?' me':''),String(v),`${r.a} to the power ${i+1}`,fSty())})});
+  h+=bubP('fin','',fer?`p = ${n} is prime`:`n = ${n},  φ(${n}) = ${K}`);
+  h+=bubP('fth','ok',fer?`<b class="m">a${sp(n-1)} ≡ 1 (mod ${n})</b><br>for every a = 1, …, ${n-1}`:`<b class="m">a<sup>φ(${n})</sup> = a${sp(K)} ≡ 1 (mod ${n})</b><br>for every a with gcd(a, ${n}) = 1`);
+  h+=bubP('fu1','',`<b class="m">${A}¹⁰⁰ ≡ ${A}${sp(FE.e)} ≡ ${p100}</b><br>since 100 = ${Math.floor(100/K)}·${K} + ${FE.e}`);
+  h+=bubP('fu2','',`<b class="m">${A}⁻¹ ≡ ${A}${sp(K-1)} ≡ ${inv} (mod ${n})</b><br>check: ${A}·${inv} = ${A*inv} ≡ 1`);
+  return h;
+}
+function fPose(k){
+  const{n,K,A,rows,ek}=FE,P={cam:'F',fhh:{at:[80,40],o:1},fin:{at:[822,60],o:1},fth:{at:[822,140],o:k>=K+1},fu1:{at:[822,236],o:k>=K+2},fu2:{at:[822,326],o:k>=K+3}};
+  for(let j=1;j<=K;j++)P['fh'+j]={at:[fXY(1,j)[0],40],o:1};
+  rows.forEach(r=>{P['fr'+r.a]={at:[80,fXY(r.a,1)[1]],o:1,c:{nc:k>=K+1&&!r.co}};
+    r.v.forEach((v,i)=>{const j=i+1;P[`f${r.a}_${j}`]={at:fXY(r.a,j),o:j<=k,c:{nc:k>=K+1&&!r.co,glow:k===K+1&&j===K&&r.co,colg:k>K+1&&j===K&&r.co,pk:r.a===A&&((k===K+2&&j===ek)||(k===K+3&&j===K-1))}}})});
+  return P;
+}
+function fPhases(k){
+  const{n,K,A,rows,ek}=FE;
+  if(k<=K){const L=[];rows.forEach((r,i)=>L.push([.06+.72*i/rows.length,{[`f${r.a}_${k}`]:{o:1}},.12]));return L}
+  if(k===K+1){const G={};rows.forEach(r=>{if(r.co)G[`f${r.a}_${K}`]={c:{glow:1}};else{G['fr'+r.a]={c:{nc:1}};r.v.forEach((v,i)=>{G[`f${r.a}_${i+1}`]={c:{nc:1}}})}});return[[.08,G,.25],[.5,{fth:{o:1}},.25]]}
+  const G={};rows.forEach(r=>{if(r.co)G[`f${r.a}_${K}`]={c:{glow:0,colg:1}}});
+  if(k===K+2)return[[0,G,.1],[.12,{[`f${A}_${ek}`]:{c:{pk:1}}},.2],[.42,{fu1:{o:1}},.25]];
+  return[[0,{[`f${A}_${ek}`]:{c:{pk:0}}},.1],[.12,{[`f${A}_${K-1}`]:{c:{pk:1}}},.2],[.42,{fu2:{o:1}},.25]];
+}
+function wbF(k){
+  const{fer,n,K,A,rows,e,ek,p100,inv,nc}=FE,ra=rows[A-1];
+  if(k===0)return{t:fer?`Powers modulo the prime ${n}`:`Powers modulo ${n}, with φ(${n}) = ${K}`,rows:[{s:`row a, column k: a<sup>k</sup> mod ${n}`,txt:1},{s:`each new column = the column before × a, mod ${n}`,txt:1}],note:'Watch which numbers appear in the last column.'};
+  if(k<=K){const pv=k===1?1:ra.v[k-2],v=ra.v[k-1];return{t:`Column ${k} · a<sup>${k}</sup> mod ${n}`,rows:[{s:k===1?`${A}<sup>1</sup> = ${A}`:`${SUPP(A,k)} = ${SUPP(A,k-1)} · ${A}`,n:k===1?null:`${pv} · ${A} = ${pv*A}`,r:`${v}`,v:v===1?'= 1':null,ok:true,f:k===1?`${A}`:`${pv}·${A} = ${pv*A} = ${Math.floor(pv*A/n)}·${n} + ${v}`}],note:k===1?'The highlighted row a = '+A+' is worked out here; the other rows are made the same way.':''}}
+  if(k===K+1)return fer?{t:'Fermat’s little theorem',rows:[{s:`a${sp(n-1)} ≡ 1 (mod ${n})`,v:'every row',ok:true}],note:`For a prime p and any a that p does not divide. Lecture 7 also writes it as aᵖ ≡ a (mod p), which holds for every a.`}
+    :{t:'Euler’s theorem',rows:[{s:`a<sup>φ(${n})</sup> = a${sp(K)} ≡ 1 (mod ${n})`,v:'if gcd(a, n) = 1',ok:true},{s:`rows ${nc.join(', ')} share a factor with ${n}`,txt:1,v:'never 1',ok:false}],note:'For a prime n, φ(n) = n − 1 and this is Fermat’s little theorem again.'};
+  if(k===K+2)return{t:`Big exponents shrink: ${A}¹⁰⁰ mod ${n}`,rows:[{s:`100 = ${Math.floor(100/K)} · ${K} + ${e}`,txt:1},{s:`${A}¹⁰⁰ = (${SUPP(A,K)})<sup>${Math.floor(100/K)}</sup> · ${SUPP(A,e)}`,n:`1 · ${SUPP(A,e)}`,r:`<b class="cs">${p100}</b>`,v:'check',ok:p100===(e===0?1:ra.v[e-1]),f:`${A}^100 mod ${n} = ${p100}`}],note:`Only the exponent modulo ${K} matters. RSA uses this to make decryption undo encryption.`};
+  return{t:`An inverse without Euclid: ${A}⁻¹ mod ${n}`,rows:[{s:`${A} · ${SUPP(A,K-1)} = ${SUPP(A,K)} ≡ 1`,txt:1},{s:`${A}⁻¹ ≡ ${SUPP(A,K-1)} mod ${n}`,r:`<b class="cs">${inv}</b>`,f:`${A}^${K-1} mod ${n} = ${inv}`},{s:`check: ${A} · ${inv} = ${A*inv}`,n:`${Math.floor(A*inv/n)}·${n} + ${A*inv%n}`,r:'1',v:'✓',ok:A*inv%n===1}],note:fer?`Lecture 7: a⁻¹ ≡ a<sup>p−2</sup> (mod p).${n===7&&A===3?' Slide 29 has this example: 3⁵ = 243 = 34·7 + 5.':''}`:`With Euler’s theorem: a⁻¹ ≡ a<sup>φ(n)−1</sup> (mod n).`};
+}
+T.fe={n:()=>FE.K+4,render(k){CUR=k;const{fer,n,K,A,rows,e,p100,inv,nc}=FE;
+  stage.innerHTML=scnBox(960,FE.H,fParts(),'')+wbHTML(wbF(k));
+  scnFit();poseNow(fPose(k));
+  PARTI={fin:fer?`${n} is prime.`:`φ(${n}) = ${K}: the numbers ${rows.filter(r=>r.co).map(r=>r.a).join(', ')}.`};
+  rows.forEach(r=>{PARTI['fr'+r.a]=r.co?`gcd(${r.a}, ${n}) = 1`:`gcd(${r.a}, ${n}) = ${gN(r.a,n)}: this row never reaches 1.`;r.v.forEach((v,i)=>{PARTI[`f${r.a}_${i+1}`]=`${r.a}^${i+1} mod ${n} = ${v}`})});
+  $('#explain').innerHTML=[say(fer?'Fermat’s little theorem':'Euler’s theorem',`The table shows a<sup>k</sup> mod ${n} for every a = 1, …, ${n-1}. Column k is column k − 1 times a. ${fer?`${n} is prime.`:`φ(${n}) = ${K}.`} Press <b>Step</b> and watch the last column.`),
+    ...Array.from({length:K},(_,i)=>{const k=i+1,v=ra(k);return say(`Column ${k}`,k===1?`a¹ = a.`:`Each number of column ${k-1} is multiplied by its row’s a, mod ${n}. In the row a = ${A}: ${SUPP(A,k)} ≡ <b>${v}</b>.`,k===K?(fer?`This is the column k = p − 1 = ${K}.`:`This is the column k = φ(${n}) = ${K}.`):'')}),
+    fer?say('Every row ends in 1',`a${sp(n-1)} ≡ 1 (mod ${n}) for every a from 1 to ${n-1}: <b>Fermat’s little theorem</b>. It holds for every prime p and every a that p does not divide.`)
+      :say('Every coprime row ends in 1',`a${sp(K)} ≡ 1 (mod ${n}) for every a with gcd(a, ${n}) = 1: <b>Euler’s theorem</b>, a<sup>φ(n)</sup> ≡ 1 (mod n). The grey rows (${nc.join(', ')}) share a factor with ${n} and never reach 1.`),
+    say('Use 1 · big exponents',`Since ${SUPP(A,K)} ≡ 1, the exponent counts only modulo ${K}: 100 = ${Math.floor(100/K)}·${K} + ${e}, so ${A}¹⁰⁰ ≡ ${SUPP(A,e)} ≡ <b>${p100}</b> (mod ${n}).`),
+    say('Use 2 · an inverse',`${A}·${SUPP(A,K-1)} = ${SUPP(A,K)} ≡ 1, so <b>${A}⁻¹ ≡ ${SUPP(A,K-1)} ≡ ${inv}</b> (mod ${n}). ${fer?'Lecture 7 writes a⁻¹ ≡ a<sup>p−2</sup> (mod p).':'In general a⁻¹ ≡ a<sup>φ(n)−1</sup> (mod n).'} For large n, the extended Euclidean algorithm (tab 3) is usually faster.`)][k];
+  $('#extra').innerHTML=`<h3>The pattern in the rows</h3><p>In each row the first 1 comes at a k that divides ${K}, and from there the row repeats. That is why column ${K} is all 1s.</p><p class="note">Switch between Fermat (a prime p) and Euler (any n) above the picture. The lecture uses p = 7 and n = 12.</p>`+quiz('fe');
+  function ra(k){return rows[A-1].v[k-1]}
+},
+plan(k){return scnPlan(fPose,k,fPhases(k),k<=FE.K?1200:1300)},
+focus(){follow($('#scn'))}};
+
+function compute(){GV=gcdVals();IV=invVals();EV=eeaVals();PV=phiVals();FE=feVals();D.v++}
+
+/* ---------- the longer read under the picture ---------- */
+const dbox=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const DEX=b=>dbox('Example',b),DNO=b=>dbox('Careful',b,'no'),DUSE=b=>dbox('In cryptography',b,'use');
+const DM=s=>`<span class="mth">${s}</span>`;
+const GO=(id,t)=>`<a href="#" data-goto="${id}">${t}</a>`;
+// reading references: section numbers from the books' tables of contents, HAC numbers checked against the chapter itself
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)';
+const HAC='Menezes, van Oorschot, Vanstone, <cite>Handbook of Applied Cryptography</cite> (CRC Press, 1996), chapter 2, section 2.4, “Number theory”, free at <a href="https://cacr.uwaterloo.ca/hac/" target="_blank" rel="noopener">cacr.uwaterloo.ca/hac</a>';
+const LEC='Lecture 7 of this course, “Public-Key Cryptography”';
+const REFS={
+  gcd:[`${PAAR}, chapter 6: section 6.3.1, “Euclidean Algorithm”.`,`${HAC}: Algorithm 2.104, the Euclidean algorithm, and Fact 2.105 on its running time.`,`${LEC}, slides 32–33.`],
+  inv:[`${PAAR}, chapter 1: section 1.4.2, “Integer Rings”, and section 1.4.4, “Affine Cipher”; chapter 6, section 6.3.2, “Extended Euclidean Algorithm”.`,`${HAC}: Definition 2.115, the multiplicative inverse, and Algorithm 2.142, computing inverses in ℤ<sub>n</sub>.`,`${LEC}, slide 36.`],
+  eea:[`${PAAR}, chapter 6: section 6.3.2, “Extended Euclidean Algorithm”.`,`${HAC}: Algorithm 2.107, the extended Euclidean algorithm, with the worked Example 2.109.`,`${LEC}, slides 34–39.`],
+  phi:[`${PAAR}, chapter 6: section 6.3.3, “Euler’s Phi Function”.`,`${HAC}: Definition 2.100 and Fact 2.101, the Euler phi function and its properties.`,`${LEC}, slides 25–28.`],
+  fe:[`${PAAR}, chapter 6: section 6.3.4, “Fermat’s Little Theorem and Euler’s Theorem”.`,`${HAC}: Fact 2.126, Euler’s theorem, and Fact 2.127, Fermat’s theorem.`,`${LEC}, slides 29–30, and lecture 8, slide 24 (the Fermat primality test).`]
+};
+const MORE=id=>REFS[id]&&REFS[id].length?dbox('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk'):'';
+const divRows=(a,b)=>euclid(a,b).R.map(d=>`${d.a} = ${d.q}·${d.b} + ${d.r}`).join('<br>');
+// writing the gcd as a combination by going back up the divisions
+function backSub(a,b){
+  const R=euclid(a,b).R;if(R.length<2)return null;
+  const L=R.length-2,lines=[];let x=1n,y=-R[L].q,u=R[L].a,v=R[L].b;
+  lines.push(`${R[L].r} = ${u} − ${R[L].q}·${v}`);
+  for(let j=L-1;j>=0;j--){const d=R[j];// v = d.a − d.q·d.b, and u = d.b
+    const nx=y,ny=x-y*d.q;lines.push(`= ${pn(x)}·${d.b} + ${pn(y)}·(${d.a} − ${d.q}·${d.b}) = ${pn(nx)}·${d.a} + ${pn(ny)}·${d.b}`);x=nx;y=ny;u=d.a;v=d.b}
+  return{lines,x,y};
+}
+const tbl=(head,rows)=>`<div class="scroll"><table class="svc"><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table></div>`;
+
+T.gcd.doc=()=>{const{A,B,g,m}=GV,lec=euclid(1180n,482n),fib=euclid(987n,610n);
+  return`<h2>The greatest common divisor and Euclid’s algorithm</h2>
+  <p class="lead">The greatest common divisor gcd(a, b) of two positive integers is the largest integer that divides both. Two numbers with gcd 1 are called <b>coprime</b> or relatively prime.</p>
+  <h3>Division with remainder</h3>
+  <p>For integers a and b > 0 there is exactly one pair q, r with ${DM('a = q·b + r,  0 ≤ r < b')}. q is the quotient, a div b, and r is the remainder, a mod b. The calculator next to the walkthrough computes both.</p>
+  <h3>Euclid’s algorithm</h3>
+  <p>Lecture 7 gives it for a ≥ b ≥ 0: while b ≠ 0, set r ← a mod b, a ← b, b ← r. When b = 0, the result is a. It works because ${DM('gcd(a, b) = gcd(b, a mod b)')}, and the remainders get smaller until one is 0.</p>
+  ${DEX(`The lecture’s example, gcd(1180, 482):<br>${DM(divRows(1180n,482n))}<br>The last remainder that is not 0 is ${lec.g}, so gcd(1180, 482) = ${lec.g}.`)}
+  ${A!==1180n||B!==482n?DEX(`Your numbers, gcd(${nm(A)}, ${nm(B)}) = ${nm(g)}, after ${m} division${m>1?'s':''}.`):''}
+  <h3>How fast it is</h3>
+  <p>Every two divisions at least halve the remainder, so the number of divisions grows only with the number of digits. Lamé showed that it is never more than five times the number of digits of the smaller number. Consecutive Fibonacci numbers are the slowest case: 987 and 610 need ${fib.R.length} divisions, the most of any pair below 1000. For 2048-bit RSA numbers, the algorithm needs a few thousand divisions at most.</p>
+  ${DNO(`Stop at the last remainder that is not 0. The final remainder is always 0, and it is not the gcd. Also gcd(a, 0) = a, because every number divides 0.`)}
+  ${DUSE(`Key generation checks gcd values: the affine key a needs gcd(a, 26) = 1, and the RSA exponent e needs gcd(e, φ(n)) = 1, or no decryption key exists. The same divisions, with two more columns, give the inverse: ${GO('eea','the extended Euclidean algorithm')} in tab 3.`)}
+  <p class="fine">The algorithm is in Book VII of Euclid’s <cite>Elements</cite>, which is a self-contained introduction to number theory.</p>
+  ${MORE('gcd')}`};
+
+T.inv.doc=()=>{const{n,a,inv,units}=IV,u26=[];for(let x=1;x<26;x++)if(gN(x,26)===1)u26.push([x,Number(modinv(BigInt(x),26n))]);
+  const rsa=modinv(7n,20n);
+  return`<h2>The inverse modulo n</h2>
+  <p class="lead">The inverse of a modulo n is the number a⁻¹ in 0, …, n − 1 with ${DM('a · a⁻¹ ≡ 1 (mod n)')}. It exists exactly when gcd(a, n) = 1, and then it is unique.</p>
+  <h3>Why gcd(a, n) must be 1</h3>
+  <p>If a·x ≡ 1 (mod n), then a·x − k·n = 1 for some integer k. Any common divisor of a and n divides the left side, so it divides 1. In the other direction, if gcd(a, n) = 1, the extended Euclidean algorithm writes 1 = s·n + t·a, and t is the inverse.</p>
+  ${DEX(`Modulo ${n}: ${inv!=null?`${DM(`${a}⁻¹ ≡ ${inv}`)}, since ${a}·${inv} = ${a*inv} = ${Math.floor(a*inv/n)}·${n} + 1.`:`${a} has no inverse, since gcd(${a}, ${n}) = ${gN(a,n)}.`}`)}
+  <h3>All inverses modulo 26</h3>
+  <p>These are the 12 keys a that the affine cipher allows, each with the number that decrypts it:</p>
+  ${tbl(['a',...u26.map(u=>u[0])],[['a⁻¹',...u26.map(u=>u[1])]])}
+  ${DNO(`a⁻¹ is not the fraction 1/a: modulo 26, 1/5 = 0.2 means nothing, but 5⁻¹ = 21. Trying x = 1, 2, 3, … needs up to n − 1 tries, which is fine for 26 and hopeless for RSA numbers of 600 digits. The extended Euclidean algorithm (tab 3) needs only a few divisions, and the x it gives can be negative: then add n.`)}
+  ${DUSE(`The affine cipher decrypts with x = a⁻¹·(y − b) mod 26. RSA’s private key is an inverse too: d = e⁻¹ mod φ(n). Lecture 8 uses φ(n) = 20 and e = 7, which gives ${DM(`d = 7⁻¹ mod 20 = ${rsa}`)}, since 7·${rsa} = ${7n*rsa} = ${7n*rsa/20n}·20 + 1.`)}
+  ${MORE('inv')}`};
+
+T.eea.doc=()=>{const{a,b,g,L,inv,R}=EV,lec=eeaRows(67n,12n),l2=eeaRows(240n,46n),bs=a.toString().length<=6?backSub(a,b):null,rs=eeaRows(HP*HQ-HP-HQ+1n,65537n);
+  const show=T=>tbl(['i','q<sub>i−1</sub>','r<sub>i</sub>','s<sub>i</sub>','t<sub>i</sub>'],T.R.map(w=>[w.i,w.q==null?'':nf(w.q),nf(w.r),nf(w.s),nf(w.t)]));
+  return`<h2>The extended Euclidean algorithm</h2>
+  <p class="lead">The extended Euclidean algorithm finds the greatest common divisor of two integers a and b and, in the same run, two integers x and y with ${DM('a·x + b·y = gcd(a, b)')}. The numbers x and y are called the <b>Bézout coefficients</b> of a and b.</p>
+  <p>Euclid’s algorithm alone gives only the gcd. The two coefficients are what cryptography needs: when gcd(a, b) = 1, reading the equation modulo a removes the term a·x and leaves b·y ≡ 1 (mod a), so y is the inverse of b modulo a. This is how RSA computes its private key and how the affine cipher finds a⁻¹. This page writes s and t for x and y, as slide 39 of lecture 7 does, with r₀ = a and r₁ = b.</p>
+  <h3>The rows</h3>
+  <p>Start with s₀ = 1, t₀ = 0 and s₁ = 0, t₁ = 1. For i = 2, 3, …, until r<sub>i</sub> = 0:</p>
+  <p>${DM('q<sub>i−1</sub> = r<sub>i−2</sub> div r<sub>i−1</sub>')}<br>${DM('r<sub>i</sub> = r<sub>i−2</sub> − q<sub>i−1</sub>·r<sub>i−1</sub>,  s<sub>i</sub> = s<sub>i−2</sub> − q<sub>i−1</sub>·s<sub>i−1</sub>,  t<sub>i</sub> = t<sub>i−2</sub> − q<sub>i−1</sub>·t<sub>i−1</sub>')}</p>
+  <p>Every row keeps r<sub>i</sub> = s<sub>i</sub>·r₀ + t<sub>i</sub>·r₁. The last row with r<sub>i</sub> ≠ 0 holds the gcd and its s and t.</p>
+  ${DEX(`The lecture’s example, 12⁻¹ mod 67:${show(lec)}From row ${lec.L.i}: ${DM(`1 = ${pn(lec.L.s)}·67 + ${lec.L.t}·12`)}, so 12⁻¹ mod 67 = ${lec.inv}. Check: 12·${lec.inv} = ${12n*lec.inv} = ${12n*lec.inv/67n}·67 + 1.`)}
+  ${DEX(`The lecture’s table for 240 and 46, completed:${show(l2)}${DM(`${l2.g} = ${pn(l2.L.s)}·240 + ${l2.L.t}·46`)}. The gcd is ${l2.g}, not 1, so 46 has no inverse modulo 240.`)}
+  ${bs?`<h3>By hand: going back up</h3><p>Without a table, write the gcd from the last division and replace the remainders one by one, going up. For ${a} and ${b}:</p>${DEX(`${DM(divRows(a,b))}<br><br>${DM(bs.lines.join('<br>'))}<br>The same s = ${nf(bs.x)} and t = ${nf(bs.y)} as in the table.`)}`:''}
+  ${DNO(`Books and slides name the columns differently: x and y, or s and t. Whatever the names, the inverse is the coefficient that multiplies the number you invert, and it can be negative: then add the modulus once. Lecture 7 writes the algorithm for a ≥ b, so to invert 12 modulo 67, run it on 67 and 12.`)}
+  ${DUSE(`RSA computes its private key this way: d = e⁻¹ mod φ(n). For the 2048-bit key of the ${'<a href="rsa.html">RSA page</a>'} and e = 65537, the table has only ${rs.R.length} rows. Trying d = 1, 2, 3, … would need about d tries, and this d has ${rs.inv.toString().length} digits.`)}
+  ${MORE('eea')}`};
+function eeaRows(a,b){const s={ea:ST.ea,eb:ST.eb};ST.ea=a;ST.eb=b;const v=eeaVals();ST.ea=s.ea;ST.eb=s.eb;return v}
+
+T.phi.doc=()=>{const{n,phi,F}=PV,ex=[[17,'17 is prime'],[32,'2⁵'],[25,'5²'],[35,'5 · 7'],[240,'2⁴ · 3 · 5'],[899,'29 · 31'],[12,'2² · 3']];
+  return`<h2>Euler’s φ function</h2>
+  <p class="lead">φ(n) is the number of integers from 1 to n − 1 that are coprime to n, that is, have gcd 1 with n. By convention φ(1) = 1.</p>
+  <h3>The rules</h3>
+  <ul class="pts"><li>For a prime p: φ(p) = p − 1, since every smaller number is coprime to p.</li><li>For a prime power: φ(pᵉ) = pᵉ − pᵉ⁻¹, since exactly the multiples of p share a factor with pᵉ.</li><li>For coprime a and b: φ(a·b) = φ(a)·φ(b).</li></ul>
+  <p>Together: if n = p₁<sup>e₁</sup>·…·p<sub>k</sub><sup>e<sub>k</sub></sup> with different primes p<sub>i</sub>, then ${DM('φ(n) = (p₁<sup>e₁</sup> − p₁<sup>e₁−1</sup>)·…·(p<sub>k</sub><sup>e<sub>k</sub></sup> − p<sub>k</sub><sup>e<sub>k</sub>−1</sup>)')}. For n = p·q this is (p − 1)(q − 1).</p>
+  ${DEX(`The lecture’s examples, each counted by this page:<br>${ex.map(([x,f])=>DM(`φ(${x}) = ${phiOf(x)}`)+` (${f})`).join('<br>')}`)}
+  ${DNO(`φ(a·b) = φ(a)·φ(b) needs gcd(a, b) = 1: φ(4) = ${phiOf(4)}, but φ(2)·φ(2) = 1. And φ(n) is easy only for someone who knows the prime factors of n. For an RSA modulus, lecture 8 notes that the best known way to get φ(n) is to factor n.`)}
+  ${DUSE(`RSA chooses n = p·q, so φ(n) = (p − 1)(q − 1), and the private key is d = e⁻¹ mod φ(n). Euler’s theorem (tab 5) is the reason decryption works.`)}
+  <p class="fine">Euler introduced this function; it is also called Euler’s totient function.</p>
+  ${MORE('phi')}`};
+
+T.fe.doc=()=>{const c561=Number(modpow(2n,560n,561n)),perm=[1,2,3,4,5,6].map(x=>3*x%7),m=18n,c=modpow(m,7n,33n),back=modpow(c,3n,33n);
+  return`<h2>Fermat’s little theorem and Euler’s theorem</h2>
+  <p class="lead">${DM('Fermat: if p is prime and p does not divide a, then a<sup>p−1</sup> ≡ 1 (mod p).')}<br>${DM('Euler: if gcd(a, n) = 1, then a<sup>φ(n)</sup> ≡ 1 (mod n).')}<br>For a prime n, φ(n) = n − 1, so Fermat’s theorem is the special case of Euler’s.</p>
+  <h3>Why Fermat’s theorem holds</h3>
+  <p>Multiply each of 1, 2, …, p − 1 by a, modulo p. No two products are equal, because a has an inverse, so the products are the same numbers in another order. Multiplying all of them gives a<sup>p−1</sup>·(p − 1)! ≡ (p − 1)!, and (p − 1)! can be cancelled because it is coprime to p.</p>
+  ${DEX(`p = 7, a = 3: the numbers 1, …, 6 become ${DM(perm.join(', '))}, the same six in another order. So 3⁶ ≡ ${Number(modpow(3n,6n,7n))} (mod 7).`)}
+  ${DEX(`From lecture 7: ${DM(`3⁻¹ mod 7 = 3⁵ mod 7 = 243 mod 7 = ${Number(modpow(3n,5n,7n))}`)}, and ${DM(`5<sup>φ(12)</sup> = 5⁴ = 625 ≡ ${Number(modpow(5n,4n,12n))} (mod 12)`)}.`)}
+  ${DNO(`The converse is false: a<sup>n−1</sup> ≡ 1 does not prove that n is prime. 561 = 3·11·17 is not prime, yet ${DM(`2⁵⁶⁰ mod 561 = ${c561}`)}, and the same holds for every a coprime to 561. Such numbers are called Carmichael numbers; Carmichael found 561, the smallest of them, in 1910. The Fermat test of lecture 8 is fooled by them, and the Miller–Rabin test is used instead.`)}
+  ${DUSE(`RSA decryption works because e·d = 1 + k·φ(n), so ${DM('(x<sup>e</sup>)<sup>d</sup> = x · (x<sup>φ(n)</sup>)<sup>k</sup> ≡ x (mod n)')} for x coprime to n (it also holds for the other x). Lecture 8’s example, n = 33, e = 7, d = 3: ${DM(`18⁷ mod 33 = ${c}`)} and ${DM(`${c}³ mod 33 = ${back}`)}. Diffie–Hellman relies on the same fact in ℤ<sub>p</sub>*: see the <a href="dlog.html">discrete logarithm page</a>.`)}
+  ${MORE('fe')}`};
+
+// the card is rebuilt only when the tab, a choice or the numbers change, and written only when its text changes
+let DOCK='',DOCH='';
+function fillDoc(){
+  const t=T[ST.tab],ck=[ST.tab,ST.ga,ST.gb,ST.in,ST.ia,ST.ea,ST.eb,ST.pn,ST.fm,ST.fp,ST.fn,D.v].join('|');
+  if(ck===DOCK)return;DOCK=ck;
+  const h=t.doc?t.doc():'',dc=$('#doc');dc.hidden=!h;if(h!==DOCH){DOCH=h;dc.innerHTML=h}
+}
+
+/* ---------- step engine: one animation at a time ----------
+   Each tab: n() = number of states, render(k) = static picture after step k,
+   plan(k) = {dur, start()} where start() returns tick(p) that animates step k−1 → k. */
+const ENG={playing:false,anim:null,playT:null};
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const speed=()=>+$('#spd').value;
+function curN(){return T[ST.tab].n()}
+// room is kept for the longest text of a walkthrough, so the picture does not move from step to step
+const ROOM={k:'',h:0},NARROW=matchMedia('(max-width:1000px)');
+function drawStep(t,k){
+  const ex=$('#explain'),n=t.n();ex.style.minHeight=ex.style.marginBottom='';
+  PARTI={};
+  if(n<2){t.render(k);return}
+  const sig=Object.entries(ST).filter(([,v])=>v===null||typeof v!=='object').map(([a,v])=>a+'='+v).join(','),ck=`${n}|${ex.clientWidth}|${D.v}|${sig}`;
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){t.render(j);h=Math.max(h,ex.offsetHeight)}ROOM.k=ck;ROOM.h=h}
+  PARTI={};t.render(k);
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function controls(k){
+  const t=T[ST.tab],n=t.n(),stepped=n>1,a=!!ENG.anim;
+  $('#prog').textContent=stepped?`Step ${k} of ${n-1}`:'';
+  $('#pfill').style.width=stepped?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0&&!a;$('#bStep').disabled=k>=n-1&&!a;
+  $('#fWrap').hidden=!t.focus;
+  fillDoc();
+}
+function show(){
+  if(ENG.anim||ENG.playT){ENG.anim=null;setPlaying(false)}
+  const t=T[ST.tab],k=clamp(ST.step[ST.tab]||0,0,t.n()-1);ST.step[ST.tab]=k;
+  fxClear();drawStep(t,k);controls(k);
+}
+function startStage(to){
+  stopAnim(true);
+  const tab=ST.tab,t=T[tab],n=t.n();if(to<1||to>n-1)return;
+  ST.step[tab]=to;fxClear();drawStep(t,to);
+  const pl=t.plan&&t.plan(to),tick=pl?pl.start():null;
+  if(!tick){fxClear();drawStep(t,to);controls(to);next();return}
+  const a={tab,to,tick,t0:performance.now(),dur:Math.max(60,(RM.matches?Math.min(pl.dur,180):pl.dur)/speed())};
+  ENG.anim=a;controls(to);tick(0);
+  if(t.focus&&$('#follow').checked)t.focus(to);
+  requestAnimationFrame(function f(now){if(ENG.anim!==a)return;const p=clamp((now-a.t0)/a.dur,0,1);a.tick(p);if(p<1)requestAnimationFrame(f);else finish()});
+}
+function finish(){const a=ENG.anim;if(!a)return;ENG.anim=null;fxClear();drawStep(T[a.tab],a.to);controls(a.to);next()}
+function next(){
+  if(!ENG.playing)return;const k=ST.step[ST.tab];
+  if(k<curN()-1)ENG.playT=setTimeout(()=>{ENG.playT=null;startStage(k+1)},(RM.matches?60:380)/speed());else setPlaying(false);
+}
+function stopAnim(complete){
+  if(ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}
+  const a=ENG.anim;if(!a)return;ENG.anim=null;ST.step[a.tab]=complete?a.to:a.to-1;fxClear();
+  if(a.tab===ST.tab){drawStep(T[a.tab],ST.step[a.tab]);controls(ST.step[a.tab])}
+}
+function setPlaying(on){ENG.playing=on;if(!on&&ENG.playT){clearTimeout(ENG.playT);ENG.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play'}
+function follow(el){
+  if(!el)return;const r=el.getBoundingClientRect(),vh=innerHeight;
+  if(r.top>=8&&r.bottom<=vh-8)return;
+  window.scrollBy({top:r.height>vh-16?r.top-8:r.top-(vh-r.height)/2,behavior:RM.matches?'auto':'smooth'});
+}
+function setTab(id){
+  setPlaying(false);stopAnim(true);ST.tab=id;ST.pick=null;
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  show();
+  try{localStorage.setItem('nt-tab',id)}catch(e){}
+}
+const redo=()=>{setPlaying(false);stopAnim(false);ST.pick=null};
+
+
+/* ---------- the numbers above the picture ---------- */
+const RSAPHI=(HP-1n)*(HQ-1n);
+const PRE={
+  gcd:[['1180,482','lecture 7'],['301,70',''],['4864,3458','HAC'],['987,610','the slowest pair below 1000']],
+  inv:[['26,5','key of the affine page'],['26,7',''],['26,13','no inverse'],['67,12','lecture 7']],
+  eea:[['67,12','lecture 7, slide 39'],['240,46','lecture 7, slide 38'],['26,5','the affine key'],['20,7','lecture 8: RSA'],['rsa','e = 65537']],
+  phi:[['26','affine cipher'],['17',''],['25',''],['35',''],['240','lecture 7']]};
+const FLD={gcd:[['ga','a'],['gb','b']],inv:[['in','modulus n'],['ia','a']],eea:[['ea','r₀ · the modulus'],['eb','r₁ · the number to invert']],phi:[['pn','n']]};
+const BNOTE={gcd:'Two whole numbers from 1 to 18 digits.',inv:'n from 2 to 70, and a from 1 to n − 1.',eea:'Two whole numbers above 0, up to 700 digits. The inverse of r₁ modulo r₀ is computed when gcd = 1.',phi:'n from 2 to 240.'};
+const preLab=(t,v)=>{if(v==='rsa')return'RSA-2048';const[x,y]=v.split(',');return t==='inv'?`${y} mod ${x}`:t==='eea'?`${y} mod ${x}`:y?`${x} and ${y}`:x};
+function buildBar(){
+  const t=ST.tab,ib=$('#inbar');
+  if(t==='fe'){ib.innerHTML=`<div class="cbar"><div class="ex">${sg('fm',ST.fm,[['fer','Fermat: a prime p'],['eul','Euler: any n']])}</div><div class="ex">${ST.fm==='fer'?'p = '+sg('fp',ST.fp,[[5,'5'],[7,'7'],[11,'11'],[13,'13']]):'n = '+sg('fn',ST.fn,[[9,'9'],[10,'10'],[12,'12'],[15,'15']])}</div></div>`;return}
+  const F=FLD[t].map(([k,l])=>`<div class="fld${t==='eea'?'':' sm'}"><div class="flh"><b>${l}</b></div><input type="text" id="in-${k}" data-k="${k}" value="${ST[k]}" spellcheck="false" autocomplete="off" inputmode="numeric"></div>`).join('');
+  ib.innerHTML=`<div class="cbar">${F}<div class="ex">Examples: ${PRE[t].map(([v,l])=>`<button data-pre="${v}">${preLab(t,v)}${l?` <small>${l}</small>`:''}</button>`).join('')}</div><div class="err" id="err"></div><p class="bn">${BNOTE[t]}</p></div>`;
+}
+const setErr=m=>{const e=$('#err');if(e)e.textContent=m||''};
+// a typed number is checked; only a valid one changes the walkthrough
+function readIn(k,raw){
+  const v=raw.replace(/[\s,_]/g,'');
+  if(k==='ga'||k==='gb'){if(!/^\d{1,18}$/.test(v)||BigInt(v)<1n)return['A whole number from 1, with at most 18 digits.'];return[null,BigInt(v)]}
+  if(k==='ea'||k==='eb'){if(!/^\d{1,700}$/.test(v)||BigInt(v)<1n)return['A whole number from 1, with at most 700 digits.'];return[null,BigInt(v)]}
+  if(k==='in'){if(!/^\d{1,2}$/.test(v)||+v<2||+v>70)return['n is a whole number from 2 to 70.'];if(ST.ia>=+v)return[`a must be below n: first make a smaller than ${+v}.`];return[null,+v]}
+  if(k==='ia'){if(!/^\d{1,2}$/.test(v)||+v<1||+v>=ST.in)return[`a is a whole number from 1 to ${ST.in-1}.`];return[null,+v]}
+  if(k==='pn'){if(!/^\d{1,3}$/.test(v)||+v<2||+v>240)return['n is a whole number from 2 to 240.'];return[null,+v]}
+  return['?'];
+}
+const anew=()=>{redo();ST.step[ST.tab]=0;compute();show()};
+$('#inbar').addEventListener('input',e=>{
+  const t=e.target,k=t.dataset&&t.dataset.k;if(!k)return;
+  const[err,val]=readIn(k,t.value);if(err){setErr(err);return}setErr();ST[k]=val;anew();
+});
+function goTab(id){setTab(id);buildBar();setErr()}
+
+/* ---------- the calculator: division with remainder ---------- */
+const cF=v=>v.toLocaleString('en-US').replace('-','−');
+function calc(){
+  const A=$('#cA').value.replace(/[\s,_]/g,'').replace('−','-'),B=$('#cB').value.replace(/[\s,_]/g,''),E=$('#cE');
+  let m='';if(!/^-?\d{1,700}$/.test(A))m='The dividend is a whole number, for example 3768 or −11.';else if(!/^\d{1,700}$/.test(B)||BigInt(B)===0n)m='The divisor is a whole number above 0.';
+  E.textContent=m;if(m){$('#cQ').textContent=$('#cR').textContent='–';$('#cL1').textContent=$('#cL2').textContent='';return}
+  const a=BigInt(A),b=BigInt(B);let q=a/b,r=a%b;if(r<0n){r+=b;q-=1n}
+  $('#cQ').textContent=cF(q);$('#cR').textContent=cF(r);
+  $('#cL1').innerHTML=`<b>${cF(a)} / ${cF(b)} = ${cF(q)} R ${cF(r)}</b>`;
+  $('#cL2').innerHTML=`Check the result: <b>${cF(q)} × ${cF(b)} + ${cF(r)} = ${cF(q*b+r)}</b>${q*b+r===a?'':' ✗'}. So ${cF(a)} mod ${cF(b)} = ${cF(r)}.`;
+}
+$('#calc').addEventListener('input',calc);
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)goTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(true);return}startStage((ST.step[ST.tab]||0)+1)};
+$('#bBack').onclick=()=>{setPlaying(false);if(ENG.anim){stopAnim(false);return}const k=ST.step[ST.tab]||0;if(k>0){ST.step[ST.tab]=k-1;show()}};
+$('#bReset').onclick=()=>{setPlaying(false);stopAnim(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{
+  if(ENG.playing){setPlaying(false);return}
+  const n=curN();if(n<2)return;
+  if((ST.step[ST.tab]||0)>=n-1&&!ENG.anim){ST.step[ST.tab]=0;show()}
+  setPlaying(true);if(!ENG.anim)startStage(ST.step[ST.tab]+1);
+};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');if(g){e.preventDefault();goTab(g.dataset.goto);window.scrollTo({top:$('#tabs').offsetTop-8,behavior:'smooth'});return}
+  const st=e.target.closest('[data-set]');if(st){const[k,v]=st.dataset.set.split(':');ST[k]=/^\d+$/.test(v)?+v:v;buildBar();anew();return}
+  const pr=e.target.closest('[data-pre]');if(pr){
+    const v=pr.dataset.pre,t=ST.tab,ks=FLD[t].map(f=>f[0]);
+    const vals=v==='rsa'?[RSAPHI,65537n]:v.split(',').map(x=>t==='inv'||t==='phi'?+x:BigInt(x));
+    ks.forEach((k,i)=>{ST[k]=vals[i];const f=$('#in-'+k);if(f)f.value=String(vals[i])});setErr();anew();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+  for(const h of CLICK)if(h(e))return;
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  const act=e.target.closest&&e.target.closest('[data-part],[data-eq]');
+  if(act&&(e.key==='Enter'||e.key===' ')){act.dispatchEvent(new MouseEvent('click',{bubbles:true}));e.preventDefault();return}
+  if(e.target.closest&&e.target.closest('button,a')&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'){$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
+});
+let startTab='gcd';try{const t=localStorage.getItem('nt-tab');if(t&&T[t])startTab=t}catch(e){}
+ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
+compute();buildBar();calc();show();
+</script>
+</body>
+</html>
