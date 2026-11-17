@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remainders and Euclid’s algorithm</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
+  --n0:#2f6fd0;--n1:#2f9e6a;--n2:#b8690f;--n3:#7d55c7;--n4:#c8372d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --cs:32px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
+  --n0:#5a8fe8;--n1:#45b882;--n2:#f0a35e;--n3:#b49aec;--n4:#f07a70;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:25px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text],input[type=number]{font:14px var(--mono);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:70px;text-transform:uppercase}input[type=number]{width:74px}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.note{display:block;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.warn{display:block;padding:8px 10px;border-radius:7px;background:var(--xorBg);font-size:14px;border-left:3px solid var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.inbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.err{color:var(--xor);font-size:13px;flex-basis:100%}
+.err:empty{display:none}
+.sec{margin-top:22px}
+.pics-s{font-size:13px;color:var(--muted);max-width:68ch;margin:0 0 10px}
+.scroll{overflow-x:auto;max-width:100%}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+@keyframes come{from{opacity:0;transform:translateY(4px)}}
+.nw{animation:come .35s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.chk{list-style:none;margin:14px auto 0;padding:0;max-width:440px;font-size:14.5px}
+.chk li{display:flex;gap:10px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line)}
+.chk li.todo{color:var(--faint)}
+.chk li b{flex:none;width:18px;text-align:center}
+.chk li.now{background:var(--ambBg)}
+.verdict{margin:14px auto 0;max-width:560px;text-align:center}
+.verdict span{display:inline-block;padding:7px 14px;border-radius:999px;font-weight:600;font-size:14.5px}
+.verdict .y{background:var(--okBg);color:var(--ok)}.verdict .n{background:var(--xorBg);color:var(--xor)}
+.calc{margin:14px auto 0;max-width:560px;display:grid;gap:6px}
+.calc div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);font:13.5px var(--mono)}
+.calc div b{font:600 13px var(--sans);color:var(--muted)}
+.calc div.now{background:var(--ambBg)}
+table.map{border-collapse:collapse;width:100%;font-size:14.5px}
+table.map th,table.map td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.map th{font-size:13px;color:var(--muted);font-weight:600}
+table.map td:first-child{white-space:nowrap;font-weight:600}
+table.map .ex{font:14px var(--mono)}
+.tag{display:inline-block;font:600 11.5px var(--sans);padding:2px 8px;border-radius:10px;margin-right:6px}
+.tag.g{background:var(--accentBg);color:var(--accent)}.tag.r{background:var(--ambBg);color:var(--amb)}.tag.f{background:var(--okBg);color:var(--ok)}
+dl.words{margin:0}
+dl.words dt{font-weight:700;margin-top:8px}
+dl.words dt:first-child{margin-top:0}
+dl.words dd{margin:0;color:var(--muted)}
+.chk li[data-step]{cursor:pointer}
+.chk li[data-step]:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.pickline{margin:10px auto 0;max-width:600px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+/* one colour per job a number has in a division */
+.ra{color:var(--n0)}.rb{color:var(--n3)}.rq{color:var(--n2)}.rr{color:var(--n1)}.rz{color:var(--faint)}.rx{color:var(--n4)}
+input[type=text].num{width:150px;text-transform:none}
+.inbar .row button{font-size:13px;padding:6px 10px}
+.doc a,#explain a,#extra a{color:var(--accent)}
+.doc ul,.doc ol{max-width:72ch;font-size:15.5px;margin:0 0 10px;padding-left:22px}
+.doc li{margin:0 0 5px}
+.exb.bk{border-color:var(--key);background:var(--keyBg)}.exb.bk>b{color:var(--key)}
+.exb ul{margin:0;padding-left:18px;font-size:14.5px}
+/* a step's computation: the words on top, the numbers under them */
+.bench{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;justify-content:center;margin:16px auto 0;padding:10px 16px 12px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);max-width:660px}
+.bench .bt{display:flex;flex-direction:column;align-items:center;gap:1px}
+.bench .bt i{font:12px var(--sans);font-style:normal;color:var(--muted)}
+.bench .bt b{font:700 23px var(--mono)}
+.bench .op{font:22px var(--mono);color:var(--muted);padding-bottom:1px}
+.bench.sm .bt b,.bench.sm .op{font-size:18px}
+.bnote{font-size:14px;color:var(--muted);text-align:center;margin:8px auto 0;max-width:660px}
+.bnote b{color:var(--ink);font-family:var(--mono);font-weight:600}
+@media (max-width:560px){.bench .bt b,.bench .op{font-size:19px}.bench.sm .bt b,.bench.sm .op{font-size:16px}.bench{gap:6px 8px;padding:9px 10px 10px}}
+/* a number as rows of dots */
+svg.dots{display:block;width:100%;height:auto;margin:0 auto}
+.dots .d{fill:var(--n0)}
+.dots .d.r{fill:var(--n1)}
+.dots .grp{fill:color-mix(in srgb,var(--n3) 9%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.dots .rem{fill:color-mix(in srgb,var(--n1) 12%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.dots .gl{font:13px var(--mono);fill:var(--n3)}
+.dots .rl{font:700 13px var(--mono);fill:var(--n1)}
+.dots .al{font:700 13px var(--mono);fill:var(--n0)}
+.dots g[data-step]{cursor:pointer}
+.dots g[data-step]:hover .grp,.dots g[data-step]:hover .rem{stroke-width:2.6}
+/* a number as a length */
+svg.nl{display:block;width:100%;max-width:720px;height:auto;margin:0 auto}
+.nl .whole{fill:color-mix(in srgb,var(--n0) 14%,var(--panel));stroke:var(--n0);stroke-width:1.4}
+.nl .seg{fill:color-mix(in srgb,var(--n3) 12%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.nl .rem{fill:color-mix(in srgb,var(--n1) 24%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.nl [data-step]{cursor:pointer}
+.nl .ax{stroke:var(--line2);stroke-width:1.4}
+.nl .tk{font:11.5px var(--mono);fill:var(--muted);text-anchor:middle}
+.nl .lb{font:700 13px var(--mono);text-anchor:middle}
+.nl .lb.b{fill:var(--n3)}.nl .lb.r{fill:var(--n1)}.nl .lb.a{fill:var(--n0)}.nl .lb.x{fill:var(--n4)}
+.nl .arc{fill:none;stroke-width:2}
+.nl .arc.r{stroke:var(--n1)}.nl .arc.x{stroke:var(--n4);stroke-dasharray:4 4}
+.nl .pt{fill:var(--n0);stroke:var(--panel);stroke-width:2}
+/* divisors */
+.strip{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin:0 auto;max-width:700px}
+.strip i{font-style:normal;min-width:36px;text-align:center;border-radius:6px;background:color-mix(in srgb,var(--ink) 5%,transparent);padding:3px 4px 4px;font:700 14px/1.25 var(--mono)}
+.strip i small{display:block;font:11px var(--mono);color:var(--muted);font-weight:400}
+.strip i.z{background:var(--okBg);color:var(--ok)}
+.strip i.one{background:var(--okBg);color:var(--ok);outline:2px solid var(--ok);outline-offset:-2px}
+.strip i.mg{background:var(--xorBg);color:var(--xor)}
+.cap2{font-size:13.5px;color:var(--muted);text-align:center;margin:0 0 8px}
+.cap2 b{color:var(--ink)}
+.dvr{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 12px;align-items:start;margin:0 0 12px}
+.dvr .dl{font-size:13.5px;color:var(--muted);padding-top:5px}
+.dvr .dl b{color:var(--ink);font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chips button,.chips i{font:600 13.5px var(--mono);font-style:normal;padding:4px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+.chips i.more{border-style:dashed;color:var(--muted);font-weight:400}
+.chips .c{background:var(--ambBg);border-color:var(--amb);color:var(--amb)}
+.chips .g{background:var(--okBg);border-color:var(--ok);color:var(--ok);font-size:16px;padding:4px 12px}
+.chips .pk{outline:2px solid var(--accent);outline-offset:1px}
+@media (max-width:700px){.dvr{grid-template-columns:minmax(0,1fr);gap:4px}.dvr .dl{padding:0}}
+/* Euclid: the lines of divisions, and the rectangle cut into squares */
+.duo2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:center}
+.duo2.one{grid-template-columns:minmax(0,1fr)}
+@media (max-width:1180px){.duo2{grid-template-columns:minmax(0,1fr)}}
+.lad{display:grid;grid-template-columns:repeat(7,auto);justify-content:center;gap:2px 8px;font:700 20px var(--mono);align-items:center}
+.lad .row{display:contents;cursor:pointer}
+.lad .n{text-align:right;padding:3px 7px;border-radius:7px}
+.lad .o{color:var(--muted);font-weight:400}
+.lad .arw{color:var(--faint);font:400 17px var(--sans);text-align:center;line-height:1.05}
+.lad .row.cur .n{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.lad .row:hover .n{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.lad .row.fut>*,.lad .arw.fut{visibility:hidden}
+.lad .n.g{outline:2.5px solid var(--n1);outline-offset:1px;background:var(--okBg);color:var(--n1)}
+.lad.sm{font-size:16px}
+@media (max-width:560px){.lad{font-size:16px;gap:2px 4px}.lad .n{padding:3px 4px}.lad.sm{font-size:13.5px}}
+svg.til{display:block;width:100%;max-width:580px;height:auto;margin:0 auto}
+.til rect.sq{stroke-width:1.5;cursor:pointer}
+.til rect.sq:hover{stroke-width:3}
+.til .c0{fill:color-mix(in srgb,var(--n0) 16%,var(--panel));stroke:var(--n0)}
+.til .c1{fill:color-mix(in srgb,var(--n3) 16%,var(--panel));stroke:var(--n3)}
+.til .c2{fill:color-mix(in srgb,var(--n2) 18%,var(--panel));stroke:var(--n2)}
+.til .c3{fill:color-mix(in srgb,var(--n4) 14%,var(--panel));stroke:var(--n4)}
+.til rect.gq{fill:color-mix(in srgb,var(--n1) 32%,var(--panel));stroke:var(--n1)}
+.til .rest{fill:none;stroke:var(--muted);stroke-dasharray:6 5;stroke-width:1.5}
+.til .frame{fill:none;stroke:var(--line2);stroke-width:1.2}
+.til text{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.til text.dm{font:12.5px var(--mono);fill:var(--muted)}
+.til text.rs{font:12.5px var(--mono);fill:var(--muted);font-weight:400}
+table.pairs{border-collapse:collapse;margin:14px auto 0;font:14px var(--mono)}
+table.pairs th,table.pairs td{padding:5px 14px;border-bottom:1px solid var(--line);text-align:left}
+table.pairs th{font:600 12.5px var(--sans);color:var(--muted)}
+/* extended Euclid: the table, and the lines of the backward way */
+table.xt{border-collapse:collapse;margin:0 auto;font:15.5px var(--mono)}
+table.xt th,table.xt td{padding:7px 16px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.xt th{font:600 12.5px var(--sans);color:var(--muted);vertical-align:bottom}
+table.xt th small{display:block;font-weight:400}
+table.xt tr[data-step]{cursor:pointer}
+table.xt tr[data-step]:hover td{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+table.xt tr.cur td{background:var(--ambBg)}
+table.xt tr.ans td{background:var(--okBg);font-weight:700}
+table.xt tr.zero td{color:var(--faint)}
+table.xt tr.fut td{visibility:hidden}
+table.xt td.ck{color:var(--muted);font-size:13px;text-align:left}
+table.xt .hid{visibility:hidden}
+table.xt td.pick{outline:2.5px solid var(--n1);outline-offset:-3px}
+@media (max-width:640px){table.xt{font-size:13.5px}table.xt th,table.xt td{padding:6px 8px}table.xt .ck{display:none}}
+.calc div{grid-template-columns:118px minmax(0,1fr)}
+.bw{max-width:620px;margin:0 auto;display:grid;gap:6px}
+.bw .h3{margin:10px 0 0}
+.bw .h3:first-child{margin-top:0}
+.bw div.ln{font:15.5px var(--mono);padding:7px 12px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);overflow-wrap:anywhere}
+.bw div.ln.cur{background:var(--ambBg)}
+.bw div.ln.ans{background:var(--okBg);font-weight:700}
+.bw div.ln.fut{visibility:hidden}
+.bw div.ln small{display:block;font:12px var(--sans);color:var(--muted);font-weight:400}
+.bw mark{background:none;color:var(--n4);font-weight:700}
+@media (max-width:560px){.bw div.ln{font-size:13.5px;padding:6px 9px}}
+/* your turn */
+.ex{max-width:640px;margin:0 auto}
+.ex h3{font-size:18px;margin:0 0 4px}
+.ex .task{font-size:15px;color:var(--muted);margin:0 0 14px}
+.exl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font:700 20px var(--mono);margin:0 0 8px}
+.exl input[type=text]{width:78px;font:700 18px var(--mono);text-align:center;padding:5px 6px;text-transform:none}
+.exl input[type=text].w{width:120px}
+.exl .o{color:var(--muted);font-weight:400}
+.exl.done{opacity:.8}
+.exl .n{padding:2px 4px}
+.fb{margin:10px 0 0;padding:9px 12px;border-radius:8px;font-size:14.5px}
+.fb.ok{background:var(--okBg);border-left:3px solid var(--ok)}
+.fb.no{background:var(--xorBg);border-left:3px solid var(--xor)}
+.exb2{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.score{font-size:13.5px;color:var(--muted);margin-top:12px}
+@media (max-width:560px){.exl{font-size:17px}.exl input[type=text]{width:64px;font-size:16px}}
+table.map td:first-child{white-space:normal}
+table.map td .m{white-space:nowrap}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Remainders and Euclid’s algorithm</h1>
+  <p class="sub">Division with remainder, the greatest common divisor, Euclid’s algorithm, and its extended form that finds inverses modulo n: the arithmetic under the affine cipher and every RSA key</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="div" class="on">1 · Remainder</button>
+    <button data-tab="gcd">2 · Common divisors</button>
+    <button data-tab="euc">3 · Euclid’s algorithm</button>
+    <button data-tab="ext">4 · Extended Euclid</button>
+    <button data-tab="inv">5 · Inverse mod n</button>
+    <button data-tab="try">6 · Your turn</button>
+    <button data-tab="use">7 · Where it is used</button>
+  </nav>
+</header>
+
+<section class="wrap"><div class="card inbar" id="bar" hidden></div></section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stage"></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: every quotient, remainder and table on this page is computed in your browser from the numbers you type.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
+const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a.at(-1):String(a[0]);
+
+/* ---------- whole numbers of any size ---------- */
+const B=BigInt;
+const abs=n=>n<0n?-n:n;
+// a number as text: a real minus sign, and digits in groups of three once there are more than four
+const fmt=n=>{n=B(n);const s=abs(n).toString();return(n<0n?'−':'')+(s.length>4?s.replace(/\B(?=(\d{3})+$)/g,' '):s)};
+const par=n=>B(n)<0n?`(${fmt(n)})`:fmt(n);          // a negative number in brackets, for use inside a formula
+const mod=(a,n)=>((a%n)+n)%n;                       // the remainder that is never negative
+const fdiv=(a,b)=>(a-mod(a,b))/b;                   // the quotient that belongs to it
+const digits=n=>abs(B(n)).toString().length;
+const plural=(n,w)=>`${fmt(n)} ${w}${B(n)===1n?'':'s'}`;
+// a ÷ b as a calculator shows it
+function dec(a,b,places=3){let r=a%b,s='';for(let i=0;i<places&&r>0n;i++){r*=10n;s+=(r/b).toString();r%=b}return fmt(a/b)+(s?'.'+s:'')+(r>0n?'…':'')}
+
+// Euclid's algorithm: every line a = q · b + r, until the remainder is 0
+function euclid(a,b){const rows=[];while(b>0n){const q=a/b,r=a%b;rows.push({a,b,q,r});a=b;b=r}return{rows,g:a}}
+const gcd=(a,b)=>euclid(a,b).g;
+// the extended algorithm as a table: every row says r = s · a + t · b
+function extended(a,b){const R=[{r:a,s:1n,t:0n,q:null},{r:b,s:0n,t:1n,q:null}];
+  while(R.at(-1).r>0n){const x=R.at(-2),y=R.at(-1),q=x.r/y.r;R.push({q,r:x.r-q*y.r,s:x.s-q*y.s,t:x.t-q*y.t})}
+  return R}
+const modpow=(b,e,m)=>{let r=1n%m;b=mod(b,m);while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n}return r};
+// every divisor of n, by trying d = 1, 2, 3, … up to √n. Only for numbers small enough to try
+const LISTMAX=10n**12n,DIVS=new Map();
+function divisors(n){if(n>LISTMAX||n<1n)return null;const key=n.toString();if(DIVS.has(key))return DIVS.get(key);
+  const v=Number(n),lo=[],hi=[];for(let d=1;d*d<=v;d++)if(v%d===0){lo.push(d);if(d*d!==v)hi.push(v/d)}
+  const out=lo.concat(hi.reverse()).map(B);DIVS.set(key,out);return out}
+const isPrime=n=>n>1n&&n<=LISTMAX&&divisors(n).length===2;
+// a sum of multiples, written with the positive part first: [[4, '54'], [−1, '198']] → 4 · 54 − 1 · 198
+function lin(terms){const t=terms.filter(u=>u[0]!==0n);if(!t.length)return'0';t.sort((p,q)=>(p[0]<0n?1:0)-(q[0]<0n?1:0));
+  return t.map((u,i)=>`${i?(u[0]<0n?' − ':' + '):(u[0]<0n?'−':'')}${fmt(abs(u[0]))} · ${u[1]}`).join('')}
+
+/* ---------- what the reader has chosen ---------- */
+const ST={tab:'div',step:{},da:47n,db:5n,a:252n,b:198n,xm:'fwd',ia:7n,in:26n,pick:{div:null},q:{},kind:'rem',ex:{},seed:Date.now()%2147483647,solved:0,playT:null,playing:false};
+const T={};
+const stage=$('#stage');
+// the pieces of a bench: a word with its number under it, and the signs between
+const bt=(word,cls,n)=>`<span class="bt"><i>${word}</i><b class="${cls}">${typeof n==='bigint'?fmt(n):n}</b></span>`;
+const op=s=>`<span class="op">${s}</span>`;
+const numIn=(key,label,v)=>`<label class="fld"><span class="flh">${label}</span><input type="text" class="num" inputmode="numeric" autocomplete="off" data-in="${key}" value="${v}"></label>`;
+const loadBtn=(spec,text)=>`<button data-load="${spec}">${text}</button>`;
+const cc=(cls,n)=>`<b class="${cls}">${fmt(n)}</b>`;          // a number in the colour of its job
+
+/* ---------- 1 · division with remainder ---------- */
+function divS(){const a=ST.da,b=ST.db,q=a/b,r=a%b,rows=q+(r>0n?1n:0n);return{a,b,q,r,dots:a>0n&&a<=156n&&b<=26n&&rows<=12n}}
+// a small number: one dot for every 1, in rows of b
+function dotsPic(S,k){
+  const b=Number(S.b),q=Number(S.q),r=Number(S.r),cs=26,pad=12,pitch=38,W=pad*2+b*cs+176,n=q+(r?1:0),H=pad*2+n*pitch-(pitch-cs),tx=pad+b*cs+18,o=[];
+  for(let i=0;i<n;i++){const full=i<q,y=pad+i*pitch,cnt=full?b:r;let g='';
+    if(k>=1&&full)g+=`<rect class="grp" x="${pad-4}" y="${y-4}" width="${b*cs+8}" height="${cs+8}" rx="10"/>`;
+    if(k>=2&&!full)g+=`<rect class="rem" x="${pad-4}" y="${y-4}" width="${r*cs+8}" height="${cs+8}" rx="10"/>`;
+    for(let j=0;j<cnt;j++)g+=`<circle class="d${!full&&k>=2?' r':''}" cx="${pad+j*cs+cs/2}" cy="${y+cs/2}" r="8.5"/>`;
+    if(k>=1&&full)g+=`<text class="gl" x="${tx}" y="${y+cs/2+4.5}">${i+1} · ${b} = ${(i+1)*b}</text>`;
+    if(k>=2&&!full)g+=`<text class="rl" x="${tx}" y="${y+cs/2+4.5}">${r} left over</text>`;
+    if(k===0&&i===0)g+=`<text class="al" x="${tx}" y="${y+cs/2+4.5}">${fmt(S.a)} dots</text>`;
+    o.push(`<g${(full&&k>=1)||(!full&&k>=2)?` data-step="${full?1:2}"`:''}>${g}</g>`)}
+  return`<svg class="dots" viewBox="0 0 ${W} ${H}" style="max-width:${Math.round(W*1.25)}px" role="img" aria-label="${fmt(S.a)} dots in rows of ${fmt(S.b)}: ${plural(S.q,'full row')} and ${fmt(S.r)} left over">${o.join('')}</svg>`}
+// a larger number: a bar as long as a, cut into pieces as long as b
+function barPic(S,k){
+  const a=Number(S.a),b=Number(S.b),q=Number(S.q),r=Number(S.r),x0=24,x1=696,sc=(x1-x0)/Math.max(a,1),X=v=>x0+v*sc,y=40,h=36,o=[];
+  if(k===0)o.push(`<rect class="whole" x="${X(0)}" y="${y}" width="${Math.max(a*sc,2)}" height="${h}" rx="6"/><text class="lb a" x="${X(a/2)}" y="${y+h/2+5}">${fmt(S.a)}</text>`);
+  else{
+    if(q>0&&q<=14)for(let i=0;i<q;i++)o.push(`<rect class="seg" data-step="1" x="${X(i*b)}" y="${y}" width="${b*sc}" height="${h}" rx="6"/>`+(b*sc>=32?`<text class="lb b" x="${X(i*b+b/2)}" y="${y+h/2+5}">${fmt(S.b)}</text>`:''));
+    else if(q>0)o.push(`<rect class="seg" data-step="1" x="${X(0)}" y="${y}" width="${q*b*sc}" height="${h}" rx="6"/><text class="lb b" x="${X(q*b/2)}" y="${y+h/2+5}">${fmt(S.q)} times ${fmt(S.b)}</text>`);
+    if(r>0){const w=Math.max(r*sc,5),far=X(q*b)>540;
+      o.push(`<rect class="${k>=2?'rem':'whole'}"${k>=2?' data-step="2"':''} x="${X(q*b)}" y="${y}" width="${w}" height="${h}" rx="5"/>`);
+      if(k>=2)o.push(`<text class="lb r" x="${far?X(q*b)+w:X(q*b)+w/2}" y="${y-9}"${far?' style="text-anchor:end"':''}>${fmt(S.r)} left over</text>`)}}
+  // the scale under the bar: 0, the multiples of b, and a
+  const close=k>=1&&q>0&&r>0&&r*sc<54,marks=[[0,'0',0],[a,fmt(S.a),close?1:0]];
+  if(k>=1&&q>0&&r>0)marks.push([q*b,fmt(S.q*S.b),0]);
+  if(k>=1&&q>1&&q<=14){const every=Math.max(1,Math.ceil(50/(b*sc)));for(let i=every;i<q;i+=every)if((q-i)*b*sc>=46)marks.push([i*b,fmt(B(i)*S.b),0])}
+  o.push(`<line class="ax" x1="${x0}" y1="${y+h+10}" x2="${x1}" y2="${y+h+10}"/>`);
+  for(const[v,t,low]of marks)o.push(`<line class="ax" x1="${X(v)}" y1="${y+h+5}" x2="${X(v)}" y2="${y+h+15+low*16}"/><text class="tk" x="${X(v)}" y="${y+h+29+low*16}">${t}</text>`);
+  return`<svg class="nl" viewBox="0 0 720 ${y+h+54}" role="img" aria-label="A bar of length ${fmt(S.a)}: ${plural(S.q,'piece')} of length ${fmt(S.b)} and ${fmt(S.r)} left over">${o.join('')}</svg>`}
+// −a on the number line, between the two multiples of b next to it
+function negPic(S){
+  const b=S.b,a=-S.a,qn=fdiv(a,b),rn=mod(a,b),lo=Number(qn*b),hi=lo+Number(b),x0=90,x1=630,X=v=>x0+(v-lo)/(hi-lo)*(x1-x0),y=66,xa=X(Number(a)),o=[];
+  o.push(`<line class="ax" x1="30" y1="${y}" x2="690" y2="${y}"/>`);
+  for(const[v,qq]of[[lo,qn],[hi,qn+1n]])o.push(`<line class="ax" x1="${X(v)}" y1="${y-7}" x2="${X(v)}" y2="${y+7}"/><text class="tk" x="${X(v)}" y="${y+24}">${fmt(qq*b)}</text><text class="tk" x="${X(v)}" y="${y+40}">${fmt(qq)} · ${fmt(b)}</text>`);
+  if(rn>0n){const m1=(X(lo)+xa)/2,m2=(xa+X(hi))/2;
+    o.push(`<path class="arc r" d="M${X(lo)} ${y-5} Q${m1} ${y-46} ${xa} ${y-8}"/><text class="lb r" x="${m1}" y="${y-36}">+ ${fmt(rn)}</text>`);
+    o.push(`<path class="arc x" d="M${X(hi)} ${y-5} Q${m2} ${y-46} ${xa} ${y-8}"/><text class="lb x" x="${m2}" y="${y-36}">− ${fmt(b-rn)}</text>`)}
+  o.push(`<circle class="pt" cx="${xa}" cy="${y}" r="6.5"/><text class="lb a" x="${xa}" y="${y+60}">${fmt(a)}</text>`);
+  return`<svg class="nl" viewBox="0 0 720 ${y+70}" role="img" aria-label="${fmt(a)} lies ${fmt(rn)} above ${fmt(qn*b)}">${o.join('')}</svg>`}
+
+T.div={n:()=>6,
+  bar:()=>numIn('da','<b>a</b> · the number to divide',ST.da)+numIn('db','<b>b</b> · divide by',ST.db)+
+    `<div class="fld"><span class="flh">Examples</span><div class="row">${loadBtn('da=47,db=5','47 ÷ 5')}${loadBtn('da=100,db=7','100 ÷ 7')}${loadBtn('da=2026,db=26','2026 ÷ 26')}${loadBtn('da=144,db=12','144 ÷ 12')}${loadBtn('da=5,db=12','5 ÷ 12')}</div></div><div class="err" id="err"></div>`,
+  view(k){
+    const S=divS(),{a,b,q,r}=S;
+    let h=(S.dots?dotsPic(S,k):barPic(S,k))+`<p class="hint">${S.dots?`Every dot is 1. The dots stand in rows of ${fmt(b)}.`:`The bar is ${fmt(a)} long.`}${k>=1?' Click a part of the picture to go to its step.':''}</p>`;
+    if(k>=3)h+=`<div class="bench${k===3?' nw':''}">${bt('dividend','ra',a)}${op('=')}${bt('quotient','rq',q)}${op('·')}${bt('divisor','rb',b)}${op('+')}${bt('remainder','rr',r)}</div>`;
+    if(k>=4)h+=`<div class="bench sm${k===4?' nw':''}">${bt('dividend','ra',a)}${op('mod')}${bt('divisor','rb',b)}${op('=')}${bt('remainder','rr',r)}</div>
+      <p class="bnote">On a calculator: <b>${fmt(a)} ÷ ${fmt(b)} = ${dec(a,b)}</b> → keep the whole part, <b>${fmt(q)}</b> → <b>${fmt(a)} − ${fmt(q)} · ${fmt(b)} = ${fmt(r)}</b></p>`;
+    if(k>=5){const na=-a,qn=fdiv(na,b),rn=mod(na,b);
+      h+=`<div class="sec nw"><div class="h3">The same division with ${fmt(na)}</div>${negPic(S)}<div class="bench sm">${bt('dividend','ra',na)}${op('=')}${bt('quotient','rq',par(qn))}${op('·')}${bt('divisor','rb',b)}${op('+')}${bt('remainder','rr',rn)}</div></div>`}
+    return h},
+  say(k){
+    const{a,b,q,r}=divS(),A=fmt(a),Bb=fmt(b),Q=fmt(q),na=-a,qn=fdiv(na,b),rn=mod(na,b);
+    return[
+      say('The question',`How many times does ${cc('rb',b)} fit into ${cc('ra',a)}, and what is left over?`,'That is division with remainder: whole numbers go in, whole numbers come out, no decimals.','Type your own numbers above the picture, then press <b>Step</b>.'),
+      say('Step 1 · take the divisor away, again and again',q===0n?`${Bb} is larger than ${A}, so it does not fit even once. The <b>quotient</b> is ${cc('rq',0n)}.`:`${Bb} can be taken away from ${A} exactly ${cc('rq',q)} ${q===1n?'time':'times'}: ${Q} · ${Bb} = ${fmt(q*b)}. One more would make ${fmt((q+1n)*b)}, which is too much.`,q===0n?'':`This count is the <b>quotient</b>, q = ${Q}.`),
+      say('Step 2 · what is left',r===0n?`Nothing is left: ${A} − ${fmt(q*b)} = 0. The <b>remainder</b> is ${cc('rr',0n)}, and we say that ${Bb} <b>divides</b> ${A}.`:`${A} − ${fmt(q*b)} = ${cc('rr',r)} is left. It is smaller than ${Bb}, so no further ${Bb} fits. This is the <b>remainder</b>, r = ${fmt(r)}.`,`A remainder is always one of 0, 1, …, ${fmt(b-1n)}: smaller than the divisor.`),
+      say('Step 3 · one line says it all',fm(`${A} = ${Q} · ${Bb} + ${fmt(r)}`),'Every division with remainder can be written like this: <b>a = q · b + r</b> with 0 ≤ r &lt; b.','For given a and b there is exactly one such q and one such r.'),
+      say('Step 4 · mod','Modular arithmetic throws the quotient away and keeps only the remainder. That operation is called <b>mod</b>:',fm(`${A} mod ${Bb} = ${fmt(r)}`),'On a calculator: divide, drop everything after the decimal point, multiply back and subtract.'),
+      say('Step 5 · a negative number',`What is ${fmt(na)} mod ${Bb}? A remainder is never negative.`+(rn===0n?' Here nothing is left over:':` So the quotient goes one step further down, to ${fmt(qn)}, and the remainder is counted upward from ${fmt(qn*b)}:`),fm(`${fmt(na)} = ${par(qn)} · ${Bb} + ${fmt(rn)}<br>${fmt(na)} mod ${Bb} = ${fmt(rn)}`),rn===0n?'':`<span class="warn">Many programming languages answer ${fmt(-r)} for ${fmt(na)} % ${Bb}. For modular arithmetic add the divisor once: ${fmt(-r)} + ${Bb} = ${fmt(rn)}.</span>`)][k]},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>Dividend, divisor</dt><dd>The number that is divided, and the number it is divided by.</dd><dt>Quotient, q</dt><dd>How many times the divisor fits.</dd><dt>Remainder, r</dt><dd>What is left over. Always 0 ≤ r &lt; divisor.</dd><dt>a mod b</dt><dd>The remainder of a divided by b.</dd><dt>b | a</dt><dd>“b divides a”: the remainder is 0.</dd></dl>`};
+
+/* ---------- 2 · divisors, and the greatest one that two numbers share ---------- */
+function gcdS(){
+  const{a,b}=ST,da=divisors(a),db=divisors(b),E=euclid(a,b);let com=null;
+  if(da&&db){const s=new Set(db.map(String));com=da.filter(d=>s.has(d.toString()))}
+  return{a,b,da,db,g:E.g,m:E.rows.length,com,ok:!!(da&&db)}}
+// a list of divisors as chips; a very long list shows its two ends
+function chipRow(lab,which,arr,cls){
+  const cut=arr.length>72,show=cut?[...arr.slice(0,36),null,...arr.slice(-36)]:arr;
+  return`<div class="dvr"><div class="dl">${lab}</div><div class="chips">${show.map(d=>d===null?`<i class="more">… ${arr.length-72} more …</i>`:which?`<button data-div="${which},${d}" class="${cls(d)}">${fmt(d)}</button>`:`<i class="${cls(d)}">${fmt(d)}</i>`).join('')}</div></div>`}
+function pickDiv(){
+  const p=ST.pick.div,n=p&&(p[0]==='a'?ST.a:ST.b);
+  if(!p||n%p[1]!==0n)return`<p class="pickline">Click a divisor to see the multiplication behind it.</p>`;
+  return`<p class="pickline"><b>${fmt(n)} = ${fmt(p[1])} · ${fmt(n/p[1])}</b>, remainder 0. So ${fmt(p[1])} divides ${fmt(n)}${p[1]*p[1]===n?'':`, and ${fmt(n/p[1])} does too`}.</p>`}
+
+T.gcd={n:()=>gcdS().ok?6:1,
+  bar:()=>numIn('a','<b>a</b>',ST.a)+numIn('b','<b>b</b>',ST.b)+
+    `<div class="fld"><span class="flh">Examples</span><div class="row">${loadBtn('a=252,b=198','252, 198')}${loadBtn('a=301,b=70','301, 70')}${loadBtn('a=1071,b=462','1071, 462')}${loadBtn('a=15,b=26','15, 26')}${loadBtn('a=97,b=36','97, 36')}</div></div><div class="err" id="err"></div>`,
+  view(k){
+    const S=gcdS(),{a,b,g}=S;
+    if(!S.ok){const big=a>b?a:b;
+      return`<p class="cap2">A list of all divisors is only possible for small numbers. For <b>${fmt(big)}</b> it would take about ${fmt(B(Math.round(Math.sqrt(Number(big)))))} trial divisions.</p>
+        <div class="bench">${bt('greatest common divisor','',`gcd(${fmt(a)}, ${fmt(b)})`)}${op('=')}${bt('found by Euclid','rr',g)}</div>
+        <p class="bnote">Euclid’s algorithm (tab 3) needs ${plural(B(S.m),'division')} for these two numbers, and not a single divisor.</p>`}
+    const isC=d=>S.com.some(x=>x===d),pk=ST.pick.div,cl=w=>d=>((k>=4&&d===g?'g':k>=3&&isC(d)?'c':'')+(pk&&pk[0]===w&&pk[1]===d?' pk':'')).trim();
+    const top=Number(a<16n?a:16n);
+    let h=k===0?`<p class="cap2">The remainder of <b>${fmt(a)}</b> divided by d, for d = 1 … ${top}. Remainder 0 means that d divides ${fmt(a)}.</p>
+      <div class="strip">${range(1,top).map(d=>{const r=a%B(d);return`<i class="${r===0n?'z':''}"><small>d = ${d}</small>${fmt(r)}</i>`}).join('')}</div>`:'';
+    if(k>=1)h+=chipRow(`Divisors of <b>${fmt(a)}</b><br>${S.da.length} in all`,'a',S.da,cl('a'));
+    if(k>=2)h+=chipRow(`Divisors of <b>${fmt(b)}</b><br>${S.db.length} in all`,'b',S.db,cl('b'));
+    if(k>=3)h+=chipRow('In both lists','',S.com,d=>k>=4&&d===g?'g':'c');
+    if(k>=1)h+=pickDiv();
+    if(k>=4)h+=`<div class="bench${k===4?' nw':''}">${bt('greatest common divisor','',`gcd(${fmt(a)}, ${fmt(b)})`)}${op('=')}${bt('the largest number in both lists','rr',g)}</div>`;
+    if(k>=5)h+=`<div class="verdict nw"><span class="${g===1n?'y':'n'}">${g===1n?`gcd = 1 · ${fmt(a)} and ${fmt(b)} are coprime`:`gcd = ${fmt(g)} · ${fmt(a)} and ${fmt(b)} are not coprime`}</span></div>`;
+    return h},
+  say(k){
+    const S=gcdS(),{a,b,g}=S,A=fmt(a),Bb=fmt(b);
+    if(!S.ok)return say('Too large for a list',`The divisors of numbers this large cannot be listed in reasonable time. The gcd can still be found: gcd(${A}, ${Bb}) = ${fmt(g)}.`,'Tab 3 shows how. To see the lists, choose numbers below one trillion.');
+    let nd=2n;while(a%nd===0n)nd++;
+    const ed=g>1n?g:S.da.length>2?S.da[1]:a;
+    return[
+      say('What “divides” means','A number d <b>divides</b> a when the division leaves no remainder: a mod d = 0. Then d is called a <b>divisor</b> of a.',`${fmt(ed)} divides ${A}: ${A} = ${fmt(a/ed)} · ${fmt(ed)} + 0.`,`${fmt(nd)} does not: ${A} = ${fmt(a/nd)} · ${fmt(nd)} + ${fmt(a%nd)}.`),
+      say('Step 1 · every divisor of a',`${A} has ${plural(B(S.da.length),'divisor')}.`+(S.da.length===2?` Only 1 and itself: ${A} is a <b>prime</b>.`:S.da.length>2?` They come in pairs that multiply to ${A}, like ${fmt(S.da[1])} · ${fmt(a/S.da[1])}.`:''),'1 and the number itself are always in the list.'),
+      say('Step 2 · every divisor of b',`${Bb} has ${plural(B(S.db.length),'divisor')}.`+(S.db.length===2?` ${Bb} is a prime.`:''),'Click any divisor to see its partner.'),
+      say('Step 3 · the divisors they share',S.com.length===1?'Only one number is in both lists: 1.':`${S.com.length} numbers are in both lists: ${list(S.com.map(fmt))}.`,'These are the <b>common divisors</b>. 1 is always one of them.'),
+      say('Step 4 · the greatest of them',fm(`gcd(${A}, ${Bb}) = ${fmt(g)}`),'The <b>greatest common divisor</b> is the largest number that divides both.',g>1n?`Look at the shared list again: it is exactly the list of the divisors of ${fmt(g)}. Every common divisor divides the gcd.`:''),
+      say('Step 5 · coprime or not',g===1n?`The gcd is 1: ${A} and ${Bb} share no divisor except 1. Such numbers are called <b>coprime</b>. This is the condition for an inverse (tab 5).`:`The gcd is ${fmt(g)}, not 1. So ${A} and ${Bb} are not coprime: both are multiples of ${fmt(g)}.`,'<span class="warn">This method needs every divisor of both numbers. For numbers with hundreds of digits nobody can list them. Euclid’s algorithm, in the next tab, finds the gcd without knowing a single divisor.</span>')][k]},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>Divisor of a</dt><dd>A number that divides a without remainder. Also called a factor.</dd><dt>Multiple of d</dt><dd>d, 2d, 3d, … If d divides a, then a is a multiple of d.</dd><dt>Prime</dt><dd>A number larger than 1 whose only divisors are 1 and itself.</dd><dt>gcd(a, b)</dt><dd>The greatest common divisor. In Azerbaijani: ƏBOB, ən böyük ortaq bölən.</dd><dt>Coprime</dt><dd>gcd(a, b) = 1. Also: relatively prime.</dd></dl>`};
+
+/* ---------- 3 · Euclid's algorithm ---------- */
+function eucS(){const{a,b}=ST,E=euclid(a,b);return{a,b,rows:E.rows,g:E.g,m:E.rows.length}}
+// the lines a = q · b + r under each other. Lines that are still to come keep their place but are not shown
+function ladder(rows,shown,cur,mark,sm){
+  let L='';
+  rows.forEach((w,i)=>{const fut=i>=shown?' fut':'';
+    if(i)L+=`<span class="arw${fut}" style="grid-column:2/5">↙</span><span class="arw${fut}" style="grid-column:6">↙</span>`;
+    L+=`<div class="row${i===cur?' cur':''}${fut}" data-step="${i+1}"><span class="n ra" style="grid-column:1">${fmt(w.a)}</span><span class="o">=</span><span class="n rq">${fmt(w.q)}</span><span class="o">·</span><span class="n rb${mark&&i===rows.length-1?' g':''}">${fmt(w.b)}</span><span class="o">+</span><span class="n ${w.r===0n?'rz':'rr'}">${fmt(w.r)}</span></div>`});
+  return`<div class="scroll"><div class="lad${sm||rows.some(w=>digits(w.a)>7)?' sm':''}">${L}</div></div>`}
+// the same run as a picture: a rectangle a × b, and every line cuts off q squares
+function tiling(S,k){
+  const{rows,m,g}=S,first=rows.findIndex(w=>w.q>0n);if(first<0)return'';
+  const big=Number(rows[first].a),small=Number(rows[first].b);let cnt=0n;for(const w of rows)cnt+=w.q;
+  if(cnt>260n||big/Number(g)>220)return'';
+  const shown=Math.min(k,m),res=k>m,sc=520/big,ox=52,oy=28,o=[];
+  let x=0,y=0,w=big,h=small,rest=shown<=first?[0,0,big,small,null]:null;
+  rows.forEach((rw,i)=>{if(rw.q===0n)return;const side=Math.min(w,h),n=Number(rw.q),hz=w>=h;
+    if(i<shown)for(let j=0;j<n;j++){const sx=hz?x+j*side:x,sy=hz?y:y+j*side;
+      o.push(`<rect class="sq ${res&&i===m-1?'gq':'c'+((i-first)%4)}${i===k-1?' nw':''}" data-step="${i+1}" x="${ox+sx*sc}" y="${oy+sy*sc}" width="${side*sc}" height="${side*sc}" rx="2"/>`+(side*sc>=34?`<text x="${ox+(sx+side/2)*sc}" y="${oy+(sy+side/2)*sc}">${fmt(rw.b)}</text>`:''))}
+    if(hz){x+=n*side;w-=n*side}else{y+=n*side;h-=n*side}
+    if(i===shown-1&&w>1e-9&&h>1e-9)rest=[x,y,w,h,rw]});
+  if(rest){const[rx,ry,rw2,rh,rw]=rest,lab=rw?`${fmt(rw.r)} × ${fmt(rw.b)} left`:`${fmt(B(big))} × ${fmt(B(small))}`;
+    o.push(`<rect class="rest" x="${ox+rx*sc+2}" y="${oy+ry*sc+2}" width="${Math.max(rw2*sc-4,1)}" height="${Math.max(rh*sc-4,1)}"/>`+(rw2*sc>=lab.length*8.2&&rh*sc>=22?`<text class="rs" x="${ox+(rx+rw2/2)*sc}" y="${oy+(ry+rh/2)*sc}">${lab}</text>`:''))}
+  return`<svg class="til" viewBox="0 0 ${ox+520+10} ${oy+small*sc+12}" role="img" aria-label="A rectangle ${big} by ${small} cut into squares; the smallest squares have side ${fmt(g)}">
+    <rect class="frame" x="${ox}" y="${oy}" width="${big*sc}" height="${small*sc}"/>${o.join('')}
+    <text class="dm" x="${ox+big*sc/2}" y="${oy-12}">${fmt(B(big))}</text><text class="dm" x="${ox-8}" y="${oy+small*sc/2}" style="text-anchor:end">${fmt(B(small))}</text></svg>`}
+// the common divisors of a pair, as text
+function commonTxt(x,y){
+  const dx=divisors(x),dy=y===0n?dx:divisors(y);if(!dx||!dy)return null;
+  const s=new Set(dy.map(String)),c=dx.filter(d=>s.has(d.toString()));
+  return c.length>14?c.slice(0,6).map(fmt).join(', ')+', … , '+c.slice(-3).map(fmt).join(', ')+` (${c.length} in all)`:c.map(fmt).join(', ')}
+const EUX=[['a=252,b=198','252, 198'],['a=301,b=70','301, 70'],['a=1071,b=462','1071, 462'],['a=89,b=55','89, 55'],['a=198,b=252','198, 252'],['a=7,b=26','7, 26']];
+const eucBar=()=>numIn('a','<b>a</b>',ST.a)+numIn('b','<b>b</b>',ST.b)+`<div class="fld"><span class="flh">Examples</span><div class="row">${EUX.map(e=>loadBtn(e[0],e[1])).join('')}</div></div>`;
+
+T.euc={n:()=>eucS().m+4,
+  bar:()=>eucBar()+'<div class="err" id="err"></div>',
+  view(k){
+    const S=eucS(),{rows,m,g,a,b}=S,res=k>m,til=tiling(S,k);
+    let h=`<div class="duo2${til?'':' one'}"><div><p class="cap2">gcd(<b>${fmt(a)}</b>, <b>${fmt(b)}</b>) = ${res?`<b class="rr">${fmt(g)}</b>`:'?'}</p>${ladder(rows,Math.min(k,m),k-1,res)}</div>${til?`<div>${til}</div>`:''}</div>
+      <p class="hint">${k===0?'Press Step: every step is one division with remainder.':'Click a line'+(til?' or a square':'')+' to go to its step.'}</p>`;
+    if(k>=1&&k<=m){const w=rows[k-1];
+      h+=`<div class="bench">${bt('dividend','ra',w.a)}${op('=')}${bt('quotient','rq',w.q)}${op('·')}${bt('divisor','rb',w.b)}${op('+')}${bt('remainder',w.r===0n?'rz':'rr',w.r)}</div>
+        <p class="bnote">On a calculator: <b>${fmt(w.a)} ÷ ${fmt(w.b)} = ${dec(w.a,w.b)}</b> → whole part <b>${fmt(w.q)}</b> → <b>${fmt(w.a)} − ${fmt(w.q)} · ${fmt(w.b)} = ${fmt(w.r)}</b></p>`}
+    if(k===m+1)h+=`<div class="bench nw">${bt('greatest common divisor','',`gcd(${fmt(a)}, ${fmt(b)})`)}${op('=')}${bt('last remainder that is not 0','rr',g)}</div>
+      <p class="bnote">Check: <b>${fmt(a)} = ${fmt(g)} · ${fmt(a/g)}</b> and <b>${fmt(b)} = ${fmt(g)} · ${fmt(b/g)}</b></p>`;
+    if(k===m+2){const pr=[...rows.map(w=>[w.a,w.b]),[g,0n]],tx=pr.map(p=>commonTxt(p[0],p[1]));
+      h+=tx.every(Boolean)?`<table class="pairs nw"><tr><th>pair</th><th>numbers that divide both</th></tr>${pr.map((p,i)=>`<tr><td>(${fmt(p[0])}, ${fmt(p[1])})</td><td>${tx[i]}</td></tr>`).join('')}</table>
+        <p class="bnote">Every pair has the same common divisors. In the last pair the second number is 0, and every number divides 0.</p>`:`<p class="bnote">These numbers are too large to list their divisors, but the argument does not need the lists.</p>`}
+    if(k===m+3){const sm=a<b?a:b,d=digits(sm),da=divisors(a),db=divisors(b),rsa=(2n**2048n).toString().length;
+      h+=`<div class="calc nw"><div class="now"><b>this run</b><span>${plural(B(m),'division')}</span></div><div><b>Lamé’s limit</b><span>5 · ${d} ${d===1?'digit':'digits'} = at most ${5*d} divisions</span></div>
+        <div><b>by lists</b><span>${da&&db?`about ${fmt(B(Math.floor(Math.sqrt(Number(a)))))} + ${fmt(B(Math.floor(Math.sqrt(Number(b)))))} trial divisions (up to √a and √b)`:'not possible for numbers this large'}</span></div>
+        <div><b>RSA-2048</b><span>${rsa} digits: at most 5 · ${rsa} = ${fmt(B(5*rsa))} divisions</span></div></div>`}
+    return h},
+  say(k){
+    const S=eucS(),{rows,m,g,a,b}=S,A=fmt(a),Bb=fmt(b);
+    if(k===0)return say('The idea',`We want gcd(${A}, ${Bb}) without listing a single divisor.`,'Euclid’s trick: divide one number by the other and look only at the remainder. The pair (divisor, remainder) has the same gcd as the pair before, and its numbers are smaller.','Repeat until the remainder is 0. Press <b>Step</b>.');
+    if(k<=m){const w=rows[k-1];
+      return say(`Step ${k} · divide ${fmt(w.a)} by ${fmt(w.b)}`,
+        w.q===0n?`${fmt(w.a)} is the smaller number, so ${fmt(w.b)} fits 0 times and all of it is left over. This line only swaps the two numbers.`:`${fmt(w.b)} fits ${plural(w.q,'time')} into ${fmt(w.a)}: ${fmt(w.q)} · ${fmt(w.b)} = ${fmt(w.q*w.b)}, and ${fmt(w.a)} − ${fmt(w.q*w.b)} = ${fmt(w.r)} is left.`,
+        w.r>0n?`The remainder is not 0, so we go on with the pair (${fmt(w.b)}, ${fmt(w.r)}): the divisor moves to the front, and the remainder becomes the new divisor.`:`The remainder is 0: ${fmt(w.b)} divides ${fmt(w.a)} exactly. The algorithm stops here.`)}
+    if(k===m+1)return say('The result',`The last remainder that was not 0 is ${fmt(g)}. In the last line it stands as the divisor.`,fm(`gcd(${A}, ${Bb}) = ${fmt(g)}`),tiling(S,0)?`In the picture: squares of side ${fmt(g)} are the largest squares that fill the whole ${fmt(a>b?a:b)} × ${fmt(a>b?b:a)} rectangle without a gap.`:'');
+    if(k===m+2)return say('Why the gcd never changed','Take any line, a = q · b + r.','If a number d divides a and b, it also divides a − q · b, and that is r. If d divides b and r, it also divides q · b + r, and that is a.','So the pair (a, b) and the pair (b, r) have exactly the same common divisors, and therefore the same greatest one.');
+    const d=digits(a<b?a:b);
+    return say('How fast is it?',`${plural(B(m),'division')} for these numbers.`,'The remainders shrink fast: after every two lines the remainder is less than half of what it was. So the number of lines grows with the number of digits, not with the size of the numbers.',`Gabriel Lamé proved in 1844 that it never takes more than 5 lines for each decimal digit of the smaller number. Here that means at most ${5*d}.`)},
+  extra:()=>`<h3>The recipe</h3><ol style="margin:0 0 8px;padding-left:20px"><li>Divide the larger number by the smaller one.</li><li>Remainder 0? Then the divisor is the gcd. Stop.</li><li>Otherwise go on with the pair (divisor, remainder).</li></ol><span class="fm">gcd(a, b) = gcd(b, a mod b)<br>gcd(a, 0) = a</span>`};
+
+/* ---------- 4 · the extended algorithm: the gcd as s · a + t · b ---------- */
+function extS(){const{a,b}=ST,R=extended(a,b),L=R.length;return{a,b,R,L,g:R[L-2].r,s:R[L-2].s,t:R[L-2].t}}
+// the backward way: write the gcd with two neighbouring numbers of Euclid's run, then replace the smaller one, line by line
+function backS(){
+  const{a,b}=ST,E=euclid(a,b),rows=E.rows,m=rows.length,seq=[a,b,...rows.map(w=>w.r)],subs=[];
+  let x=0n,y=1n;
+  if(m>=2){x=1n;y=-rows[m-2].q;
+    for(let j=m-1;j>=2;j--){const q=rows[j-2].q,nx=y,ny=x-y*q;subs.push({j,q,x,y,nx,ny});x=nx;y=ny}}
+  return{a,b,rows,m,seq,g:E.g,subs,s:x,t:y}}
+// the table of the forward way (also used for inverses)
+function xtable(R,o){
+  const L=R.length,hid=o.hideST?' hid':'';
+  let h=`<div class="scroll"><table class="xt"><tr><th>quotient<small>q</small></th><th>remainder<small>r</small></th><th class="${hid}">s<small>how many ${fmt(o.a)}</small></th><th class="${hid}">t<small>how many ${fmt(o.b)}</small></th><th class="ck${hid}">check: s · ${fmt(o.a)} + t · ${fmt(o.b)}</th></tr>`;
+  R.forEach((w,i)=>{const cls=[i>=o.shown?'fut':'',i===o.cur?'cur':'',o.ans&&i===L-2?'ans':'',w.r===0n?'zero':''].filter(Boolean).join(' ');
+    h+=`<tr class="${cls}"${o.step?` data-step="${o.step(i)}"`:''}><td class="rq">${w.q===null?'':fmt(w.q)}</td><td class="${w.r===0n?'':'rr'}">${fmt(w.r)}</td><td class="${hid}">${fmt(w.s)}</td><td class="${hid}${o.pickT&&i===L-2?' pick':''}">${fmt(w.t)}</td><td class="ck${hid}">${par(w.s)} · ${fmt(o.a)} + ${par(w.t)} · ${fmt(o.b)} = ${fmt(w.s*o.a+w.t*o.b)}</td></tr>`});
+  return h+'</table></div>'}
+const sumTxt=(u,v)=>`${fmt(u)} ${v<0n?'−':'+'} ${fmt(abs(v))}`;
+
+T.ext={n:()=>ST.xm==='fwd'?extS().L+1:4+backS().subs.length,
+  bar:()=>eucBar()+`<div class="fld"><span class="flh">Method</span><div class="seg" id="xm"><button data-xm="fwd" class="${ST.xm==='fwd'?'on':''}">Table, going down</button><button data-xm="bwd" class="${ST.xm==='bwd'?'on':''}">Substitute, going back up</button></div></div><div class="err" id="err"></div>`,
+  view(k){
+    if(ST.xm==='bwd')return this.back(k);
+    const{a,b,R,L,g,s,t}=extS(),goal=`<div class="bench sm">${bt('s','','?')}${op('·')}${bt('a','ra',a)}${op('+')}${bt('t','','?')}${op('·')}${bt('b','rb',b)}${op('=')}${bt('gcd','rr',g)}</div>`;
+    let h=xtable(R,{a,b,shown:k===0?0:k>=L?L:Math.max(2,k+1),cur:k>=2&&k<L?k:-1,ans:k===L,step:i=>i<=1?1:i})+`<p class="hint">${k===0?'The table fills in row by row.':'Every row says: r = s · a + t · b. Click a row to go to its step.'}</p>`;
+    if(k<=1)h+=goal;
+    if(k>=2&&k<L){const w=R[k],x=R[k-2],y=R[k-1];
+      h+=`<div class="calc"><div><b>quotient</b><span>${fmt(x.r)} ÷ ${fmt(y.r)} = ${dec(x.r,y.r)} → whole part q = ${fmt(w.q)}</span></div>
+        <div class="now"><b>new r</b><span>${fmt(x.r)} − ${fmt(w.q)} · ${fmt(y.r)} = ${fmt(w.r)}</span></div>
+        <div class="now"><b>new s</b><span>${par(x.s)} − ${fmt(w.q)} · ${par(y.s)} = ${fmt(w.s)}</span></div>
+        <div class="now"><b>new t</b><span>${par(x.t)} − ${fmt(w.q)} · ${par(y.t)} = ${fmt(w.t)}</span></div></div>`}
+    if(k===L)h+=`<div class="bench sm nw">${bt('gcd','rr',g)}${op('=')}${bt('s','',par(s))}${op('·')}${bt('a','ra',a)}${op('+')}${bt('t','',par(t))}${op('·')}${bt('b','rb',b)}</div>
+      <p class="bnote">Check: <b>${sumTxt(s*a,t*b)} = ${fmt(s*a+t*b)}</b></p>`;
+    return h},
+  back(k){
+    const{a,b,rows,m,seq,g,subs,s,t}=backS(),last=3+subs.length,ln=(cls,body,note)=>`<div class="ln ${cls}">${body}${note?`<small>${note}</small>`:''}</div>`;
+    let h=`<div class="bw"><div class="h3">Euclid’s lines, each solved for its remainder</div>`;
+    rows.forEach((w,i)=>{const used=k===2?i===m-2:k>=3&&k<last&&subs[k-3].j-2===i;
+      h+=w.r===0n?ln((k>=1?'':'fut')+' rz',`${fmt(w.a)} = ${fmt(w.q)} · ${fmt(w.b)} + 0`,`remainder 0, so the gcd is ${fmt(w.b)}`):ln((k>=1?'':'fut ')+(used?'cur':''),`${fmt(w.r)} = ${fmt(w.a)} − ${fmt(w.q)} · ${fmt(w.b)}`,'')});
+    h+=`<div class="h3">The gcd, rewritten step by step</div>`;
+    const start=m>=2?`${fmt(g)} = ${lin([[1n,fmt(seq[m-2])],[-rows[m-2].q,fmt(seq[m-1])]])}`:`${fmt(g)} = 0 · ${fmt(a)} + 1 · ${fmt(b)}`;
+    h+=ln((k>=2?'':'fut ')+(k===2?'cur':'')+(k===last&&!subs.length?' ans':''),start,m>=2?'the line of the gcd':`${fmt(b)} divides ${fmt(a)}`);
+    subs.forEach((u,i)=>{const U=fmt(seq[u.j-1]),V=fmt(seq[u.j]),W=fmt(seq[u.j-2]),vis=k>=3+i,cur=k===3+i,fin=k===last&&i===subs.length-1;
+      h+=ln((vis?'':'fut ')+(cur?'cur':''),`${fmt(g)} = ${lin([[u.x,U],[u.y,`<mark>(${W} − ${fmt(u.q)} · ${U})</mark>`]])}`,`${V} replaced by ${W} − ${fmt(u.q)} · ${U}`);
+      h+=ln((vis?'':'fut ')+(fin?'ans':cur?'cur':''),`${fmt(g)} = ${lin([[u.nx,W],[u.ny,U]])}`,`counted: ${par(u.x)} − ${par(u.y)} · ${fmt(u.q)} = ${fmt(u.ny)} times ${U}`)});
+    h+='</div>';
+    if(k===last)h+=`<div class="bench sm nw">${bt('gcd','rr',g)}${op('=')}${bt('s','',par(s))}${op('·')}${bt('a','ra',a)}${op('+')}${bt('t','',par(t))}${op('·')}${bt('b','rb',b)}</div>
+      <p class="bnote">Check: <b>${sumTxt(s*a,t*b)} = ${fmt(s*a+t*b)}</b></p>`;
+    return h},
+  say(k){
+    const A=fmt(ST.a),Bb=fmt(ST.b);
+    if(ST.xm==='bwd'){const{rows,m,seq,g,subs,s,t,a,b}=backS(),G=fmt(g),last=3+subs.length;
+      if(k===0)return say('The goal',`Find two whole numbers s and t with`,fm(`s · ${A} + t · ${Bb} = ${G}`),'This is the way most people do it by hand: run Euclid first, then walk back up through its lines.');
+      if(k===1)return say('Step 1 · run Euclid, then turn every line around','First find the gcd as in tab 3. Then solve every line for its remainder: a = q · b + r becomes r = a − q · b.','Now each remainder is written with the two numbers above it.');
+      if(k===2)return m>=2?say('Step 2 · start at the gcd',`The gcd ${G} is the remainder of the line before the last one:`,fm(`${G} = ${fmt(seq[m-2])} − ${fmt(rows[m-2].q)} · ${fmt(seq[m-1])}`),subs.length?`It is written with ${fmt(seq[m-2])} and ${fmt(seq[m-1])}. We want it written with ${A} and ${Bb}. So we replace the smaller number, one line at a time, going up.`:'It is already written with the two starting numbers.')
+        :say('Step 2 · nothing to replace',`${Bb} divides ${A}, so the gcd is ${Bb} itself:`,fm(`${G} = 0 · ${A} + 1 · ${Bb}`));
+      if(k<last){const u=subs[k-3],U=fmt(seq[u.j-1]),V=fmt(seq[u.j]),W=fmt(seq[u.j-2]);
+        return say(`Step ${k} · replace ${V}`,`${V} is the remainder of an earlier line: ${V} = ${W} − ${fmt(u.q)} · ${U}. Put the right-hand side in its place.`,`Then count how many times ${U} appears: ${par(u.x)} − ${par(u.y)} · ${fmt(u.q)} = ${fmt(u.ny)}.`,'Do not multiply the numbers out. Keep them as names and only count them.')}
+      return say('The result',fm(`${G} = ${par(s)} · ${A} + ${par(t)} · ${Bb}`),`Check: ${sumTxt(s*a,t*b)} = ${fmt(s*a+t*b)}.`,'The table method gives the same two numbers. Try it with the switch above the picture.')}
+    const{R,L,g,s,t,a,b}=extS(),G=fmt(g);
+    if(k===0)return say('The goal',`Euclid’s algorithm finds gcd(${A}, ${Bb}) = ${G}. The extended algorithm finds, in the same run, two whole numbers s and t with`,fm(`s · ${A} + t · ${Bb} = ${G}`),'Such numbers always exist. Usually one of them is negative. Tab 5 uses them to find inverses.');
+    if(k===1)return say('Step 1 · two rows to start','Every row of the table says how its number r is made from a and b: r = s · a + t · b.',fm(`${A} = 1 · ${A} + 0 · ${Bb}<br>${Bb} = 0 · ${A} + 1 · ${Bb}`),'So the first two rows have (s, t) = (1, 0) and (0, 1).');
+    if(k<L){const w=R[k],x=R[k-2],y=R[k-1];
+      return say(`Step ${k} · a new row`,`${fmt(y.r)} fits ${plural(w.q,'time')} into ${fmt(x.r)}, so q = ${fmt(w.q)}.`,'<b>New row = row two above − q · row above</b>, in every column. The three subtractions are written under the table.',w.r===0n?'The remainder is 0: this is the last row.':`The new row is true as well: ${par(w.s)} · ${A} + ${par(w.t)} · ${Bb} = ${fmt(w.r)}.`)}
+    return say('The result','The remainder reached 0. The row above it holds the gcd and the two numbers we wanted:',fm(`${G} = ${par(s)} · ${A} + ${par(t)} · ${Bb}`),`Check: ${sumTxt(s*a,t*b)} = ${fmt(s*a+t*b)}.`)},
+  extra(){const{a,b,g,s,t}=extS(),s2=s+b/g,t2=t-a/g;
+    return`<h3>Good to know</h3><p><b>Bézout’s identity.</b> For any whole numbers a and b there are whole numbers s and t with s · a + t · b = gcd(a, b).</p>
+      <p><b>Not the only pair.</b> ${par(s2)} · ${fmt(a)} + ${par(t2)} · ${fmt(b)} = ${fmt(s2*a+t2*b)} works as well. The algorithm returns a pair of small numbers.</p>
+      <p><b>Two methods, one answer.</b> The table goes down once and is the safer one by hand. Substituting back up is the classic school method.</p>`}};
+
+/* ---------- 5 · the inverse modulo n ---------- */
+function invS(){
+  const a=ST.ia,n=ST.in,ar=mod(a,n),R=extended(n,ar),L=R.length,g=R[L-2].r,s=R[L-2].s,t=R[L-2].t,ok=g===1n;
+  return{a,n,ar,R,L,g,s,t,ok,x:ok?mod(t,n):null,strip:n<=40n}}
+const inverse=(a,n)=>{const R=extended(n,mod(a,n)),w=R[R.length-2];return w.r===1n?mod(w.t,n):null};
+
+T.inv={n:()=>invS().ok?6:4,
+  bar:()=>numIn('ia','<b>a</b> · the number',ST.ia)+numIn('in','<b>n</b> · the modulus',ST.in)+
+    `<div class="fld"><span class="flh">Examples</span><div class="row">${loadBtn('ia=7,in=26','7⁻¹ mod 26')}${loadBtn('ia=17,in=3120','17⁻¹ mod 3120')}${loadBtn('ia=5,in=17','5⁻¹ mod 17')}${loadBtn('ia=13,in=26','13 mod 26')}${loadBtn('ia=10,in=29','10⁻¹ mod 29')}</div></div><div class="err" id="err"></div>`,
+  view(k){
+    const S=invS(),{n,ar,R,L,g,s,t,ok,x}=S,found=ok&&(k>=4||(k>=1&&S.strip));
+    let h=`<div class="bench sm">${bt('the number','ra',ar)}${op('·')}${bt('its inverse','rr',found?fmt(x):'?')}${op('≡')}${bt('&nbsp;','',1n)}${op('mod')}${bt('the modulus','rb',n)}</div>`;
+    if(S.strip)h+=`<div class="sec" style="margin-top:14px"><p class="cap2"><b>${fmt(ar)} · x</b> mod ${fmt(n)}, for every x from 1 to ${fmt(n-1n)}${k>=1?(ok?'. The remainder 1 appears once.':`. Only multiples of ${fmt(g)} appear.`):''}</p>
+      <div class="strip">${range(1,Number(n)-1).map(i=>{const v=ar*B(i)%n;return`<i class="${k>=1&&v===1n?'one':''}"><small>x = ${i}</small>${fmt(v)}</i>`}).join('')}</div></div>`;
+    if(k>=2)h+=`<div class="sec nw0" style="margin-top:16px">${xtable(R,{a:n,b:ar,shown:L,cur:-1,ans:true,hideST:!ok||k<3,pickT:ok&&k>=4})}</div>`;
+    if(k===2)h+=`<p class="bnote">The last remainder that is not 0: <b>gcd(${fmt(n)}, ${fmt(ar)}) = ${fmt(g)}</b>${ok?' → an inverse exists':' → no inverse'}</p>`;
+    if(!ok&&k>=3&&n<=60n){const u=range(1,Number(n)-1).filter(i=>gcd(n,B(i))===1n);
+      h+=`<div class="sec nw"><p class="cap2">The <b>${u.length}</b> numbers that do have an inverse modulo ${fmt(n)}: the ones coprime to it</p><div class="chips" style="justify-content:center">${u.map(i=>`<i>${i}</i>`).join('')}</div></div>`}
+    if(ok&&k===3)h+=`<p class="bnote">The row of the gcd: <b>1 = ${par(s)} · ${fmt(n)} + ${par(t)} · ${fmt(ar)}</b></p>`;
+    if(ok&&k>=4)h+=`<div class="bench sm${k===4?' nw':''}">${bt('t from the table','',par(t))}${op('mod')}${bt('the modulus','rb',n)}${op('=')}${bt('the inverse','rr',x)}</div>`;
+    if(ok&&k>=5)h+=`<div class="bench sm nw">${bt('the number','ra',ar)}${op('·')}${bt('the inverse','rr',x)}${op('=')}${bt('product','',ar*x)}${op('=')}${bt('quotient','rq',ar*x/n)}${op('·')}${bt('the modulus','rb',n)}${op('+')}${bt('remainder','rr',1n)}</div>`;
+    return h},
+  say(k){
+    const{a,n,ar,g,s,t,ok,x,strip}=invS(),A=fmt(ar),Nn=fmt(n);
+    if(k===0)return say('The question',`Which number x gives ${A} · x ≡ 1 (mod ${Nn})?`+(a!==ar?` (${fmt(a)} is reduced first: ${fmt(a)} mod ${Nn} = ${A}.)`:''),`That x is called the <b>inverse</b> of ${A} modulo ${Nn}, written ${A}⁻¹. Multiplying by it undoes multiplying by ${A}, the way ⅓ undoes 3 in ordinary arithmetic.`,'Not every number has one.');
+    if(k===1)return!strip?say('Step 1 · trying is hopeless',`For a small modulus one could multiply ${A} by 1, 2, 3, … until the remainder is 1. Modulo ${Nn} that could take up to ${fmt(n-1n)} tries.`,'We need a method that computes the inverse instead of searching for it.')
+      :ok?say('Step 1 · try every x',`For a small modulus we can simply try: multiply ${A} by 1, 2, 3, … and take the remainder modulo ${Nn}.`,`The remainder 1 appears at x = ${fmt(x)}: ${A} · ${fmt(x)} = ${fmt(ar*x)} = ${fmt(ar*x/n)} · ${Nn} + 1.`,'For an RSA modulus with hundreds of digits there are far too many x to try. We need a method that computes the inverse.')
+      :say('Step 1 · try every x',`Multiply ${A} by 1, 2, 3, … and take the remainder modulo ${Nn}.`,`The remainder 1 never appears. Every remainder in the row is a multiple of ${fmt(g)}.`,'The next step shows why.');
+    if(k===2)return say('Step 2 · is there an inverse at all?',`An inverse exists exactly when the two numbers are coprime. Euclid’s algorithm on ${Nn} and ${A} gives:`,fm(`gcd(${Nn}, ${A}) = ${fmt(g)}`),ok?'The gcd is 1, so there is an inverse, and only one among 1, …, n − 1.':`The gcd is ${fmt(g)}, not 1. <b>${A} has no inverse modulo ${Nn}.</b>`);
+    if(!ok)return say('Why there is none',`${A} and ${Nn} are both multiples of ${fmt(g)}. Then ${A} · x is a multiple of ${fmt(g)}, every multiple of ${Nn} is one, and so the remainder of ${A} · x modulo ${Nn} is one too.`,`1 is not a multiple of ${fmt(g)}. So the remainder can never be 1.`,'Only numbers that are coprime to the modulus have an inverse.');
+    if(k===3)return say('Step 3 · the extended algorithm','The same run, with the columns s and t switched on, writes the gcd with the two numbers:',fm(`1 = ${par(s)} · ${Nn} + ${par(t)} · ${A}`),`The number we want is t, the count of ${A}.`);
+    if(k===4)return say('Step 4 · read the line modulo n',`Modulo ${Nn}, the part ${par(s)} · ${Nn} is a multiple of ${Nn} and disappears. What is left says:`,fm(`${par(t)} · ${A} ≡ 1 (mod ${Nn})`),t<0n?`So ${fmt(t)} is an inverse. It is negative, so add the modulus once: ${fmt(t)} + ${Nn} = ${fmt(x)}.`:`So the inverse is ${fmt(x)}.`);
+    return say('Step 5 · check',fm(`${A} · ${fmt(x)} = ${fmt(ar*x)} = ${fmt(ar*x/n)} · ${Nn} + 1`),'The remainder is 1, as it must be.',`From now on, “dividing by ${A}” modulo ${Nn} means multiplying by ${fmt(x)}.`)},
+  extra(){const{n,ar,ok,x}=invS();
+    return`<h3>Three ways to find an inverse</h3><p><b>Try every x.</b> Fine for mod 26, impossible for real key sizes.</p><p><b>Extended Euclid.</b> Works for every modulus and every size. This is what RSA key generation uses.</p>
+      <p><b>A power, if the modulus is a prime p.</b> Then a⁻¹ = a<sup>p − 2</sup> mod p (Fermat’s little theorem).${ok&&isPrime(n)&&n>2n?` Here: ${fmt(ar)}<sup>${fmt(n-2n)}</sup> mod ${fmt(n)} = ${fmt(modpow(ar,n-2n,n))}.`:''}</p>`}};
+
+/* ---------- 6 · your turn: exercises with new numbers every time, and a check of every line ---------- */
+function rnd(){ST.seed=ST.seed*48271%2147483647;return ST.seed/2147483647}
+const ri=(lo,hi)=>lo+Math.floor(rnd()*(hi-lo+1));
+function newEx(kind){
+  if(kind==='rem'){const b=ri(3,19),a=ri(b+6,399);return{a:B(a),b:B(b),v:{},fb:null,done:false}}
+  if(kind==='gcd')for(;;){const a=ri(40,400),b=ri(12,a-1),E=euclid(B(a),B(b));if(E.rows.length>=3&&E.rows.length<=5)return{a:B(a),b:B(b),rows:E.rows,g:E.g,at:0,v:{},fb:null,done:false}}
+  for(;;){const n=[26,26,17,23,29,31,37,41,20,27,35,45,50][ri(0,12)],a=ri(2,n-2);if(gcd(B(n),B(a))===1n&&a*a%n!==1)return{a:B(a),n:B(n),v:{},fb:null,done:false}}}
+const exOf=kind=>ST.ex[kind]||(ST.ex[kind]=newEx(kind));
+const exIn=(key,v,w)=>`<input type="text" inputmode="numeric" autocomplete="off" data-exv="${key}" value="${v??''}"${w?' class="w"':''} aria-label="${key==='q'?'quotient':key==='r'?'remainder':key==='g'?'the gcd':'the inverse'}">`;
+const num=s=>{s=String(s??'').trim().replace('−','-');return/^-?\d{1,20}$/.test(s)?B(s):null};
+function checkEx(){
+  const kind=ST.kind,E=exOf(kind),no=html=>{E.fb={ok:false,html}},ok=html=>{E.fb={ok:true,html}};
+  if(kind==='rem'||(kind==='gcd'&&E.at<E.rows.length)){
+    const w=kind==='rem'?E:E.rows[E.at],q=num(E.v.q),r=num(E.v.r);
+    if(q===null||r===null)return no('Type a whole number in both boxes.');
+    if(q*w.b+r!==w.a)return no(`${par(q)} · ${fmt(w.b)} + ${par(r)} = ${fmt(q*w.b+r)}, not ${fmt(w.a)}. Multiply back and compare with the number on the left.`);
+    if(r<0n)return no('That adds up, but a remainder is never negative. Take a smaller quotient.');
+    if(r>=w.b)return no(`That adds up, but the remainder must be smaller than ${fmt(w.b)}. ${fmt(w.b)} still fits into ${fmt(r)}, so the quotient is larger.`);
+    if(kind==='rem'){E.done=true;ST.solved++;return ok(`Right. ${fmt(w.a)} = ${fmt(q)} · ${fmt(w.b)} + ${fmt(r)}, so ${fmt(w.a)} mod ${fmt(w.b)} = ${fmt(r)}.`)}
+    E.at++;E.v={};
+    return ok(r===0n?'Right, and the remainder is 0: the algorithm stops. Which number is the gcd?':`Right. The next pair is (${fmt(w.b)}, ${fmt(r)}): divide ${fmt(w.b)} by ${fmt(r)}.`)}
+  if(kind==='gcd'){const g=num(E.v.g);
+    if(g===null)return no('Type a whole number.');
+    if(g===0n)return no('0 is the last remainder. The gcd is the last remainder that is not 0: the divisor of the last line.');
+    if(g!==E.g)return no(`Not ${fmt(g)}. The gcd is the last remainder that is not 0. It stands as the divisor in the last line.`);
+    E.done=true;ST.solved++;
+    return ok(`Right. gcd(${fmt(E.a)}, ${fmt(E.b)}) = ${fmt(E.g)}, found in ${plural(B(E.rows.length),'line')}. Check: ${fmt(E.a)} = ${fmt(E.g)} · ${fmt(E.a/E.g)} and ${fmt(E.b)} = ${fmt(E.g)} · ${fmt(E.b/E.g)}.`)}
+  const x=num(E.v.x);
+  if(x===null)return no('Type a whole number.');
+  const p=E.a*x,r=mod(p,E.n);
+  if(r!==1n)return no(`${fmt(E.a)} · ${par(x)} = ${fmt(p)} = ${par(fdiv(p,E.n))} · ${fmt(E.n)} + ${fmt(r)}. The remainder is ${fmt(r)}, not 1.`);
+  E.done=true;ST.solved++;
+  return ok(x>=1n&&x<E.n?`Right. ${fmt(E.a)} · ${fmt(x)} = ${fmt(p)} = ${fmt(p/E.n)} · ${fmt(E.n)} + 1.`:`Right: ${fmt(E.a)} · ${par(x)} = ${fmt(p)} leaves the remainder 1. The inverse is usually written as the number between 1 and ${fmt(E.n-1n)}, which is ${fmt(mod(x,E.n))}.`)}
+// open the numbers of the exercise in the walkthrough that explains them
+function exSteps(){
+  const kind=ST.kind,E=exOf(kind);
+  if(kind==='rem'){ST.da=E.a;ST.db=E.b;ST.step.div=4;setTab('div')}
+  else if(kind==='gcd'){ST.a=E.a;ST.b=E.b;ST.step.euc=E.rows.length+1;setTab('euc')}
+  else{ST.ia=E.a;ST.in=E.n;ST.step.inv=5;setTab('inv')}}
+
+T.try={n:()=>1,
+  bar:()=>`<div class="fld"><span class="flh">Kind of exercise</span><div class="seg" id="kind">${[['rem','Remainder'],['gcd','Euclid, line by line'],['inv','Inverse']].map(o=>`<button data-kind="${o[0]}" class="${ST.kind===o[0]?'on':''}">${o[1]}</button>`).join('')}</div></div>`,
+  view(){
+    const kind=ST.kind,E=exOf(kind),box=(key,cls,val,w)=>E.done?`<span class="n ${cls}">${fmt(val)}</span>`:exIn(key,E.v[key],w);
+    let h='<div class="ex">';
+    if(kind==='rem')h+=`<h3>Divide with remainder</h3><p class="task">Find the quotient and the remainder. The remainder must be smaller than ${fmt(E.b)}.</p>
+      <div class="exl${E.done?' done':''}"><span class="n ra">${fmt(E.a)}</span><span class="o">=</span>${box('q','rq',E.a/E.b)}<span class="o">·</span><span class="n rb">${fmt(E.b)}</span><span class="o">+</span>${box('r','rr',E.a%E.b)}</div>`;
+    else if(kind==='gcd'){
+      h+=`<h3>Euclid’s algorithm, line by line</h3><p class="task">Find gcd(${fmt(E.a)}, ${fmt(E.b)}). Fill in the quotient and the remainder of the line. When the line is right, the next one appears.</p>`;
+      E.rows.forEach((w,i)=>{if(i>E.at)return;const dn=i<E.at;
+        h+=`<div class="exl${dn?' done':''}"><span class="n ra">${fmt(w.a)}</span><span class="o">=</span>${dn?`<span class="n rq">${fmt(w.q)}</span>`:exIn('q',E.v.q)}<span class="o">·</span><span class="n rb">${fmt(w.b)}</span><span class="o">+</span>${dn?`<span class="n rr">${fmt(w.r)}</span>`:exIn('r',E.v.r)}</div>`});
+      if(E.at>=E.rows.length)h+=`<div class="exl${E.done?' done':''}"><span class="o">gcd(${fmt(E.a)}, ${fmt(E.b)}) =</span>${box('g','rr',E.g)}</div>`}
+    else h+=`<h3>Find the inverse</h3><p class="task">Find the number x between 1 and ${fmt(E.n-1n)} with ${fmt(E.a)} · x ≡ 1 (mod ${fmt(E.n)}). Work it out on paper with the extended algorithm, then check your answer here.</p>
+      <div class="exl${E.done?' done':''}"><span class="n ra">${fmt(E.a)}</span><span class="o">⁻¹ mod</span><span class="n rb">${fmt(E.n)}</span><span class="o">=</span>${box('x','rr',inverse(E.a,E.n),1)}</div>`;
+    if(E.fb)h+=`<div class="fb ${E.fb.ok?'ok':'no'}" role="status">${E.fb.html}</div>`;
+    return h+`<div class="exb2">${E.done?'':'<button class="pri" data-exa="check">Check</button>'}<button data-exa="new">${E.done?'Another one':'Other numbers'}</button><button data-exa="steps">Show me the steps</button></div><p class="score">Solved in this visit: ${ST.solved}</p></div>`},
+  say:()=>say('Your turn','Choose a kind of exercise above the picture. Work on paper or with a calculator, type your numbers and press <b>Check</b> (or the Enter key).','A wrong line is not just marked wrong: the page says which rule it breaks, with your own numbers.','Stuck? <b>Show me the steps</b> opens the same numbers in the walkthrough.'),
+  extra:()=>`<h3>Before you press Check</h3><ul style="margin:0;padding-left:20px"><li>Multiply back: q · b + r must give the number on the left.</li><li>The remainder must be smaller than the divisor.</li><li>The gcd is the last remainder that is <b>not</b> 0.</li><li>An inverse times its number must leave the remainder 1.</li></ul>`};
+
+/* ---------- 7 · where the course uses the two algorithms ---------- */
+T.use={n:()=>1,
+  view(){
+    const d=inverse(17n,3120n),k=inverse(10n,29n),R=[
+      ['Affine cipher','Decryption multiplies by a⁻¹ mod 26, so the key a must be coprime to 26.',`gcd(7, 26) = ${gcd(26n,7n)} and 7⁻¹ mod 26 = ${inverse(7n,26n)}`,'classic.html#affine','Classical ciphers'],
+      ['RSA key generation','The public exponent e must be coprime to φ(n). The private exponent is its inverse: d = e⁻¹ mod φ(n).',`p = 61, q = 53: φ(n) = ${60*52}, e = 17, d = ${fmt(d)}`,'rsa.html','RSA, step by step'],
+      ['Digital signatures','Elgamal, DSA and ECDSA divide by the one-time number k. They do it by multiplying with k⁻¹ mod q.',`q = 29, k = 10: k⁻¹ = ${k}, because 10 · ${k} = ${10n*k} = ${10n*k/29n} · 29 + 1`,'signatures.html','Digital signatures'],
+      ['Finite fields','Division in GF(p) is multiplication by an inverse. In GF(2⁸) the same algorithm, run on polynomials, gives the inverse inside the AES S-box.',`5⁻¹ in GF(17) is ${inverse(5n,17n)}`,'fields.html','Numbers, groups, rings and fields'],
+      ['RSA keys that share a prime','If two public moduli were made with the same prime, one gcd finds it, and both keys are broken.',`gcd(${61*53}, ${61*71}) = ${gcd(B(61*53),B(61*71))}`,'','']];
+    return`<div class="scroll"><table class="map"><tr><th>Where</th><th>What is computed</th><th>With small numbers</th><th>Page</th></tr>${R.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><span class="m">${r[2]}</span></td><td>${r[3]?`<a href="${r[3]}">${r[4]}</a>`:''}</td></tr>`).join('')}</table></div>`},
+  say:()=>say('Two small algorithms, used everywhere','Euclid’s algorithm answers: do these two numbers share a factor? The extended algorithm answers: what do I multiply by to undo this number?','Every public-key system in this course asks one of these two questions while making or using a key.'),
+  extra:()=>`<h3>To remember</h3><dl class="words"><dt>a = q · b + r</dt><dd>Division with remainder, 0 ≤ r &lt; b.</dd><dt>gcd(a, b) = gcd(b, a mod b)</dt><dd>Euclid: repeat until the remainder is 0.</dd><dt>s · a + t · b = gcd(a, b)</dt><dd>Extended Euclid finds s and t.</dd><dt>a⁻¹ mod n</dt><dd>Exists exactly when gcd(a, n) = 1. It is the t (or s) that belongs to a.</dd></dl>`};
+
+/* ---------- the longer read under each picture: one article per step, with the reader's own numbers ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)',AZB='Əliquliyev, İmamverdiyev, <cite>Kriptoqrafiyanın əsasları</cite> (2006), the course textbook';
+const AZB7=`${AZB}: pp. 357–359, public-key cryptography (lecture 7 of the syllabus).`;
+const REFS={
+  mod:[`${PAAR}, chapter 1: section 1.4.1, “Modular Arithmetic”.`],
+  ring:[`${PAAR}, chapter 1: section 1.4.2, “Integer Rings”.`],
+  euc:[`${PAAR}, chapter 6: section 6.3.1, “Euclidean Algorithm”.`,AZB7],
+  ext:[`${PAAR}, chapter 6: section 6.3.2, “Extended Euclidean Algorithm”.`,AZB7],
+  all:[`${PAAR}, chapter 6: section 6.3.1, “Euclidean Algorithm”, and section 6.3.2, “Extended Euclidean Algorithm”.`,AZB7]};
+const MORE=id=>box('Read more','<ul>'+REFS[id].map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk');
+const RSADIG=(2n**2048n).toString().length;       // the number of decimal digits of a 2048-bit number
+
+/* remainder */
+T.div.doc=k=>{
+  const{a,b,q,r}=divS(),A=fmt(a),Bb=fmt(b),Q=fmt(q),Rr=fmt(r);
+  if(k===0)return`<h2>Division with remainder</h2>
+    <p class="lead">Divide one whole number by another and stay inside the whole numbers. The answer is a pair: a quotient and a remainder.</p>
+    <p>Fractions and decimals are not needed anywhere on this page. Here ${A} ÷ ${Bb} does not mean ${dec(a,b)}. It means: ${Bb} fits ${plural(q,'time')}, and ${Rr} is left over.</p>
+    <h3>Why a cryptography course starts here</h3>
+    <p>Almost every public-key computation ends with “and keep only the remainder”. The affine cipher computes (a · p + b) mod 26. RSA computes m<sup>e</sup> mod n. Diffie–Hellman computes g<sup>x</sup> mod p. Before any of that makes sense, the remainder has to be an everyday tool.</p>
+    ${USE('Taking the remainder keeps every result in a fixed range. After “mod 26” the result is one of 26 letters. After “mod n” it has no more digits than n, however large the numbers before were.')}`;
+  if(k===1){const v=[];for(let i=0n;i<=q&&i<=12n;i++)v.push(fmt(a-i*b));
+    const chain=q===0n?`${A} is smaller than ${Bb}: nothing can be taken away.`:q<=12n?`${v.join(' → ')}<br>${plural(q,'subtraction')} of ${Bb}, and ${Rr} is left.`:`${fmt(a)} → ${fmt(a-b)} → ${fmt(a-2n*b)} → … → ${fmt(r+b)} → ${Rr}<br>${plural(q,'subtraction')} of ${Bb}, and ${Rr} is left.`;
+    return`<h2>Taking the divisor away</h2>
+    <p class="lead">Division is repeated subtraction: count how many times b can be taken away from a before the result would drop below 0.</p>
+    ${EX(M(chain))}
+    <p>Nobody subtracts thousands of times. The quotient is found in one go, by long division on paper or with a calculator (step 4). But its meaning stays the same: the quotient is a count.</p>
+    <h3>When the first number is the smaller one</h3>
+    <p>Then the divisor does not fit even once. The quotient is 0 and the whole number is left over.</p>
+    ${EX(M('5 = 0 · 12 + 5'))}`}
+  if(k===2){const e=(q>0n?q:1n)*b;
+    return`<h2>The remainder</h2>
+    <p class="lead">What is left when no further b fits. It is always smaller than b.</p>
+    <p>If the remainder were ${Bb} or more, one more ${Bb} could be taken away, and the quotient would be larger by one. So the remainder of a division by ${Bb} is always one of ${b<=12n?list(range(0,Number(b)-1)):`0, 1, 2, …, ${fmt(b-1n)}`}: exactly ${Bb} possible ${b===1n?'value':'values'}.</p>
+    <h3>Remainder 0</h3>
+    <p>Then b fits exactly. We say “b divides a”, write b | a, and call a a multiple of b.</p>
+    ${EX(M(`${fmt(e)} = ${fmt(e/b)} · ${Bb} + 0`)+` &nbsp; so ${Bb} divides ${fmt(e)}`)}
+    ${USE('The possible remainders 0, 1, …, n − 1 are the elements of ℤ<sub>n</sub>, the set that modular arithmetic computes in. The page <a href="fields.html">Numbers, groups, rings and fields</a> builds on it.')}`}
+  if(k===3)return`<h2>a = q · b + r</h2>
+    <p class="lead">The division equation. Every division with remainder is this one line.</p>
+    <p>For whole numbers a and b with b &gt; 0 there is exactly one pair q, r with a = q · b + r and 0 ≤ r &lt; b. Both conditions matter: the equation alone has many solutions, and the condition on r picks one of them.</p>
+    ${EX(M(`${A} = ${Q} · ${Bb} + ${Rr}`))}
+    ${q>0n?NO(M(`${A} = ${fmt(q-1n)} · ${Bb} + ${fmt(r+b)}`)+` adds up too, but ${fmt(r+b)} is not smaller than ${Bb}. It is not the division with remainder.`):''}
+    <h3>How to check a division</h3>
+    <p>Multiply back and add: q · b + r must give a. Then look at r: it must be smaller than b.</p>`;
+  if(k===4){const cg=[a,r,r+2n*b,r-b].filter((v,i,ar)=>ar.indexOf(v)===i),y=38n,rx=a%b,ry=y%b;
+    return`<h2>mod, and how to compute it</h2>
+    <p class="lead">a mod b is the remainder of a divided by b.</p>
+    <h3>With a calculator</h3>
+    <ol><li>Divide: ${A} ÷ ${Bb} = ${dec(a,b,4)}.</li><li>Drop everything after the decimal point: q = ${Q}.</li><li>Multiply back and subtract: ${A} − ${Q} · ${Bb} = ${A} − ${fmt(q*b)} = ${Rr}.</li></ol>
+    ${NO('Drop the decimals, do not round. 9.8 becomes 9, not 10.')}
+    <h3>Congruent numbers</h3>
+    <p>Two numbers are <b>congruent</b> modulo b when they leave the same remainder. That is the same as saying that b divides their difference.</p>
+    ${EX(M(`${cg.map(fmt).join(' ≡ ')} (mod ${Bb})`)+`<br>All of them leave the remainder ${Rr}.`)}
+    <h3>Remainders can be taken early</h3>
+    <p>In a sum or a product, every number may be replaced by its remainder first. The final remainder is the same.</p>
+    ${EX(`${M(`(${A} · ${fmt(y)}) mod ${Bb}`)}: first ${M(`${A} mod ${Bb} = ${fmt(rx)}`)} and ${M(`${fmt(y)} mod ${Bb} = ${fmt(ry)}`)}, then ${M(`${fmt(rx)} · ${fmt(ry)} = ${fmt(rx*ry)}`)} and ${M(`${fmt(rx*ry)} mod ${Bb} = ${fmt(rx*ry%b)}`)}.<br>The long way: ${M(`${A} · ${fmt(y)} = ${fmt(a*y)} = ${fmt(a*y/b)} · ${Bb} + ${fmt(a*y%b)}`)}.`)}
+    ${USE('This is why RSA can raise a 2048-bit number to a huge power: after every multiplication the result is reduced modulo n, so the numbers never grow.')}
+    ${MORE('mod')}`}
+  const p=r===0n?[47n,5n]:[a,b],na=-p[0],pb=p[1],qn=fdiv(na,pb),rn=mod(na,pb),pr=p[0]%pb;
+  return`<h2>Negative numbers</h2>
+    <p class="lead">A remainder is never negative. For a negative number the quotient goes one step further down.</p>
+    ${EX(M(`${fmt(na)} = ${par(qn)} · ${fmt(pb)} + ${fmt(rn)}`)+`, so ${M(`${fmt(na)} mod ${fmt(pb)} = ${fmt(rn)}`)}`)}
+    <h3>A quick way</h3>
+    <p>Take the remainder of the positive number first: ${fmt(p[0])} mod ${fmt(pb)} = ${fmt(pr)}. If it is 0, the answer is 0. Otherwise subtract it from the divisor: ${fmt(pb)} − ${fmt(pr)} = ${fmt(rn)}.</p>
+    ${NO(`Programming languages disagree. In C, Java and JavaScript, ${M(`${fmt(na)} % ${fmt(pb)}`)} gives ${fmt(-pr)}. In Python it gives ${fmt(rn)}. Code that does modular arithmetic adds the divisor when the result is negative.`)}
+    ${USE('Decrypting a shift or affine cipher subtracts the key, and the result can drop below 0. '+M('(2 − 5) mod 26 = −3 mod 26 = 23')+': the letter C, shifted back by 5, is X.')}`};
+
+/* common divisors */
+T.gcd.doc=k=>{
+  const S=gcdS(),{a,b,g}=S,A=fmt(a),Bb=fmt(b),G=fmt(g);
+  if(!S.ok)return`<h2>When the lists are out of reach</h2>
+    <p class="lead">Trying every possible divisor takes about √a steps. For large numbers that is far too many.</p>
+    <p>Euclid’s algorithm needs ${plural(B(S.m),'division')} for these two numbers. See tab 3.</p>`;
+  const pairs=(n,ds)=>{const p=ds.filter(d=>d*d<=n);return p.slice(0,8).map(d=>`${fmt(d)} · ${fmt(n/d)}`).join(' = ')+(p.length>8?' = …':'')};
+  if(k===0){let nd=2n;while(a%nd===0n)nd++;const x=S.da[Math.floor(S.da.length/2)];
+    return`<h2>Divisors</h2>
+    <p class="lead">d is a divisor of a when a ÷ d leaves the remainder 0.</p>
+    <p>The same fact has several names: d <b>divides</b> a, d is a <b>factor</b> of a, a is a <b>multiple</b> of d. In symbols: d | a.</p>
+    ${EX(M(`${A} = ${fmt(a/x)} · ${fmt(x)} + 0`)+` &nbsp; ${fmt(x)} divides ${A}<br>`+M(`${A} = ${fmt(a/nd)} · ${fmt(nd)} + ${fmt(a%nd)}`)+` &nbsp; ${fmt(nd)} does not`)}
+    <h3>Two divisors every number has</h3>
+    <p>1 divides every number, and every number divides itself. A number larger than 1 with no other divisors is a <b>prime</b>.</p>
+    <h3>And 0?</h3>
+    <p>Every number divides 0, because 0 = 0 · d. This will matter at the end of Euclid’s algorithm.</p>`}
+  if(k===1)return`<h2>All divisors of ${A}</h2>
+    <p class="lead">Found by trying d = 1, 2, 3, … and keeping every d that leaves the remainder 0.</p>
+    <p>Divisors come in pairs: if d divides a, then a ÷ d divides it too. One of the two is at most √a, so it is enough to try up to √a, here up to ${Math.floor(Math.sqrt(Number(a)))}.</p>
+    ${EX(M(`${A} = ${pairs(a,S.da)}`))}
+    ${NO('For a number with hundreds of digits even √a is far too many trials. Finding the divisors of a large number is the factoring problem, and RSA rests on the fact that nobody can do it fast.')}`;
+  if(k===2)return`<h2>All divisors of ${Bb}</h2>
+    <p class="lead">The same search for the second number.</p>
+    ${EX(M(`${Bb} = ${pairs(b,S.db)}`))}
+    <p>${S.db.length===2?`${Bb} has only the divisors 1 and ${Bb}: it is a prime.`:`${Bb} has ${plural(B(S.db.length),'divisor')}.`} How many divisors a number has says little about its size. It depends on how the number splits into primes.</p>`;
+  if(k===3)return`<h2>Common divisors</h2>
+    <p class="lead">The numbers that divide both ${A} and ${Bb}.</p>
+    ${EX(`Common divisors of ${A} and ${Bb}: `+M(S.com.map(fmt).join(', ')))}
+    <h3>The fact that makes Euclid’s algorithm work</h3>
+    <p>If d divides a and d divides b, then d also divides a + b, a − b, and a − q · b for every whole number q. A common divisor survives adding and subtracting.</p>
+    ${EX(`${G} divides ${A} and ${Bb}, so it divides their difference: `+M(`${A} − ${Bb} = ${fmt(a-b)} = ${G} · ${par((a-b)/g)}`))}`;
+  if(k===4)return`<h2>The greatest common divisor</h2>
+    <p class="lead">gcd(a, b) is the largest number that divides both a and b.</p>
+    ${EX(M(`gcd(${A}, ${Bb}) = ${G}`))}
+    <p>Other names for the same thing: greatest common factor, highest common factor. In Azerbaijani schoolbooks it is ƏBOB, ən böyük ortaq bölən.</p>
+    <h3>Every common divisor divides the gcd</h3>
+    <p>The common divisors of ${A} and ${Bb} are exactly the divisors of ${G}: ${M(divisors(g).map(fmt).join(', '))}.</p>
+    <h3>Two everyday uses</h3>
+    <p>Simplifying a fraction: divide the top and the bottom by their gcd. And the least common multiple is a · b ÷ gcd(a, b).</p>
+    ${EX(M(`${A} / ${Bb} = ${fmt(a/g)} / ${fmt(b/g)}`)+' &nbsp; and &nbsp; '+M(`lcm(${A}, ${Bb}) = ${fmt(a*b/g)}`))}`;
+  const units=range(1,25).filter(i=>gcd(26n,B(i))===1n);
+  return`<h2>Coprime numbers</h2>
+    <p class="lead">Two numbers are coprime when their gcd is 1: they share no divisor except 1.</p>
+    <p>Neither of them has to be a prime. 15 = 3 · 5 and 26 = 2 · 13 are both composite, and still gcd(15, 26) = 1.</p>
+    ${EX(M(`gcd(${A}, ${Bb}) = ${G}`)+(g===1n?`: ${A} and ${Bb} are coprime`:`: ${A} and ${Bb} are not coprime, both are multiples of ${G}`))}
+    ${USE(`The affine cipher c = (a · p + b) mod 26 can be decrypted only if a is coprime to 26. That leaves ${units.length} values for a: `+M(units.join(', '))+'. In RSA the public exponent e must be coprime to φ(n).')}
+    <h3>gcd with 0</h3>
+    <p>gcd(a, 0) = a, because every number divides 0. Euclid’s algorithm ends with exactly this case.</p>
+    ${NO('Listing divisors is fine for small numbers and hopeless for large ones. The next tab finds the gcd without a single divisor.')}`};
+
+/* Euclid's algorithm */
+T.euc.doc=k=>{
+  const S=eucS(),{rows,m,g,a,b}=S,A=fmt(a),Bb=fmt(b),G=fmt(g);
+  if(k===0)return`<h2>Euclid’s algorithm</h2>
+    <p class="lead">It finds gcd(a, b) by repeated division with remainder, without factoring anything.</p>
+    <h3>The recipe</h3>
+    <ol><li>Divide the first number by the second and note the remainder.</li><li>If the remainder is 0, the divisor of this line is the gcd.</li><li>Otherwise continue with the pair (divisor, remainder) and go back to 1.</li></ol>
+    <h3>In one line</h3>
+    <p>${M('gcd(a, b) = gcd(b, a mod b)')} and ${M('gcd(a, 0) = a')}. The whole algorithm is these two facts, used again and again.</p>
+    <h3>Where it comes from</h3>
+    <p>The method is in Euclid’s <i>Elements</i>, written about 300 BC: in Book 7 (Propositions 1 and 2) for whole numbers and in Book 10 for lengths. It is one of the oldest algorithms still in everyday use. Donald Knuth called it “the granddaddy of all algorithms”.</p>
+    ${MORE('euc')}`;
+  if(k<=m){const w=rows[k-1],x=fmt(w.a),y=fmt(w.b);
+    return`<h2>Line ${k}: ${x} divided by ${y}</h2>
+    <p class="lead">${w.q===0n?`${x} is smaller than ${y}: the quotient is 0 and the line only swaps the two numbers.`:`${y} fits ${plural(w.q,'time')} into ${x}, and ${fmt(w.r)} is left.`}</p>
+    <h3>How to get the two numbers</h3>
+    <ol><li>${x} ÷ ${y} = ${dec(w.a,w.b,4)}. The whole part is the quotient: ${fmt(w.q)}.</li><li>Multiply back: ${fmt(w.q)} · ${y} = ${fmt(w.q*w.b)}.</li><li>Subtract: ${x} − ${fmt(w.q*w.b)} = ${fmt(w.r)}. That is the remainder.</li></ol>
+    <h3>What happens to the pair</h3>
+    <p>${w.r>0n?`The pair (${x}, ${y}) is replaced by (${y}, ${fmt(w.r)}). ${x} is not needed again.`:`The remainder is 0, so ${y} divides ${x}. The gcd of a number and one of its divisors is that divisor: ${y}.`}</p>
+    <h3>Why nothing is lost</h3>
+    <p>A number that divides ${x} and ${y} also divides ${x} − ${fmt(w.q)} · ${y} = ${fmt(w.r)}. A number that divides ${y} and ${fmt(w.r)} also divides ${fmt(w.q)} · ${y} + ${fmt(w.r)} = ${x}. So both pairs have the same common divisors.</p>
+    ${EX(`With the gcd itself, ${G}: `+M(`${x} = ${G} · ${fmt(w.a/g)}, &nbsp; ${y} = ${G} · ${fmt(w.b/g)}, &nbsp; ${fmt(w.r)} = ${G} · ${fmt(w.r/g)}`))}`}
+  if(k===m+1){const pr=[[a,b],...rows.map(w=>[w.b,w.r])].map(p=>`gcd(${fmt(p[0])}, ${fmt(p[1])})`),big=a>b?a:b,sm=a>b?b:a;
+    return`<h2>The result</h2>
+    <p class="lead">The gcd is the last remainder that is not 0.</p>
+    ${EX(M((pr.length>8?[...pr.slice(0,3),'…',...pr.slice(-2)]:pr).join(' = ')+` = ${G}`))}
+    ${NO(`The very last remainder is 0, and 0 is not the answer. The answer stands ${m>1?`one line above it, as the remainder of line ${m-1}, and again `:''}as the divisor of the last line.`)}
+    <h3>Checking the answer</h3>
+    <p>${G} must divide both numbers: ${M(`${A} = ${G} · ${fmt(a/g)}`)} and ${M(`${Bb} = ${G} · ${fmt(b/g)}`)}. And the two quotients, ${fmt(a/g)} and ${fmt(b/g)}, must be coprime. Otherwise a larger common divisor would exist.</p>
+    <h3>The picture</h3>
+    <p>Start with a rectangle ${fmt(big)} by ${fmt(sm)}. Each line cuts off as many squares as fit: the quotient counts the squares, and the remainder is the width of the strip that is left. The last squares, of side ${G}, fill their strip exactly. Squares of that size then fill every larger square too, and so the whole rectangle.</p>`}
+  if(k===m+2)return`<h2>Why it works</h2>
+    <p class="lead">Each line keeps the set of common divisors unchanged. So the greatest of them cannot change either.</p>
+    <h3>One line, two directions</h3>
+    <p>Write the line as a = q · b + r.</p>
+    <ul><li>Suppose d divides a and b: a = d · x and b = d · y. Then r = a − q · b = d · (x − q · y). So d divides r.</li><li>Suppose d divides b and r: b = d · y and r = d · z. Then a = q · b + r = d · (q · y + z). So d divides a.</li></ul>
+    <p>The pair (a, b) and the pair (b, r) therefore have the same common divisors.</p>
+    <h3>Why it must stop</h3>
+    <p>Every remainder is smaller than its divisor, and that divisor is the remainder of the line before. So the remainders get smaller and smaller, and a shrinking list of whole numbers that cannot go below 0 has to reach 0.</p>
+    ${EX('The remainders of this run: '+M(rows.map(w=>fmt(w.r)).join(' &gt; ')))}
+    <h3>At the end</h3>
+    <p>The last pair is (${G}, 0). Every number divides 0, so the common divisors of that pair are the divisors of ${G}, and the greatest of them is ${G} itself.</p>`;
+  const sm=a<b?a:b,d=digits(sm),F=euclid(89n,55n).rows.length;
+  return`<h2>How many lines?</h2>
+    <p class="lead">${plural(B(m),'line')} for ${A} and ${Bb}. The count depends on the number of digits, not on the size of the numbers.</p>
+    <h3>The remainder halves every two lines</h3>
+    <p>Take a line with divisor b and remainder r. If r is at most half of b, good. If r is more than half of b, then in the next line r fits into b exactly once, and the new remainder is b − r, which is less than half of b. Either way, two lines later the remainder is below half.</p>
+    <h3>Lamé’s limit</h3>
+    <p>Gabriel Lamé proved in 1844 that the algorithm never needs more than five lines for each decimal digit of the smaller number.</p>
+    ${EX(`The smaller number, ${fmt(sm)}, has ${d} ${d===1?'digit':'digits'}: at most 5 · ${d} = ${5*d} lines. This run needed ${m}.`)}
+    <h3>The slowest numbers</h3>
+    <p>The algorithm is slowest when the quotients are 1, so that each line removes as little as possible. That happens for neighbours in the Fibonacci sequence 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, …</p>
+    ${EX(`gcd(89, 55) takes ${F} lines, although both numbers have only two digits. Try it with the example button above the picture.`)}
+    ${USE(`For two numbers of 2048 bits, ${RSADIG} digits each, Euclid needs at most ${fmt(B(5*RSADIG))} divisions: well under a millisecond of computer time. Factoring one such number is out of reach. Tab 7 shows an attack that lives on this difference.`)}`};
+
+/* extended Euclid */
+function extResult(a,b,g,s,t){
+  const s2=s+b/g,t2=t-a/g,z=extended(a,b).at(-1);
+  return`<h2>Reading the result</h2>
+    <p class="lead">The gcd, written as a sum of multiples of the two starting numbers.</p>
+    ${EX(M(`${fmt(g)} = ${par(s)} · ${fmt(a)} + ${par(t)} · ${fmt(b)} = ${sumTxt(s*a,t*b)}`))}
+    <h3>Always check</h3>
+    <p>Multiply out and add. If the sum is not the gcd, a sign went wrong somewhere. That is by far the most common mistake.</p>
+    <h3>The row of the 0</h3>
+    <p>The last row of the table says ${M(`0 = ${par(z.s)} · ${fmt(a)} + ${par(z.t)} · ${fmt(b)}`)}. Apart from the signs, its two numbers are b ÷ gcd = ${fmt(b/g)} and a ÷ gcd = ${fmt(a/g)}. That is a free test for the whole table.</p>
+    <h3>Other pairs</h3>
+    <p>Adding the row of the 0 to the answer changes s and t but not the sum. So there are infinitely many pairs.</p>
+    ${EX(M(`${par(s2)} · ${fmt(a)} + ${par(t2)} · ${fmt(b)} = ${fmt(s2*a+t2*b)}`))}
+    ${USE('When the gcd is 1, the line reads s · a + t · b = 1. Looked at modulo b it says s · a ≡ 1: s is the inverse of a. Tab 5 does exactly this.')}`}
+T.ext.doc=k=>{
+  const A=fmt(ST.a),Bb=fmt(ST.b);
+  const intro=`<h2>The extended algorithm</h2>
+    <p class="lead">Besides the gcd it returns two whole numbers s and t with s · a + t · b = gcd(a, b).</p>
+    <h3>Bézout’s identity</h3>
+    <p>Such s and t exist for every pair of whole numbers. The statement is named after Étienne Bézout (1730–1783), who proved it for polynomials. For whole numbers it is already in a book by Claude Gaspard Bachet de Méziriac from 1624.</p>
+    <h3>Why anyone wants s and t</h3>
+    <p>When the gcd is 1, the line s · a + t · b = 1 hands over an inverse: modulo b the term t · b disappears, and s · a ≡ 1 is left. Every RSA private key is computed this way.</p>
+    <h3>Two ways to do it</h3>
+    <ul><li><b>The table, going down.</b> Carry s and t along while Euclid’s algorithm runs. One pass, and every row can be checked. This is how programs do it.</li><li><b>Substituting, going back up.</b> Run Euclid first, then rewrite the gcd with earlier and earlier remainders. This is the classic way on paper.</li></ul>
+    <p>Both give the same answer. Choose the method above the picture.</p>
+    ${MORE('ext')}`;
+  if(k===0)return intro;
+  if(ST.xm==='bwd'){const{rows,m,seq,g,subs,s,t,a,b}=backS(),G=fmt(g),last=3+subs.length;
+    if(k===1)return`<h2>Turn every line around</h2>
+      <p class="lead">Each line of Euclid’s algorithm, solved for its remainder.</p>
+      <p>From a = q · b + r follows r = a − q · b. Nothing new is computed: the same numbers are only moved to the other side.</p>
+      ${EX(M(rows.filter(w=>w.r>0n).map(w=>`${fmt(w.a)} = ${fmt(w.q)} · ${fmt(w.b)} + ${fmt(w.r)} &nbsp;→&nbsp; ${fmt(w.r)} = ${fmt(w.a)} − ${fmt(w.q)} · ${fmt(w.b)}`).join('<br>')||`${Bb} divides ${A}: no line has a remainder`))}
+      <p>The line with remainder 0 is not turned around. It only told us where to stop.</p>`;
+    if(k===2)return`<h2>Start at the gcd</h2>
+      <p class="lead">The gcd is the last remainder that is not 0, so one of the turned lines starts with it.</p>
+      ${EX(M(m>=2?`${G} = ${fmt(seq[m-2])} − ${fmt(rows[m-2].q)} · ${fmt(seq[m-1])}`:`${G} = 0 · ${A} + 1 · ${Bb}`))}
+      <p>${subs.length?`This is already “the gcd as a sum of multiples”, but of the wrong numbers: ${fmt(seq[m-2])} and ${fmt(seq[m-1])} instead of ${A} and ${Bb}. Each further step swaps the smaller of the two for the pair above it.`:'It is already written with the two starting numbers, so there is nothing to replace.'}</p>`;
+    if(k<last){const u=subs[k-3],U=fmt(seq[u.j-1]),V=fmt(seq[u.j]),W=fmt(seq[u.j-2]);
+      return`<h2>Replace ${V}</h2>
+      <p class="lead">${V} is a remainder, so one of the turned lines says what it is made of.</p>
+      <ol><li>The line for ${V}: ${M(`${V} = ${W} − ${fmt(u.q)} · ${U}`)}</li><li>Put it in place of ${V}: ${M(`${G} = ${lin([[u.x,U],[u.y,`(${W} − ${fmt(u.q)} · ${U})`]])}`)}</li><li>Open the bracket and count. ${W} appears ${fmt(u.y)} ${abs(u.y)===1n?'time':'times'}. ${U} appears ${par(u.x)} − ${par(u.y)} · ${fmt(u.q)} = ${fmt(u.ny)} times.</li><li>Result: ${M(`${G} = ${lin([[u.nx,W],[u.ny,U]])}`)}</li></ol>
+      ${NO(`Do not work out products such as ${fmt(u.q)} · ${U}. The numbers ${W} and ${U} are names here. Only the counts in front of them change.`)}
+      ${NO('Watch the signs. A minus in front of the bracket turns the minus inside it into a plus.')}`}
+    return extResult(a,b,g,s,t)}
+  const{R,L,g,s,t,a,b}=extS();
+  if(k===1)return`<h2>Two rows to start</h2>
+    <p class="lead">Every row of the table is a true sentence of the form r = s · a + t · b.</p>
+    ${EX(M(`${A} = 1 · ${A} + 0 · ${Bb}<br>${Bb} = 0 · ${A} + 1 · ${Bb}`))}
+    <p>These two are true for any numbers. So the table always starts with s, t = 1, 0 and then 0, 1.</p>
+    <h3>Why the rule keeps the rows true</h3>
+    <p>Take two true rows, r₁ = s₁ · a + t₁ · b and r₂ = s₂ · a + t₂ · b. Subtract q times the second from the first:</p>
+    <p>${M('r₁ − q · r₂ = (s₁ − q · s₂) · a + (t₁ − q · t₂) · b')}</p>
+    <p>That is a true row again. And r₁ − q · r₂ is exactly the remainder that Euclid’s algorithm computes next.</p>`;
+  if(k<L){const w=R[k],x=R[k-2],y=R[k-1];
+    const neg=y.s<0n?`Here: ${par(x.s)} − ${fmt(w.q)} · ${par(y.s)} = ${fmt(x.s)} + ${fmt(w.q*abs(y.s))} = ${fmt(w.s)}.`:y.t<0n?`Here: ${par(x.t)} − ${fmt(w.q)} · ${par(y.t)} = ${fmt(x.t)} + ${fmt(w.q*abs(y.t))} = ${fmt(w.t)}.`:'For example 1 − 3 · (−1) = 1 + 3 = 4.';
+    return`<h2>Row ${k+1} of the table</h2>
+    <p class="lead">One quotient, then the same subtraction in three columns.</p>
+    <ol><li>Quotient: ${fmt(x.r)} ÷ ${fmt(y.r)} = ${dec(x.r,y.r,4)}, whole part ${fmt(w.q)}.</li><li>Remainder: ${M(`${fmt(x.r)} − ${fmt(w.q)} · ${fmt(y.r)} = ${fmt(w.r)}`)}</li><li>s: ${M(`${par(x.s)} − ${fmt(w.q)} · ${par(y.s)} = ${fmt(w.s)}`)}</li><li>t: ${M(`${par(x.t)} − ${fmt(w.q)} · ${par(y.t)} = ${fmt(w.t)}`)}</li></ol>
+    <h3>Check the row before going on</h3>
+    ${EX(M(`${par(w.s)} · ${A} + ${par(w.t)} · ${Bb} = ${sumTxt(w.s*a,w.t*b)} = ${fmt(w.r)}`))}
+    ${NO(`Subtracting a negative number adds. ${neg}`)}
+    ${w.r===0n?'<p>The remainder is 0, so this is the last row. The answer is in the row above it.</p>':''}`}
+  return extResult(a,b,g,s,t)};
+
+/* inverse */
+T.inv.doc=k=>{
+  const{n,ar,L,g,s,t,ok,x,strip}=invS(),A=fmt(ar),Nn=fmt(n);
+  if(k===0){const y=n>4n?4n:1n,c1=y*ar%n;
+    return`<h2>The inverse modulo n</h2>
+    <p class="lead">The inverse of a modulo n is the number x with a · x ≡ 1 (mod n). It is written a⁻¹.</p>
+    <p>In ordinary arithmetic, multiplying by ⅓ undoes multiplying by 3. Modulo n there are no fractions, but for many numbers there is a whole number that does the same job.</p>
+    ${ok?EX(`Take any number, say ${fmt(y)}. Multiply by ${A}: ${M(`${fmt(y)} · ${A} = ${fmt(y*ar)} ≡ ${fmt(c1)} (mod ${Nn})`)}. Now multiply by ${A}⁻¹ = ${fmt(x)}: ${M(`${fmt(c1)} · ${fmt(x)} = ${fmt(c1*x)} ≡ ${fmt(c1*x%n)} (mod ${Nn})`)}. The ${fmt(y)} is back.`):EX(`${A} has no inverse modulo ${Nn}. Steps 1 and 2 show why.`)}
+    ${USE('The affine cipher encrypts with c = (a · p + b) mod 26 and decrypts with p = a⁻¹ · (c − b) mod 26. Without a⁻¹ there is no decryption.')}
+    ${MORE('ring')}`}
+  if(k===1)return`<h2>Trying every x</h2>
+    <p class="lead">For a small modulus, a table of a · x mod n settles the question.</p>
+    ${!strip?`<p>With n = ${Nn} the table would have ${fmt(n-1n)} entries, so the picture leaves it out.</p>`:ok?`<p>The row in the picture contains every number from 1 to ${fmt(n-1n)} exactly once. That always happens when a and n are coprime: multiplying by a only shuffles the numbers. So 1 appears exactly once, and the inverse is unique.</p>`:`<p>The row in the picture repeats itself and reaches only multiples of ${fmt(g)}. Different x give the same result, so multiplying by ${A} cannot be undone.</p>`}
+    ${NO('Trying takes up to n − 1 multiplications. For an RSA modulus, n − 1 has more than 600 digits.')}`;
+  if(k===2){let phi='The count of such numbers is called φ(n), Euler’s phi function.';
+    if(n<=3000n){let c=0;for(let i=1n;i<n;i++)if(gcd(n,i)===1n)c++;phi=`Among 1, …, ${fmt(n-1n)} exactly ${c} ${c===1?'number is':'numbers are'} coprime to ${Nn}. This count is called φ(${Nn}), Euler’s phi function.${isPrime(n)?` ${Nn} is a prime, so every number from 1 to ${fmt(n-1n)} has an inverse.`:''}`}
+    return`<h2>When is there an inverse?</h2>
+    <p class="lead">Exactly when gcd(a, n) = 1.</p>
+    <h3>Why</h3>
+    <p>a · x ≡ 1 (mod n) means a · x = 1 + k · n for some whole number k, that is, a · x − k · n = 1. A common divisor of a and n divides the left side, so it must divide 1, and only 1 does. In the other direction: if the gcd is 1, the extended algorithm produces such an x and k.</p>
+    ${EX(M(`gcd(${Nn}, ${A}) = ${fmt(g)}`)+(ok?`: ${A} has an inverse modulo ${Nn}`:`: ${A} has no inverse modulo ${Nn}`))}
+    <h3>How many numbers have one?</h3>
+    <p>${phi}</p>
+    ${USE('In RSA the public exponent e needs an inverse modulo φ(n). So key generation first checks gcd(e, φ(n)) = 1, with Euclid’s algorithm.')}`}
+  if(!ok)return`<h2>No inverse</h2>
+    <p class="lead">${A} and ${Nn} share the factor ${fmt(g)}, and that blocks every attempt.</p>
+    <p>${A} · x is a multiple of ${fmt(g)}. Subtracting multiples of ${Nn}, which are multiples of ${fmt(g)} as well, leaves a multiple of ${fmt(g)}. The remainder 1 is out of reach.</p>
+    ${EX(M(`${A} = ${fmt(g)} · ${fmt(ar/g)}, &nbsp; ${Nn} = ${fmt(g)} · ${fmt(n/g)}`)+(ar>0n?`<br>Worse: ${M(`${A} · ${fmt(n/g)} = ${fmt(ar*(n/g))} = ${fmt(ar/g)} · ${Nn} ≡ 0 (mod ${Nn})`)}. Two numbers that are not 0 multiply to 0.`:''))}
+    ${USE('An affine cipher with such an a sends different letters to the same letter, and the receiver cannot tell them apart. That is why a must be coprime to the size of the alphabet.')}`;
+  if(k===3)return`<h2>The extended algorithm finds it</h2>
+    <p class="lead">Run the table of tab 4 on the modulus and the number. The row of the gcd is the answer in disguise.</p>
+    ${EX(M(`1 = ${par(s)} · ${Nn} + ${par(t)} · ${A}`)+`<br>Check: ${M(`${sumTxt(s*n,t*ar)} = ${fmt(s*n+t*ar)}`)}`)}
+    <p>The modulus goes first because it is the larger number. Column t then counts the number we are inverting, so the inverse comes out of column t.</p>
+    <h3>Cost</h3>
+    <p>The table has ${L} rows for these numbers. Even for numbers of 600 digits it has at most a few thousand rows.</p>
+    ${MORE('ext')}`;
+  if(k===4)return`<h2>Reading the line modulo n</h2>
+    <p class="lead">Modulo n, every multiple of n is 0. So one of the two terms simply vanishes.</p>
+    <ol><li>The line: ${M(`1 = ${par(s)} · ${Nn} + ${par(t)} · ${A}`)}</li><li>Modulo ${Nn}: ${M(`${par(s)} · ${Nn} ≡ 0`)}</li><li>Left over: ${M(`${par(t)} · ${A} ≡ 1 (mod ${Nn})`)}</li><li>${t<0n?`Make it positive: ${M(`${fmt(t)} + ${Nn} = ${fmt(x)}`)}`:`${fmt(t)} is already between 1 and ${fmt(n-1n)}.`}</li></ol>
+    ${NO(`A negative t is not a mistake. ${fmt(x-n)} and ${fmt(x)} are the same number modulo ${Nn}. The inverse is written as the one between 1 and n − 1.`)}`;
+  const y=mod(10n,n)||1n,z=y*x%n;
+  return`<h2>Check, and use</h2>
+    <p class="lead">An inverse can always be checked with one multiplication.</p>
+    ${EX(M(`${A} · ${fmt(x)} = ${fmt(ar*x)} = ${fmt(ar*x/n)} · ${Nn} + 1`))}
+    <h3>Division modulo n</h3>
+    <p>“Divided by ${A}” now means “times ${fmt(x)}”.</p>
+    ${EX(`${fmt(y)} ÷ ${A} modulo ${Nn}: ${M(`${fmt(y)} · ${fmt(x)} = ${fmt(y*x)} ≡ ${fmt(z)}`)}. Check: ${M(`${fmt(z)} · ${A} = ${fmt(z*ar)} ≡ ${fmt(z*ar%n)} (mod ${Nn})`)}.`)}
+    ${USE(`RSA with p = 61 and q = 53 has φ(n) = 60 · 52 = ${60*52}. For e = 17 the private exponent is d = 17⁻¹ mod ${60*52} = ${fmt(inverse(17n,3120n))}. The example button “17⁻¹ mod 3120” above the picture shows that table.`)}`};
+
+T.try.doc=()=>`<h2>How to practise</h2>
+  <p class="lead">Do each kind until it feels boring. That is the sign that it has become a tool.</p>
+  <h3>Remainder</h3>
+  <p>Divide on a calculator, keep the whole part, multiply back, subtract. Always look at the remainder at the end: it must be smaller than the divisor.</p>
+  <h3>Euclid, line by line</h3>
+  <p>Each new line starts with the two numbers on the right of the line before: the old divisor, then the old remainder. Stop when a remainder is 0.</p>
+  <h3>Inverse</h3>
+  <p>Write the table of tab 4 with the modulus on top. When the remainder 1 appears, take the t of that row and, if it is negative, add the modulus.</p>
+  <h3>The mistakes that happen most</h3>
+  <ul><li>Rounding the quotient up. 3.9 becomes 3.</li><li>Taking the last remainder, 0, as the gcd instead of the one before it.</li><li>Losing a minus sign in the columns s and t. Check every row: s · a + t · b must give r.</li><li>Leaving an inverse negative. Add the modulus.</li><li>Looking for an inverse that does not exist. Check the gcd first.</li></ul>`;
+
+T.use.doc=()=>`<h2>Where the two algorithms appear</h2>
+  <p class="lead">Wherever a public-key system has to test for a common factor, or to divide modulo n.</p>
+  <h3>Shared primes: the gcd as an attack</h3>
+  <p>An RSA modulus is a product of two secret primes. If two different keys were made with the same prime, the gcd of their moduli is that prime, and Euclid’s algorithm finds it at once.</p>
+  ${EX(M(`n₁ = 61 · 53 = ${61*53}, &nbsp; n₂ = 61 · 71 = ${61*71}, &nbsp; gcd(n₁, n₂) = ${gcd(B(61*53),B(61*71))}`)+'<br>Nobody had to factor anything.')}
+  <p>This is not only a classroom example. In early 2012 a team around Arjen Lenstra compared millions of public keys collected from the internet and could factor 0.2% of them using only Euclid’s algorithm. A second group, with Nadia Heninger, found the weak keys almost entirely in embedded devices such as routers and firewalls, which had too little randomness when they made their keys.</p>
+  <h3>A short history</h3>
+  <ul><li><b>About 300 BC.</b> Euclid’s <i>Elements</i>: Book 7, Propositions 1 and 2, for whole numbers; Book 10 for lengths.</li><li><b>1624.</b> A book by Bachet de Méziriac contains the statement that s · a + t · b = gcd(a, b) can be solved in whole numbers.</li><li><b>18th century.</b> Étienne Bézout (1730–1783) proves it for polynomials. The identity carries his name.</li><li><b>1844.</b> Gabriel Lamé: at most five divisions for each decimal digit of the smaller number.</li><li><b>1977.</b> The RSA cryptosystem: the extended algorithm becomes part of every key generation.</li></ul>
+  ${MORE('all')}`;
+
+/* ---------- one question per tab: answer first, then read why ---------- */
+const QZ={
+  div:{q:'What is 100 mod 7?',o:['14','2','3'],a:1,why:'100 = 14 · 7 + 2. The quotient 14 is thrown away, and the remainder is 2.'},
+  gcd:{q:'Which pair is coprime?',o:['14 and 21','15 and 26','18 and 27'],a:1,why:'15 = 3 · 5 and 26 = 2 · 13 share no factor. 14 and 21 share 7, and 18 and 27 share 9.'},
+  euc:{q:'Euclid’s algorithm for gcd(48, 18): what is the first line?',o:['48 = 3 · 18 − 6','18 = 2 · 9 + 0','48 = 2 · 18 + 12'],a:2,why:'18 fits twice into 48, and 12 is left. A remainder is never negative, so 48 = 3 · 18 − 6 is not a division with remainder.'},
+  ext:{q:'gcd(7, 26) = 1. Which pair gives s · 7 + t · 26 = 1?',o:['s = −11, t = 3','s = 3, t = −11','s = 4, t = −1'],a:0,why:'−11 · 7 + 3 · 26 = −77 + 78 = 1. The other two pairs give −265 and 2.'},
+  inv:{q:'What is 3⁻¹ mod 7?',o:['2','4','5'],a:2,why:'3 · 5 = 15 = 2 · 7 + 1. With 2 the product is 6, and with 4 it is 12 = 7 + 5.'}};
+function quiz(id){
+  const z=QZ[id];if(!z)return'';const p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`;
+}
+
+/* ---------- the walkthrough: one step at a time ---------- */
+const NARROW=matchMedia('(max-width:1000px)'),RM=matchMedia('(prefers-reduced-motion: reduce)'),ROOM={k:'',h:0};
+const speed=()=>+$('#spd').value;
+// The text changes length from step to step. Room is kept for the longest text of the open walkthrough,
+// so the picture and the card under the text stay where they are
+function holdRoom(t,n,k){
+  const ex=$('#explain');ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2)return;
+  const ck=[ST.tab,ex.clientWidth,ST.da,ST.db,ST.a,ST.b,ST.xm,ST.ia,ST.in].join('|');
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){ex.innerHTML=t.say(j);h=Math.max(h,ex.offsetHeight)}ex.innerHTML=t.say(k);ROOM.k=ck;ROOM.h=h}
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function show(){
+  const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
+  stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  const dc=$('#doc');dc.hidden=!t.doc;dc.innerHTML=t.doc?t.doc(k):'';
+  holdRoom(t,n,k);
+  $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
+}
+function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
+function tickPlay(){ST.playT=setTimeout(()=>{ST.playT=null;const n=T[ST.tab].n(),k=ST.step[ST.tab]||0;if(k>=n-1){setPlaying(false);return}ST.step[ST.tab]=k+1;show();if(k+1>=n-1)setPlaying(false);else tickPlay()},(RM.matches?900:2100)/speed())}
+function setBar(){const t=T[ST.tab],b=$('#bar');b.hidden=!t.bar;b.innerHTML=t.bar?t.bar():''}
+function setTab(id){
+  setPlaying(false);ST.tab=id;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));setBar();show();
+  try{localStorage.setItem('euclid-tab',id);history.replaceState(null,'','#'+id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)+1;show()};
+$('#bBack').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)-1;show()};
+$('#bReset').onclick=()=>{setPlaying(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const n=T[ST.tab].n();if(n<2)return;if((ST.step[ST.tab]||0)>=n-1){ST.step[ST.tab]=0;show()}setPlaying(true)};
+function exAct(act){
+  if(act==='steps'){exSteps();window.scrollTo({top:$('#tabs').offsetTop-8,behavior:RM.matches?'auto':'smooth'});return}
+  if(act==='new')ST.ex[ST.kind]=newEx(ST.kind);else checkEx();
+  show();const i=$('#stage input');if(i)i.focus();
+}
+document.addEventListener('click',e=>{
+  const ld=e.target.closest('[data-load]');if(ld){setPlaying(false);for(const kv of ld.dataset.load.split(',')){const[key,v]=kv.split('=');ST[key]=B(v)}ST.pick.div=null;setBar();show();return}
+  const xm=e.target.closest('[data-xm]');if(xm){setPlaying(false);ST.xm=xm.dataset.xm;ST.step.ext=0;setBar();show();return}
+  const kd=e.target.closest('[data-kind]');if(kd){ST.kind=kd.dataset.kind;setBar();show();return}
+  const xa=e.target.closest('[data-exa]');if(xa){exAct(xa.dataset.exa);return}
+  const dv=e.target.closest('[data-div]');if(dv){const[w,d]=dv.dataset.div.split(',');ST.pick.div=[w,B(d)];show();return}
+  const st=e.target.closest('[data-step]');if(st){setPlaying(false);ST.step[ST.tab]=+st.dataset.step;show();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+});
+const RULES={da:[0n,'a: a whole number from 0 up, at most 15 digits.'],db:[1n,'b: a whole number from 1 up, at most 15 digits. Division by 0 has no meaning.'],a:[1n,'a: a whole number from 1 up, at most 15 digits.'],b:[1n,'b: a whole number from 1 up, at most 15 digits.'],ia:[1n,'a: a whole number from 1 up, at most 15 digits.'],in:[2n,'n: a whole number from 2 up, at most 15 digits.']};
+document.addEventListener('input',e=>{
+  const x=e.target.closest('[data-exv]');if(x){exOf(ST.kind).v[x.dataset.exv]=x.value;return}
+  const i=e.target.closest('[data-in]');if(!i)return;
+  const key=i.dataset.in,v=i.value.trim(),err=$('#err'),[min,msg]=RULES[key];
+  if(!/^\d{1,15}$/.test(v)||B(v)<min){if(err)err.textContent=msg;return}
+  if(err)err.textContent='';setPlaying(false);ST[key]=B(v);ST.pick.div=null;show();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.closest&&e.target.closest('[data-exv]')){exAct('check');e.preventDefault();return}
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='ArrowRight'){if(!$('#bStep').disabled)$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&T[ST.tab].n()>1&&!(e.target.closest&&e.target.closest('button'))){$('#bPlay').click();e.preventDefault()}
+});
+let startTab='div';
+try{const h=location.hash.slice(1),t=localStorage.getItem('euclid-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
+setTab(startTab);
+</script>
+</body>
+</html>
