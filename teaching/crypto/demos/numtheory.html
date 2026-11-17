@@ -278,17 +278,18 @@ input[type=text]{font-family:var(--mono);width:100%}
 .cbar .bn{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
 .err{color:var(--xor);font-size:13px}
 .err:empty{display:none}
+#calc{margin-top:12px}
 #calc h3{margin:0 0 8px;font-size:15px}
-#calc .fld{margin-bottom:8px}
+#calc h3 small{font:400 13px var(--sans);color:var(--muted);margin-left:6px}
 #calc .flh small{font-weight:400}
-.cres{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:2px 0 8px}
-.cres div{padding:6px 10px;border-radius:8px;background:var(--accentBg);min-width:0}
-.cres small{display:block;font:600 11.5px var(--sans);color:var(--muted)}
-.cres b{display:block;font:700 16px var(--mono);color:var(--accent);overflow-wrap:anywhere}
-#calc p{margin:5px 0;font-size:14px;overflow-wrap:anywhere}
+.cgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;align-items:start}
+.cv{min-height:31px;padding:4px 9px;border:1px solid transparent;border-radius:7px;background:var(--accentBg);font:700 15px/21px var(--mono);color:var(--accent);overflow-wrap:anywhere}
+.clines{display:flex;flex-wrap:wrap;gap:0 18px;margin-top:8px}
+#calc p{margin:2px 0;font-size:14px;overflow-wrap:anywhere;min-width:0}
 #calc p b{font-family:var(--mono);font-size:13.5px}
 #calc .fine{font-size:12.5px;color:var(--muted)}
-@media (max-width:1000px){#calc{order:5}#extra{order:6}}
+#calc .err{margin-top:6px}
+@media (max-width:700px){.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}#calc h3 small{display:block;margin:2px 0 0}}
 /* tab 1: a bar for each division */
 .gtk{height:34px;border-radius:7px;border:1.5px dashed var(--line2);background:color-mix(in srgb,var(--ink) 3%,var(--panel))}
 .gcp{height:34px}
@@ -366,6 +367,18 @@ input[type=text]{font-family:var(--mono);width:100%}
   <h1>Number theory for public key, step by step</h1>
   <p class="sub">The greatest common divisor, the inverse modulo n, the extended Euclidean algorithm, Euler’s φ function, and the theorems of Fermat and Euler, with every number computed in the browser</p>
   <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <div class="card" id="calc">
+    <h3>Division with remainder <small>a = q · b + r, with r from 0 to b − 1</small></h3>
+    <div class="cgrid">
+      <div class="fld"><div class="flh"><b>Dividend</b> <small>a</small></div><input type="text" id="cA" value="1180" spellcheck="false" autocomplete="off" inputmode="numeric" aria-label="Dividend a"></div>
+      <div class="fld"><div class="flh"><b>Divisor</b> <small>b</small></div><input type="text" id="cB" value="482" spellcheck="false" autocomplete="off" inputmode="numeric" aria-label="Divisor b"></div>
+      <div class="fld"><div class="flh"><b>Quotient</b> <small>q</small></div><div class="cv" id="cQ"></div></div>
+      <div class="fld"><div class="flh"><b>Remainder</b> <small>r</small></div><div class="cv" id="cR"></div></div>
+    </div>
+    <div class="err" id="cE"></div>
+    <div class="clines" aria-live="polite"><p id="cL1"></p><p id="cL2"></p></div>
+    <p class="fine">A negative dividend works too: the remainder is always from 0 to b − 1, as in a mod b. For example −11 = −1 × 26 + 15, so −11 mod 26 = 15.</p>
+  </div>
   <nav class="tabs" id="tabs">
     <button data-tab="gcd" class="on">1 · gcd (Euclid)</button>
     <button data-tab="inv">2 · Inverse mod n</button>
@@ -393,16 +406,6 @@ input[type=text]{font-family:var(--mono);width:100%}
       <div class="pbar"><i id="pfill"></i></div>
     </div>
     <div class="card" id="explain"></div>
-    <div class="card" id="calc">
-      <h3>Division with remainder</h3>
-      <div class="fld"><div class="flh"><b>Dividend</b> <small>a</small></div><input type="text" id="cA" value="1180" spellcheck="false" autocomplete="off" inputmode="numeric"></div>
-      <div class="fld"><div class="flh"><b>Divisor</b> <small>b</small></div><input type="text" id="cB" value="482" spellcheck="false" autocomplete="off" inputmode="numeric"></div>
-      <div class="err" id="cE"></div>
-      <div class="cres"><div><small>Quotient q</small><b id="cQ"></b></div><div><small>Remainder r</small><b id="cR"></b></div></div>
-      <p id="cL1"></p>
-      <p id="cL2"></p>
-      <p class="fine">A negative dividend works too: the remainder is always from 0 to b − 1, as in a mod b. For example −11 = −1 × 26 + 15, so −11 mod 26 = 15.</p>
-    </div>
     <div class="card" id="extra"></div>
   </aside>
   <section class="card doc" id="doc" hidden></section>
