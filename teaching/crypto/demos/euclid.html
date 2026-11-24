@@ -259,6 +259,22 @@ table.xt tr.fut td{visibility:hidden}
 table.xt td.ck{color:var(--muted);font-size:13px;text-align:left}
 table.xt .hid{visibility:hidden}
 table.xt td.pick{outline:2.5px solid var(--n1);outline-offset:-3px}
+/* tab 8: the calculator */
+.cxw .blk{padding:4px 0 18px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.cxw .blk:last-child{border-bottom:0;margin-bottom:0;padding-bottom:4px}
+.cxw h3{font:600 14px var(--sans);color:var(--muted);text-align:center;margin:0}
+.cxw .bench{margin-top:10px}
+.elines{font:15px/1.75 var(--mono);text-align:center;margin:10px auto 0;max-height:250px;overflow:auto;overflow-wrap:anywhere}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:660px;margin:12px auto 0}
+.two>div{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);min-width:0}
+.two>div.main{border-color:var(--n1);box-shadow:inset 0 0 0 1px var(--n1)}
+.two small{display:block;font:600 12.5px var(--sans);color:var(--muted)}
+.two .big{display:block;font:700 26px var(--mono);color:var(--n1);margin:2px 0}
+.two .ck{font:13.5px/1.5 var(--mono);overflow-wrap:anywhere}
+.two .from{display:inline-block;font:600 11.5px var(--sans);padding:1px 8px;border-radius:10px;background:var(--ambBg);color:var(--amb);margin-top:6px}
+details.how{max-width:660px;margin:14px auto 0}
+details.how summary{cursor:pointer;color:var(--accent);font-size:14px;text-align:center;margin-bottom:10px}
+@media (max-width:560px){.two{grid-template-columns:minmax(0,1fr)}.elines{font-size:13.5px}}
 @media (max-width:640px){table.xt{font-size:13.5px}table.xt th,table.xt td{padding:6px 8px}table.xt .ck{display:none}}
 .calc div{grid-template-columns:118px minmax(0,1fr)}
 .bw{max-width:620px;margin:0 auto;display:grid;gap:6px}
@@ -304,6 +320,7 @@ table.map td .m{white-space:nowrap}
     <button data-tab="inv">5 · Inverse mod n</button>
     <button data-tab="try">6 · Your turn</button>
     <button data-tab="use">7 · Where it is used</button>
+    <button data-tab="calc">8 · Calculator</button>
   </nav>
 </header>
 
@@ -372,7 +389,7 @@ function lin(terms){const t=terms.filter(u=>u[0]!==0n);if(!t.length)return'0';t.
   return t.map((u,i)=>`${i?(u[0]<0n?' − ':' + '):(u[0]<0n?'−':'')}${fmt(abs(u[0]))} · ${u[1]}`).join('')}
 
 /* ---------- what the reader has chosen ---------- */
-const ST={tab:'div',step:{},da:47n,db:5n,a:252n,b:198n,xm:'fwd',ia:7n,in:26n,pick:{div:null},q:{},kind:'rem',ex:{},seed:Date.now()%2147483647,solved:0,playT:null,playing:false};
+const ST={tab:'div',step:{},da:47n,db:5n,a:252n,b:198n,xm:'fwd',ia:7n,in:26n,ca:3n,cn:40n,calcHow:false,pick:{div:null},q:{},kind:'rem',ex:{},seed:Date.now()%2147483647,solved:0,playT:null,playing:false};
 const T={};
 const stage=$('#stage');
 // the pieces of a bench: a word with its number under it, and the signs between
@@ -739,6 +756,43 @@ T.use={n:()=>1,
     return`<div class="scroll"><table class="map"><tr><th>Where</th><th>What is computed</th><th>With small numbers</th><th>Page</th></tr>${R.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><span class="m">${r[2]}</span></td><td>${r[3]?`<a href="${r[3]}">${r[4]}</a>`:''}</td></tr>`).join('')}</table></div>`},
   say:()=>say('Two small algorithms, used everywhere','Euclid’s algorithm answers: do these two numbers share a factor? The extended algorithm answers: what do I multiply by to undo this number?','Every public-key system in this course asks one of these two questions while making or using a key.'),
   extra:()=>`<h3>To remember</h3><dl class="words"><dt>a = q · b + r</dt><dd>Division with remainder, 0 ≤ r &lt; b.</dd><dt>gcd(a, b) = gcd(b, a mod b)</dt><dd>Euclid: repeat until the remainder is 0.</dd><dt>s · a + t · b = gcd(a, b)</dt><dd>Extended Euclid finds s and t.</dd><dt>a⁻¹ mod n</dt><dd>Exists exactly when gcd(a, n) = 1. It is the t (or s) that belongs to a.</dd></dl>`};
+
+/* ---------- 8 · calculator: every answer for two numbers at once ---------- */
+function calcS(){
+  const a=ST.ca,n=ST.cn,q=fdiv(a,n),r=mod(a,n),x0=abs(a),E=x0>=n?euclid(x0,n):euclid(n,x0);
+  const R=extended(n,r),L=R.length,w=R[L-2],g=w.r,ok=g===1n,x=ok?mod(w.t,n):null;
+  return{a,n,q,r,E,g:E.g,R,L,s:w.s,t:w.t,ok,x,xn:ok?x-n:null}}
+T.calc={n:()=>1,
+  bar:()=>numIn('ca','<b>a</b> · the number',ST.ca)+numIn('cn','<b>b</b> · divide by, or the modulus',ST.cn)+
+    `<div class="fld"><span class="flh">Examples</span><div class="row">${loadBtn('ca=3,cn=40','3 and 40')}${loadBtn('ca=343,cn=55','343 and 55')}${loadBtn('ca=-343,cn=55','−343 and 55')}${loadBtn('ca=17,cn=3120','17 and 3120')}${loadBtn('ca=12,cn=18','12 and 18')}</div></div><div class="err" id="err"></div>${calcHint}`,
+  view(){
+    const S=calcS(),{a,n,q,r,E,g,R,L,t,ok,x,xn}=S,A=fmt(a),Nn=fmt(n),Rr=fmt(r),tr=a%n;
+    let h='<div class="cxw"><div class="blk"><h3>Division with remainder</h3>';
+    h+=`<div class="bench">${bt('dividend','ra',a)}${op('=')}${bt('quotient','rq',par(q))}${op('·')}${bt('divisor','rb',n)}${op('+')}${bt('remainder','rr',r)}</div>`;
+    h+=`<div class="bench sm">${bt('a','ra',a)}${op('mod')}${bt('b','rb',n)}${op('=')}${bt('remainder','rr',r)}</div>`;
+    if(a<0n)h+=`<p class="bnote">The quotient is rounded down to ${fmt(q)}, so the remainder is not negative.${tr!==0n?` A calculator, C, Java or JavaScript give <b>${fmt(tr)}</b> here. Add ${Nn} once: ${fmt(tr)} + ${Nn} = ${Rr}.`:''}</p>`;
+    else h+=`<p class="bnote">On a calculator: <b>${A} ÷ ${Nn} = ${dec(a,n)}</b>; keep the whole part, ${fmt(q)}. Then <b>${A} − ${fmt(q)} · ${Nn} = ${Rr}</b>.</p>`;
+    h+='</div><div class="blk"><h3>Greatest common divisor, by Euclid’s algorithm</h3>';
+    if(E.rows.length)h+=`<div class="elines">${E.rows.map(w=>`<div><span class="ra">${fmt(w.a)}</span> = <span class="rq">${fmt(w.q)}</span> · <span class="rb">${fmt(w.b)}</span> + <span class="${w.r?'rr':'rz'}">${fmt(w.r)}</span></div>`).join('')}</div>`;
+    h+=`<div class="bench sm"><span class="bt"><i>the last remainder that is not 0</i><b>gcd(${A}, ${Nn}) = <span class="rr">${fmt(g)}</span></b></span></div>`;
+    if(a<0n)h+=`<p class="bnote">A minus sign does not change the divisors, so gcd(${A}, ${Nn}) = gcd(${fmt(-a)}, ${Nn}).</p>`;
+    else if(a===0n)h+=`<p class="bnote">Every number divides 0, so gcd(0, ${Nn}) = ${Nn}.</p>`;
+    h+=`</div><div class="blk"><h3>Inverse of ${A} modulo ${Nn}</h3>`;
+    if(r!==a)h+=`<p class="bnote">First reduce: ${A} mod ${Nn} = <b>${Rr}</b>. The inverse of ${A} is the inverse of ${Rr}.</p>`;
+    if(!ok){
+      h+=`<div class="bench sm">${bt('the number','ra',fmt(r)+'⁻¹')}${op('mod')}${bt('the modulus','rb',n)}${op('=')}${bt('','rx','none')}</div>`;
+      h+=`<p class="bnote">gcd(${Rr}, ${Nn}) = <b>${fmt(g)}</b>, not 1. Both numbers are multiples of ${fmt(g)}, so ${Rr} · x mod ${Nn} is always a multiple of ${fmt(g)} and never 1.</p>`;
+      return h+'</div></div>'}
+    const ck=v=>{const p=r*v;return`${Rr} · ${par(v)} = ${fmt(p)} = ${par(fdiv(p,n))} · ${Nn} + 1`};
+    h+=`<div class="bench">${bt('the number','ra',fmt(r)+'⁻¹')}${op('mod')}${bt('the modulus','rb',n)}${op('=')}${bt('the inverse','rr',x)}</div>`;
+    h+=`<div class="two"><div class="main"><small>Between 1 and ${fmt(n-1n)}: the usual answer</small><span class="big">${fmt(x)}</span><div class="ck">${ck(x)}</div>${t===x?'<span class="from">the table gives this one</span>':''}</div>
+      <div><small>The same inverse, written negative</small><span class="big">${fmt(xn)}</span><div class="ck">${ck(xn)}</div>${t===xn?'<span class="from">the table gives this one</span>':''}</div></div>`;
+    h+=`<p class="bnote">Both leave the remainder 1, so both are inverses. They differ by ${Nn}: <b>${fmt(xn)} + ${Nn} = ${fmt(x)}</b>. Modulo ${Nn} they are the same number, and so is every ${fmt(x)} + ${Nn} · k: <b>…, ${[x-3n*n,x-2n*n,xn,x,x+n,x+2n*n].map(fmt).join(', ')}, …</b></p>`;
+    h+=`<details class="how"${ST.calcHow?' open':''}><summary>How: the extended Euclidean table</summary>${xtable(R,{a:n,b:r,shown:L,cur:-1,ans:true,hideST:false,pickT:true})}<p class="bnote">The green row is the gcd: <b>1 = ${par(S.s)} · ${Nn} + ${par(t)} · ${Rr}</b>. The t in it, ${fmt(t)}, is an inverse${t<0n?`; add ${Nn} once to get ${fmt(x)}`:''}.</p></details>`;
+    return h+'</div></div>'},
+  say:()=>say('Calculator','Type a and b above the picture. Everything is computed at once: the quotient and the remainder, the gcd with every line of Euclid’s algorithm, and the inverse of a modulo b.','a may be negative, and both fields take a calculation such as 7*25 or 2^10 + 1.','The steps behind each answer are in tabs 1 to 5.'),
+  extra(){const{n,ok,x,xn}=calcS(),Nn=fmt(n);
+    return`<h3>Why two answers for one inverse?</h3><p>Modulo ${Nn}, numbers that differ by a multiple of ${Nn} are the same number${ok?`: ${fmt(xn)} and ${fmt(x)} differ by ${Nn}`:''}.</p><p>So when x is an inverse, x + ${Nn} and x − ${Nn} are inverses too. The extended algorithm often ends with a negative t. Both forms pass the check, and the one written as a⁻¹ mod n is the one between 1 and n − 1.</p>`}};
 
 /* ---------- the longer read under each picture: one article per step, with the reader's own numbers ---------- */
 const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
@@ -1146,7 +1200,7 @@ function setEq(inp,r){
   if(!h){h=document.createElement('span');h.className='eqv';h.setAttribute('aria-live','polite');(f.querySelector('.flh')||f).appendChild(h)}
   h.textContent=r&&r.calc&&r.v!==undefined?eqShort(r.v):'';
 }
-const RULES={da:[0n,'a: a whole number from 0 up, at most 15 digits.'],db:[1n,'b: a whole number from 1 up, at most 15 digits. Division by 0 has no meaning.'],a:[1n,'a: a whole number from 1 up, at most 15 digits.'],b:[1n,'b: a whole number from 1 up, at most 15 digits.'],ia:[1n,'a: a whole number from 1 up, at most 15 digits.'],in:[2n,'n: a whole number from 2 up, at most 15 digits.']};
+const RULES={ca:[-(10n**15n-1n),'a: a whole number, at most 15 digits.'],cn:[2n,'b: a whole number from 2 up, at most 15 digits.'],da:[0n,'a: a whole number from 0 up, at most 15 digits.'],db:[1n,'b: a whole number from 1 up, at most 15 digits. Division by 0 has no meaning.'],a:[1n,'a: a whole number from 1 up, at most 15 digits.'],b:[1n,'b: a whole number from 1 up, at most 15 digits.'],ia:[1n,'a: a whole number from 1 up, at most 15 digits.'],in:[2n,'n: a whole number from 2 up, at most 15 digits.']};
 document.addEventListener('input',e=>{
   const x=e.target.closest('[data-exv]');if(x){exOf(ST.kind).v[x.dataset.exv]=x.value;return}
   const i=e.target.closest('[data-in]');if(!i)return;
@@ -1154,9 +1208,10 @@ document.addEventListener('input',e=>{
   setEq(i,r);
   if(r.empty){say('');return}
   if(r.err){say(msg.split(':')[0]+': '+r.err);return}
-  if(r.v<min||r.v.toString().length>15){say(msg);return}
+  if(r.v<min||digits(r.v)>15){say(msg);return}
   say('');setPlaying(false);ST[key]=r.v;ST.pick.div=null;show();
 });
+document.addEventListener('toggle',e=>{if(e.target.matches&&e.target.matches('details.how'))ST.calcHow=e.target.open},true);
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.closest&&e.target.closest('[data-exv]')){exAct('check');e.preventDefault();return}
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
