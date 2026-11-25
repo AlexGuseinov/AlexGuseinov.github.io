@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elliptic curves, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
+  --n0:#2f6fd0;--n1:#2f9e6a;--n2:#b8690f;--n3:#7d55c7;--n4:#c8372d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --cs:32px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
+  --n0:#5a8fe8;--n1:#45b882;--n2:#f0a35e;--n3:#b49aec;--n4:#f07a70;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:25px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text],input[type=number]{font:14px var(--mono);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:70px;text-transform:uppercase}input[type=number]{width:74px}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.note{display:block;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.warn{display:block;padding:8px 10px;border-radius:7px;background:var(--xorBg);font-size:14px;border-left:3px solid var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.inbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.err{color:var(--xor);font-size:13px;flex-basis:100%}
+.err:empty{display:none}
+.sec{margin-top:22px}
+.pics-s{font-size:13px;color:var(--muted);max-width:68ch;margin:0 0 10px}
+.scroll{overflow-x:auto;max-width:100%}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+@keyframes come{from{opacity:0;transform:translateY(4px)}}
+.nw{animation:come .35s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.chk{list-style:none;margin:14px auto 0;padding:0;max-width:440px;font-size:14.5px}
+.chk li{display:flex;gap:10px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line)}
+.chk li.todo{color:var(--faint)}
+.chk li b{flex:none;width:18px;text-align:center}
+.chk li.now{background:var(--ambBg)}
+.verdict{margin:14px auto 0;max-width:560px;text-align:center}
+.verdict span{display:inline-block;padding:7px 14px;border-radius:999px;font-weight:600;font-size:14.5px}
+.verdict .y{background:var(--okBg);color:var(--ok)}.verdict .n{background:var(--xorBg);color:var(--xor)}
+.calc{margin:14px auto 0;max-width:560px;display:grid;gap:6px}
+.calc div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);font:13.5px var(--mono)}
+.calc div b{font:600 13px var(--sans);color:var(--muted)}
+.calc div.now{background:var(--ambBg)}
+table.map{border-collapse:collapse;width:100%;font-size:14.5px}
+table.map th,table.map td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.map th{font-size:13px;color:var(--muted);font-weight:600}
+table.map td:first-child{white-space:nowrap;font-weight:600}
+table.map .ex{font:14px var(--mono)}
+.tag{display:inline-block;font:600 11.5px var(--sans);padding:2px 8px;border-radius:10px;margin-right:6px}
+.tag.g{background:var(--accentBg);color:var(--accent)}.tag.r{background:var(--ambBg);color:var(--amb)}.tag.f{background:var(--okBg);color:var(--ok)}
+dl.words{margin:0}
+dl.words dt{font-weight:700;margin-top:8px}
+dl.words dt:first-child{margin-top:0}
+dl.words dd{margin:0;color:var(--muted)}
+.chk li[data-step]{cursor:pointer}
+.chk li[data-step]:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.pickline{margin:10px auto 0;max-width:600px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+/* one colour per job a number has in a division */
+.ra{color:var(--n0)}.rb{color:var(--n3)}.rq{color:var(--n2)}.rr{color:var(--n1)}.rz{color:var(--faint)}.rx{color:var(--n4)}
+input[type=text].num{width:180px;text-transform:none;font:500 17px/1.3 var(--mono);padding:8px 11px;border-radius:9px;transition:border-color .15s,box-shadow .15s}
+input[type=text].num:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line2))}
+input[type=text].num:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent)}
+input[type=text].num::placeholder{font:400 14px var(--sans);color:var(--faint)}
+.inbar .flh{font-size:14px;min-height:22px}
+.eqv{display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;background:var(--ink);color:var(--bg);font:600 13px/20px var(--mono);white-space:nowrap;vertical-align:middle}
+.eqv:empty{display:none}
+.inbar .hint2{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+@media (max-width:560px){input[type=text].num{width:150px}}
+.inbar .row button{font-size:13px;padding:6px 10px}
+.doc a,#explain a,#extra a{color:var(--accent)}
+.doc ul,.doc ol{max-width:72ch;font-size:15.5px;margin:0 0 10px;padding-left:22px}
+.doc li{margin:0 0 5px}
+.exb.bk{border-color:var(--key);background:var(--keyBg)}.exb.bk>b{color:var(--key)}
+.exb ul{margin:0;padding-left:18px;font-size:14.5px}
+/* a step's computation: the words on top, the numbers under them */
+.bench{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;justify-content:center;margin:16px auto 0;padding:10px 16px 12px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);max-width:660px}
+.bench .bt{display:flex;flex-direction:column;align-items:center;gap:1px}
+.bench .bt i{font:12px var(--sans);font-style:normal;color:var(--muted)}
+.bench .bt b{font:700 23px var(--mono)}
+.bench .op{font:22px var(--mono);color:var(--muted);padding-bottom:1px}
+.bench.sm .bt b,.bench.sm .op{font-size:18px}
+.bnote{font-size:14px;color:var(--muted);text-align:center;margin:8px auto 0;max-width:660px}
+.bnote b{color:var(--ink);font-family:var(--mono);font-weight:600}
+@media (max-width:560px){.bench .bt b,.bench .op{font-size:19px}.bench.sm .bt b,.bench.sm .op{font-size:16px}.bench{gap:6px 8px;padding:9px 10px 10px}}
+/* a number as rows of dots */
+svg.dots{display:block;width:100%;height:auto;margin:0 auto}
+.dots .d{fill:var(--n0)}
+.dots .d.r{fill:var(--n1)}
+.dots .grp{fill:color-mix(in srgb,var(--n3) 9%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.dots .rem{fill:color-mix(in srgb,var(--n1) 12%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.dots .gl{font:13px var(--mono);fill:var(--n3)}
+.dots .rl{font:700 13px var(--mono);fill:var(--n1)}
+.dots .al{font:700 13px var(--mono);fill:var(--n0)}
+.dots g[data-step]{cursor:pointer}
+.dots g[data-step]:hover .grp,.dots g[data-step]:hover .rem{stroke-width:2.6}
+/* a number as a length */
+svg.nl{display:block;width:100%;max-width:720px;height:auto;margin:0 auto}
+.nl .whole{fill:color-mix(in srgb,var(--n0) 14%,var(--panel));stroke:var(--n0);stroke-width:1.4}
+.nl .seg{fill:color-mix(in srgb,var(--n3) 12%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.nl .rem{fill:color-mix(in srgb,var(--n1) 24%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.nl [data-step]{cursor:pointer}
+.nl .ax{stroke:var(--line2);stroke-width:1.4}
+.nl .tk{font:11.5px var(--mono);fill:var(--muted);text-anchor:middle}
+.nl .lb{font:700 13px var(--mono);text-anchor:middle}
+.nl .lb.b{fill:var(--n3)}.nl .lb.r{fill:var(--n1)}.nl .lb.a{fill:var(--n0)}.nl .lb.x{fill:var(--n4)}
+.nl .arc{fill:none;stroke-width:2}
+.nl .arc.r{stroke:var(--n1)}.nl .arc.x{stroke:var(--n4);stroke-dasharray:4 4}
+.nl .pt{fill:var(--n0);stroke:var(--panel);stroke-width:2}
+/* divisors */
+.strip{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin:0 auto;max-width:700px}
+.strip i{font-style:normal;min-width:36px;text-align:center;border-radius:6px;background:color-mix(in srgb,var(--ink) 5%,transparent);padding:3px 4px 4px;font:700 14px/1.25 var(--mono)}
+.strip i small{display:block;font:11px var(--mono);color:var(--muted);font-weight:400}
+.strip i.z{background:var(--okBg);color:var(--ok)}
+.strip i.one{background:var(--okBg);color:var(--ok);outline:2px solid var(--ok);outline-offset:-2px}
+.strip i.mg{background:var(--xorBg);color:var(--xor)}
+.cap2{font-size:13.5px;color:var(--muted);text-align:center;margin:0 0 8px}
+.cap2 b{color:var(--ink)}
+.dvr{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 12px;align-items:start;margin:0 0 12px}
+.dvr .dl{font-size:13.5px;color:var(--muted);padding-top:5px}
+.dvr .dl b{color:var(--ink);font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chips button,.chips i{font:600 13.5px var(--mono);font-style:normal;padding:4px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+.chips i.more{border-style:dashed;color:var(--muted);font-weight:400}
+.chips .c{background:var(--ambBg);border-color:var(--amb);color:var(--amb)}
+.chips .g{background:var(--okBg);border-color:var(--ok);color:var(--ok);font-size:16px;padding:4px 12px}
+.chips .pk{outline:2px solid var(--accent);outline-offset:1px}
+@media (max-width:700px){.dvr{grid-template-columns:minmax(0,1fr);gap:4px}.dvr .dl{padding:0}}
+/* Euclid: the lines of divisions, and the rectangle cut into squares */
+.duo2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:center}
+.duo2.one{grid-template-columns:minmax(0,1fr)}
+@media (max-width:1180px){.duo2{grid-template-columns:minmax(0,1fr)}}
+.lad{display:grid;grid-template-columns:repeat(7,auto);justify-content:center;gap:2px 8px;font:700 20px var(--mono);align-items:center}
+.lad .row{display:contents;cursor:pointer}
+.lad .n{text-align:right;padding:3px 7px;border-radius:7px}
+.lad .o{color:var(--muted);font-weight:400}
+.lad .arw{color:var(--faint);font:400 17px var(--sans);text-align:center;line-height:1.05}
+.lad .row.cur .n{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.lad .row:hover .n{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.lad .row.fut>*,.lad .arw.fut{visibility:hidden}
+.lad .n.g{outline:2.5px solid var(--n1);outline-offset:1px;background:var(--okBg);color:var(--n1)}
+.lad.sm{font-size:16px}
+@media (max-width:560px){.lad{font-size:16px;gap:2px 4px}.lad .n{padding:3px 4px}.lad.sm{font-size:13.5px}}
+svg.til{display:block;width:100%;max-width:580px;height:auto;margin:0 auto}
+.til rect.sq{stroke-width:1.5;cursor:pointer}
+.til rect.sq:hover{stroke-width:3}
+.til .c0{fill:color-mix(in srgb,var(--n0) 16%,var(--panel));stroke:var(--n0)}
+.til .c1{fill:color-mix(in srgb,var(--n3) 16%,var(--panel));stroke:var(--n3)}
+.til .c2{fill:color-mix(in srgb,var(--n2) 18%,var(--panel));stroke:var(--n2)}
+.til .c3{fill:color-mix(in srgb,var(--n4) 14%,var(--panel));stroke:var(--n4)}
+.til rect.gq{fill:color-mix(in srgb,var(--n1) 32%,var(--panel));stroke:var(--n1)}
+.til .rest{fill:none;stroke:var(--muted);stroke-dasharray:6 5;stroke-width:1.5}
+.til .frame{fill:none;stroke:var(--line2);stroke-width:1.2}
+.til text{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.til text.dm{font:12.5px var(--mono);fill:var(--muted)}
+.til text.rs{font:12.5px var(--mono);fill:var(--muted);font-weight:400}
+table.pairs{border-collapse:collapse;margin:14px auto 0;font:14px var(--mono)}
+table.pairs th,table.pairs td{padding:5px 14px;border-bottom:1px solid var(--line);text-align:left}
+table.pairs th{font:600 12.5px var(--sans);color:var(--muted)}
+/* extended Euclid: the table, and the lines of the backward way */
+table.xt{border-collapse:collapse;margin:0 auto;font:15.5px var(--mono)}
+table.xt th,table.xt td{padding:7px 16px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.xt th{font:600 12.5px var(--sans);color:var(--muted);vertical-align:bottom}
+table.xt th small{display:block;font-weight:400}
+table.xt tr[data-step]{cursor:pointer}
+table.xt tr[data-step]:hover td{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+table.xt tr.cur td{background:var(--ambBg)}
+table.xt tr.ans td{background:var(--okBg);font-weight:700}
+table.xt tr.zero td{color:var(--faint)}
+table.xt tr.fut td{visibility:hidden}
+table.xt td.ck{color:var(--muted);font-size:13px;text-align:left}
+table.xt .hid{visibility:hidden}
+table.xt td.pick{outline:2.5px solid var(--n1);outline-offset:-3px}
+/* tab 8: the calculator */
+.cxw .blk{padding:4px 0 18px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.cxw .blk:last-child{border-bottom:0;margin-bottom:0;padding-bottom:4px}
+.cxw h3{font:600 14px var(--sans);color:var(--muted);text-align:center;margin:0}
+.cxw .bench{margin-top:10px}
+.elines{font:15px/1.75 var(--mono);text-align:center;margin:10px auto 0;max-height:250px;overflow:auto;overflow-wrap:anywhere}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:660px;margin:12px auto 0}
+.two>div{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);min-width:0}
+.two>div.main{border-color:var(--n1);box-shadow:inset 0 0 0 1px var(--n1)}
+.two small{display:block;font:600 12.5px var(--sans);color:var(--muted)}
+.two .big{display:block;font:700 26px var(--mono);color:var(--n1);margin:2px 0}
+.two .ck{font:13.5px/1.5 var(--mono);overflow-wrap:anywhere}
+.two .from{display:inline-block;font:600 11.5px var(--sans);padding:1px 8px;border-radius:10px;background:var(--ambBg);color:var(--amb);margin-top:6px}
+details.how{max-width:660px;margin:14px auto 0}
+details.how summary{cursor:pointer;color:var(--accent);font-size:14px;text-align:center;margin-bottom:10px}
+@media (max-width:560px){.two{grid-template-columns:minmax(0,1fr)}.elines{font-size:13.5px}}
+@media (max-width:640px){table.xt{font-size:13.5px}table.xt th,table.xt td{padding:6px 8px}table.xt .ck{display:none}}
+.calc div{grid-template-columns:118px minmax(0,1fr)}
+.bw{max-width:620px;margin:0 auto;display:grid;gap:6px}
+.bw .h3{margin:10px 0 0}
+.bw .h3:first-child{margin-top:0}
+.bw div.ln{font:15.5px var(--mono);padding:7px 12px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);overflow-wrap:anywhere}
+.bw div.ln.cur{background:var(--ambBg)}
+.bw div.ln.ans{background:var(--okBg);font-weight:700}
+.bw div.ln.fut{visibility:hidden}
+.bw div.ln small{display:block;font:12px var(--sans);color:var(--muted);font-weight:400}
+.bw mark{background:none;color:var(--n4);font-weight:700}
+@media (max-width:560px){.bw div.ln{font-size:13.5px;padding:6px 9px}}
+/* your turn */
+.ex{max-width:640px;margin:0 auto}
+.ex h3{font-size:18px;margin:0 0 4px}
+.ex .task{font-size:15px;color:var(--muted);margin:0 0 14px}
+.exl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font:700 20px var(--mono);margin:0 0 8px}
+.exl input[type=text]{width:78px;font:700 18px var(--mono);text-align:center;padding:5px 6px;text-transform:none}
+.exl input[type=text].w{width:120px}
+.exl .o{color:var(--muted);font-weight:400}
+.exl.done{opacity:.8}
+.exl .n{padding:2px 4px}
+.fb{margin:10px 0 0;padding:9px 12px;border-radius:8px;font-size:14.5px}
+.fb.ok{background:var(--okBg);border-left:3px solid var(--ok)}
+.fb.no{background:var(--xorBg);border-left:3px solid var(--xor)}
+.exb2{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.score{font-size:13.5px;color:var(--muted);margin-top:12px}
+@media (max-width:560px){.exl{font-size:17px}.exl input[type=text]{width:64px;font-size:16px}}
+table.map td:first-child{white-space:normal}
+table.map td .m{white-space:nowrap}
+/* ---------- the elliptic curve page ---------- */
+svg.pic{display:block;width:100%;max-width:760px;height:auto;margin:0 auto;overflow:visible}
+svg.pic.gq{max-width:560px}
+.pic .gl{stroke:var(--line);stroke-width:1}
+.pic .gl.ax{stroke:var(--line2);stroke-width:1.5}
+.pic .tk{font:11.5px var(--mono);fill:var(--muted);text-anchor:middle}
+.pic .axn{font:italic 13px var(--math);fill:var(--muted)}
+.pic .cv{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linejoin:round}
+.pic .ln{stroke:var(--muted);stroke-width:1.8;fill:none}
+.pic .ln.sec{stroke:var(--n2)}.pic .ln.tan{stroke:var(--n2)}.pic .ln.neg{stroke:var(--n4)}
+.pic .ln.dash{stroke-dasharray:5 5;stroke:var(--faint)}
+.pic .refl{stroke:var(--n1);stroke-width:1.8;stroke-dasharray:4 4}
+.pic .draw{stroke-dasharray:1;animation:drawIn .9s ease-in-out both}
+.pic .ln.dash.draw,.pic .refl.draw{stroke-dasharray:1;animation:drawIn .7s ease-in-out both}
+.pic .cv.draw{animation-duration:1.6s}
+@keyframes drawIn{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.pic .pt circle{stroke:var(--panel);stroke-width:2.2}
+.pic .pt text{font:600 13px var(--sans);fill:var(--ink);paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.pic .pP circle{fill:var(--n0)}.pic .pQ circle{fill:var(--n3)}.pic .p3 circle{fill:var(--n2)}.pic .pR circle{fill:var(--n1)}
+.pic .pN circle{fill:var(--n3)}.pic .pV circle{fill:color-mix(in srgb,var(--n0) 45%,var(--panel))}.pic .pV text{font-size:11.5px;fill:var(--muted)}
+.pic .pF circle{fill:var(--accent)}.pic .pF.dim circle{fill:color-mix(in srgb,var(--ink) 18%,var(--panel));stroke-width:1}
+.pic .pA circle{fill:var(--n3)}.pic .pB circle{fill:var(--n2)}
+.pic .ring{fill:none;stroke:var(--xor);stroke-width:2.5}
+.pic .inf{font:600 13px var(--sans);fill:var(--n4)}
+.pic .gbox{fill:color-mix(in srgb,var(--ink) 2%,var(--panel));stroke:var(--line2)}
+.pic .gc{stroke:var(--line);stroke-width:.8}
+.pic .mir{stroke:var(--faint);stroke-width:1.4;stroke-dasharray:6 5}
+.pic .hop{stroke:color-mix(in srgb,var(--n0) 30%,transparent);stroke-width:1.6;fill:none}
+.pic .hop.cur{stroke:var(--n0);stroke-width:2.4}
+.pic .ahd{fill:var(--n0)}
+.pic .nw{animation:come .45s ease-out both}
+/* the arithmetic of a step, line by line */
+.fxs{max-width:700px;margin:14px auto 0;display:flex;flex-direction:column;gap:5px}
+.fx{font:14.5px/1.55 var(--mono);padding:7px 12px;border-radius:8px;background:color-mix(in srgb,var(--ink) 4%,transparent);overflow-wrap:anywhere}
+.fx sub{font-size:.75em}
+.eqb{font:600 16px var(--mono);padding:7px 0}
+.inbar small{color:var(--muted);font-weight:400}
+.inbar select{font:15px var(--mono);padding:8px 10px;border-radius:9px;min-width:130px}
+/* a picture with a table beside it */
+.duo{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.duo{grid-template-columns:minmax(0,1fr)}}
+.cap2{font-size:13.5px;color:var(--muted);text-align:center;margin:0 0 8px}
+.cap2 b{color:var(--ink)}
+.chips.sm{justify-content:center}
+.chips.sm i b{color:var(--n1)}
+.tb{max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:9px}
+table.xt{border-collapse:collapse;margin:0 auto;font:14px var(--mono);width:100%}
+table.xt th,table.xt td{padding:5px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.xt th{font:600 12px var(--sans);color:var(--muted);position:sticky;top:0;background:var(--panel)}
+table.xt tr.none td{color:var(--faint)}
+table.xt tr.has td:last-child{color:var(--n1);font-weight:700}
+table.xt tr.cur td{background:var(--ambBg)}
+table.xt tr.fut td{visibility:hidden}
+table.xt.da td:last-child{font-weight:600}
+.mono{font-family:var(--mono)}
+/* key exchange: Alice, the open line, Bob */
+.trio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr);gap:10px;margin-top:14px}
+@media (max-width:760px){.trio{grid-template-columns:minmax(0,1fr)}}
+.who{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel);box-shadow:0 2px 0 var(--line);min-height:120px}
+.who h4{margin:0 0 6px;font-size:14px}
+.who.al h4{color:var(--n3)}.who.bo h4{color:var(--n2)}.who.mid{background:color-mix(in srgb,var(--ink) 3%,var(--panel))}.who.mid h4{color:var(--muted)}
+.who p{margin:0 0 5px;font:13.5px/1.5 var(--mono);overflow-wrap:anywhere}
+.who p.eve{font-family:var(--sans);color:var(--xor)}
+.scr{color:var(--xor)}.kA{color:var(--n3)}.kB{color:var(--n2)}
+/* real curves */
+.kgen{max-width:760px;margin:0 auto;padding:12px 14px;border:1px solid var(--line);border-radius:10px;box-shadow:0 2px 0 var(--line)}
+.kv{display:grid;grid-template-columns:200px minmax(0,1fr);gap:4px 12px;padding:5px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.kv span{font-size:13px;color:var(--muted)}
+.kv code{font:13px var(--mono);overflow-wrap:anywhere}
+@media (max-width:620px){.kv{grid-template-columns:minmax(0,1fr)}}
+.cards3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:16px 0}
+.ccard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 2px 0 var(--line)}
+.ccard b{font-size:16px}.ccard small{display:block;color:var(--muted);font-size:12.5px;margin-bottom:6px}
+.ccard p{margin:0 0 4px;font-size:13.5px;overflow-wrap:anywhere}
+.ccard p.use{color:var(--muted)}
+table.xt.ks td,table.xt.ks th{text-align:right}table.xt.ks td:nth-child(2),table.xt.ks th:nth-child(2){text-align:left}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Elliptic curves, step by step</h1>
+  <p class="sub">The group behind ECDH and ECDSA: the curve, how two of its points are added, the same rules over a finite field, multiples of a point, key exchange, and the curves used in TLS and Bitcoin</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="cv" class="on">1 · The curve</button>
+    <button data-tab="add">2 · Adding points</button>
+    <button data-tab="fp">3 · Over GF(p)</button>
+    <button data-tab="mul">4 · Multiples of a point</button>
+    <button data-tab="dh">5 · Key exchange</button>
+    <button data-tab="real">6 · Real curves</button>
+  </nav>
+</header>
+
+<section class="wrap"><div class="card inbar" id="bar" hidden></div></section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stage"></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Works offline: every point, sum and key on this page is computed in your browser.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
+const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a.at(-1):String(a[0]);
+
+/* ---------- numbers as text: a real minus sign ---------- */
+const nm=v=>(v<0?'−':'')+Math.abs(v);
+const pn=v=>v<0?`(${nm(v)})`:nm(v);                         // a negative number in brackets, inside a formula
+const fr=(v,d=3)=>{const s=(Math.round(v*10**d)/10**d).toFixed(d).replace(/\.?0+$/,'');return s==='-0'?'0':s.replace('-','−')};
+const pt=P=>P?`(${nm(P[0])}, ${nm(P[1])})`:'O';
+const signed=(v,t)=>v===0?'':(v<0?` − ${Math.abs(v)===1&&t?'':Math.abs(v)}${t}`:` + ${v===1&&t?'':v}${t}`);
+const eqn=(a,b,mod)=>`y² = x³${signed(a,'x')}${signed(b,'')}${mod?` (mod ${mod})`:''}`;
+const eqnc=(a,b,p)=>`y² ≡ x³${signed(a,'x')}${signed(b,'')} (mod ${p})`;
+
+/* ---------- arithmetic modulo a small prime p ---------- */
+const md=(x,p)=>((x%p)+p)%p;
+function inv(x,p){let r0=p,r1=md(x,p),t0=0,t1=1;while(r1){const q=Math.floor(r0/r1);[r0,r1]=[r1,r0-q*r1];[t0,t1]=[t1,t0-q*t1]}return r0===1?md(t0,p):null}
+const isPrime=n=>{if(n<2)return false;for(let d=2;d*d<=n;d++)if(n%d===0)return false;return true};
+// the points of y² = x³ + ax + b over GF(p), and the sum of two of them (null is the point at infinity O)
+const curveKey=c=>c.p+','+c.a+','+c.b;
+const PTS=new Map();
+function points(c){const k=curveKey(c);if(PTS.has(k))return PTS.get(k);
+  const sq=new Map();for(let y=0;y<c.p;y++){const s=y*y%c.p;if(!sq.has(s))sq.set(s,[]);sq.get(s).push(y)}
+  const rows=range(0,c.p-1).map(x=>{const r=md(x*x*x+c.a*x+c.b,c.p);return{x,r,ys:sq.get(r)||[]}});
+  const out={rows,sq,list:rows.flatMap(w=>w.ys.map(y=>[w.x,y]))};PTS.set(k,out);return out}
+function eAdd(P,Q,c){
+  if(!P)return Q;if(!Q)return P;const p=c.p,[x1,y1]=P,[x2,y2]=Q;
+  if(x1===x2&&md(y1+y2,p)===0)return null;
+  const l=x1===x2?md((3*x1*x1+c.a)*inv(2*y1,p),p):md((y2-y1)*inv(x2-x1,p),p);
+  const x3=md(l*l-x1-x2,p);return[x3,md(l*(x1-x3)-y1,p)]}
+// the same sum with every intermediate number, for the bench under the picture
+function eAddW(P,Q,c){
+  const p=c.p,[x1,y1]=P,[x2,y2]=Q,dbl=x1===x2;
+  const num=dbl?md(3*x1*x1+c.a,p):md(y2-y1,p),den=dbl?md(2*y1,p):md(x2-x1,p),di=inv(den,p),l=md(num*di,p);
+  const x3=md(l*l-x1-x2,p),y3=md(l*(x1-x3)-y1,p);return{dbl,num,den,di,l,x3,y3}}
+const sameP=(P,Q)=>P===Q||(P&&Q&&P[0]===Q[0]&&P[1]===Q[1]);
+function eMul(k,P,c){let R=null;for(const b of k.toString(2)){R=eAdd(R,R,c);if(b==='1')R=eAdd(R,P,c)}return R}
+const ORD=new Map();
+function order(P,c){const key=curveKey(c)+'|'+P;if(ORD.has(key))return ORD.get(key);let R=P,n=1;while(R){R=eAdd(R,P,c);n++}ORD.set(key,n);return n}
+const singular=(a,b,p)=>p?md(4*a*a*a+27*b*b,p)===0:4*a*a*a+27*b*b===0;
+
+/* ---------- whole numbers of any size: the real curves ---------- */
+const B=BigInt;
+const bmod=(x,m)=>{x%=m;return x<0n?x+m:x};
+function binv(x,m){let a=bmod(x,m),b=m,x0=1n,x1=0n;while(b){const q=a/b;[a,b]=[b,a-q*b];[x0,x1]=[x1,x0-q*x1]}return bmod(x0,m)}
+function bAdd(P,Q,c){
+  if(!P)return Q;if(!Q)return P;const p=c.p,[x1,y1]=P,[x2,y2]=Q;
+  if(x1===x2&&bmod(y1+y2,p)===0n)return null;
+  const l=x1===x2?bmod((3n*x1*x1+c.a)*binv(2n*y1,p),p):bmod((y2-y1)*binv(x2-x1,p),p);
+  const x3=bmod(l*l-x1-x2,p);return[x3,bmod(l*(x1-x3)-y1,p)]}
+function bMul(k,P,c){let R=null;for(const b of k.toString(2)){R=bAdd(R,R,c);if(b==='1')R=bAdd(R,P,c)}return R}
+const hex=v=>v.toString(16).padStart(64,'0');
+const SECP={name:'secp256k1',p:2n**256n-2n**32n-977n,a:0n,b:7n,
+  G:[0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n,0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n],
+  n:0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n};
+const P256={name:'P-256',p:2n**256n-2n**224n+2n**192n+2n**96n-1n,a:-3n,b:0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604Bn,
+  G:[0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296n,0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5n],
+  n:0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n};
+P256.a=bmod(P256.a,P256.p);
+
+/* ---------- drawing: a plane for the curve over the real numbers ---------- */
+function plane(V,W=640,H=420){
+  const L=34,R=12,T=12,Bm=26,sx=x=>L+(x-V.x0)/(V.x1-V.x0)*(W-L-R),sy=y=>T+(V.y1-y)/(V.y1-V.y0)*(H-T-Bm);
+  let g='';
+  for(let x=Math.ceil(V.x0/V.dx)*V.dx;x<=V.x1;x+=V.dx)g+=`<line class="gl${x===0?' ax':''}" x1="${sx(x)}" x2="${sx(x)}" y1="${T}" y2="${H-Bm}"/>`+(x?`<text class="tk" x="${sx(x)}" y="${H-Bm+16}">${nm(x)}</text>`:'');
+  for(let y=Math.ceil(V.y0/V.dy)*V.dy;y<=V.y1;y+=V.dy)g+=`<line class="gl${y===0?' ax':''}" y1="${sy(y)}" y2="${sy(y)}" x1="${L}" x2="${W-R}"/>`+(y?`<text class="tk" x="${L-6}" y="${sy(y)+4}" text-anchor="end">${nm(y)}</text>`:'');
+  g+=`<text class="tk" x="${sx(0)-6}" y="${sy(0)+14}" text-anchor="end">0</text><text class="axn" x="${W-R-4}" y="${sy(0)-6}" text-anchor="end">x</text><text class="axn" x="${sx(0)+8}" y="${T+12}">y</text>`;
+  return{W,H,sx,sy,L,R,T,Bm,V,grid:g,clip:`<clipPath id="cp"><rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-Bm}"/></clipPath>`}}
+const f3=(x,a,b)=>x*x*x+a*x+b;
+function roots(a,b){const r=[];let pv=f3(-30,a,b);
+  for(let i=-2999;i<=3000;i++){const x=i/100,v=f3(x,a,b);
+    if(v===0)r.push(x);else if(pv!==0&&pv*v<0){let lo=x-.01,hi=x;for(let j=0;j<60;j++){const m=(lo+hi)/2;if(f3(lo,a,b)*f3(m,a,b)<=0)hi=m;else lo=m}r.push((lo+hi)/2)}pv=v}
+  return r}
+// the curve as SVG paths: a closed oval between the first two roots, and an open arc from the last root to the right
+function curvePath(G,a,b){
+  const r=roots(a,b),E=G.V.x1+1,y=x=>Math.sqrt(Math.max(0,f3(x,a,b))),P=(x,s)=>`${G.sx(x).toFixed(1)} ${G.sy(s*y(x)).toFixed(1)}`;
+  let d='';
+  if(r.length>=3&&r[1]-r[0]>1e-6){const u=range(0,160).map(i=>r[0]+(r[1]-r[0])*(1-Math.cos(Math.PI*i/160))/2);
+    d+='M'+u.map(x=>P(x,1)).join(' L')+' L'+u.slice().reverse().map(x=>P(x,-1)).join(' L')+'Z'}
+  const s=r.at(-1),u=range(0,240).map(i=>s+(E-s)*(i/240)**2);
+  d+='M'+u.slice().reverse().map(x=>P(x,-1)).join(' L')+' L'+u.map(x=>P(x,1)).join(' L');
+  return{d,r}}
+const dot=(G,x,y,cls,lab,o={})=>`<g class="pt ${cls}${o.nw?' nw':''}"><circle cx="${G.sx(x)}" cy="${G.sy(y)}" r="${o.r||6.5}"/>${lab?`<text x="${G.sx(x)+(o.dx??10)}" y="${G.sy(y)+(o.dy??-10)}"${o.end?' text-anchor="end"':''}>${lab}</text>`:''}</g>`;
+function lineThrough(G,x,y,l,cls){const X0=G.V.x0-1,X1=G.V.x1+1;
+  return`<line class="ln ${cls||''}" pathLength="1" x1="${G.sx(X0)}" y1="${G.sy(y+l*(X0-x))}" x2="${G.sx(X1)}" y2="${G.sy(y+l*(X1-x))}"/>`}
+const vline=(G,x,cls)=>`<line class="ln ${cls||''}" pathLength="1" x1="${G.sx(x)}" y1="${G.sy(G.V.y0-1)}" x2="${G.sx(x)}" y2="${G.sy(G.V.y1+1)}"/>`;
+const svgWrap=(G,body,lab)=>`<svg class="pic" viewBox="0 0 ${G.W} ${G.H}" role="img" aria-label="${lab}"><defs>${G.clip||''}</defs>${G.grid}<g clip-path="url(#cp)">${body}</g></svg>`;
+
+/* ---------- drawing: the grid of points over GF(p) ---------- */
+function grid(c){
+  const p=c.p,cs=Math.max(5,Math.min(30,Math.floor(520/p))),L=32,T=8,W=L+p*cs+8,H=T+p*cs+26;
+  const X=x=>L+(x+.5)*cs,Yy=y=>T+(p-.5-y)*cs,every=p<=23?1:p<=53?5:10;
+  let g=`<rect class="gbox" x="${L}" y="${T}" width="${p*cs}" height="${p*cs}"/>`;
+  if(cs>=9)for(let i=1;i<p;i++)g+=`<line class="gc" x1="${L+i*cs}" x2="${L+i*cs}" y1="${T}" y2="${T+p*cs}"/><line class="gc" y1="${T+i*cs}" y2="${T+i*cs}" x1="${L}" x2="${L+p*cs}"/>`;
+  for(let i=0;i<p;i++)if(i%every===0||i===p-1)g+=`<text class="tk" x="${X(i)}" y="${T+p*cs+16}">${i}</text><text class="tk" x="${L-5}" y="${Yy(i)+4}" text-anchor="end">${i}</text>`;
+  return{p,cs,L,T,W,H,X,Y:Yy,r:Math.max(2.6,Math.min(cs*.3,7.5)),grid:g}}
+const gdot=(Gq,P,cls,lab,o={})=>`<g class="pt ${cls}${o.nw?' nw':''}"${o.delay!=null?` style="animation-delay:${o.delay}ms"`:''}><circle cx="${Gq.X(P[0])}" cy="${Gq.Y(P[1])}" r="${o.r||Gq.r}"/>${lab?`<text x="${Gq.X(P[0])+(o.dx??Gq.r+3)}" y="${Gq.Y(P[1])+(o.dy??-Gq.r-2)}"${o.end?' text-anchor="end"':''}>${lab}</text>`:''}</g>`;
+const gsvg=(Gq,body,lab)=>`<svg class="pic gq" viewBox="0 0 ${Gq.W} ${Gq.H}" role="img" aria-label="${lab}"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahd"/></marker></defs>${Gq.grid}${body}</svg>`;
+// the pieces of a bench under the picture: a word with its value under it, and the signs between
+const bt=(word,cls,v)=>`<span class="bt"><i>${word}</i><b class="${cls}">${v}</b></span>`;
+const op=s=>`<span class="op">${s}</span>`;
+const bench=(...xs)=>`<div class="bench">${xs.join('')}</div>`;
+
+/* ---------- what the reader has chosen ---------- */
+const ST={tab:'cv',step:{},ca:-2,cb:1,ad:'pq',fp:17,fa:2,fb:2,P:null,mm:'seq',kk:13,ka:3,kb:10,q:{},key:null,playT:null,playing:false};
+const T={};
+const stage=$('#stage');
+const RC=()=>({p:ST.fp,a:md(ST.fa,ST.fp),b:md(ST.fb,ST.fp)});
+const numIn=(key,label,v,w)=>`<label class="fld"><span class="flh">${label}</span><input type="text" class="num${w?' '+w:''}" inputmode="text" autocomplete="off" spellcheck="false" data-in="${key}" value="${v}"></label>`;
+const loadBtn=(spec,text)=>`<button data-load="${spec}">${text}</button>`;
+const segB=(key,cur,opts)=>`<div class="seg">${opts.map(o=>`<button data-set="${key}:${o[0]}" class="${cur===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>`;
+const fx=(rows,k0)=>`<div class="fxs">${rows.map((r,i)=>`<div class="fx${i===rows.length-1&&k0?' nw':''}">${r}</div>`).join('')}</div>`;
+
+/* ---------- 1 · the curve over the real numbers ---------- */
+const V1={x0:-5,x1:5,y0:-8,y1:8,dx:1,dy:2};
+function cvS(){
+  const a=ST.ca,b=ST.cb,G=plane(V1),C=curvePath(G,a,b),r=C.r,disc=4*a**3+27*b*b;
+  let x0=null;for(let x=Math.ceil(r.at(-1)+.2);x<=4;x++){const f=f3(x,a,b);if(f>.2&&Math.sqrt(f)<=7){x0=x;break}}
+  if(x0===null)x0=Math.ceil(r.at(-1)+.2);
+  const pieces=disc<0?2:1,sx=disc===0?[0,1,-1].map(s=>s*Math.sqrt(Math.max(0,-a/3))).find(x=>Math.abs(f3(x,a,b))<1e-9):null;
+  return{a,b,G,C,r,disc,x0,f0:f3(x0,a,b),pieces,sx}}
+const EX1=[[-2,1,'two pieces'],[-1,1,'one piece'],[0,7,'Bitcoin’s curve'],[-3,2,'crosses itself'],[0,0,'a sharp point']];
+T.cv={n:()=>4,
+  bar:()=>numIn('ca','<b>a</b>',ST.ca)+numIn('cb','<b>b</b>',ST.cb)+
+    `<div class="fld"><span class="flh">Examples</span><div class="row">${EX1.map(e=>loadBtn(`ca=${e[0]},cb=${e[1]}`,`${eqn(e[0],e[1])} <small>${e[2]}</small>`)).join('')}</div></div><div class="err" id="err"></div><p class="hint2">a and b are whole numbers from −10 to 10. A calculation such as 2*3 − 7 works too.</p>`,
+  view(k){
+    const S=cvS(),{a,b,G,C,r,disc,x0,f0,sx}=S;
+    let body=`<path class="cv${k===0?' draw':''}" d="${C.d}" pathLength="1"/>`;
+    if(k===1){const y0=Math.sqrt(f0);body+=vline(G,x0,'dash draw')+dot(G,x0,y0,'pP',`P = (${x0}, ${fr(y0,2)})`,{nw:1})+dot(G,x0,-y0,'pN',`−P = (${x0}, ${fr(-y0,2)})`,{nw:1,dy:22})}
+    if(k===2)body+=r.map((x,i)=>dot(G,x,0,'pR',fr(x,2),{nw:1,r:5.5,dy:i%2?24:-12,dx:-4,end:1})).join('');
+    if(k===3&&disc===0&&sx!=null)body+=`<circle class="ring nw" cx="${G.sx(sx)}" cy="${G.sy(0)}" r="15"/>`;
+    let h=svgWrap(G,body,'The curve '+eqn(a,b));
+    if(k===0)h+=bench(bt('','','y²'),op('='),bt('','','x³'),op('+'),bt('a','ra',pn(a)),op('·'),bt('','','x'),op('+'),bt('b','rb',pn(b)));
+    if(k===1){const y0=Math.sqrt(f0);h+=bench(bt('x','ra',x0),op('→'),bt('x³ + a·x + b','',fr(f0)),op('→'),bt('y = ±√ of it','rr','±'+fr(y0,3)))}
+    if(k===2)h+=bench(bt('x³ + a·x + b = 0 at','',r.map(x=>fr(x,3)).join(', ')),op('→'),bt('pieces','rq',disc===0?'touching':S.pieces));
+    if(k===3)h+=bench(bt('4a³ + 27b²','',`4·${pn(a)}³ + 27·${pn(b)}²`),op('='),bt('','',nm(disc)),op(disc?'≠':'='),bt('','','0'),op('→'),bt('','',disc?'<span class="cy">smooth</span>':'<span class="cn">not allowed</span>'));
+    return h},
+  say(k){
+    const{a,b,r,disc,x0,f0,pieces,sx}=cvS(),E=eqn(a,b);
+    if(k===0)return say('The equation','The curves used in cryptography have the form'+fm('y² = x³ + a·x + b'),`Here a = ${nm(a)} and b = ${nm(b)}. Every point (x, y) on the line in the picture satisfies ${E}.`,'Type other values for a and b above the picture, or press <b>Step</b>.');
+    if(k===1){const y0=Math.sqrt(f0);return say('Step 1 · two points for one x',`Take x = ${x0}. Then x³ + a·x + b = ${fr(f0)}, and y² = ${fr(f0)} has two solutions: y = ${fr(y0,3)} and y = ${fr(-y0,3)}.`,'So the curve is symmetric about the x-axis. The mirror image of a point P = (x, y) is the point (x, −y). It is written −P.')}
+    if(k===2)return say('Step 2 · one piece or two',`x³ + a·x + b is 0 at x = ${list(r.map(x=>fr(x,3)))}${disc===0?' and once more where the curve touches itself':''}. Where it is negative, y² would be negative, and the curve has no point there.`,disc<0?'It has three zeros, so the curve has two pieces: a closed oval and an open arc to the right.':disc>0?'It has one zero, so the curve is one piece, open to the right.':'Two of its zeros fall together, so the pieces touch.');
+    return disc?say('Step 3 · smooth, with no sharp points',`The curve must not cross itself and must not have a sharp point. That is the condition 4a³ + 27b² ≠ 0.`,`Here 4·${pn(a)}³ + 27·${pn(b)}² = ${nm(disc)}. It is not 0, so ${E} is an <b>elliptic curve</b>.`,'Try a = −3, b = 2 or a = 0, b = 0 to see what goes wrong.')
+      :say('Step 3 · smooth, with no sharp points',`Here 4·${pn(a)}³ + 27·${pn(b)}² = 0. The curve ${a===0&&b===0?'has a sharp point (a cusp)':'crosses itself'} at (${fr(sx??0,2)}, 0), circled in the picture.`,'There the tangent line is not defined, and the addition of points in tab 2 breaks. <b>This is not an elliptic curve</b>, and it is not used in cryptography.')},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>Elliptic curve</dt><dd>The points (x, y) with y² = x³ + a·x + b, where 4a³ + 27b² ≠ 0, plus one extra point O (tab 2).</dd><dt>−P</dt><dd>The mirror image of P = (x, y): the point (x, −y).</dd><dt>Smooth</dt><dd>No sharp point and no crossing: at every point the curve has one tangent line.</dd></dl>`};
+
+/* ---------- 2 · adding two points ---------- */
+const C2={a:-7,b:10},V2={x0:-4.5,x1:6.5,y0:-12,y1:12,dx:1,dy:2};
+const ADD={pq:{P:[1,2],Q:[3,4],t:'P + Q'},p2:{P:[3,4],Q:[5,10],t:'P + Q'},dbl:{P:[1,2],Q:[1,2],t:'P + P'},neg:{P:[1,2],Q:[1,-2],t:'P + (−P)'}};
+function addS(){
+  const A=ADD[ST.ad],[x1,y1]=A.P,[x2,y2]=A.Q,a=C2.a,G=plane(V2),C=curvePath(G,a,C2.b);
+  if(ST.ad==='neg')return{...A,kind:'neg',G,C,x1,y1,x2,y2};
+  const dbl=ST.ad==='dbl',num=dbl?3*x1*x1+a:y2-y1,den=dbl?2*y1:x2-x1,l=num/den,x3=l*l-x1-x2,yl=y1+l*(x3-x1),y3=-yl;
+  return{...A,kind:dbl?'dbl':'chord',dbl,G,C,x1,y1,x2,y2,num,den,l,x3,yl,y3}}
+T.add={n:()=>ST.ad==='neg'?4:5,
+  bar:()=>`<div class="fld"><span class="flh">The curve</span><div class="eqb">${eqn(C2.a,C2.b)}</div></div><div class="fld"><span class="flh">What to add</span>${segB('ad',ST.ad,[['pq','(1, 2) + (3, 4)'],['p2','(3, 4) + (5, 10)'],['dbl','(1, 2) + (1, 2)'],['neg','(1, 2) + (1, −2)']])}</div>`,
+  view(k){
+    const S=addS(),{G,C,x1,y1,x2,y2}=S;
+    let body=`<path class="cv" d="${C.d}"/>`;
+    if(S.kind==='neg'){
+      if(k>=1)body+=vline(G,x1,'neg'+(k===1?' draw':''));
+      body+=dot(G,x1,y1,'pP','P = (1, 2)',{dx:12})+dot(G,x2,y2,'pQ','−P = (1, −2)',{dx:12,dy:20});
+      let h=svgWrap(G,body,'P and −P on '+eqn(C2.a,C2.b));
+      if(k>=2)h=h.replace('</svg>',`<g class="nw"><text class="inf" x="${G.sx(x1)+12}" y="${G.T+16}">↑ to O, the point at infinity</text></g></svg>`);
+      const rows=[`x<sub>P</sub> = x<sub>Q</sub> = 1, so the line through the two points is vertical`];
+      if(k>=1)rows.push(`λ = (y<sub>Q</sub> − y<sub>P</sub>) / (x<sub>Q</sub> − x<sub>P</sub>) = (−2 − 2) / (1 − 1) = −4 / 0 → <b class="cn">no slope</b>`);
+      if(k>=2)rows.push(`P + (−P) = <b class="rr">O</b>`);
+      if(k>=3)rows.push(`P + O = P for every point P, so O is the zero of the addition`);
+      return h+fx(rows,k>0)}
+    const{dbl,l,x3,yl,y3,num,den}=S,lab3=dbl?'−2P':'−(P + Q)',labR=dbl?'2P':'P + Q';
+    if(k>=1)body+=lineThrough(G,x1,y1,l,(dbl?'tan':'sec')+(k===1?' draw':''));
+    if(k>=3)body+=`<line class="refl${k===3?' draw':''}" pathLength="1" x1="${G.sx(x3)}" y1="${G.sy(yl)}" x2="${G.sx(x3)}" y2="${G.sy(y3)}"/>`;
+    body+=dot(G,x1,y1,'pP',dbl?`P = (${x1}, ${y1})`:`P = (${x1}, ${y1})`,{dx:12,dy:dbl?-10:16});
+    if(!dbl)body+=dot(G,x2,y2,'pQ',`Q = (${x2}, ${y2})`,{dx:12});
+    const lf=G.sx(x3)<230,lo=lf?{dx:12}:{dx:-12,end:1};
+    if(k>=2)body+=dot(G,x3,yl,'p3',`${lab3} = (${fr(x3)}, ${fr(yl)})`,{nw:k===2,...lo,dy:yl<0?20:-10});
+    if(k>=3)body+=dot(G,x3,y3,'pR',`${labR} = (${fr(x3)}, ${fr(y3)})`,{nw:k===3,...lo,dy:y3<0?20:-10});
+    let h=svgWrap(G,body,`${labR} on ${eqn(C2.a,C2.b)}`);
+    const rows=[];
+    rows.push(dbl?`P = (${x1}, ${y1}) is added to itself: the line is the <b>tangent</b> at P`:`P = (${x1}, ${y1}), Q = (${x2}, ${y2}): the line goes through both`);
+    if(k>=1)rows.push(dbl?`λ = (3x<sub>P</sub>² + a) / (2y<sub>P</sub>) = (3·${x1}² + ${pn(C2.a)}) / (2·${y1}) = ${nm(num)} / ${den} = <b class="rq">${fr(l)}</b>`
+      :`λ = (y<sub>Q</sub> − y<sub>P</sub>) / (x<sub>Q</sub> − x<sub>P</sub>) = (${y2} − ${y1}) / (${x2} − ${x1}) = ${num} / ${den} = <b class="rq">${fr(l)}</b>`);
+    if(k>=2)rows.push(`x<sub>3</sub> = λ² − x<sub>P</sub> − x<sub>Q</sub> = ${pn(l)}² − ${x1} − ${x2} = <b class="rr">${fr(x3)}</b>; on the line y = ${y1} + ${pn(l)}·(${fr(x3)} − ${x1}) = ${fr(yl)}`);
+    if(k>=3)rows.push(`y<sub>3</sub> = λ·(x<sub>P</sub> − x<sub>3</sub>) − y<sub>P</sub> = ${pn(l)}·(${x1} − ${pn(x3)}) − ${y1} = <b class="rr">${fr(y3)}</b>, the mirror image of ${fr(yl)}`);
+    if(k>=4)rows.push(`check: ${pn(y3)}² = ${y3*y3} and ${pn(x3)}³ − 7·${pn(x3)} + 10 = ${x3**3-7*x3+10} ${Y}`);
+    return h+fx(rows,k>0)},
+  say(k){
+    const S=addS();
+    if(S.kind==='neg'){
+      if(k===0)return say('Adding a point and its mirror image','P = (1, 2) and −P = (1, −2) lie on one vertical line.','What should P + (−P) be?');
+      if(k===1)return say('Step 1 · a vertical line','The line through P and −P is vertical. It has no slope: the formula for λ divides by x<sub>Q</sub> − x<sub>P</sub> = 0.','A vertical line meets the curve in these two points only. There is no third point to reflect.');
+      if(k===2)return say('Step 2 · the point at infinity','So one extra point is added to the curve: <b>O</b>, the point at infinity. Think of it as lying at the top and the bottom of every vertical line.','By definition, P + (−P) = O.');
+      return say('Step 3 · O is the zero','Adding O changes nothing: P + O = P. O plays the role that 0 plays for numbers, and −P really is the negative of P.','With O included, the points of the curve form a <b>group</b>: the sum of two points is again a point of the curve.')}
+    const{dbl,l,x3,yl,y3,x1,y1,x2,y2}=S,R=dbl?'2P':'P + Q';
+    if(k===0)return dbl?say('Adding a point to itself',`To compute P + P = 2P for P = (${x1}, ${y1}), there is no second point to draw a line through.`,'Use the tangent line at P instead: the line that just touches the curve there.')
+      :say('Adding two points',`P = (${x1}, ${y1}) and Q = (${x2}, ${y2}) are on the curve ${eqn(C2.a,C2.b)}.`,`P + Q is not (${x1+x2}, ${y1+y2}). That point is not even on the curve. The sum is found with a line.`);
+    if(k===1)return say(`Step 1 · ${dbl?'the tangent':'the line through P and Q'}`,`Its slope is λ = ${fr(l)}.`,dbl?'For the tangent, the slope comes from the curve itself: 3x² + a over 2y.':'Slope is the rise over the run, as in school.');
+    if(k===2)return say('Step 2 · the third point',`A line through two points of the curve meets it in exactly one more point. Here it is at x = ${fr(x3)}: the point (${fr(x3)}, ${fr(yl)}).`,'Its x comes straight from λ: x₃ = λ² − x<sub>P</sub> − x<sub>Q</sub>.');
+    if(k===3)return say('Step 3 · reflect it',`The sum is the mirror image of the third point: ${R} = (${fr(x3)}, ${fr(y3)}).`,'Why reflect? Without it, the point O of the next example would not act as zero.');
+    return say('Step 4 · check',`(${fr(x3)}, ${fr(y3)}) satisfies ${eqn(C2.a,C2.b)}, so the sum is again a point of the curve.`,dbl?'The same rule, with the tangent, gives 3P = 2P + P, 4P = 3P + P, and so on. Tab 4 does exactly that over a finite field.':'Q + P gives the same line and so the same point: the order of the two points does not matter.')},
+  extra:()=>`<h3>The rules in one place</h3><dl class="words"><dt>Line</dt><dd>λ = (y<sub>Q</sub> − y<sub>P</sub>) / (x<sub>Q</sub> − x<sub>P</sub>), or (3x<sub>P</sub>² + a) / (2y<sub>P</sub>) when P = Q.</dd><dt>Sum</dt><dd>x₃ = λ² − x<sub>P</sub> − x<sub>Q</sub>, y₃ = λ·(x<sub>P</sub> − x₃) − y<sub>P</sub>.</dd><dt>Zero</dt><dd>P + (−P) = O and P + O = P.</dd></dl>`};
+
+/* ---------- 3 · the same equation over GF(p) ---------- */
+function fpS(){
+  const c=RC(),{p,a,b}=c,PT=points(c),n=PT.list.length,N=n+1,sq=[...new Set(range(1,p-1).map(y=>y*y%p))].sort((u,v)=>u-v);
+  const ex=PT.rows.find(w=>w.ys.length===2)||PT.rows.find(w=>w.ys.length);
+  return{c,p,a,b,PT,n,N,sq,ex,lo:p+1-2*Math.sqrt(p),hi:p+1+2*Math.sqrt(p)}}
+const EX3=[[17,2,2,'Paar’s example'],[11,1,6,'Stinson’s example'],[23,1,1,''],[97,2,3,'']];
+T.fp={n:()=>4,
+  bar:()=>numIn('fp','<b>p</b> · a prime',ST.fp)+numIn('fa','<b>a</b>',ST.fa)+numIn('fb','<b>b</b>',ST.fb)+
+    `<div class="fld"><span class="flh">Examples</span><div class="row">${EX3.map(e=>loadBtn(`fp=${e[0]},fa=${e[1]},fb=${e[2]}`,`${eqnc(e[1],e[2],e[0])}${e[3]?` <small>${e[3]}</small>`:''}`)).join('')}</div></div><div class="err" id="err"></div><p class="hint2">p is a prime from 5 to 97. Tabs 4 and 5 use this curve.</p>`,
+  view(k){
+    const S=fpS(),{c,p,a,b,PT,n,N,sq}=S,Gq=grid(c);
+    let body='';
+    if(k>=3)body+=`<line class="mir nw" x1="${Gq.L}" x2="${Gq.L+p*Gq.cs}" y1="${Gq.T+p*Gq.cs/2}" y2="${Gq.T+p*Gq.cs/2}"/>`;
+    if(k>=2)body+=PT.list.map((P,i)=>gdot(Gq,P,'pF','',{nw:k===2,delay:k===2?P[0]*45:null})).join('');
+    let h=`<div class="duo"><div class="duoL">${gsvg(Gq,body,`The points of ${eqnc(a,b,p)}`)}</div><div class="duoR">`;
+    if(k===0)h+=`<p class="cap2">The grid has a square for every pair (x, y) of numbers from 0 to ${p-1}. The points of the curve will be marked in it.</p>`;
+    if(k===1)h+=`<p class="cap2">Every square y² mod ${p}, for y = 1 … ${p-1}</p><div class="chips sm nw">${range(1,p-1).map(y=>`<i>${y}² ≡ <b>${y*y%p}</b></i>`).join('')}</div>`;
+    if(k>=2)h+=`<div class="scroll tb${k===2?' nw':''}"><table class="xt"><tr><th>x</th><th>x³${signed(a,'x')}${signed(b,'')} mod ${p}</th><th>points</th></tr>${PT.rows.map(w=>`<tr class="${w.ys.length?'has':'none'}"><td>${w.x}</td><td>${w.r}</td><td>${w.ys.length?w.ys.map(y=>`(${w.x}, ${y})`).join(' '):'—'}</td></tr>`).join('')}</table></div>`;
+    h+='</div></div>';
+    if(k===0)h+=bench(bt('the curve','',eqnc(a,b,p)));
+    if(k===1)h+=bench(bt('squares among 1 … '+(p-1),'rq',sq.length),op('='),bt('','',`(${p} − 1) / 2`));
+    if(k===2){const e=S.ex;h+=bench(bt('x','ra',e.x),op('→'),bt(`x³${signed(a,'x')}${signed(b,'')} mod ${p}`,'',e.r),op('→'),bt('y','rr',e.ys.join(' or ')))}
+    if(k===3)h+=bench(bt('points','',n),op('+'),bt('O','',1),op('='),bt('N','rr',N),op('in'),bt('Hasse’s range','',`${fr(S.lo,2)} … ${fr(S.hi,2)}`));
+    return h},
+  say(k){
+    const S=fpS(),{p,a,b,n,N,sq,ex}=S,E=eqnc(a,b,p);
+    if(k===0)return say('The same equation, modulo p','Cryptography does not use real numbers: they would need infinite precision. It uses the same equation with every number taken modulo a prime p.',`Here ${E}. x and y are whole numbers from 0 to ${p-1}, and a point (x, y) is on the curve when both sides leave the same remainder.`);
+    if(k===1)return say('Step 1 · which numbers are squares?',`y² must equal the right-hand side mod ${p}. So first list the squares: y² mod ${p} for every y.`,p<=31?`Only ${sq.length} of the numbers 1 … ${p-1} appear: ${list(sq.map(String))}.`:`Only ${sq.length} of the numbers 1 … ${p-1} appear, exactly half.`,'A number that does not appear has no square root modulo '+p+'.');
+    if(k===2)return say('Step 2 · try every x',`For every x, compute x³${signed(a,'x')}${signed(b,'')} mod ${p}. If the result is a square, both of its roots give a point. If it is 0, there is one point. Otherwise there is none.`,ex?`For x = ${ex.x} the right side is ${ex.r}, and ${ex.ys.map(y=>`${y}² = ${y*y} ≡ ${y*y%p}`).join(' and ')}: the point${ex.ys.length>1?'s':''} ${ex.ys.map(y=>`(${ex.x}, ${y})`).join(' and ')}.`:'');
+    return say('Step 3 · count',`The curve has ${n} points with coordinates, plus the point at infinity O: <b>N = ${N}</b> points in all.`,`They come in mirror pairs (x, y) and (x, ${p} − y), around the dashed middle line. That is the “−P = (x, −y)” of tab 1, taken mod ${p}.`,`Hasse’s theorem says N is always within 2√p of p + 1: here between ${fr(S.lo,2)} and ${fr(S.hi,2)}.`)},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>GF(p)</dt><dd>The numbers 0 … p − 1 with + and · taken mod p. Every number except 0 has an inverse, so we can divide. See <a href="fields.html">fields</a>.</dd><dt>Square mod p</dt><dd>A number that is y² mod p for some y.</dd><dt>N</dt><dd>The number of points, O included: the order of the curve.</dd></dl>`};
+
+/* ---------- 4 · multiples of a point: P, 2P, 3P, … and double-and-add ---------- */
+function curP(){
+  const c=RC(),L=points(c).list;if(!L.length)return null;
+  if(ST.P&&L.some(P=>sameP(P,ST.P)))return ST.P;
+  if(c.p===17&&c.a===2&&c.b===2)return[5,1];
+  let best=L[0],bo=0;for(const P of L){const o=order(P,c);if(o>bo){bo=o;best=P}}return best}
+function mulS(){
+  const c=RC(),P=curP(),N=order(P,c),seq=[];let R=null;
+  for(let j=1;j<=N;j++){R=eAdd(R,P,c);seq.push(R)}
+  return{c,P,N,seq,CH:N<=30?1:Math.ceil(N/30),curveN:points(c).list.length+1}}
+function daS(){
+  const S=mulS(),k=clamp(ST.kk,1,S.N-1),bits=k.toString(2),ops=[{t:'start',R:S.P,m:1,i:0}];
+  let R=S.P,m=1;
+  for(let i=1;i<bits.length;i++){const w=eAddW(R,R,S.c),R2=eAdd(R,R,S.c);ops.push({t:'dbl',R:R2,m:m*2,i,w,from:R});R=R2;m*=2;
+    if(bits[i]==='1'){const w2=R&&eAddW(R,S.P,S.c),R3=eAdd(R,S.P,S.c);ops.push({t:'add',R:R3,m:m+1,i,w:w2,from:R});R=R3;m+=1}}
+  return{...S,k,bits,ops}}
+// one line of arithmetic mod p for a sum, with every number in it
+function sumRows(Pa,Pb,c,lab){
+  const p=c.p;if(!Pa||!Pb)return[`${lab}: one of the two points is O, so the sum is the other one`];
+  if(Pa[0]===Pb[0]&&md(Pa[1]+Pb[1],p)===0)return[`x is the same and y<sub>2</sub> = ${p} − y<sub>1</sub>: the two points are mirror images, so ${lab} = <b class="rr">O</b>`];
+  const w=eAddW(Pa,Pb,c);
+  return[w.dbl?`λ = (3x² + a) · (2y)⁻¹ = ${w.num} · ${w.den}⁻¹ = ${w.num} · ${w.di} ≡ <b class="rq">${w.l}</b> (mod ${p})`:`λ = (y<sub>2</sub> − y<sub>1</sub>) · (x<sub>2</sub> − x<sub>1</sub>)⁻¹ = ${w.num} · ${w.den}⁻¹ = ${w.num} · ${w.di} ≡ <b class="rq">${w.l}</b> (mod ${p})`,
+    `x = λ² − x<sub>1</sub> − x<sub>2</sub> ≡ ${w.x3}, y = λ·(x<sub>1</sub> − x) − y<sub>1</sub> ≡ ${w.y3}: ${lab} = <b class="rr">(${w.x3}, ${w.y3})</b>`]}
+T.mul={n:()=>{const S=mulS();return ST.mm==='seq'?Math.ceil(S.N/S.CH)+1:daS().ops.length+1},
+  bar(){const S=mulS(),L=points(S.c).list;
+    return`<div class="fld"><span class="flh"><b>P</b> · a point of ${eqnc(S.c.a,S.c.b,S.c.p)}</span><select data-pt>${L.map(P=>`<option value="${P[0]},${P[1]}"${sameP(P,S.P)?' selected':''}>${pt(P)}</option>`).join('')}</select></div>
+      <div class="fld"><span class="flh">Show</span>${segB('mm',ST.mm,[['seq','P, 2P, 3P, … one by one'],['da','kP by double-and-add']])}</div>
+      ${ST.mm==='da'?numIn('kk','<b>k</b> · from 1 to '+(S.N-1),ST.kk):''}<div class="err" id="err"></div><p class="hint2">The curve comes from tab 3.</p>`},
+  view(k){
+    const S=mulS(),{c,P,N,seq,CH}=S,Gq=grid(c),all=points(c).list;
+    let body=all.map(Q=>gdot(Gq,Q,'pF dim','')).join('');
+    if(ST.mm==='seq'){
+      const m=Math.min(k*CH,N),lab=N<=24;
+      for(let j=2;j<=Math.min(m,N-1);j++){const A=seq[j-2],Bq=seq[j-1];body+=`<line class="hop${j===m?' cur draw':''}" pathLength="1" x1="${Gq.X(A[0])}" y1="${Gq.Y(A[1])}" x2="${Gq.X(Bq[0])}" y2="${Gq.Y(Bq[1])}"${j===m?' marker-end="url(#ah)"':''}/>`}
+      for(let j=1;j<=Math.min(m,N-1);j++){const R=seq[j-1];body+=gdot(Gq,R,j===1?'pP':j===m?'pR':'pV',j===1?'P':(lab||j===m)?`${j}P`:'',{nw:j===m&&k>0})}
+      let h=gsvg(Gq,body,'Multiples of '+pt(P));
+      if(k===0)h+=bench(bt('P','ra',pt(P)),op('has order'),bt('N','rr',N));
+      else if(m<N)h+=fx([`${m}P = ${m-1===1?'P':(m-1)+'P'} + P = ${pt(seq[m-2])} + ${pt(P)}`,...sumRows(seq[m-2],P,c,m+'P')],true);
+      else h+=fx([`${N}P = ${N-1}P + P = ${pt(seq[N-2])} + ${pt(P)}`,...sumRows(seq[N-2],P,c,N+'P'),`after ${N}P the list starts again: ${N+1}P = P`],true);
+      return h}
+    const D=daS(),o=D.ops[Math.min(k,D.ops.length-1)],fin=k>=D.ops.length;
+    for(let j=1;j<=Math.min(k,D.ops.length-1);j++){const A=D.ops[j-1].R,Bq=D.ops[j].R;if(A&&Bq&&!sameP(A,Bq))body+=`<line class="hop${j===k?' cur draw':''}" pathLength="1" x1="${Gq.X(A[0])}" y1="${Gq.Y(A[1])}" x2="${Gq.X(Bq[0])}" y2="${Gq.Y(Bq[1])}"${j===k?' marker-end="url(#ah)"':''}/>`}
+    body+=gdot(Gq,P,'pP','P');
+    if(o.R&&!sameP(o.R,P))body+=gdot(Gq,o.R,'pR',`${o.m}P`,{nw:k>0});
+    let h=`<div class="duo"><div class="duoL">${gsvg(Gq,body,`${D.k}P by double-and-add`)}</div><div class="duoR"><p class="cap2">k = ${D.k} = <b class="mono">${D.bits}</b> in binary</p><div class="scroll"><table class="xt da"><tr><th>bit</th><th>step</th><th>R</th></tr>${D.ops.map((w,j)=>`<tr class="${j===k&&!fin?'cur':''}${j>k?' fut':''}"><td>${w.t==='start'?D.bits[0]:w.t==='dbl'?D.bits[w.i]:''}</td><td>${w.t==='start'?'start: R = P':w.t==='dbl'?'double: R = 2R':'add: R = R + P'}</td><td>${w.m}P = ${pt(w.R)}</td></tr>`).join('')}</table></div></div></div>`;
+    if(k===0)h+=bench(bt('k','ra',D.k),op('='),bt('binary','',`<span class="mono">${D.bits}</span>`),op('→'),bt('start','rr','R = P'));
+    else if(!fin)h+=fx([o.t==='dbl'?`bit ${D.bits[o.i]}: double, ${o.m}P = 2 · ${o.m/2}P = 2 · ${pt(o.from)}`:`the bit is 1: add P, ${o.m}P = ${o.m-1}P + P = ${pt(o.from)} + ${pt(P)}`,...(o.t==='dbl'?sumRows(o.from,o.from,c,o.m+'P'):sumRows(o.from,P,c,o.m+'P'))],true);
+    else{const nd=D.bits.length-1,na=[...D.bits].filter(b=>b==='1').length-1;h+=bench(bt('doublings','rq',nd),op('+'),bt('additions','rq',na),op('='),bt('steps','rr',nd+na),op('instead of'),bt('one by one','',D.k-1))}
+    return h},
+  say(k){
+    if(ST.mm==='seq'){
+      const S=mulS(),{P,N,seq,CH,curveN}=S,m=Math.min(k*CH,N);
+      if(k===0)return say('Adding a point to itself, again and again',`Take P = ${pt(P)}. Add it to itself: 2P = P + P, then 3P = 2P + P, and so on. Every result is again a point of the curve.`,`kP means P added k times. It is not a product of two points: k is a whole number and P is a point.`);
+      if(m<N)return say(`Step ${k} · ${m}P`,`${m}P = ${pt(seq[m-1])}.`,m===2?'Adding P to itself uses the tangent rule, with the slope (3x² + a) / (2y). Division mod p is multiplication by an inverse, found with the extended Euclidean algorithm.':`The arrows jump across the grid with no visible pattern. From the picture alone you cannot tell how many jumps lead to a point.`);
+      return say(`Step ${k} · back to the start`,`${N-1}P = ${pt(seq[N-2])} is the mirror image of P, so ${N}P = O. Then ${N+1}P = P, and the list repeats.`,`So P has order <b>${N}</b>: it reaches ${N===curveN?'every one of the '+N+' points of the curve, O included. P generates the whole group':N+' of the '+curveN+' points of the curve'}.`,`<b>The elliptic curve discrete logarithm problem:</b> given P and Q = kP, find k. Here it is easy, there are only ${N} candidates. On a 256-bit curve there are about 2²⁵⁶.`)}
+    const D=daS(),fin=k>=D.ops.length,o=D.ops[Math.min(k,D.ops.length-1)];
+    if(k===0)return say(`${D.k}P with double-and-add`,`Adding P ${D.k-1} times works for small k, but a real key k has about 77 digits. Instead, read k in binary: ${D.k} = ${D.bits}.`,'Start with R = P for the first bit. For every further bit, double R. If the bit is 1, also add P.','It is the square-and-multiply algorithm of RSA, with “square” replaced by “double” and “multiply” by “add”.');
+    if(!fin)return say(`Step ${k} · ${o.t==='dbl'?'double':'add'}`,o.t==='dbl'?`The next bit is ${D.bits[o.i]}. Double: R = 2 · ${o.m/2}P = ${o.m}P = ${pt(o.R)}.`:`The bit is 1, so add P: R = ${o.m-1}P + P = ${o.m}P = ${pt(o.R)}.`,`Read the binary digits so far, ${D.bits.slice(0,o.i+1)}, as a number: it is ${parseInt(D.bits.slice(0,o.i+1),2)}${o.t==='dbl'&&D.bits[o.i]==='1'?', and the add step that follows makes R equal to it':', the multiple R now holds'}.`);
+    const nd=D.bits.length-1,na=[...D.bits].filter(b=>b==='1').length-1;
+    return say('Done',`${D.k}P = ${pt(D.ops.at(-1).R)} after ${nd} doublings and ${na} additions: ${nd+na} steps instead of ${D.k-1}.`,'For a 256-bit k this is at most 255 doublings and 255 additions, about 383 on average. Adding P one by one would never finish.')},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>kP</dt><dd>P + P + … + P, k times (scalar multiplication).</dd><dt>Order of P</dt><dd>The smallest N with NP = O.</dd><dt>ECDLP</dt><dd>Given P and kP, find k. Easy to state, very hard on large curves.</dd></dl>`};
+
+/* ---------- 5 · Diffie–Hellman on the curve ---------- */
+function dhS(){
+  const S=mulS(),{c,P,N}=S,a=clamp(ST.ka,1,N-1),b=clamp(ST.kb,1,N-1),A=eMul(a,P,c),Bq=eMul(b,P,c),Ta=eMul(a,Bq,c),Tb=eMul(b,A,c),ab=a*b%N;
+  let tries=0,R=null;do{R=eAdd(R,P,c);tries++}while(!sameP(R,A)&&tries<N);
+  return{...S,a,b,A,Bq,Ta,Tb,ab,tries}}
+T.dh={n:()=>6,
+  bar(){const S=mulS();return numIn('ka','<b>a</b> · Alice’s secret',ST.ka)+numIn('kb','<b>b</b> · Bob’s secret',ST.kb)+`<div class="err" id="err"></div><p class="hint2">Secrets from 1 to ${S.N-1}. The curve ${eqnc(S.c.a,S.c.b,S.c.p)} and P = ${pt(S.P)} come from tabs 3 and 4.</p>`},
+  view(k){
+    const S=dhS(),{c,P,N,a,b,A,Bq,Ta,Tb,ab}=S,Gq=grid(c);
+    let body=points(c).list.map(Q=>gdot(Gq,Q,'pF dim','')).join('')+gdot(Gq,P,'pP','P');
+    if(k>=1)body+=gdot(Gq,A,'pA','A',{nw:k===1});
+    if(k>=2)body+=gdot(Gq,Bq,'pB','B',{nw:k===2});
+    if(k>=4&&Ta)body+=gdot(Gq,Ta,'pR','T',{nw:k===4,r:Gq.r+2});
+    const row=(t,cls,on)=>on?`<p class="${cls||''}">${t}</p>`:'';
+    let h=gsvg(Gq,body,'Diffie–Hellman on '+eqnc(c.a,c.b,c.p));
+    h+=`<div class="trio"><div class="who al"><h4>Alice</h4>${row(`secret <b class="scr">a = ${a}</b>`,'',k>=1)}${row(`A = a·P = ${a}·${pt(P)} = <b class="kA">${pt(A)}</b>`,k===1?'nw':'',k>=1)}${row(`receives B = ${pt(Bq)}`,k===3?'nw':'',k>=3)}${row(`a·B = ${a}·${pt(Bq)} = <b class="rr">${pt(Ta)}</b>`,k===4?'nw':'',k>=4)}</div>
+      <div class="who mid"><h4>Everyone sees</h4>${row(`the curve ${eqnc(c.a,c.b,c.p)}`,'',true)}${row(`the point P = ${pt(P)} of order ${N}`,'',true)}${row(`A = <b class="kA">${pt(A)}</b> →`,k===3?'nw':'',k>=3)}${row(`← B = <b class="kB">${pt(Bq)}</b>`,k===3?'nw':'',k>=3)}${row(`Eve sees P, A and B, but not a or b`,'eve'+(k===3?' nw':''),k>=3)}${row(`a·b = ${a}·${b} ≡ ${ab} (mod ${N}): the shared point is ${ab}P`,k===5?'nw':'',k>=5)}</div>
+      <div class="who bo"><h4>Bob</h4>${row(`secret <b class="scr">b = ${b}</b>`,k===2?'nw':'',k>=2)}${row(`B = b·P = ${b}·${pt(P)} = <b class="kB">${pt(Bq)}</b>`,k===2?'nw':'',k>=2)}${row(`receives A = ${pt(A)}`,k===3?'nw':'',k>=3)}${row(`b·A = ${b}·${pt(A)} = <b class="rr">${pt(Tb)}</b>`,k===4?'nw':'',k>=4)}</div></div>`;
+    if(k===4)h+=bench(bt('Alice: a·B','rr',pt(Ta)),op(sameP(Ta,Tb)?'=':'≠'),bt('Bob: b·A','rr',pt(Tb)));
+    if(k===5)h+=bench(bt('a·(b·P)','',`${a}·(${b}P)`),op('='),bt('(a·b)·P','',`${ab}P`),op('='),bt('b·(a·P)','',`${b}·(${a}P)`),op('='),bt('T','rr',pt(Ta)));
+    return h},
+  say(k){
+    const S=dhS(),{c,P,N,a,b,A,Bq,Ta,ab,tries}=S;
+    if(k===0)return say('Key exchange on a curve','Alice and Bob want a shared secret, but every message between them can be read by Eve.',`They agree in public on the curve ${eqnc(c.a,c.b,c.p)} and the point P = ${pt(P)}, which has order ${N}.`,'This is the Diffie–Hellman exchange of the discrete-log page, with “multiply a point by a number” in place of “raise a number to a power”.');
+    if(k===1)return say('Step 1 · Alice',`Alice picks a secret number a = ${a} and computes A = aP = ${pt(A)} with double-and-add.`,'She keeps a. A is her public key.');
+    if(k===2)return say('Step 2 · Bob',`Bob picks his own secret b = ${b} and computes B = bP = ${pt(Bq)}.`,'He keeps b. B is his public key.');
+    if(k===3)return say('Step 3 · swap the public keys','Alice sends A to Bob and Bob sends B to Alice, in the open.','Eve now knows P, A and B.');
+    if(k===4)return say('Step 4 · each one multiplies',`Alice multiplies Bob’s B by her secret a, and Bob multiplies Alice’s A by his secret b. Both get <b>${pt(Ta)}</b>.`,'Neither secret ever crossed the line.');
+    return say('Step 5 · why it works, and why Eve is stuck',`a·(bP) and b·(aP) are both (ab)P: P added ${a}·${b} times. Since ${N}P = O, only ab mod ${N} = ${ab} counts.`,`Eve would need a from A = aP. Here she can try P, 2P, 3P, … and finds a after ${tries} tr${tries===1?'y':'ies'}. On a 256-bit curve the best known attack needs about 2¹²⁸ steps.`,'In practice the x-coordinate of the shared point is fed into a key derivation function, and the result is the AES key.')},
+  extra:()=>`<h3>Before you trust it</h3><p>The exchange keeps out a listener, not an attacker who changes the messages. Mallory can swap A and B for her own points and talk to each side. So in TLS the server also signs its public point, for example with ECDSA (<a href="signatures.html">signatures</a>).</p>`};
+
+/* ---------- 6 · the curves in real use ---------- */
+function newKey(){
+  const C=ST.rc==='p256'?P256:SECP,r=new Uint8Array(32);crypto.getRandomValues(r);
+  const k=bmod(B('0x'+[...r].map(x=>x.toString(16).padStart(2,'0')).join('')),C.n-1n)+1n,t0=performance.now(),Q=bMul(k,C.G,C),ms=performance.now()-t0;
+  const bits=k.toString(2);ST.key={C,k,Q,ms,nd:bits.length-1,na:[...bits].filter(b=>b==='1').length-1}}
+const ROWS6=[['112','Triple DES (3 keys)','2048','224 to 255'],['128','AES-128','3072','256 to 383'],['192','AES-192','7680','384 to 511'],['256','AES-256','15 360','512 and more']];
+T.real={n:()=>1,
+  bar:()=>`<div class="fld"><span class="flh">Make a real key pair on</span>${segB('rc',ST.rc||'secp',[['secp','secp256k1 (Bitcoin)'],['p256','P-256 (TLS)']])}</div><div class="fld"><span class="flh">&nbsp;</span><button class="pri" data-act="newkey">New key</button></div>`,
+  view(){
+    if(!ST.key||ST.key.C!==(ST.rc==='p256'?P256:SECP))newKey();
+    const K=ST.key,C=K.C,on=bmod(K.Q[1]**2n-(K.Q[0]**3n+C.a*K.Q[0]+C.b),C.p)===0n;
+    let h=`<div class="kgen"><p class="cap2">A key pair on ${C.name}, made in your browser just now</p>
+      <div class="kv"><span>private key k</span><code class="scr">${hex(K.k)}</code></div>
+      <div class="kv"><span>public key Q = kG, x</span><code class="kA">${hex(K.Q[0])}</code></div>
+      <div class="kv"><span>public key Q = kG, y</span><code class="kA">${hex(K.Q[1])}</code></div>
+      <div class="kv"><span>compressed, as Bitcoin writes it</span><code>${K.Q[1]%2n?'03':'02'}${hex(K.Q[0])}</code></div>
+      <p class="hint">${K.nd} doublings and ${K.na} additions, ${fr(K.ms,1)} ms. Q is on the curve: ${on?Y:N}</p></div>`;
+    h+=`<div class="cards3">${[
+      ['P-256','NIST, also called secp256r1','y² = x³ − 3x + b','2²⁵⁶ − 2²²⁴ + 2¹⁹² + 2⁹⁶ − 1','TLS certificates and key exchange, and many standards that follow NIST'],
+      ['secp256k1','SEC 2','y² = x³ + 7','2²⁵⁶ − 2³² − 977','Bitcoin and Ethereum signatures (ECDSA)'],
+      ['Curve25519','D. J. Bernstein, 2005','y² = x³ + 486662x² + x','2²⁵⁵ − 19','X25519 key exchange in TLS 1.3, SSH and Signal']].map(r=>`<div class="ccard"><b>${r[0]}</b><small>${r[1]}</small><p class="mono">${r[2]}</p><p>p = <span class="mono">${r[3]}</span></p><p class="use">${r[4]}</p></div>`).join('')}</div>`;
+    h+=`<div class="scroll"><table class="xt ks"><tr><th>security (bits)</th><th>symmetric</th><th>RSA modulus (bits)</th><th>elliptic curve (bits)</th></tr>${ROWS6.map(r=>`<tr class="${r[0]==='128'?'cur':''}"><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</table></div><p class="hint">Comparable strengths, from NIST SP 800-57 Part 1. A 256-bit curve matches 3072-bit RSA.</p>`;
+    return h},
+  say:()=>say('The curves in real use','The same rules as on the 17 × 17 grid, with a prime p of 78 digits. Nothing else changes.',`The private key is a random number k below the order n of the base point G. The public key is Q = kG, computed with double-and-add.`,'Press <b>New key</b> for another one. Finding k from Q is the ECDLP: about 2¹²⁸ steps for these curves.'),
+  extra:()=>`<h3>Why curves instead of RSA?</h3><p>The best attack on a curve is generic (about √n steps), while RSA can be attacked by factoring, which is much faster than trying. So curves need far shorter keys: 256 bits against 3072.</p><p>Shorter keys mean faster key exchange and smaller signatures, which is why TLS, Bitcoin and phone apps use curves.</p>`};
+
+/* ---------- a typed number may also be a short calculation: 7*25, 2^10 + 1, (3 × 26 + 5) ---------- */
+function evalInt(raw){
+  const s=String(raw).replace(/[\s_,]/g,'').replace(/[×·∙⋅xX]/g,'*').replace(/[−–]/g,'-').replace(/[÷:]/g,'/').replace(/\*\*/g,'^');
+  if(!s)return{empty:true};
+  if(!/^[\d+\-*/^()]+$/.test(s))return{err:'use digits and + − × ÷ ^ ( ) only, for example 7*25 or 2^10 + 1.'};
+  const BIG=2400;let i=0;
+  const fail=m=>{throw new Error(m)};
+  const chk=v=>{if((v<0n?-v:v).toString().length>BIG)fail('the number grows too large.');return v};
+  const at=()=>{
+    if(s[i]==='('){i++;const v=expr();if(s[i]!==')')fail('a bracket is not closed.');i++;return v}
+    const m=/^\d+/.exec(s.slice(i));
+    if(!m)fail(i>=s.length?'the calculation is not finished.':`a number is missing before ${s[i]==='*'?'×':s[i]==='/'?'÷':s[i]}.`);
+    i+=m[0].length;if(m[0].length>BIG)fail('the number grows too large.');return BigInt(m[0]);
+  };
+  const pw=()=>{
+    const b=at();if(s[i]!=='^')return b;i++;
+    const e=un();if(e<0n)fail('a power needs an exponent from 0 up.');
+    const ab=b<0n?-b:b;if(ab>1n&&BigInt(ab.toString(2).length-1)*e>8000n)fail('the number grows too large.');
+    return chk(b**e);
+  };
+  const un=()=>{if(s[i]==='-'){i++;return -un()}if(s[i]==='+'){i++;return un()}return pw()};
+  const term=()=>{let v=un();while(s[i]==='*'||s[i]==='/'){const o=s[i++],w=un();
+    if(o==='*')v=chk(v*w);else{if(w===0n)fail('division by 0 has no meaning.');if(v%w!==0n)fail(`${v} ÷ ${w} is not a whole number.`);v=v/w}}return v};
+  const expr=()=>{let v=term();while(s[i]==='+'||s[i]==='-'){const o=s[i++],w=term();v=chk(o==='+'?v+w:v-w)}return v};
+  try{
+    const v=expr();if(i<s.length)fail(s[i]===')'?'a bracket is closed that was never opened.':`a sign is missing before ${s.slice(i,i+3)}.`);
+    return{v,calc:!/^[+-]?\d+$/.test(s)};
+  }catch(e){return{err:e.message}}
+}
+// the value of a calculation, shown beside the label of its field
+const eqShort=v=>{const ng=v<0n,t=(ng?-v:v).toString(),g=t.length>20?`${t.slice(0,8)}…${t.slice(-6)} (${t.length} digits)`:t.replace(/\B(?=(\d{3})+$)/g,',');return'= '+(ng?'−':'')+g};
+function setEq(inp,r){
+  const f=inp.closest('.fld');if(!f)return;let h=f.querySelector('.eqv');
+  if(!h){h=document.createElement('span');h.className='eqv';h.setAttribute('aria-live','polite');(f.querySelector('.flh')||f).appendChild(h)}
+  h.textContent=r&&r.calc&&r.v!==undefined?eqShort(r.v):'';
+}
+
+/* ---------- the longer read under each picture ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const PAAR='Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024)';
+const MORE=xs=>box('Read more','<ul>'+xs.map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk');
+T.cv.doc=()=>{const{a,b,disc}=cvS();return`<h2>What an elliptic curve is</h2>
+<p class="lead">An elliptic curve is the set of points (x, y) with ${M('y² = x³ + a·x + b')}, where the numbers a and b satisfy ${M('4a³ + 27b² ≠ 0')}. To these points one more is added, the point at infinity O (tab 2).</p>
+<p>It is not an ellipse. The name comes from elliptic integrals, which mathematicians met when they computed the length of an ellipse; these curves turned up in that work.</p>
+<h3>Reading the equation</h3>
+<p>Pick an x, compute the right side, and take square roots. A positive result gives two points, one above and one below the x-axis. A negative result gives none, because no real number squares to a negative one. That is why the picture has gaps and why it is symmetric.</p>
+${EX(`On ${eqn(-2,1)}, x = 2 gives 8 − 4 + 1 = 5, so (2, √5) and (2, −√5) are on the curve. x = −2 gives −8 + 4 + 1 = −3: no point.`)}
+<h3>Why 4a³ + 27b² must not be 0</h3>
+<p>When it is 0, the right side x³ + a·x + b has a repeated zero, and the curve gets a sharp point or crosses itself there. At such a point there is no single tangent line, and the addition of tab 2 cannot be defined.</p>
+${NO(`y² = x³ has a sharp point (a cusp) at (0, 0): 4·0 + 27·0 = 0. y² = x³ − 3x + 2 = (x − 1)²(x + 2) crosses itself at (1, 0): 4·(−27) + 27·4 = 0. Neither is an elliptic curve.${disc===0?` Your curve, ${eqn(a,b)}, is of this kind.`:''}`)}
+${USE('The pictures over the real numbers are only for understanding. Cryptography uses the same equation over a finite field (tab 3), where the curve is a cloud of points. Every rule from these pictures carries over unchanged.')}
+<p class="fine">History: elliptic curves were studied for their own sake for centuries. Neal Koblitz and Victor Miller proposed them for cryptography independently, in 1985.</p>
+${MORE([`${PAAR}, chapter 9, section 9.1.`,'N. Koblitz, “Elliptic curve cryptosystems”, <cite>Mathematics of Computation</cite> 48 (177), 1987, pp. 203–209.','V. S. Miller, “Use of elliptic curves in cryptography”, CRYPTO ’85, LNCS 218, Springer, 1986.'])}`};
+T.add.doc=()=>`<h2>Adding points: chord and tangent</h2>
+<p class="lead">To add P and Q, draw the line through them. It meets the curve in exactly one more point. The mirror image of that point is P + Q.</p>
+<h3>Why there is exactly one more point</h3>
+<p>Put the line ${M('y = λx + c')} into the curve equation. You get a cubic equation in x: ${M('x³ − λ²x² + … = 0')}. A cubic has three roots, and two of them are already known: x<sub>P</sub> and x<sub>Q</sub>. The three roots of x³ − λ²x² + … add up to λ², so the third one is ${M('x₃ = λ² − x<sub>P</sub> − x<sub>Q</sub>')}. This is the formula in the bench.</p>
+<h3>The three cases</h3>
+<ul><li><b>P ≠ Q:</b> the line through both, slope λ = (y<sub>Q</sub> − y<sub>P</sub>) / (x<sub>Q</sub> − x<sub>P</sub>).</li><li><b>P = Q:</b> the tangent at P, slope λ = (3x<sub>P</sub>² + a) / (2y<sub>P</sub>).</li><li><b>Q = −P:</b> a vertical line. It has no third point, and the sum is O.</li></ul>
+${EX(`On ${eqn(-7,10)}: (1, 2) + (3, 4). λ = 2 / 2 = 1, x₃ = 1 − 1 − 3 = −3, y₃ = 1·(1 − (−3)) − 2 = 2. So (1, 2) + (3, 4) = (−3, 2). Check: 2² = 4 and (−3)³ + 21 + 10 = 4.`)}
+${NO('P + Q is not found by adding coordinates. (1, 2) + (3, 4) is not (4, 6): 6² = 36, but 4³ − 28 + 10 = 46, so (4, 6) is not even on the curve.')}
+<h3>A group</h3>
+<p>With O added, the points of the curve form a group: there is a zero (O), every point has a negative (−P), P + Q = Q + P, and (P + Q) + R = P + (Q + R). The last rule is not visible in the picture, but it holds; checking it by algebra is long.</p>
+${USE('Every elliptic curve system needs only this addition. ECDH and ECDSA repeat it a few hundred times per key.')}
+${MORE([`${PAAR}, chapter 9, section 9.1.`])}`;
+T.fp.doc=()=>{const S=fpS(),{p,a,b}=S,c=S.c;let ex='';
+  if(p===17&&a===2&&b===2){const w=eAddW([5,1],[5,1],c);ex=EX(`2P for P = (5, 1) on ${eqnc(2,2,17)}. λ = (3·5² + 2) · (2·1)⁻¹ = 77 · 2⁻¹. 77 mod 17 = 9, and 2⁻¹ mod 17 = 9, because 2 · 9 = 18 = 17 + 1. So λ = 9 · 9 = 81 ≡ ${w.l}. Then x = ${w.l}² − 5 − 5 = 159 ≡ ${w.x3} and y = ${w.l}·(5 − ${w.x3}) − 1 = −14 ≡ ${w.y3}. 2P = (${w.x3}, ${w.y3}).`)}
+  return`<h2>Elliptic curves over a finite field</h2>
+<p class="lead">Over GF(p), the curve is the set of pairs (x, y) of numbers 0 … p − 1 with ${M('y² ≡ x³ + a·x + b (mod p)')}, plus the point O. There are finitely many points, and the computer works with them exactly.</p>
+<h3>The same formulas</h3>
+<p>Points are added with the formulas of tab 2. Only the meaning of the operations changes: every result is taken mod p, and dividing by a number means multiplying by its inverse mod p. The inverse comes from the <a href="euclid.html#inv">extended Euclidean algorithm</a>.</p>
+${ex}
+<h3>How many points?</h3>
+<p>About half of the numbers 1 … p − 1 are squares mod p, and a square has two roots. So about half of the x values give two points each, and the total is close to p + 1. Hasse’s theorem makes this exact: ${M('|N − (p + 1)| ≤ 2√p')}. Emil Artin conjectured it in his thesis, and Helmut Hasse proved it in 1933.</p>
+${NO('The picture over GF(p) is not a curve any more. There are no lines to see and no order of left and right. Only the mirror symmetry survives: (x, y) and (x, p − y) are both points.')}
+${USE('Real systems choose p and the curve so that N, or a large factor of it, is prime. For P-256 and secp256k1, N itself is a prime of 256 bits.')}
+${MORE([`${PAAR}, chapter 9, sections 9.1 and 9.2.`,'H. Hasse, the proof of 1933, published in <cite>Journal für die reine und angewandte Mathematik</cite> in 1936.'])}`};
+T.mul.doc=()=>`<h2>Multiples of a point, and the hard problem</h2>
+<p class="lead">kP is P added to itself k times. Computing kP from k and P is fast. Finding k from P and kP is the <b>elliptic curve discrete logarithm problem</b> (ECDLP), and no fast method is known.</p>
+<h3>Cyclic groups</h3>
+<p>The multiples P, 2P, 3P, … must repeat, because there are finitely many points. The first time the list reaches O is the <b>order</b> of P. If the order equals the number of points, P reaches every point of the curve and is called a generator.</p>
+<h3>Double-and-add</h3>
+<p>Write k in binary. Start with R = P. For every following bit, double R, and if the bit is 1, add P. A 256-bit k needs at most 255 doublings and 255 additions. It is the same idea as square-and-multiply for powers in <a href="rsa.html">RSA</a>.</p>
+${EX('k = 13 = 1101 in binary. R = P; bit 1: R = 2P, then 3P; bit 0: R = 6P; bit 1: R = 12P, then 13P. Three doublings and two additions, instead of twelve additions.')}
+${NO('kP is not a product of two points and not a power. k is an ordinary whole number; P is a point. Two points are never multiplied.')}
+${USE('A private key is a random k. The public key is kP. The best known general attack, Pollard’s rho, needs about √n steps for a point of order n: about 2¹²⁸ for a 256-bit curve.')}
+${MORE([`${PAAR}, chapter 9, section 9.2.`])}`;
+T.dh.doc=()=>`<h2>Elliptic curve Diffie–Hellman (ECDH)</h2>
+<p class="lead">Two people agree on a curve and a point P. Each picks a secret number, sends the corresponding multiple of P, and multiplies what they receive by their own secret. Both end up with the same point.</p>
+<h3>The protocol</h3>
+<ul><li>Public: the curve, the prime p and the point P of order n.</li><li>Alice: secret a, sends A = aP. Bob: secret b, sends B = bP.</li><li>Alice computes aB, Bob computes bA. Both are abP.</li></ul>
+${EX(`Paar’s example: ${eqnc(2,2,17)}, P = (5, 1), a = 3, b = 10. A = 3P = (10, 6), B = 10P = (7, 11), and both compute (13, 10) = 11P, since 3 · 10 = 30 ≡ 11 (mod 19).`)}
+${NO('ECDH alone does not tell Alice that B really came from Bob. An attacker in the middle can replace both public points. The public points must be authenticated, with certificates and signatures.')}
+${USE('TLS 1.3 uses ECDH in every connection, usually with Curve25519 (X25519) or P-256. The x-coordinate of the shared point goes through a key derivation function, and the result keys AES or ChaCha20.')}
+${MORE([`${PAAR}, chapter 9 (elliptic curve Diffie–Hellman).`,'A. Langley, M. Hamburg, S. Turner, RFC 7748, “Elliptic Curves for Security”, 2016: X25519 and X448.'])}`;
+T.real.doc=()=>`<h2>Curves in practice</h2>
+<p class="lead">Nobody invents a curve for each key. A few standard curves are used everywhere; only the private number k differs from key to key.</p>
+<h3>Three curves you will meet</h3>
+<ul><li><b>P-256</b> (NIST): the default curve of many TLS certificates. a = −3 makes its arithmetic a little faster.</li><li><b>secp256k1</b> (SEC 2): y² = x³ + 7. Bitcoin and Ethereum sign transactions with ECDSA on it.</li><li><b>Curve25519</b> (Bernstein, 2005): built so that the fast and the safe way to compute are the same. X25519 is the usual key exchange of TLS 1.3, SSH and Signal.</li></ul>
+<h3>Why the keys are short</h3>
+<p>For RSA there are attacks that use the structure of numbers (factoring with the number field sieve), so the keys must be long. For a good curve, nothing better than the generic √n attack is known. That is why 256-bit curves match 3072-bit RSA.</p>
+${NO('A quantum computer running Shor’s algorithm would break elliptic curves too, and with fewer qubits than RSA of the same strength. This is the reason for post-quantum standards such as ML-KEM (FIPS 203, 2024).')}
+${USE('Signatures with curves: ECDSA and EdDSA. See <a href="signatures.html">digital signatures</a>, where ECDSA is computed step by step.')}
+${MORE(['Certicom Research, SEC 2: “Recommended Elliptic Curve Domain Parameters”, version 2.0, 2010 (secp256k1).','NIST SP 800-186, “Recommendations for Discrete Logarithm-based Cryptography: Elliptic Curve Domain Parameters”, 2023 (P-256, Curve25519).','RFC 7748, “Elliptic Curves for Security”, 2016 (Curve25519).','NIST SP 800-57 Part 1, Rev. 5, “Recommendation for Key Management”, 2020: the table of comparable strengths.'])}`;
+
+/* ---------- one question per tab: answer first, then read why ---------- */
+const QZ={
+  cv:{q:'Which equation is not an elliptic curve?',o:['y² = x³ − x + 1','y² = x³','y² = x³ + 7'],a:1,why:'For y² = x³, 4a³ + 27b² = 0: the curve has a sharp point at (0, 0). The other two give −4 + 27 = 23 and 27 · 49 = 1323.'},
+  add:{q:'On y² = x³ − 7x + 10, what is (1, 2) + (1, −2)?',o:['(2, 0)','(1, 0)','O, the point at infinity'],a:2,why:'The two points are mirror images, so the line through them is vertical and the sum is O.'},
+  fp:{q:'How many points has y² = x³ + 2x + 2 over GF(17), O included?',o:['17','18','19'],a:2,why:'18 points with coordinates, plus O: 19. Hasse’s theorem allows 10 to 26.'},
+  mul:{q:'P has order 19. What is 20P?',o:['O','P','2P'],a:1,why:'20P = 19P + P = O + P = P.'},
+  dh:{q:'What must Eve find to break ECDH?',o:['the order of P','a from A = aP','the prime p'],a:1,why:'The curve, p, P and its order are public. The secret is a (or b), and getting it from A is the ECDLP.'},
+  real:{q:'A 256-bit curve gives about the security of RSA with a modulus of…',o:['256 bits','1024 bits','3072 bits'],a:2,why:'Both give about 128-bit security (NIST SP 800-57).'}};
+function quiz(id){
+  const z=QZ[id];if(!z)return'';const p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`}
+
+/* ---------- the walkthrough: one step at a time ---------- */
+const NARROW=matchMedia('(max-width:1000px)'),RM=matchMedia('(prefers-reduced-motion: reduce)'),ROOM={k:'',h:0};
+const speed=()=>+$('#spd').value;
+function holdRoom(t,n,k){
+  const ex=$('#explain');ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2)return;
+  const ck=[ST.tab,ex.clientWidth,ST.ca,ST.cb,ST.ad,ST.fp,ST.fa,ST.fb,ST.P,ST.mm,ST.kk,ST.ka,ST.kb].join('|');
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){ex.innerHTML=t.say(j);h=Math.max(h,ex.offsetHeight)}ex.innerHTML=t.say(k);ROOM.k=ck;ROOM.h=h}
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function show(){
+  const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
+  stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  const dc=$('#doc');dc.hidden=!t.doc;dc.innerHTML=t.doc?t.doc(k):'';
+  holdRoom(t,n,k);
+  $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
+}
+function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
+function tickPlay(){ST.playT=setTimeout(()=>{ST.playT=null;const n=T[ST.tab].n(),k=ST.step[ST.tab]||0;if(k>=n-1){setPlaying(false);return}ST.step[ST.tab]=k+1;show();if(k+1>=n-1)setPlaying(false);else tickPlay()},(RM.matches?900:(ST.tab==='mul'&&ST.mm==='seq'?1300:2100))/speed())}
+function setBar(){const t=T[ST.tab],b=$('#bar');b.hidden=!t.bar;b.innerHTML=t.bar?t.bar():''}
+function setTab(id){
+  setPlaying(false);ST.tab=id;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));setBar();show();
+  try{localStorage.setItem('ecc-tab',id);history.replaceState(null,'','#'+id)}catch(e){}
+}
+// a change of the curve can make the chosen multiples too large: keep them inside 1 … N − 1
+function fixSecrets(){const N=mulS().N;ST.kk=clamp(ST.kk,1,Math.max(1,N-1));ST.ka=clamp(ST.ka,1,Math.max(1,N-1));ST.kb=clamp(ST.kb,1,Math.max(1,N-1))}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)+1;show()};
+$('#bBack').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)-1;show()};
+$('#bReset').onclick=()=>{setPlaying(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const n=T[ST.tab].n();if(n<2)return;if((ST.step[ST.tab]||0)>=n-1){ST.step[ST.tab]=0;show()}setPlaying(true)};
+document.addEventListener('click',e=>{
+  const ld=e.target.closest('[data-load]');if(ld){setPlaying(false);for(const kv of ld.dataset.load.split(',')){const[key,v]=kv.split('=');ST[key]=+v}if(ST.tab==='fp'){ST.P=null;fixSecrets()}setBar();show();return}
+  const st=e.target.closest('[data-set]');if(st){setPlaying(false);const[k,v]=st.dataset.set.split(':');ST[k]=v;ST.step[ST.tab]=0;if(k==='rc')ST.key=null;setBar();show();return}
+  const ac=e.target.closest('[data-act]');if(ac){if(ac.dataset.act==='newkey'){ST.key=null;show()}return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+});
+document.addEventListener('change',e=>{const s=e.target.closest('[data-pt]');if(!s)return;setPlaying(false);ST.P=s.value.split(',').map(Number);fixSecrets();ST.step.mul=0;setBar();show()});
+const RULES={ca:[-10,10,'a is a whole number from −10 to 10.'],cb:[-10,10,'b is a whole number from −10 to 10.'],fp:[5,97,'p is a prime from 5 to 97.'],
+  fa:[-999,999,'a is a whole number from −999 to 999. It is taken mod p.'],fb:[-999,999,'b is a whole number from −999 to 999. It is taken mod p.'],
+  kk:[1,()=>mulS().N-1,n=>`k is a whole number from 1 to ${n}.`],ka:[1,()=>mulS().N-1,n=>`a is a whole number from 1 to ${n}.`],kb:[1,()=>mulS().N-1,n=>`b is a whole number from 1 to ${n}.`]};
+document.addEventListener('input',e=>{
+  const i=e.target.closest('[data-in]');if(!i)return;
+  const key=i.dataset.in,R=RULES[key],r=evalInt(i.value),err=$('#err'),sayE=m=>{if(err)err.textContent=m};
+  setEq(i,r);if(r.empty){sayE('');return}
+  if(r.err){sayE(r.err[0].toUpperCase()+r.err.slice(1));return}
+  const hi=typeof R[1]==='function'?R[1]():R[1],msg=typeof R[2]==='function'?R[2](hi):R[2];
+  if(r.v<B(R[0])||r.v>B(hi)){sayE(msg);return}
+  const v=Number(r.v);
+  if(key==='fp'&&!isPrime(v)){sayE(`${v} is not a prime. Try 17, 23, 29, 31 or 97.`);return}
+  if(key==='fp'||key==='fa'||key==='fb'){const c={p:ST.fp,a:ST.fa,b:ST.fb};c[{fp:'p',fa:'a',fb:'b'}[key]]=v;
+    if(singular(md(c.a,c.p),md(c.b,c.p),c.p)){sayE(`4a³ + 27b² ≡ 0 (mod ${c.p}): this curve is not smooth. Change a or b.`);return}}
+  sayE('');setPlaying(false);ST[key]=v;
+  if(key==='fp'||key==='fa'||key==='fb'){ST.P=null;fixSecrets()}
+  show();
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.target.closest&&e.target.closest('button,a')&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'){if(!$('#bStep').disabled)$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&T[ST.tab].n()>1){$('#bPlay').click();e.preventDefault()}
+});
+let startTab='cv';
+try{const h=location.hash.slice(1),t=localStorage.getItem('ecc-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
+setTab(startTab);
+</script>
+</body>
+</html>
