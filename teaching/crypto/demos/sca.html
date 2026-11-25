@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Side-channel and fault attacks, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
+  --n0:#2f6fd0;--n1:#2f9e6a;--n2:#b8690f;--n3:#7d55c7;--n4:#c8372d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --cs:32px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
+  --n0:#5a8fe8;--n1:#45b882;--n2:#f0a35e;--n3:#b49aec;--n4:#f07a70;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:25px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text],input[type=number]{font:14px var(--mono);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:70px;text-transform:uppercase}input[type=number]{width:74px}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.note{display:block;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.warn{display:block;padding:8px 10px;border-radius:7px;background:var(--xorBg);font-size:14px;border-left:3px solid var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.inbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.err{color:var(--xor);font-size:13px;flex-basis:100%}
+.err:empty{display:none}
+.sec{margin-top:22px}
+.pics-s{font-size:13px;color:var(--muted);max-width:68ch;margin:0 0 10px}
+.scroll{overflow-x:auto;max-width:100%}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+@keyframes come{from{opacity:0;transform:translateY(4px)}}
+.nw{animation:come .35s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.chk{list-style:none;margin:14px auto 0;padding:0;max-width:440px;font-size:14.5px}
+.chk li{display:flex;gap:10px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line)}
+.chk li.todo{color:var(--faint)}
+.chk li b{flex:none;width:18px;text-align:center}
+.chk li.now{background:var(--ambBg)}
+.verdict{margin:14px auto 0;max-width:560px;text-align:center}
+.verdict span{display:inline-block;padding:7px 14px;border-radius:999px;font-weight:600;font-size:14.5px}
+.verdict .y{background:var(--okBg);color:var(--ok)}.verdict .n{background:var(--xorBg);color:var(--xor)}
+.calc{margin:14px auto 0;max-width:560px;display:grid;gap:6px}
+.calc div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);font:13.5px var(--mono)}
+.calc div b{font:600 13px var(--sans);color:var(--muted)}
+.calc div.now{background:var(--ambBg)}
+table.map{border-collapse:collapse;width:100%;font-size:14.5px}
+table.map th,table.map td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.map th{font-size:13px;color:var(--muted);font-weight:600}
+table.map td:first-child{white-space:nowrap;font-weight:600}
+table.map .ex{font:14px var(--mono)}
+.tag{display:inline-block;font:600 11.5px var(--sans);padding:2px 8px;border-radius:10px;margin-right:6px}
+.tag.g{background:var(--accentBg);color:var(--accent)}.tag.r{background:var(--ambBg);color:var(--amb)}.tag.f{background:var(--okBg);color:var(--ok)}
+dl.words{margin:0}
+dl.words dt{font-weight:700;margin-top:8px}
+dl.words dt:first-child{margin-top:0}
+dl.words dd{margin:0;color:var(--muted)}
+.chk li[data-step]{cursor:pointer}
+.chk li[data-step]:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.pickline{margin:10px auto 0;max-width:600px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+/* one colour per job a number has in a division */
+.ra{color:var(--n0)}.rb{color:var(--n3)}.rq{color:var(--n2)}.rr{color:var(--n1)}.rz{color:var(--faint)}.rx{color:var(--n4)}
+input[type=text].num{width:180px;text-transform:none;font:500 17px/1.3 var(--mono);padding:8px 11px;border-radius:9px;transition:border-color .15s,box-shadow .15s}
+input[type=text].num:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line2))}
+input[type=text].num:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent)}
+input[type=text].num::placeholder{font:400 14px var(--sans);color:var(--faint)}
+.inbar .flh{font-size:14px;min-height:22px}
+.eqv{display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;background:var(--ink);color:var(--bg);font:600 13px/20px var(--mono);white-space:nowrap;vertical-align:middle}
+.eqv:empty{display:none}
+.inbar .hint2{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+@media (max-width:560px){input[type=text].num{width:150px}}
+.inbar .row button{font-size:13px;padding:6px 10px}
+.doc a,#explain a,#extra a{color:var(--accent)}
+.doc ul,.doc ol{max-width:72ch;font-size:15.5px;margin:0 0 10px;padding-left:22px}
+.doc li{margin:0 0 5px}
+.exb.bk{border-color:var(--key);background:var(--keyBg)}.exb.bk>b{color:var(--key)}
+.exb ul{margin:0;padding-left:18px;font-size:14.5px}
+/* a step's computation: the words on top, the numbers under them */
+.bench{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;justify-content:center;margin:16px auto 0;padding:10px 16px 12px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);max-width:660px}
+.bench .bt{display:flex;flex-direction:column;align-items:center;gap:1px}
+.bench .bt i{font:12px var(--sans);font-style:normal;color:var(--muted)}
+.bench .bt b{font:700 23px var(--mono)}
+.bench .op{font:22px var(--mono);color:var(--muted);padding-bottom:1px}
+.bench.sm .bt b,.bench.sm .op{font-size:18px}
+.bnote{font-size:14px;color:var(--muted);text-align:center;margin:8px auto 0;max-width:660px}
+.bnote b{color:var(--ink);font-family:var(--mono);font-weight:600}
+@media (max-width:560px){.bench .bt b,.bench .op{font-size:19px}.bench.sm .bt b,.bench.sm .op{font-size:16px}.bench{gap:6px 8px;padding:9px 10px 10px}}
+/* a number as rows of dots */
+svg.dots{display:block;width:100%;height:auto;margin:0 auto}
+.dots .d{fill:var(--n0)}
+.dots .d.r{fill:var(--n1)}
+.dots .grp{fill:color-mix(in srgb,var(--n3) 9%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.dots .rem{fill:color-mix(in srgb,var(--n1) 12%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.dots .gl{font:13px var(--mono);fill:var(--n3)}
+.dots .rl{font:700 13px var(--mono);fill:var(--n1)}
+.dots .al{font:700 13px var(--mono);fill:var(--n0)}
+.dots g[data-step]{cursor:pointer}
+.dots g[data-step]:hover .grp,.dots g[data-step]:hover .rem{stroke-width:2.6}
+/* a number as a length */
+svg.nl{display:block;width:100%;max-width:720px;height:auto;margin:0 auto}
+.nl .whole{fill:color-mix(in srgb,var(--n0) 14%,var(--panel));stroke:var(--n0);stroke-width:1.4}
+.nl .seg{fill:color-mix(in srgb,var(--n3) 12%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.nl .rem{fill:color-mix(in srgb,var(--n1) 24%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.nl [data-step]{cursor:pointer}
+.nl .ax{stroke:var(--line2);stroke-width:1.4}
+.nl .tk{font:11.5px var(--mono);fill:var(--muted);text-anchor:middle}
+.nl .lb{font:700 13px var(--mono);text-anchor:middle}
+.nl .lb.b{fill:var(--n3)}.nl .lb.r{fill:var(--n1)}.nl .lb.a{fill:var(--n0)}.nl .lb.x{fill:var(--n4)}
+.nl .arc{fill:none;stroke-width:2}
+.nl .arc.r{stroke:var(--n1)}.nl .arc.x{stroke:var(--n4);stroke-dasharray:4 4}
+.nl .pt{fill:var(--n0);stroke:var(--panel);stroke-width:2}
+/* divisors */
+.strip{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin:0 auto;max-width:700px}
+.strip i{font-style:normal;min-width:36px;text-align:center;border-radius:6px;background:color-mix(in srgb,var(--ink) 5%,transparent);padding:3px 4px 4px;font:700 14px/1.25 var(--mono)}
+.strip i small{display:block;font:11px var(--mono);color:var(--muted);font-weight:400}
+.strip i.z{background:var(--okBg);color:var(--ok)}
+.strip i.one{background:var(--okBg);color:var(--ok);outline:2px solid var(--ok);outline-offset:-2px}
+.strip i.mg{background:var(--xorBg);color:var(--xor)}
+.cap2{font-size:13.5px;color:var(--muted);text-align:center;margin:0 0 8px}
+.cap2 b{color:var(--ink)}
+.dvr{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 12px;align-items:start;margin:0 0 12px}
+.dvr .dl{font-size:13.5px;color:var(--muted);padding-top:5px}
+.dvr .dl b{color:var(--ink);font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chips button,.chips i{font:600 13.5px var(--mono);font-style:normal;padding:4px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+.chips i.more{border-style:dashed;color:var(--muted);font-weight:400}
+.chips .c{background:var(--ambBg);border-color:var(--amb);color:var(--amb)}
+.chips .g{background:var(--okBg);border-color:var(--ok);color:var(--ok);font-size:16px;padding:4px 12px}
+.chips .pk{outline:2px solid var(--accent);outline-offset:1px}
+@media (max-width:700px){.dvr{grid-template-columns:minmax(0,1fr);gap:4px}.dvr .dl{padding:0}}
+/* Euclid: the lines of divisions, and the rectangle cut into squares */
+.duo2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:center}
+.duo2.one{grid-template-columns:minmax(0,1fr)}
+@media (max-width:1180px){.duo2{grid-template-columns:minmax(0,1fr)}}
+.lad{display:grid;grid-template-columns:repeat(7,auto);justify-content:center;gap:2px 8px;font:700 20px var(--mono);align-items:center}
+.lad .row{display:contents;cursor:pointer}
+.lad .n{text-align:right;padding:3px 7px;border-radius:7px}
+.lad .o{color:var(--muted);font-weight:400}
+.lad .arw{color:var(--faint);font:400 17px var(--sans);text-align:center;line-height:1.05}
+.lad .row.cur .n{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.lad .row:hover .n{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.lad .row.fut>*,.lad .arw.fut{visibility:hidden}
+.lad .n.g{outline:2.5px solid var(--n1);outline-offset:1px;background:var(--okBg);color:var(--n1)}
+.lad.sm{font-size:16px}
+@media (max-width:560px){.lad{font-size:16px;gap:2px 4px}.lad .n{padding:3px 4px}.lad.sm{font-size:13.5px}}
+svg.til{display:block;width:100%;max-width:580px;height:auto;margin:0 auto}
+.til rect.sq{stroke-width:1.5;cursor:pointer}
+.til rect.sq:hover{stroke-width:3}
+.til .c0{fill:color-mix(in srgb,var(--n0) 16%,var(--panel));stroke:var(--n0)}
+.til .c1{fill:color-mix(in srgb,var(--n3) 16%,var(--panel));stroke:var(--n3)}
+.til .c2{fill:color-mix(in srgb,var(--n2) 18%,var(--panel));stroke:var(--n2)}
+.til .c3{fill:color-mix(in srgb,var(--n4) 14%,var(--panel));stroke:var(--n4)}
+.til rect.gq{fill:color-mix(in srgb,var(--n1) 32%,var(--panel));stroke:var(--n1)}
+.til .rest{fill:none;stroke:var(--muted);stroke-dasharray:6 5;stroke-width:1.5}
+.til .frame{fill:none;stroke:var(--line2);stroke-width:1.2}
+.til text{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.til text.dm{font:12.5px var(--mono);fill:var(--muted)}
+.til text.rs{font:12.5px var(--mono);fill:var(--muted);font-weight:400}
+table.pairs{border-collapse:collapse;margin:14px auto 0;font:14px var(--mono)}
+table.pairs th,table.pairs td{padding:5px 14px;border-bottom:1px solid var(--line);text-align:left}
+table.pairs th{font:600 12.5px var(--sans);color:var(--muted)}
+/* extended Euclid: the table, and the lines of the backward way */
+table.xt{border-collapse:collapse;margin:0 auto;font:15.5px var(--mono)}
+table.xt th,table.xt td{padding:7px 16px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.xt th{font:600 12.5px var(--sans);color:var(--muted);vertical-align:bottom}
+table.xt th small{display:block;font-weight:400}
+table.xt tr[data-step]{cursor:pointer}
+table.xt tr[data-step]:hover td{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+table.xt tr.cur td{background:var(--ambBg)}
+table.xt tr.ans td{background:var(--okBg);font-weight:700}
+table.xt tr.zero td{color:var(--faint)}
+table.xt tr.fut td{visibility:hidden}
+table.xt td.ck{color:var(--muted);font-size:13px;text-align:left}
+table.xt .hid{visibility:hidden}
+table.xt td.pick{outline:2.5px solid var(--n1);outline-offset:-3px}
+/* tab 8: the calculator */
+.cxw .blk{padding:4px 0 18px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.cxw .blk:last-child{border-bottom:0;margin-bottom:0;padding-bottom:4px}
+.cxw h3{font:600 14px var(--sans);color:var(--muted);text-align:center;margin:0}
+.cxw .bench{margin-top:10px}
+.elines{font:15px/1.75 var(--mono);text-align:center;margin:10px auto 0;max-height:250px;overflow:auto;overflow-wrap:anywhere}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:660px;margin:12px auto 0}
+.two>div{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);min-width:0}
+.two>div.main{border-color:var(--n1);box-shadow:inset 0 0 0 1px var(--n1)}
+.two small{display:block;font:600 12.5px var(--sans);color:var(--muted)}
+.two .big{display:block;font:700 26px var(--mono);color:var(--n1);margin:2px 0}
+.two .ck{font:13.5px/1.5 var(--mono);overflow-wrap:anywhere}
+.two .from{display:inline-block;font:600 11.5px var(--sans);padding:1px 8px;border-radius:10px;background:var(--ambBg);color:var(--amb);margin-top:6px}
+details.how{max-width:660px;margin:14px auto 0}
+details.how summary{cursor:pointer;color:var(--accent);font-size:14px;text-align:center;margin-bottom:10px}
+@media (max-width:560px){.two{grid-template-columns:minmax(0,1fr)}.elines{font-size:13.5px}}
+@media (max-width:640px){table.xt{font-size:13.5px}table.xt th,table.xt td{padding:6px 8px}table.xt .ck{display:none}}
+.calc div{grid-template-columns:118px minmax(0,1fr)}
+.bw{max-width:620px;margin:0 auto;display:grid;gap:6px}
+.bw .h3{margin:10px 0 0}
+.bw .h3:first-child{margin-top:0}
+.bw div.ln{font:15.5px var(--mono);padding:7px 12px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);overflow-wrap:anywhere}
+.bw div.ln.cur{background:var(--ambBg)}
+.bw div.ln.ans{background:var(--okBg);font-weight:700}
+.bw div.ln.fut{visibility:hidden}
+.bw div.ln small{display:block;font:12px var(--sans);color:var(--muted);font-weight:400}
+.bw mark{background:none;color:var(--n4);font-weight:700}
+@media (max-width:560px){.bw div.ln{font-size:13.5px;padding:6px 9px}}
+/* your turn */
+.ex{max-width:640px;margin:0 auto}
+.ex h3{font-size:18px;margin:0 0 4px}
+.ex .task{font-size:15px;color:var(--muted);margin:0 0 14px}
+.exl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font:700 20px var(--mono);margin:0 0 8px}
+.exl input[type=text]{width:78px;font:700 18px var(--mono);text-align:center;padding:5px 6px;text-transform:none}
+.exl input[type=text].w{width:120px}
+.exl .o{color:var(--muted);font-weight:400}
+.exl.done{opacity:.8}
+.exl .n{padding:2px 4px}
+.fb{margin:10px 0 0;padding:9px 12px;border-radius:8px;font-size:14.5px}
+.fb.ok{background:var(--okBg);border-left:3px solid var(--ok)}
+.fb.no{background:var(--xorBg);border-left:3px solid var(--xor)}
+.exb2{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.score{font-size:13.5px;color:var(--muted);margin-top:12px}
+@media (max-width:560px){.exl{font-size:17px}.exl input[type=text]{width:64px;font-size:16px}}
+table.map td:first-child{white-space:normal}
+table.map td .m{white-space:nowrap}
+/* ---------- the side-channel page ---------- */
+.fine{font-size:13px;color:var(--muted)}
+.cn{color:var(--xor);font-weight:700}
+pre.code{font:13.5px/1.6 var(--mono);background:color-mix(in srgb,var(--ink) 4%,transparent);border-radius:10px;padding:10px 14px;margin:0 auto 12px;max-width:640px;overflow-x:auto;white-space:pre}
+pre.code .cm{color:var(--faint)}
+pre.code mark{background:var(--ambBg);color:var(--amb);border-radius:4px;padding:0 3px}
+
+/* bar charts, scatter plots and traces */
+svg.chart{display:block;width:100%;max-width:700px;height:auto;margin:0 auto}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .ax{stroke:var(--line2);stroke-width:1.4}
+.chart .tk{font:11.5px var(--mono);fill:var(--muted)}
+.chart .axn{font:12.5px var(--sans);fill:var(--muted)}
+.chart .xl{font:12.5px var(--mono);fill:var(--muted)}
+.chart .bv{font:600 12px var(--mono);fill:var(--muted)}
+.chart .bar{fill:color-mix(in srgb,var(--ink) 22%,var(--panel));transform-box:fill-box;transform-origin:bottom;animation:grow .45s ease-out both}
+.chart .bar.hi{fill:var(--xor)}
+.chart .bar.ok{fill:var(--ok)}
+.chart .bv.hi,.chart .xl.hi{fill:var(--xor);font-weight:700}
+.chart .bv.ok,.chart .xl.ok{fill:var(--ok);font-weight:700}
+@keyframes grow{from{transform:scaleY(.02)}}
+.chart .dot{fill:var(--n0);opacity:.32}
+.chart.good .dot{fill:var(--ok)}
+.chart .mline{fill:none;stroke:var(--ink);stroke-width:2}
+.chart .mdot{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.chart .rho{font:700 16px var(--mono);fill:var(--ink)}
+.chart.good .rho{fill:var(--ok)}
+@media (prefers-reduced-motion:reduce){.chart .bar{animation:none}}
+
+svg.trace{display:block;width:100%;max-width:780px;height:auto;margin:6px auto 0}
+.trace .wv{fill:none;stroke:var(--n0);stroke-width:1.6;stroke-linejoin:round}
+.trace .wv.draw{stroke-dasharray:1;animation:wdraw 1.4s ease-in-out both}
+@keyframes wdraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.trace .opb{fill:color-mix(in srgb,var(--ink) 4%,transparent)}
+.trace .opb.M{fill:color-mix(in srgb,var(--xor) 10%,transparent)}
+.trace .opl{font:700 13px var(--mono);fill:var(--muted)}
+.trace .opl.M{fill:var(--xor)}
+.trace .brk{fill:none;stroke:var(--line2);stroke-width:1.4}
+.trace .bit{font:700 17px var(--mono);fill:var(--ink)}
+.trace .bit.q{fill:var(--faint)}
+@media (prefers-reduced-motion:reduce){.trace .wv.draw{animation:none;stroke-dasharray:none}}
+
+/* 1 · the PIN */
+.pinrow{display:flex;justify-content:center;gap:10px;margin:2px 0 14px}
+.slot{width:46px;height:56px;border-radius:10px;border:1.5px dashed var(--line2);display:grid;place-items:center;font:700 26px var(--mono);color:var(--faint)}
+.slot.ok{border:1.5px solid var(--ok);background:var(--okBg);color:var(--ok)}
+.slot.nw{animation:come .35s ease-out both}
+table.tcount{margin:14px auto 0;max-width:520px}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:center}
+.duo pre.code{margin:0;font-size:12.5px}
+@media (max-width:820px){.duo{grid-template-columns:minmax(0,1fr)}}
+
+/* 2 · the bits of d */
+.bits{display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
+.bits span{width:30px;height:38px;border-radius:7px;display:grid;place-items:center;font:700 18px var(--mono);background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.bits span.lead{background:var(--keyBg);color:var(--key)}
+.bits span.nw{animation:come .35s ease-out both}
+
+/* 3 · inside the chip and the traces table */
+.inside{border:1.5px dashed var(--line2);border-radius:12px;padding:10px 12px 4px;max-width:760px;margin:0 auto}
+.inside .ih{font-size:13px;color:var(--muted);text-align:center}
+.bench .bt b.kk{color:var(--key)}
+.bench .bt b.hw{color:var(--xor)}
+table.ptab{margin:0 auto;max-width:420px}
+table.ptab td{font-family:var(--mono)}
+label.nrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+label.nrow input{flex:1;min-width:140px}
+
+/* 4 · RSA-CRT */
+.crtw{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;max-width:760px;margin:0 auto}
+.half{border-radius:10px;padding:10px 12px;background:color-mix(in srgb,var(--ink) 3%,transparent);min-width:0}
+.half h4{margin:0 0 6px;font:600 14px var(--sans)}
+.fxs{max-width:760px;margin:12px auto 0;display:flex;flex-direction:column;gap:5px}
+.fx{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:14px/1.5 var(--mono);padding:6px 11px;border-radius:8px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.half .fx{background:var(--panel)}
+.fx>b{font-weight:600}
+.fx.flt{background:var(--xorBg)}
+.fx.flt>b{color:var(--xor)}
+.fx.key{background:var(--okBg)}
+.fx.key>b{color:var(--ok)}
+.fx .big{font-size:18px}
+.fx.nw{animation:come .35s ease-out both}
+.verify{margin-top:10px}
+@media (max-width:640px){.crtw{grid-template-columns:minmax(0,1fr)}}
+
+/* 5 · the last AES round and the 256 guesses */
+.rpic{display:flex;justify-content:center;margin:4px 0}
+.rpic .bench{margin:0}
+.rpic.nw{animation:come .35s ease-out both}
+.kgrid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px;max-width:560px;margin:0 auto}
+.kgrid i{font:600 11px var(--mono);font-style:normal;text-align:center;padding:5px 0;border-radius:4px;background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--faint);transition:background-color .3s,color .3s}
+.kgrid i.out{background:var(--xorBg);color:color-mix(in srgb,var(--xor) 60%,var(--panel))}
+.kgrid i.ok{background:var(--ambBg);color:var(--amb);outline:1.5px solid var(--amb)}
+.kgrid i.key{background:var(--ok);color:var(--panel);outline:2px solid var(--ok)}
+.kgrid i.gone{opacity:.35}
+.state{display:grid;grid-template-columns:repeat(4,52px);gap:5px;justify-content:center;margin:4px 0 12px}
+.state i{height:44px;border-radius:8px;display:grid;place-items:center;font:700 15px var(--mono);font-style:normal;background:var(--okBg);color:var(--ok)}
+@media (max-width:560px){.kgrid{gap:2px}.kgrid i{font-size:9.5px;padding:4px 0}}
+
+/* 6 · the summary table */
+table.deft{width:100%;max-width:820px;margin:0 auto}
+table.deft td{vertical-align:top;font-size:14px}
+ul.plainl{margin:6px 0;padding-left:18px;font-size:14px}
+ul.plainl li{margin:3px 0}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Side-channel and fault attacks, step by step</h1>
+  <p class="sub">The key leaks from how a device computes: the time a check takes, the current a chip draws, and the wrong answers it gives after a glitch. Five attacks with real numbers, and their defences</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="time" class="on">1 · Timing</button>
+    <button data-tab="spa">2 · Power trace</button>
+    <button data-tab="cpa">3 · Correlation</button>
+    <button data-tab="crt">4 · Fault on RSA</button>
+    <button data-tab="dfa">5 · Fault on AES</button>
+    <button data-tab="def">6 · Defences</button>
+  </nav>
+</header>
+
+<main class="wrap layout">
+  <div class="card stage" id="stage"></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. The measurements are simulated in your browser; every key, signature and correlation is computed there.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
+const link=(href,t)=>`<a href="${href}">${t}</a>`;
+const h2=v=>'0x'+v.toString(16).toUpperCase().padStart(2,'0');
+const b8=v=>v.toString(2).padStart(8,'0');
+const bt=(word,cls,v)=>`<span class="bt"><i>${word}</i><b class="${cls}">${v}</b></span>`;
+const op=s=>`<span class="op">${s}</span>`;
+const bench=(...xs)=>`<div class="bench">${xs.join('')}</div>`;
+// a phone gets narrower drawings, so their labels stay readable
+const PHONE=matchMedia('(max-width:560px)'),PW=(wide,narrow)=>PHONE.matches?narrow:wide;
+const code=lines=>`<pre class="code">${lines.join('\n')}</pre>`;
+
+/* ---------- random numbers that can be repeated: the same seed gives the same run ---------- */
+function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const gauss=r=>{let u=0;while(!u)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r())};
+const newSeed=()=>crypto.getRandomValues(new Uint32Array(1))[0];
+
+/* ---------- the AES S-box: the inverse in GF(2^8), then the affine map ---------- */
+const SBOX=new Uint8Array(256),SINV=new Uint8Array(256);
+(()=>{const mul=(a,b)=>{let r=0;while(b){if(b&1)r^=a;a=a&0x80?(a<<1)^0x11b:a<<1;b>>=1}return r};
+  const inv=new Uint8Array(256);for(let a=1;a<256;a++)for(let b=1;b<256;b++)if(mul(a,b)===1){inv[a]=b;break}
+  for(let x=0;x<256;x++){const v=inv[x];let r=0;for(let i=0;i<8;i++)r|=(((v>>i)^(v>>((i+4)&7))^(v>>((i+5)&7))^(v>>((i+6)&7))^(v>>((i+7)&7))^(0x63>>i))&1)<<i;SBOX[x]=r;SINV[r]=x}})();
+const HWT=Uint8Array.from({length:256},(_,x)=>{let c=0;while(x){c+=x&1;x>>=1}return c});
+const HW=x=>HWT[x&255];
+
+/* ---------- small RSA: the textbook key p = 61, q = 53, e = 17 ---------- */
+const powm=(b,e,m)=>{let r=1n,B=BigInt(b)%BigInt(m),E=BigInt(e);const M=BigInt(m);while(E>0n){if(E&1n)r=r*B%M;B=B*B%M;E>>=1n}return Number(r)};
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b)[a,b]=[b,a%b];return a};
+function minv(a,m){let[r0,r1,s0,s1]=[a%m,m,1,0];while(r1){const q=Math.floor(r0/r1);[r0,r1]=[r1,r0-q*r1];[s0,s1]=[s1,s0-q*s1]}return((s0%m)+m)%m}
+const RSA=(()=>{const p=61,q=53,e=17,n=p*q,phi=(p-1)*(q-1),d=minv(e,phi);return{p,q,e,n,phi,d,m:65,s:powm(65,d,n)}})();
+
+/* ---------- Pearson correlation ---------- */
+function corr(a,b){const n=a.length;let ma=0,mb=0;for(let i=0;i<n;i++){ma+=a[i];mb+=b[i]}ma/=n;mb/=n;
+  let sab=0,saa=0,sbb=0;for(let i=0;i<n;i++){const x=a[i]-ma,y=b[i]-mb;sab+=x*y;saa+=x*x;sbb+=y*y}return saa&&sbb?sab/Math.sqrt(saa*sbb):0}
+
+/* ---------- a bar chart in SVG: items {label, v, cls, top} on a fixed scale ---------- */
+function barChart(items,{y0,y1,w=PW(640,380),h=230,unit='',ticks=[],xlab='',ylab='',gap=.25,showV=true,lab=true}){
+  const L=54,R=10,T=26,B=lab?40:22,pw=w-L-R,ph=h-T-B,n=items.length,bw=pw/n,sy=v=>T+ph*(1-(v-y0)/(y1-y0));
+  let s=`<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${ylab||'bar chart'}">`;
+  for(const t of ticks)s+=`<line class="gl" x1="${L}" x2="${w-R}" y1="${sy(t)}" y2="${sy(t)}"/><text class="tk" x="${L-6}" y="${sy(t)+4}" text-anchor="end">${t}${unit}</text>`;
+  items.forEach((it,i)=>{const x=L+i*bw+bw*gap/2,bwi=bw*(1-gap),v=clamp(it.v,y0,y1),y=sy(v);
+    s+=`<rect class="bar ${it.cls||''}" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bwi.toFixed(2)}" height="${(T+ph-y).toFixed(2)}"><title>${it.label}: ${it.vt??it.v}</title></rect>`;
+    if(showV&&it.vt!=null)s+=`<text class="bv ${it.cls||''}" x="${x+bwi/2}" y="${y-6}" text-anchor="middle">${it.vt}</text>`;
+    if(it.top)s+=`<text class="bv ${it.cls||''}" x="${x+bwi/2}" y="${y-6}" text-anchor="middle">${it.top}</text>`;
+    if(lab&&it.label!=='')s+=`<text class="xl ${it.cls||''}" x="${x+bwi/2}" y="${T+ph+18}" text-anchor="middle">${it.label}</text>`});
+  s+=`<line class="ax" x1="${L}" x2="${w-R}" y1="${T+ph}" y2="${T+ph}"/>`;
+  if(xlab)s+=`<text class="axn" x="${L+pw/2}" y="${h-4}" text-anchor="middle">${xlab}</text>`;
+  if(ylab)s+=`<text class="axn" x="${L}" y="14">${ylab}</text>`;
+  return s+'</svg>'}
+
+/* ---------- what the reader has chosen ---------- */
+const ST={tab:'time',step:{},q:{},playT:null,playing:false,seed:{time:11,spa:5,cpa:7,dfa:0},cpaN:200,crtHalf:'q',crtBit:0};
+const T={};
+const stage=$('#stage');
+
+/* ---------- 1 · timing: a PIN check that stops at the first wrong digit ---------- */
+const PIN='4729',T0=200,TC=40,SIG=25,RUNS=100;
+// how many digits the check compares before it answers
+const iters=(g,ct)=>{if(ct)return 4;for(let i=0;i<4;i++)if(g[i]!==PIN[i])return i+1;return 4};
+function measure(g,r,ct){let s=0;for(let k=0;k<RUNS;k++)s+=T0+TC*iters(g,ct)+SIG*gauss(r);return s/RUNS}
+// the digits found so far, then each candidate, then zeros
+function timeRound(pos,ct){const r=rng(ST.seed.time*977+pos*31+(ct?7:0)),pre=PIN.slice(0,pos);
+  return[...'0123456789'].map(c=>{const g=(pre+c).padEnd(4,'0');return{c,g,t:measure(g,r,ct),ok:g===PIN}})}
+const CODE_EARLY=['<span class="cm">// stops at the first wrong digit</span>','function check(guess, pin) {','  for (let i = 0; i &lt; 4; i++)','    if (guess[i] !== pin[i]) <mark>return false</mark>;','  return true;','}'];
+const CODE_CT=['<span class="cm">// always compares all four digits</span>','function check(guess, pin) {','  let diff = 0;','  for (let i = 0; i &lt; 4; i++)','    diff |= guess.charCodeAt(i) ^ pin.charCodeAt(i);','  return diff === 0;','}'];
+const slots=(found,nw)=>`<div class="pinrow">${[0,1,2,3].map(i=>`<span class="slot${i<found?' ok':''}${i===nw?' nw':''}">${i<found?PIN[i]:'?'}</span>`).join('')}</div>`;
+function timeChart(rs,{pos,hi,ct}){
+  return barChart(rs.map(x=>({label:PHONE.matches?x.c:(PIN.slice(0,pos)+x.c).padEnd(4,'·'),v:x.t,vt:x.t.toFixed(0),cls:hi&&x===hi?'hi':x.ok&&pos===3&&!ct?'ok':'',top:x.ok&&pos===3&&!ct?'opens':null})),
+    {y0:180,y1:390,ticks:[200,250,300,350],unit:'',ylab:'average time, ns',xlab:ct?'first digit tried, constant-time check':['first','second','third','fourth'][pos]+' digit tried'})}
+const slowest=rs=>rs.reduce((a,b)=>b.t>a.t?b:a);
+const othersMean=(rs,x)=>rs.filter(y=>y!==x).reduce((s,y)=>s+y.t,0)/(rs.length-1);
+T.time={n:()=>7,
+  view(k){
+    if(k===0)return slots(0)+code(CODE_EARLY);
+    if(k<=4){const pos=k-1,rs=timeRound(pos,false),hi=pos<3?slowest(rs):null;return slots(pos<3?pos+1:4,pos)+timeChart(rs,{pos,hi})}
+    if(k===5)return slots(4)+bench(bt('digit by digit','cy','4 × 10 = 40'),op('vs'),bt('every PIN','','10⁴ = 10 000'))+`<table class="cmp3 tcount"><tr><th>secret</th><th>digit by digit</th><th>every value</th></tr><tr><td>4 digits</td><td>40</td><td>10 000</td></tr><tr><td>8 digits</td><td>80</td><td>100 000 000</td></tr><tr><td>16 hex characters</td><td>256</td><td>16¹⁶ ≈ 1.8 · 10¹⁹</td></tr></table>`;
+    const rs=timeRound(0,true);return slots(0)+code(CODE_CT)+timeChart(rs,{pos:0,ct:true})},
+  say(k){
+    if(k===0)return say('The secret is a 4-digit PIN','The device checks a guess digit by digit and answers “wrong” as soon as one digit differs.','The answer itself says only right or wrong. But a guess that starts with the right digit is checked a little longer. Press <b>Step</b>.');
+    if(k<=3){const pos=k-1,rs=timeRound(pos,false),hi=slowest(rs),o=othersMean(rs,hi);
+      return say(`Step ${k} · the ${['first','second','third'][pos]} digit`,`The attacker tries ${(PIN.slice(0,pos)+'0').padEnd(4,'0')}, ${(PIN.slice(0,pos)+'1').padEnd(4,'0')}, … and times each one, 100 runs per guess.`,`${hi.g.slice(0,pos+1)}… takes ${hi.t.toFixed(1)} ns on average, the others ${o.toFixed(1)} ns: one more digit compared, about ${TC} ns. So the ${['first','second','third'][pos]} digit is <b>${hi.c}</b>.`)}
+    if(k===4)return say('Step 4 · the last digit','Now every guess compares all four digits, so all ten take the same time.',`But only one is accepted: ${PIN}. The PIN is found.`);
+    if(k===5)return say('Step 5 · 40 guesses instead of 10 000','The timing turned one search over 10 000 PINs into four searches over 10 digits.','The longer the secret, the bigger the gain: the work grows with the length, not exponentially.');
+    return say('Step 6 · the defence: constant time','The new check XORs every digit pair into diff and looks at the result only at the end. Every guess takes the same path, so the bars are flat.','Constant time means: the time must not depend on any secret, not even on where the first difference is.')},
+  extra:()=>`<h3>The simulation</h3><p>Each check costs ${T0} ns plus ${TC} ns per compared digit, with random noise (σ = ${SIG} ns). Each bar is the average of ${RUNS} runs, so the noise shrinks to about ${(SIG/Math.sqrt(RUNS)).toFixed(1)} ns.</p><p><button data-act="rerun">Measure again</button></p><p class="fine">Over a network the noise is much larger; an attacker then needs many more runs per guess, but the idea is the same.</p>`};
+
+/* ---------- 2 · simple power analysis of square-and-multiply ---------- */
+const DB=RSA.d.toString(2);
+function sqmOps(){const ops=[];let r=RSA.m;for(const b of DB.slice(1)){r=r*r%RSA.n;ops.push({o:'S',b,r});if(b==='1'){r=r*RSA.m%RSA.n;ops.push({o:'M',b,r})}}return ops}
+function ladderOps(){let R0=RSA.m,R1=RSA.m*RSA.m%RSA.n;const ops=[];
+  for(const b of DB.slice(1)){if(b==='1'){R0=R0*R1%RSA.n;R1=R1*R1%RSA.n}else{R1=R0*R1%RSA.n;R0=R0*R0%RSA.n}ops.push({o:'M',b,r:R0},{o:'S',b,r:R0})}return ops}
+function wave(ops,seed){const r=rng(seed),pts=[],seg=[],SW=22,GW=6,lo=()=>.08+.03*gauss(r);
+  for(const o of ops){for(let i=0;i<GW;i++)pts.push(lo());const a=pts.length;
+    for(let i=0;i<SW;i++){const u=i/(SW-1),v=o.o==='S'?.55*Math.sin(Math.PI*u):.92*Math.min(1,u/.18,(1-u)/.18);pts.push(.08+v+.035*gauss(r))}
+    seg.push({o:o.o,b:o.b,a,z:pts.length-1})}
+  for(let i=0;i<GW;i++)pts.push(lo());return{pts,seg}}
+function traceSVG(ops,seed,{labels=false,bits=false,ask=false,draw=false}={}){
+  const{pts,seg}=wave(ops,seed),W=PW(760,400),top=24,ph=110,H=top+ph+(bits?54:14),sx=W/(pts.length-1),sy=v=>top+ph*(1-v/1.1),X=i=>(i*sx).toFixed(1);
+  let s=`<svg class="trace" viewBox="0 0 ${W} ${H}" role="img" aria-label="Power trace">`;
+  if(labels)for(const g of seg)s+=`<rect class="opb ${g.o}" x="${X(g.a)}" y="${top-6}" width="${((g.z-g.a)*sx).toFixed(1)}" height="${ph+6}" rx="4"/><text class="opl ${g.o}" x="${((g.a+g.z)/2*sx).toFixed(1)}" y="${top-10}" text-anchor="middle">${g.o}</text>`;
+  s+=`<path class="wv${draw?' draw':''}" pathLength="1" d="M${pts.map((v,i)=>X(i)+' '+sy(v).toFixed(1)).join('L')}"/>`;
+  if(bits){let i=0;while(i<seg.length){const g=seg[i],two=ask?seg[i+1]:seg[i+1]&&seg[i+1].o==='M'?seg[i+1]:null,end=two?two.z:g.z,a=g.a*sx,z=end*sx,y=top+ph+12;
+      s+=`<path class="brk" d="M${a.toFixed(1)} ${y}v6H${z.toFixed(1)}v-6"/><text class="bit${ask?' q':''}" x="${((a+z)/2).toFixed(1)}" y="${y+28}" text-anchor="middle">${ask?'?':two?1:0}</text>`;i+=two?2:1}}
+  return s+'</svg>'}
+const bitStrip=(hi)=>`<div class="bits">${[...DB].map((b,i)=>`<span class="${i===0?'lead':''}${hi?' nw':''}" style="animation-delay:${i*40}ms">${b}</span>`).join('')}</div>`;
+const CODE_SQM=['r = m                          <span class="cm">// the leading 1 of d</span>','for each next bit b of d:','  r = r · r mod n              <span class="cm">// S: square, for every bit</span>','  if b == 1: r = r · m mod n   <span class="cm">// M: multiply, only for a 1</span>'];
+T.spa={n:()=>5,
+  view(k){
+    const ops=sqmOps();
+    if(k===0)return code(CODE_SQM)+`<p class="cap2">d = ${RSA.d} in binary</p>`+bitStrip();
+    if(k<=3)return traceSVG(ops,ST.seed.spa,{labels:k>=2,bits:k>=3,draw:k===1})+(k===3?`<p class="cap2">read from the trace: <b>1${ops.reduce((s,o,i)=>o.o==='S'?s+(ops[i+1]&&ops[i+1].o==='M'?'1':'0'):s,'')}</b>₂ = <b>${parseInt('1'+ops.reduce((s,o,i)=>o.o==='S'?s+(ops[i+1]&&ops[i+1].o==='M'?'1':'0'):s,''),2)}</b> ${parseInt('1'+ops.reduce((s,o,i)=>o.o==='S'?s+(ops[i+1]&&ops[i+1].o==='M'?'1':'0'):s,''),2)===RSA.d?Y+' the private key':N}</p>`:'');
+    const lo=ladderOps();return code(['for each next bit b of d:','  if b == 1: R0 = R0·R1, R1 = R1²','  else:      R1 = R0·R1, R0 = R0²','<span class="cm">// one M and one S for every bit</span>'])+traceSVG(lo,ST.seed.spa+1,{labels:true,bits:true,ask:true})+`<p class="cap2">The result is the same: R0 = ${lo.at(-1).r} ${lo.at(-1).r===RSA.s?Y:N}</p>`},
+  say(k){
+    const ops=sqmOps(),nS=ops.filter(o=>o.o==='S').length,nM=ops.length-nS;
+    if(k===0)return say('RSA signs with square-and-multiply',`The textbook key: n = ${RSA.n} = ${RSA.p} · ${RSA.q}, e = ${RSA.e}, private d = ${RSA.d}. Signing m = ${RSA.m} computes m<sup>d</sup> mod n (${link('rsa.html#sm','square and multiply on the RSA page')}).`,'For each bit of d after the first there is a square; a 1 bit adds a multiply.');
+    if(k===1)return say('Step 1 · the power trace','A small resistor in the power line and an oscilloscope record how much current the chip draws while it signs.',`This is the whole signature: ${ops.length} operations.`);
+    if(k===2)return say('Step 2 · two shapes',`The squares (S) and the multiplies (M) use the chip differently, so their humps look different. There are ${nS} S and ${nM} M.`,'Their order is all the attacker needs.');
+    if(k===3)return say('Step 3 · read the key','An S followed by an M is a 1 bit; an S alone is a 0 bit. Put the leading 1 in front.',`That gives d = ${RSA.d}, from one trace. This is simple power analysis (SPA).`);
+    return say('Step 4 · the defence: the Montgomery ladder','The ladder does one multiply and one square for every bit, whatever the bit is. The trace is a regular M S M S … and shows nothing about d.',`It gives the same result, ${RSA.s}, at the cost of a multiply for every 0 bit.`)},
+  extra:()=>`<h3>The simulation</h3><p>A square and a multiply are drawn with different shapes, as they often look on a real chip, plus random noise.</p><p><button data-act="rerun">Record again</button></p><p class="fine">Real traces need care: the two shapes can be close, and the attacker first learns them on a device he controls.</p>`};
+
+/* ---------- 3 · correlation power analysis on the first AES S-box ---------- */
+const CK=0x3C,SIGP=1;
+let CP=null;
+function cpaData(){
+  const N=ST.cpaN,s=ST.seed.cpa;if(CP&&CP.N===N&&CP.s===s)return CP;
+  const r=rng(s),p=[],L=[],Lm=[];
+  for(let i=0;i<500;i++){const x=Math.floor(r()*256),mask=Math.floor(r()*256);p.push(x);L.push(HW(SBOX[x^CK])+SIGP*gauss(r));Lm.push(HW(SBOX[x^CK]^mask)+SIGP*gauss(r))}
+  const P=p.slice(0,N),A=L.slice(0,N),Am=Lm.slice(0,N),rho=[],rhoM=[];
+  for(let g=0;g<256;g++){const pr=P.map(x=>HW(SBOX[x^g]));rho.push(corr(pr,A));rhoM.push(corr(pr,Am))}
+  const rank=a=>[...a.keys()].sort((x,y)=>Math.abs(a[y])-Math.abs(a[x]));
+  CP={N,s,p:P,L:A,Lm:Am,rho,rhoM,order:rank(rho),orderM:rank(rhoM)};return CP}
+function scatter(pred,meas,rho,cls){
+  const w=PW(640,380),h=PW(250,240),L=46,R=12,T=16,B=40,pw=w-L-R,ph=h-T-B,y0=-3,y1=11,sx=v=>L+pw*(v+.5)/9,sy=v=>T+ph*(1-(clamp(v,y0,y1)-y0)/(y1-y0));
+  let s=`<svg class="chart sc ${cls}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Predicted against measured power">`;
+  for(const t of[0,4,8])s+=`<line class="gl" x1="${L}" x2="${w-R}" y1="${sy(t)}" y2="${sy(t)}"/><text class="tk" x="${L-6}" y="${sy(t)+4}" text-anchor="end">${t}</text>`;
+  for(let x=0;x<=8;x++)s+=`<text class="tk" x="${sx(x)}" y="${T+ph+16}" text-anchor="middle">${x}</text>`;
+  const n=Math.min(pred.length,300);for(let i=0;i<n;i++){const j=((i*0.6180339887)%1-.5)*.36;s+=`<circle class="dot" cx="${(sx(pred[i]+j)).toFixed(1)}" cy="${sy(meas[i]).toFixed(1)}" r="2.6"/>`}
+  const mean=[];for(let x=0;x<=8;x++){const v=meas.filter((_,i)=>pred[i]===x);if(v.length)mean.push([x,v.reduce((a,b)=>a+b,0)/v.length])}
+  s+=`<path class="mline" d="M${mean.map(([x,v])=>sx(x).toFixed(1)+' '+sy(v).toFixed(1)).join('L')}"/>`+mean.map(([x,v])=>`<circle class="mdot" cx="${sx(x).toFixed(1)}" cy="${sy(v).toFixed(1)}" r="4.5"/>`).join('');
+  s+=`<text class="axn" x="${L+pw/2}" y="${h-4}" text-anchor="middle">predicted: Hamming weight of S(p ⊕ guess)</text><text class="axn" x="${L}" y="11">measured power</text><text class="rho" x="${w-R}" y="${T+16}" text-anchor="end">ρ = ${rho.toFixed(2)}</text>`;
+  return s+'</svg>'}
+function rhoChart(rho,order,{masked}){
+  const top=order[0];return barChart(rho.map((v,g)=>({label:g%64===0?h2(g):'',v:Math.abs(v),cls:!masked&&g===top?'hi':'',top:!masked&&g===top?`${h2(g)} · ${Math.abs(v).toFixed(2)}`:null})),{y0:0,y1:1,ticks:[0,.25,.5,.75,1],gap:.12,showV:false,ylab:'|ρ| for each key guess',xlab:'key guess, 0x00 to 0xFF'})}
+T.cpa={n:()=>6,
+  view(k){
+    const c=cpaData();
+    if(k===0){const x=c.p[0],v=x^CK,sv=SBOX[v];return`<div class="inside"><div class="ih">Inside the chip (the attacker does not see this)</div>${bench(bt('plaintext byte','',h2(x)),op('⊕'),bt('key byte','kk',h2(CK)),op('='),bt('','',h2(v)),op('→ S →'),bt('S-box output','',b8(sv)),op('→'),bt('1 bits','hw',HW(sv)))}</div><p class="cap2">The power drawn while this byte is written grows with its number of 1 bits, plus noise.</p>`}
+    if(k===1)return`<table class="cmp3 ptab"><tr><th>trace</th><th>plaintext byte p</th><th>measured power</th></tr>${c.p.slice(0,8).map((x,i)=>`<tr><td>${i+1}</td><td>${h2(x)}</td><td>${c.L[i].toFixed(2)}</td></tr>`).join('')}<tr><td>…</td><td>…</td><td>…</td></tr><tr><td>${c.N}</td><td>${h2(c.p[c.N-1])}</td><td>${c.L[c.N-1].toFixed(2)}</td></tr></table>`;
+    if(k===2||k===3){const g=k===2?0:c.order[0];return`<p class="cap2">guess k = <b>${h2(g)}</b></p>`+scatter(c.p.map(x=>HW(SBOX[x^g])),c.L,c.rho[g],k===3?'good':'')}
+    if(k===4)return rhoChart(c.rho,c.order,{masked:false});
+    return rhoChart(c.rhoM,c.orderM,{masked:true})},
+  say(k){
+    const c=cpaData(),best=c.order[0],sec=c.order[1];
+    if(k===0)return say('Power follows the data','In the first round AES computes S(p ⊕ k) for every byte. Writing a byte with many 1 bits draws a little more current than one with few.',`This is the Hamming-weight model. One measurement is useless: the noise is as big as the signal. Many are not (${link('aes.html#sb','SubBytes on the AES page')}).`);
+    if(k===1)return say('Step 1 · collect traces',`The attacker encrypts ${c.N} known plaintexts and records the power at the moment the S-box output is written.`,'He knows p and the power, not k.');
+    if(k===2)return say('Step 2 · test a guess',`For a guess k he predicts the Hamming weight of S(p ⊕ k) for every trace and compares the prediction with the measurement. For k = ${h2(0)} the cloud has no slope: ρ = ${c.rho[0].toFixed(2)}.`,'A wrong guess gives predictions that have nothing to do with what the chip did.');
+    if(k===3)return say(`Step 3 · the right guess, ${h2(best)}`,`Now the means of each column rise with the prediction: ρ = ${c.rho[best].toFixed(2)}.`,'The correlation coefficient ρ measures exactly this slope, from −1 to 1.');
+    if(k===4)return say('Step 4 · all 256 guesses',`One bar for each guess. The highest is ${h2(best)} with |ρ| = ${Math.abs(c.rho[best]).toFixed(2)}; the next is ${h2(sec)} with ${Math.abs(c.rho[sec]).toFixed(2)}. ${best===CK?'It is the key byte.':'With so few traces the peak is not yet the key: add traces.'}`,'Repeat for the other 15 bytes, and the whole AES key falls, byte by byte. This is correlation power analysis (CPA).');
+    const m=c.orderM[0];return say('Step 5 · the defence: masking',`The chip XORs every intermediate value with a fresh random mask and computes on the masked value. The written byte no longer depends on the key alone. The highest |ρ| is now ${Math.abs(c.rhoM[m]).toFixed(2)}, at a wrong guess.`,'Masked code is slower and harder to write; attacks on masking need several points of a trace at once.')},
+  extra:k=>`<h3>Number of traces</h3>${k===0?'<p>Press <b>Step</b> to start collecting.</p>':`<label class="inl nrow">N = <b id="cpaNv">${ST.cpaN}</b><input type="range" id="cpaN" min="10" max="500" step="10" value="${ST.cpaN}"></label><p class="fine">The right key byte is ranked <b id="cpaRank">${cpaData().order.indexOf(CK)+1}</b> of 256.</p>`}<p><button data-act="rerun">New traces</button></p><p class="fine">Simulated: power = Hamming weight + noise with σ = ${SIGP}, one sample per trace. Real traces have thousands of samples; CPA is run on each.</p>`};
+
+/* ---------- 4 · one fault in RSA-CRT gives away a prime factor ---------- */
+function crtRun(){
+  const{p,q,e,d,n,m}=RSA,dp=d%(p-1),dq=d%(q-1),sp=powm(m,dp,p),sq=powm(m,dq,q),qi=minv(q,p);
+  // Garner: s = sq + q · ((sp − sq) · q⁻¹ mod p)
+  const comb=(a,b)=>b+q*((((a-b)*qi)%p+p)%p);
+  const inQ=ST.crtHalf==='q',bits=inQ?6:6,bit=ST.crtBit%bits;
+  const fsp=inQ?sp:(sp^(1<<bit))%p,fsq=inQ?(sq^(1<<bit))%q:sq;
+  const s=comb(sp,sq),sf=comb(fsp,fsq),v=powm(sf,e,n),g=gcd(((v-m)%n+n)%n,n);
+  return{dp,dq,sp,sq,qi,s,fsp,fsq,sf,v,g,o:n/g,inQ,bit,check:powm(s,e,n)}}
+const bin6=v=>v.toString(2).padStart(6,'0');
+const row=(a,b,cls='')=>`<div class="fx ${cls}"><span>${a}</span><b>${b}</b></div>`;
+T.crt={n:()=>6,
+  view(k){
+    const c=crtRun(),{p,q,e,n,m}=RSA,hp=c.inQ?'':'flt',hq=c.inQ?'flt':'';
+    let h='<div class="crtw">';
+    h+=`<div class="half"><h4>mod p = ${p}</h4>${row(`d mod ${p-1}`,c.dp)}${row(`s<sub>p</sub> = ${m}<sup>${c.dp}</sup> mod ${p}`,c.sp,k>=2&&!c.inQ?'flt nw':'')}${k>=2&&!c.inQ?row('after the fault',`${bin6(c.sp)} → ${bin6(c.fsp)} = ${c.fsp}`,'flt nw'):''}</div>`;
+    h+=`<div class="half"><h4>mod q = ${q}</h4>${row(`d mod ${q-1}`,c.dq)}${row(`s<sub>q</sub> = ${m}<sup>${c.dq}</sup> mod ${q}`,c.sq,k>=2&&c.inQ?'flt nw':'')}${k>=2&&c.inQ?row('after the fault',`${bin6(c.sq)} → ${bin6(c.fsq)} = ${c.fsq}`,'flt nw'):''}</div></div>`;
+    h+=`<div class="fxs">${row(k===5?'combined inside the device':'combined (Garner)',k>=2?`s′ = ${c.sf}`:`s = ${c.s}`,k>=2?'flt':'')}`;
+    if(k<2)h+=row(`check: s<sup>${e}</sup> mod ${n}`,`${c.check} = m ${Y}`);
+    if(k===1)h+=`</div>`+bench(bt('without CRT','','one exponent mod n'),op('vs'),bt('with CRT','cy','two half-size exponents'),op('≈'),bt('','cy','4 × faster'));
+    else if(k===5)h+=`</div><div class="verify nw">${bench(bt('before sending','',`s′<sup>${e}</sup> mod n = ${c.v}`),op('≠'),bt('','',`m = ${m}`),op('→'),bt('','cn','send nothing'))}</div>`;
+    else if(k>=3){h+=row(`s′<sup>${e}</sup> mod ${n}`,`${c.v} ≠ ${m}`,'nw')+row(`gcd(${c.v} − ${m}, ${n})`,`<span class="big">${c.g}</span>`,'key nw');
+      if(k>=4)h+=row(`${n} / ${c.g}`,c.o,'nw')+row(`d = ${e}⁻¹ mod (${p-1} · ${q-1})`,`${minv(e,(p-1)*(q-1))} ${Y}`,'key nw');h+='</div>';
+}
+    else h+='</div>';
+    return h},
+  say(k){
+    const c=crtRun(),{p,q,e,n,m}=RSA,half=c.inQ?'q':'p',other=c.inQ?'p':'q';
+    if(k===0)return say('RSA signing with the CRT',`Smart cards and servers sign with the Chinese remainder theorem: two exponentiations, one mod p and one mod q, then one combination. Here m = ${m}, n = ${n} = ${p} · ${q}, d = ${RSA.d}.`,`The signature s = ${c.s} checks out: s<sup>${e}</sup> mod n = ${m}.`);
+    if(k===1)return say('Step 1 · why everyone uses it','The two exponentiations work with numbers half as long, and short exponents d mod (p − 1), d mod (q − 1). In total about four times faster than one exponentiation mod n.','That is why almost every RSA implementation signs this way.');
+    if(k===2)return say(`Step 2 · one fault in the mod-${half} half`,`A voltage glitch or a laser pulse flips bit ${c.bit} of s<sub>${half}</sub>: ${c.inQ?c.sq:c.sp} becomes ${c.inQ?c.fsq:c.fsp}. The other half is computed correctly.`,`The device combines the halves and sends the wrong signature s′ = ${c.sf}.`);
+    if(k===3)return say('Step 3 · one gcd',`s′ is still right modulo ${other}, so s′<sup>${e}</sup> − m is a multiple of ${other}, but not of ${half}.`,`gcd(s′<sup>${e}</sup> − m, n) = ${c.g}: a prime factor of n, from one faulty signature and the public key.`);
+    if(k===4)return say('Step 4 · the whole private key',`The other factor is ${n} / ${c.g} = ${c.o}. With both primes, d = e⁻¹ mod (p − 1)(q − 1) = ${RSA.d}.`,'The same works for 2048-bit RSA: the gcd takes a fraction of a second.');
+    return say('Step 5 · the defence: check before sending',`The device raises s′ to e and compares with m. ${c.v} ≠ ${m}, so it sends nothing (or computes again).`,'Checking costs one exponentiation with the short public e, very little next to signing.')},
+  extra:()=>`<h3>Choose the fault</h3><div class="seg" role="group" aria-label="Which half gets the fault"><button data-act="half" data-v="p" class="${ST.crtHalf==='p'?'on':''}">mod p half</button><button data-act="half" data-v="q" class="${ST.crtHalf==='q'?'on':''}">mod q half</button></div><p style="margin-top:8px"><button data-act="bit">Flip another bit</button></p><p class="fine">Whichever bit and whichever half: the gcd always returns the prime of the half that was computed correctly.</p>`};
+
+/* ---------- 5 · differential fault analysis on the last AES round ---------- */
+let DF=null;
+function dfaRun(){
+  const s=ST.seed.dfa;if(DF&&DF.s===s)return DF;
+  let K,pairs;
+  if(!s){K=0xA7;pairs=[[0x79,2],[0xBD,7],[0x3E,4],[0xC2,1]]}
+  else{const r=rng(s);K=Math.floor(r()*256);pairs=Array.from({length:8},()=>[Math.floor(r()*256),Math.floor(r()*8)])}
+  const out=[];let cum=new Set(range256());
+  for(const[x,bit]of pairs){const c=SBOX[x]^K,c2=SBOX[x^(1<<bit)]^K,ok=new Set();
+    for(let g=0;g<256;g++)if(HW(SINV[c^g]^SINV[c2^g])===1)ok.add(g);
+    const prev=cum;cum=new Set([...cum].filter(g=>ok.has(g)));out.push({x,bit,c,c2,ok,prev,cum});if(cum.size===1)break}
+  DF={s,K,pairs:out};return DF}
+function range256(){return Array.from({length:256},(_,i)=>i)}
+function grid(pr,key){
+  let s='<div class="kgrid" role="img" aria-label="256 key guesses">';
+  for(let g=0;g<256;g++){const cls=key!=null&&g===key?'key':pr.cum.has(g)?'ok':pr.prev.has(g)?'out':'gone';s+=`<i class="${cls}" title="${h2(g)}">${g.toString(16).toUpperCase().padStart(2,'0')}</i>`}
+  return s+'</div>'}
+const roundPic=(x,fault,c,cls='')=>`<div class="rpic ${cls}">${bench(bt(fault?'one bit flipped':'state byte','',fault?'x ⊕ e':'x'),op('→ S →'),bt('','','⊕ k'),op('='),bt(fault?'faulty ciphertext':'ciphertext',fault?'hw':'',(fault?'c′ = ':'c = ')+h2(c)))}</div>`;
+T.dfa={n:()=>6,
+  view(k){
+    const D=dfaRun(),p1=D.pairs[0],last=D.pairs.at(-1);
+    if(k===0)return roundPic(0,false,p1.c)+`<p class="cap2">The last round of AES has no MixColumns: each ciphertext byte is S(x) ⊕ k for one state byte x and one key byte k.</p>`;
+    if(k===1)return roundPic(0,false,p1.c)+roundPic(0,true,p1.c2,'nw')+bench(bt('c','',b8(p1.c)),op('⊕'),bt('c′','',b8(p1.c2)),op('='),bt('','',b8(p1.c^p1.c2)))+`<p class="cap2">One bit went in; the S-box spread it over ${HW(p1.c^p1.c2)} bits of the output.</p>`;
+    if(k===2)return grid(p1)+`<p class="cap2">pair 1: <b>${p1.cum.size}</b> of 256 guesses survive</p>`;
+    if(k===3)return grid(last,last.cum.size===1?[...last.cum][0]:null)+`<p class="cap2">after ${D.pairs.length} pairs: <b>${last.cum.size}</b> left${last.cum.size===1?`: k = <b>${h2([...last.cum][0])}</b> ${[...last.cum][0]===D.K?Y:N}`:''}</p>`;
+    if(k===4)return`<div class="state">${Array.from({length:16},(_,i)=>`<i class="nw" style="animation-delay:${i*45}ms">${i===0?h2(D.K).slice(2):'✓'}</i>`).join('')}</div>`+bench(bt('16 key bytes','','last round key'),op('→'),bt('key schedule run backwards','',''),op('→'),bt('','cy','AES-128 key'));
+    return roundPic(0,false,p1.c)+roundPic(0,true,p1.c2)+`<div class="verify nw">${bench(bt('computed twice','',`${h2(p1.c)} vs ${h2(p1.c2)}`),op('≠'),bt('','cn','send nothing'))}</div>`},
+  say(k){
+    const D=dfaRun(),p1=D.pairs[0],last=D.pairs.at(-1);
+    if(k===0)return say('Faults in the last round','Differential fault analysis compares a correct and a faulty output of the same input.',`This attack aims at one byte just before the last SubBytes (${link('aes.html#rd','one AES round')}).`);
+    if(k===1)return say('Step 1 · the same plaintext, twice',`The second time a glitch flips one bit of x. The attacker gets c = ${h2(p1.c)} and c′ = ${h2(p1.c2)}, and knows neither x, nor the bit, nor k.`,'But he knows one thing: before the S-box the two values differed in exactly one bit.');
+    if(k===2)return say('Step 2 · test all 256 key guesses',`For each guess g he undoes the last round: S⁻¹(c ⊕ g) and S⁻¹(c′ ⊕ g). If g is right, these are x and x ⊕ e, so they differ in one bit.`,`Only ${p1.cum.size} of 256 guesses pass this test.`);
+    if(k===3)return say('Step 3 · one more faulty pair',`A second pair gives another set of survivors; the key byte is in both. ${last.cum.size===1?`After ${D.pairs.length} pairs one guess is left: ${h2([...last.cum][0])}.`:`${last.cum.size} are left.`}`,'Each pair cuts the list, a few pairs are enough.');
+    if(k===4)return say('Step 4 · all 16 bytes','The bytes are independent: the same few faults per byte give the whole last round key.','The AES-128 key schedule can be run backwards, so the last round key gives the master key.');
+    return say('Step 5 · the defence: compute twice','The device encrypts twice (or decrypts the result) and compares. If they differ, a fault happened, and nothing is sent.','Hardware adds sensors for voltage, clock and light. A fault that hits both computations the same way is harder, but not impossible.')},
+  extra:()=>`<h3>Another key, other faults</h3><p><button data-act="rerun">New faults</button></p><p class="fine">The fault model here is one flipped bit in one byte before the last S-box (Giraud, 2005). Your browser tests every guess.</p>`};
+
+/* ---------- 6 · the attacks and their defences side by side ---------- */
+const DEF=[['time','Timing','how long a check or a computation takes','constant-time code: no branch, no early exit and no memory access that depends on a secret'],
+  ['spa','Simple power analysis','which operations run, from one trace','the same operations for every key bit (Montgomery ladder), exponent blinding'],
+  ['cpa','Correlation power analysis','the data, through many traces and statistics','masking, shuffling, noise; certified hardware'],
+  ['crt','Fault on RSA-CRT','a prime factor, from one wrong signature','verify the signature before sending it'],
+  ['dfa','Differential fault analysis','key bytes, from correct and faulty outputs','compute twice and compare; sensors for voltage, clock and light']];
+T.def={n:()=>1,
+  view:()=>`<table class="cmp3 deft"><tr><th>attack</th><th>what leaks</th><th>defence</th></tr>${DEF.map(([id,a,l,d])=>`<tr><td><a href="#${id}" data-go="${id}">${a}</a></td><td>${l}</td><td>${d}</td></tr>`).join('')}</table>`,
+  say:()=>say('The maths is fine, the device leaks','None of these attacks breaks RSA or AES as mathematical functions. They read the key from the time, the power or the errors of one device.','So the defence lives in the implementation: in the code, and in the chip.'),
+  extra:()=>`<h3>Rules of thumb</h3><ul class="plainl"><li>Use a library whose code is written to be constant-time; do not write your own.</li><li>Never branch on a secret; never index a table with a secret.</li><li>Check every result that is about to leave the device.</li><li>A defence against one attack can open another: test them together.</li></ul>`};
+
+/* ---------- the longer read under each picture ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const MORE=xs=>box('Read more','<ul>'+xs.map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk');
+const R_KOCHER='P. C. Kocher, “Timing attacks on implementations of Diffie–Hellman, RSA, DSS, and other systems”, CRYPTO ’96, LNCS 1109, Springer, 1996, pp. 104–113.';
+const R_DPA='P. Kocher, J. Jaffe, B. Jun, “Differential power analysis”, CRYPTO ’99, LNCS 1666, Springer, 1999, pp. 388–397.';
+const R_CPA='E. Brier, C. Clavier, F. Olivier, “Correlation power analysis with a leakage model”, CHES 2004, LNCS 3156, Springer, 2004, pp. 16–29.';
+const R_BDL='D. Boneh, R. A. DeMillo, R. J. Lipton, “On the importance of checking cryptographic protocols for faults”, EUROCRYPT ’97, LNCS 1233, Springer, 1997, pp. 37–51.';
+const R_BS='E. Biham, A. Shamir, “Differential fault analysis of secret key cryptosystems”, CRYPTO ’97, LNCS 1294, Springer, 1997, pp. 513–525.';
+const R_GIR='C. Giraud, “DFA on AES”, AES 2004, LNCS 3373, Springer, 2005, pp. 27–41.';
+const R_DIP='A. Huseynli, Y. Imamverdiyev, “Differential fault analysis of Dipper: the role of modular addition”, <cite>Herald of the Azerbaijan Engineering Academy</cite> 18 (3), 2026, pp. 1–14, <a href="https://doi.org/10.52171/herald.483">doi:10.52171/herald.483</a>.';
+T.time.doc=()=>`<h2>Side channels and timing</h2>
+<p class="lead">A side-channel attack measures something the designer never meant to output: the time a computation takes, the current it draws, its electromagnetic field. Timing is the easiest to measure, sometimes even over a network.</p>
+<p>Paul Kocher showed in 1996 that the time of a modular exponentiation reveals the private exponent of RSA, Diffie–Hellman and DSS. The PIN check on this page is the simplest case of the same mistake: the time depends on the secret.</p>
+${EX('<span class="m">memcmp</span> in C and <span class="m">==</span> on strings in most languages stop at the first difference. Comparing a MAC tag this way leaks it byte by byte, like the PIN here. Libraries have constant-time comparisons for this, for example <span class="m">CRYPTO_memcmp</span> in OpenSSL and <span class="m">hmac.compare_digest</span> in Python.')}
+${NO('Constant time means more than a loop without an early exit. A table look-up at a secret index leaks through the processor cache: that is how table-based AES was attacked.')}
+${MORE([R_KOCHER,'D. J. Bernstein, “Cache-timing attacks on AES”, 2005.'])}`;
+T.spa.doc=()=>{const ops=sqmOps(),nS=ops.filter(o=>o.o==='S').length;return`<h2>Simple power analysis</h2>
+<p class="lead">A chip draws current in a pattern that follows what it computes. Simple power analysis (SPA) reads the key from the sequence of operations in one or a few traces.</p>
+<p>Square-and-multiply is the classic victim: the operations follow the bits of the exponent, one to one.</p>
+${EX(`d = ${RSA.d} has ${DB.length} bits, ${[...DB].filter(b=>b==='1').length} of them 1. After the leading 1 the trace shows ${nS} squares and ${ops.length-nS} multiplies, and their order is the binary form of d.`)}
+${NO('The Montgomery ladder hides which operations run, but not the values they work on. Against the statistical attacks of the next tab the exponent or the message must also be randomized (blinding).')}
+${USE(`The same exponentiation is used for RSA decryption and in Diffie–Hellman; on elliptic curves double-and-add has the same weakness (${link('ecc.html#mul','multiples of a point')}).`)}
+${MORE([R_DPA,R_KOCHER])}`};
+T.cpa.doc=()=>`<h2>Correlation power analysis</h2>
+<p class="lead">Differential power analysis (DPA, Kocher, Jaffe and Jun, 1999) needs no knowledge of the operations, only many traces and a guess of one small part of the key. Correlation power analysis (CPA, Brier, Clavier and Olivier, 2004) is its most common form.</p>
+<p>For each key guess the attacker predicts a number per trace, here the Hamming weight H of the S-box output, and computes the correlation with the measured power P: ${M('ρ = cov(H, P) / (σ<sub>H</sub> · σ<sub>P</sub>)')}. The right guess has the highest |ρ|.</p>
+${EX('The Hamming weight of a random byte has variance 8 · ¼ = 2. With noise of variance 1, the expected ρ of the right guess is √2 / √3 ≈ 0.82. With a few hundred traces the measured value lands near it, a little above or below.')}
+${NO('This page records one sample per trace, at the right moment. A real trace has thousands of samples, and the attacker computes ρ for every sample: the peak shows both the key byte and the moment it is processed.')}
+${USE('Smart cards, payment terminals and IoT devices are the usual targets: the attacker holds the device in his hands. Certification of such chips includes testing against these attacks.')}
+${MORE([R_DPA,R_CPA])}`;
+T.crt.doc=()=>`<h2>Fault attacks on RSA</h2>
+<p class="lead">A fault attack makes the device compute wrongly, with a short voltage or clock glitch, a laser flash or an electromagnetic pulse, and learns the key from the wrong result.</p>
+<p>Boneh, DeMillo and Lipton showed in 1997 that one faulty RSA-CRT signature together with a correct one gives a factor of n: ${M('gcd(s − s′, n)')}. The form used on this page, a remark by Arjen Lenstra, needs only the message: ${M('gcd(s′<sup>e</sup> − m, n)')}.</p>
+${EX(`With the textbook key: s = ${RSA.s}, the faulty s′ from the picture, and both formulas give the same prime.`)}
+${NO('With randomized padding (RSA-PSS) the attacker does not know the exact padded message, and the second formula fails. With deterministic padding (PKCS#1 v1.5 signatures) it works.')}
+${USE(`Verifying a signature with the public exponent before releasing it is cheap. The ${link('rsa.html#atk','attacks on the RSA page')} are mathematical; this one needs only one wrong answer.`)}
+${MORE([R_BDL])}`;
+T.dfa.doc=()=>`<h2>Differential fault analysis</h2>
+<p class="lead">Biham and Shamir (1997) combined faults with differential cryptanalysis: encrypt the same plaintext twice, once with a fault, and study how the difference passes through the last rounds.</p>
+<p>The attacker never needs to know the fault exactly, only its type, for example “one bit” or “one byte”. Every key guess that cannot explain the observed difference is thrown away.</p>
+${EX('Giraud’s attack on AES flips single bits before the last SubBytes, as on this page. Faults one or two rounds earlier spread to several bytes and give information on several key bytes at once.')}
+${box('From our research',`A. Huseynli and Y. Imamverdiyev applied DFA to ${link('dipper.html','Dipper')}, a 64-bit lightweight block cipher that combines the GIFT S-box with modular additions of 16-bit words. With a random nibble fault in the S-box input of one round, the 96-bit key was recovered in all 1000 simulated trials, with a median of 210 faulty ciphertexts. The modular addition is what makes the attacked round informative: in variants where it is replaced by XOR or removed, this key filter gets no information. The code is on <a href="https://github.com/AlexGuseinov/dipper-dfa">GitHub</a>.`,'use')}
+${NO('Computing twice stops random faults, but an attacker who can inject the same fault twice defeats it. Infective countermeasures instead turn a faulty result into random output.')}
+${MORE([R_BS,R_GIR,R_DIP])}`;
+T.def.doc=()=>`<h2>Defences in practice</h2>
+<p class="lead">A side-channel defence makes what can be measured independent of the secret; a fault defence makes sure a wrong result never leaves the device.</p>
+${NO('Defences are tested, not proved: an implementation is attacked in a lab with the best known methods. The attacks improve every year, so the tests do too.')}
+${MORE(['P. Kocher, J. Jaffe, B. Jun, P. Rohatgi, “Introduction to differential power analysis”, <cite>Journal of Cryptographic Engineering</cite> 1, 2011, pp. 5–27.',R_KOCHER,R_BDL])}`;
+
+/* ---------- one question per tab ---------- */
+const QZ={
+  time:{q:'Why does the early-exit PIN check leak the PIN?',o:['It returns the PIN','Its time depends on how many digits are right','It uses too little memory'],a:1,why:'Each correct leading digit adds one comparison, so the right digit takes longer.'},
+  spa:{q:'In square-and-multiply, what does “S then M” in the trace mean?',o:['a 0 bit','a 1 bit','the end of the key'],a:1,why:'Every bit has a square; only a 1 bit adds a multiply.'},
+  cpa:{q:'What does the attacker need to know for CPA on the first AES round?',o:['The key','The plaintexts and the power traces','The S-box output'],a:1,why:'He predicts the S-box output for every key guess from the known plaintexts and compares with the traces.'},
+  crt:{q:'One fault in the mod-q half of an RSA-CRT signature reveals …',o:['q','p','d mod q only'],a:1,why:'s′ is still correct modulo p, so gcd(s′^e − m, n) = p.'},
+  dfa:{q:'Why does the attack aim at the last round of AES?',o:['It is the fastest round','There is no MixColumns: one ciphertext byte depends on one key byte','The S-box is different there'],a:1,why:'Without MixColumns each ciphertext byte is S(x) ⊕ k for one key byte, so guesses can be tested byte by byte.'},
+  def:{q:'Which defence stops the RSA-CRT fault attack?',o:['Masking','Constant-time comparison','Verifying the signature before sending it'],a:2,why:'A wrong signature is never released, so the attacker gets nothing to compute the gcd with.'}};
+function quiz(id){
+  const z=QZ[id];if(!z)return'';const p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`}
+
+/* ---------- the walkthrough ---------- */
+const NARROW=matchMedia('(max-width:1000px)'),RM=matchMedia('(prefers-reduced-motion: reduce)'),ROOM={k:'',h:0};
+const speed=()=>+$('#spd').value;
+function holdRoom(t,n,k){
+  const ex=$('#explain');ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2)return;
+  const ck=[ST.tab,ex.clientWidth,ST.seed[ST.tab],ST.cpaN,ST.crtHalf,ST.crtBit].join('|');
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){ex.innerHTML=t.say(j);h=Math.max(h,ex.offsetHeight)}ex.innerHTML=t.say(k);ROOM.k=ck;ROOM.h=h}
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function show(){
+  const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
+  stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  const dc=$('#doc');dc.hidden=!t.doc;dc.innerHTML=t.doc?t.doc(k):'';
+  holdRoom(t,n,k);
+  $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
+}
+function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
+function tickPlay(){ST.playT=setTimeout(()=>{ST.playT=null;const n=T[ST.tab].n(),k=ST.step[ST.tab]||0;if(k>=n-1){setPlaying(false);return}ST.step[ST.tab]=k+1;show();if(k+1>=n-1)setPlaying(false);else tickPlay()},(RM.matches?900:2400)/speed())}
+function setTab(id){
+  setPlaying(false);ST.tab=id;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));show();
+  try{localStorage.setItem('sca-tab',id);history.replaceState(null,'','#'+id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)+1;show()};
+$('#bBack').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)-1;show()};
+$('#bReset').onclick=()=>{setPlaying(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const n=T[ST.tab].n();if(n<2)return;if((ST.step[ST.tab]||0)>=n-1){ST.step[ST.tab]=0;show()}setPlaying(true)};
+document.addEventListener('click',e=>{
+  const go=e.target.closest('[data-go]');if(go){e.preventDefault();setTab(go.dataset.go);window.scrollTo({top:0,behavior:RM.matches?'auto':'smooth'});return}
+  const ac=e.target.closest('[data-act]');
+  if(ac){const a=ac.dataset.act;setPlaying(false);
+    if(a==='rerun')ST.seed[ST.tab]=newSeed();
+    else if(a==='half')ST.crtHalf=ac.dataset.v;
+    else if(a==='bit')ST.crtBit=(ST.crtBit+1)%6;
+    show();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+});
+// the trace slider redraws the picture and the text only, so it keeps working while it is dragged
+document.addEventListener('input',e=>{
+  if(e.target.id!=='cpaN')return;ST.cpaN=+e.target.value;const t=T[ST.tab],k=ST.step[ST.tab]||0;
+  stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#cpaNv').textContent=ST.cpaN;$('#cpaRank').textContent=cpaData().order.indexOf(CK)+1;
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.target.closest&&e.target.closest('button,a')&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'){if(!$('#bStep').disabled)$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&T[ST.tab].n()>1){$('#bPlay').click();e.preventDefault()}
+});
+PHONE.addEventListener('change',()=>show());
+let startTab='time';
+try{const h=location.hash.slice(1),t=localStorage.getItem('sca-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
+setTab(startTab);
+</script>
+</body>
+</html>
