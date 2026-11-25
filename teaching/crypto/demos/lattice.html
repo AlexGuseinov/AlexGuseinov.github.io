@@ -454,7 +454,7 @@ function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5>>>0;let t=a;t=Math.i
 /* ---------- the 3D scene, drawn with three.js ----------
    World units: x to the right, y away from the reader on the table, z up out of the table.
    Every step lists the parts it shows (points, rods, arrow heads, flat cells, labels).
-   Parts with the same id stay; new ones fade in; missing ones fade out. */
+   Parts with the same id stay; new ones fade in (points also grow a little); missing ones fade out. */
 const RM=matchMedia('(prefers-reduced-motion: reduce)'),NARROW=matchMedia('(max-width:1000px)');
 const SC={U:46,W:760,H:470,ok:false,root:null,items:new Map(),pose:{yaw:-18,pitch:52,zoom:1,cx:0,cy:0,cz:0},tw:null,need:true,col:null};
 const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],addv=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
@@ -465,8 +465,9 @@ try{THREE=await import('three');({OrbitControls}=await import('three/addons/cont
 const V3=p=>new THREE.Vector3(p[0],p[2]||0,-p[1]);
 const has=(c,k)=>(' '+(c||'')+' ').includes(' '+k+' ');
 function readColors(){const cs=getComputedStyle(document.documentElement),g=n=>new THREE.Color((cs.getPropertyValue(n).trim()||'#888888'));
-  return{ink:g('--ink'),muted:g('--muted'),line2:g('--line2'),n0:g('--n0'),n1:g('--n1'),n2:g('--n2'),n3:g('--n3'),xor:g('--xor')}}
-const hexOf=c=>'#'+c.getHexString();
+  return{ink:g('--ink'),muted:g('--muted'),line2:g('--line2'),panel:g('--panel'),n0:g('--n0'),n1:g('--n1'),n2:g('--n2'),n3:g('--n3'),xor:g('--xor')}}
+const rgba=(c,a)=>`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},${a})`;
+const srgb=c=>c.clone().convertLinearToSRGB();                   // THREE.Color keeps linear values; canvases want sRGB
 // the colour of a part comes from the same role names as the bench under the picture
 function roleColor(c){const K=SC.col;
   if(has(c,'v1')||has(c,'cellab'))return K.n0;if(has(c,'v2'))return K.n3;if(has(c,'v3'))return K.n1;
@@ -476,76 +477,101 @@ function roleColor(c){const K=SC.col;
   if(has(c,'org'))return K.ink;if(has(c,'axis'))return K.line2;if(has(c,'muted')||has(c,'blab'))return K.muted;return null}
 const GEO={};const geo=(n,f)=>GEO[n]||(GEO[n]=f());
 const UP=()=>new THREE.Vector3(0,1,0);
-function material(color,o={}){return new THREE.MeshStandardMaterial({color,roughness:o.rough??.4,metalness:.04,transparent:true,opacity:0,side:o.side??THREE.FrontSide,depthWrite:o.depthWrite??true})}
-// a label: text drawn large on a canvas, so it stays sharp on a sprite
+const material=(color,o={})=>new THREE.MeshStandardMaterial({color,roughness:o.rough??.4,metalness:.04,transparent:true,opacity:0,side:o.side??THREE.FrontSide,depthWrite:o.depthWrite??true});
+const gloss=color=>new THREE.MeshPhysicalMaterial({color,roughness:.3,metalness:0,clearcoat:.85,clearcoatRoughness:.18,transparent:true,opacity:0});
+// a soft round shadow, drawn once and shared
+let SHADOW=null;
+function shadowTex(){if(SHADOW)return SHADOW;const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);
+  r.addColorStop(0,'rgba(0,0,0,.55)');r.addColorStop(.45,'rgba(0,0,0,.22)');r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(0,0,128,128);SHADOW=new THREE.CanvasTexture(c);return SHADOW}
+// the table: graph paper with one square per unit, stronger axes, fading out towards the edges
+function paperTex(rx,ry){
+  const W=2048,H=Math.round(2048*ry/rx),k=W/(2*rx),c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),ink=srgb(SC.col.ink);
+  const base=g.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.55);base.addColorStop(0,rgba(ink,.05));base.addColorStop(1,rgba(ink,0));g.fillStyle=base;g.fillRect(0,0,W,H);
+  g.strokeStyle=rgba(ink,.11);g.lineWidth=2;g.beginPath();
+  for(let x=Math.ceil(-rx);x<=rx;x++){const X=(x+rx)*k;g.moveTo(X,0);g.lineTo(X,H)}for(let y=Math.ceil(-ry);y<=ry;y++){const Yy=(ry-y)*k;g.moveTo(0,Yy);g.lineTo(W,Yy)}g.stroke();
+  g.strokeStyle=rgba(ink,.32);g.lineWidth=4;g.beginPath();g.moveTo(rx*k,0);g.lineTo(rx*k,H);g.moveTo(0,ry*k);g.lineTo(W,ry*k);g.stroke();
+  g.globalCompositeOperation='destination-in';const m=g.createRadialGradient(W/2,H/2,W*.18,W/2,H/2,W*.5);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=m;g.fillRect(0,0,W,H);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t}
+// a label: text drawn large on a canvas, so it stays sharp on a sprite; a pill in the page colour with a thin rim in the role colour
 function labelSprite(it){
-  const c=it.cls||'',lines=String(it.t).replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,'').split('\n'),s=4,fs=(has(c,'blab')?27:30)*s,lh=fs*1.22;
+  const c=it.cls||'',lines=String(it.t).replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,'').split('\n'),s=4,fs=(has(c,'blab')?26:29)*s,lh=fs*1.22;
   const font=`${has(c,'bval')?'700':'600'} ${fs}px ${has(c,'bval')?'ui-monospace, SFMono-Regular, Menlo, monospace':'system-ui, -apple-system, Segoe UI, Roboto, sans-serif'}`;
   const cv=document.createElement('canvas'),g=cv.getContext('2d');g.font=font;
-  const w=Math.max(...lines.map(l=>g.measureText(l).width))+26*s,h=lh*lines.length+16*s;cv.width=Math.ceil(w);cv.height=Math.ceil(h);
-  g.font=font;const plain=has(c,'muted');
-  if(!plain){g.fillStyle='rgba(255,255,255,0.92)';g.beginPath();g.roundRect(0,0,cv.width,cv.height,11*s);g.fill()}
-  const col=roleColor(c)||new THREE.Color('#1c1b19'),hx=plain?hexOf(SC.col.muted):(col.getHSL({}).l>.62?'#1c1b19':hexOf(col));
-  if(has(c,'tag')){g.strokeStyle=hx;g.lineWidth=3*s;g.beginPath();g.roundRect(1.5*s,1.5*s,cv.width-3*s,cv.height-3*s,10*s);g.stroke()}
-  g.fillStyle=hx;g.textAlign='center';g.textBaseline='middle';lines.forEach((l,i)=>g.fillText(l,cv.width/2,8*s+lh*(i+.5)+1));
+  const w=Math.max(...lines.map(l=>g.measureText(l).width))+30*s,h=lh*lines.length+16*s;cv.width=Math.ceil(w);cv.height=Math.ceil(h);
+  g.font=font;const plain=has(c,'muted'),role=roleColor(c),txt=srgb(role||SC.col.ink);
+  if(!plain){g.fillStyle=rgba(srgb(SC.col.panel),.9);g.beginPath();g.roundRect(1.5*s,1.5*s,cv.width-3*s,cv.height-3*s,cv.height/2);g.fill();
+    g.strokeStyle=rgba(txt,has(c,'tag')?.95:.38);g.lineWidth=(has(c,'tag')?2.5:1.6)*s;g.stroke()}
+  g.fillStyle=rgba(plain?srgb(SC.col.muted):txt,1);g.textAlign='center';g.textBaseline='middle';lines.forEach((l,i)=>g.fillText(l,cv.width/2,8*s+lh*(i+.5)+1));
   const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,transparent:true,opacity:0}));
-  const H=(has(c,'blab')?.46:has(c,'bval')?.56:.54)*(lines.length>1?1.75:1);sp.userData.size=[H*cv.width/cv.height,H];sp.renderOrder=10;sp.position.copy(V3(it.p));return sp}
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,depthWrite:false,transparent:true,opacity:0,fog:false}));
+  const H=(has(c,'blab')?.5:has(c,'bval')?.62:.6)*(lines.length>1?1.75:1);sp.userData.size=[H*cv.width/cv.height,H];sp.renderOrder=20;sp.position.copy(V3(it.p));return sp}
 function build(it){
-  const c=it.cls||'',K=SC.col;let o,base=1;
+  const c=it.cls||'',K=SC.col;let o,base=1,parts=null,pop=false;
   if(it.k==='pt'){
-    const tg=has(c,'tgt'),r=has(c,'org')?.2:has(c,'hl')?.23:(has(c,'ok')||has(c,'no'))?.25:.16;
-    o=new THREE.Mesh(tg?geo('box',()=>new THREE.BoxGeometry(1,1,1)):geo('sph',()=>new THREE.SphereGeometry(1,28,18)),material(roleColor(c)||K.n0,{rough:.32}));
-    o.scale.setScalar(tg?.34:r);o.userData.ps=tg?.34:r;o.position.copy(V3(it.p))}
+    const tg=has(c,'tgt'),r=has(c,'org')?.19:has(c,'hl')?.22:(has(c,'ok')||has(c,'no'))?.24:.15,h=it.p[2]||0;
+    o=new THREE.Group();const m=new THREE.Mesh(tg?geo('box',()=>new THREE.BoxGeometry(1,1,1)):geo('sph',()=>new THREE.SphereGeometry(1,32,20)),gloss(roleColor(c)||K.n0));
+    m.scale.setScalar(tg?.32:r);o.add(m);parts=[[m.material,1]];
+    // a soft shadow straight below the point: it shows how high the point floats above the table
+    const sh=new THREE.Mesh(geo('plane',()=>new THREE.PlaneGeometry(1,1)),new THREE.MeshBasicMaterial({map:shadowTex(),transparent:true,opacity:0,depthWrite:false}));
+    sh.rotation.x=-Math.PI/2;sh.position.y=-h+.004;const ss=(tg?.32:r)*(3.4+h*.55);sh.scale.set(ss,ss,1);sh.renderOrder=-2;o.add(sh);parts.push([sh.material,h>0?.5:.75]);
+    o.position.copy(V3(it.p));pop=true}
   else if(it.k==='rod'){
     const a=V3(it.a),b=V3(it.b),d=b.clone().sub(a),L=d.length();if(L<1e-6)return null;
-    base=has(c,'axis')?.75:1;o=new THREE.Mesh(geo('cyl',()=>new THREE.CylinderGeometry(1,1,1,16)),material(roleColor(c)||K.muted,{rough:.45}));
-    const r=Math.max(.014,(it.w||3)/SC.U*.58);o.scale.set(r,L,r);o.position.copy(a).addScaledVector(d,.5);o.quaternion.setFromUnitVectors(UP(),d.normalize())}
+    base=has(c,'axis')?.6:1;o=new THREE.Mesh(geo('cyl',()=>new THREE.CylinderGeometry(1,1,1,20)),material(roleColor(c)||K.muted,{rough:.35}));
+    const r=Math.max(.016,(it.w||3)/SC.U*.82);o.scale.set(r,L,r);o.position.copy(a).addScaledVector(d,.5);o.quaternion.setFromUnitVectors(UP(),d.normalize())}
   else if(it.k==='head'){
-    const a=V3(it.a),b=V3(it.b),u=b.clone().sub(a).normalize(),h=.42;
-    o=new THREE.Mesh(geo('cone',()=>new THREE.ConeGeometry(1,1,28)),material(roleColor(c)||K.muted,{rough:.38}));
-    o.scale.set(.15,h,.15);o.position.copy(b).addScaledVector(u,-h/2);o.quaternion.setFromUnitVectors(UP(),u)}
+    const a=V3(it.a),b=V3(it.b),u=b.clone().sub(a).normalize(),h=.46;
+    o=new THREE.Mesh(geo('cone',()=>new THREE.ConeGeometry(1,1,32)),material(roleColor(c)||K.muted,{rough:.32}));
+    o.scale.set(.175,h,.175);o.position.copy(b).addScaledVector(u,-h/2);o.quaternion.setFromUnitVectors(UP(),u)}
   else if(it.k==='quad'){
     if(has(c,'ring')){const ctr=addv(it.o,mul(addv(it.u,it.v),.5)),r=len(it.u)/2;
-      o=new THREE.Mesh(new THREE.RingGeometry(r-.035,r+.035,128),material(K.n1,{side:THREE.DoubleSide,depthWrite:false}));o.rotation.x=-Math.PI/2;o.position.copy(V3(ctr)).add(new THREE.Vector3(0,.012,0));base=.95}
+      o=new THREE.Mesh(new THREE.RingGeometry(r-.03,r+.03,160),material(K.n1,{side:THREE.DoubleSide,depthWrite:false}));o.rotation.x=-Math.PI/2;o.position.copy(V3(ctr)).add(new THREE.Vector3(0,.012,0));o.userData.own=true;base=.95}
     else{const A=V3(it.o),Bq=V3(addv(it.o,it.u)),Cq=V3(addv(addv(it.o,it.u),it.v)),D=V3(addv(it.o,it.v)),g=new THREE.BufferGeometry();
-      g.setAttribute('position',new THREE.Float32BufferAttribute([A,Bq,Cq,A,Cq,D].flatMap(p=>[p.x,p.y,p.z]),3));g.computeVertexNormals();
-      const bar=has(c,'top')||has(c,'side1')||has(c,'side2');
-      const col=bar?(has(c,'hi')?K.n1:has(c,'ec')?K.n3:has(c,'rsa')?K.n2:K.n0):has(c,'floor')?K.ink:has(c,'bcell')?K.xor:has(c,'pcell')?K.n1:K.n0;
-      base=bar?1:has(c,'floor')?.05:has(c,'cell')?.22:has(c,'cell2')?.07:has(c,'bcell')?.2:has(c,'pcell')?.16:.15;
-      o=new THREE.Mesh(g,material(col,{side:THREE.DoubleSide,depthWrite:bar,rough:bar?.55:.9}));o.userData.own=true;if(!bar)o.renderOrder=-1}}
+      g.setAttribute('position',new THREE.Float32BufferAttribute([A,Bq,Cq,A,Cq,D].flatMap(p=>[p.x,p.y,p.z]),3));g.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,0,1,1,0,1],2));g.computeVertexNormals();
+      if(has(c,'floor')){const m=new THREE.MeshBasicMaterial({map:paperTex(len(it.u)/2,len(it.v)/2),transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide});o=new THREE.Mesh(g,m);o.renderOrder=-3;o.userData.own=true}
+      else{const bar=has(c,'top')||has(c,'side1')||has(c,'side2');
+        const col=bar?(has(c,'hi')?K.n1:has(c,'ec')?K.n3:has(c,'rsa')?K.n2:K.n0):has(c,'bcell')?K.xor:has(c,'pcell')?K.n1:K.n0;
+        base=bar?1:has(c,'cell')?.24:has(c,'cell2')?.08:has(c,'bcell')?.2:has(c,'pcell')?.17:.15;
+        o=new THREE.Mesh(g,bar?gloss(col):material(col,{side:THREE.DoubleSide,depthWrite:false,rough:.9}));if(bar)o.material.side=THREE.DoubleSide;o.userData.own=true;if(!bar)o.renderOrder=-1}}}
   else if(it.k==='lab'){o=labelSprite(it)}
   else return null;
-  o.userData.base=base;return o}
-function disposeObj(o){if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}if(o.userData.own&&o.geometry)o.geometry.dispose()}
+  o.userData.parts=parts||[[o.material,1]];o.userData.base=base;o.userData.pop=pop;return o}
+function disposeObj(o){o.traverse(x=>{if(x.material){if(x.material.map&&x.material.map!==SHADOW)x.material.map.dispose();x.material.dispose()}});if(o.userData.own&&o.geometry)o.geometry.dispose()}
 const sig=it=>JSON.stringify([it.k,it.cls,it.p,it.a,it.b,it.o,it.u,it.v,it.t,it.w]);
 function scSet(list){
   if(!SC.ok)return;const now=performance.now(),seen=new Set();
   for(const it of list){
     if(it.k==='rod2'||it.k==='head2')continue;
     seen.add(it.id);const s=sig(it);let e=SC.items.get(it.id);
-    if(e&&e.sig!==s){e.tf=0;e.dead=true;SC.items.delete(it.id);SC.dying.push(e);e=null}
-    if(!e){const o=build(it);if(!o)continue;SC.scene.add(o);e={o,sig:s,f:0,tf:1,t0:now+(it.delay||0),base:o.userData.base};SC.items.set(it.id,e)}
+    if(e&&e.sig!==s){e.tf=0;SC.items.delete(it.id);SC.dying.push(e);e=null}
+    if(!e){const o=build(it);if(!o)continue;SC.scene.add(o);e={o,sig:s,f:0,tf:1,t0:now+(it.delay||0),base:o.userData.base};SC.items.set(it.id,e);applyF(e)}
     else e.tf=1;
   }
-  for(const[id,e]of SC.items)if(!seen.has(id)){e.tf=0;e.dead=true;SC.items.delete(id);SC.dying.push(e)}
+  for(const[id,e]of SC.items)if(!seen.has(id)){e.tf=0;SC.items.delete(id);SC.dying.push(e)}
   fitScale();SC.need=true}
+// what a fade level f (0 … 1) means for a part: its opacity, and for points a small growth
+function applyF(e){const o=e.o,f=e.f,k=1-(1-f)*(1-f);
+  for(const[m,b]of o.userData.parts){m.opacity=e.base*b*f;m.transparent=true}
+  if(o.isSprite)o.material.transparent=true;
+  if(o.userData.pop)o.scale.setScalar((o.userData.fs||1)*(.72+.28*k))}
 // fades: in over 300 ms, out over 200 ms (instantly with reduced motion)
 function fades(now){
-  let busy=false;const step=(e,dt)=>{const sp=RM.matches?1e9:(e.tf>e.f?1/300:1/200);if(now<e.t0)return true;const f=e.tf>e.f?Math.min(e.tf,e.f+dt*sp):Math.max(e.tf,e.f-dt*sp);
-    if(f!==e.f){e.f=f;e.o.material.opacity=e.base*f;e.o.material.transparent=f<1||e.base<1;return true}return false};
-  const dt=Math.min(250,now-(SC.last||now));SC.last=now;
-  for(const e of SC.items.values())busy=step(e,dt)||busy;
-  SC.dying=SC.dying.filter(e=>{step(e,dt);if(e.f<=0){SC.scene.remove(e.o);disposeObj(e.o);return false}busy=true;return true});
+  let busy=false;const dt=Math.min(250,now-(SC.last||now));SC.last=now;
+  const step=e=>{if(now<e.t0)return true;const sp=RM.matches?1e9:(e.tf>e.f?1/300:1/200),f=e.tf>e.f?Math.min(e.tf,e.f+dt*sp):Math.max(e.tf,e.f-dt*sp);
+    if(f!==e.f){e.f=f;applyF(e);return true}return false};
+  for(const e of SC.items.values())busy=step(e)||busy;
+  SC.dying=SC.dying.filter(e=>{step(e);if(e.f<=0){SC.scene.remove(e.o);disposeObj(e.o);return false}busy=true;return true});
   return busy}
 function fitScale(){const fit=clamp(SC.W/760,.45,1);
   // on a narrow screen the camera moves back; labels and points shrink less, so they stay readable
   const ls=fit**-.55,ps=fit**-.45;
-  for(const e of [...SC.items.values(),...SC.dying]){const o=e.o;if(o.isSprite)o.scale.set(o.userData.size[0]*ls,o.userData.size[1]*ls,1);else if(o.userData.ps)o.scale.setScalar(o.userData.ps*ps)}
+  for(const e of [...SC.items.values(),...SC.dying]){const o=e.o;if(o.isSprite)o.scale.set(o.userData.size[0]*ls,o.userData.size[1]*ls,1);else if(o.userData.pop){o.userData.fs=ps;applyF(e)}}
   return fit}
 function camApply(){
   if(!SC.ok)return;const p=SC.pose,fit=fitScale(),R=SC.H/(2*SC.U*p.zoom*fit*Math.tan(SC.cam.fov*Math.PI/360)),ph=p.pitch*Math.PI/180,th=-p.yaw*Math.PI/180,t=V3([p.cx,p.cy,p.cz]);
-  SC.ctl.target.copy(t);SC.cam.position.set(t.x+R*Math.sin(ph)*Math.sin(th),t.y+R*Math.cos(ph),t.z+R*Math.sin(ph)*Math.cos(th));SC.cam.lookAt(t);SC.need=true}
+  SC.ctl.target.copy(t);SC.cam.position.set(t.x+R*Math.sin(ph)*Math.sin(th),t.y+R*Math.cos(ph),t.z+R*Math.sin(ph)*Math.cos(th));SC.cam.lookAt(t);
+  // the far side of the table fades into the page: depth you can see without a horizon
+  SC.scene.fog.near=R*.92;SC.scene.fog.far=R*2.05;SC.need=true}
 // the pose as the reader left it after turning the picture
 function readPose(){const t=SC.ctl.target,d=SC.cam.position.clone().sub(t),R=d.length();
   return{...SC.pose,pitch:Math.acos(clamp(d.y/R,-1,1))*180/Math.PI,yaw:-Math.atan2(d.x,d.z)*180/Math.PI,cx:t.x,cy:-t.z,cz:t.y}}
@@ -563,19 +589,23 @@ function loop(now){
   requestAnimationFrame(loop);if(!SC.ok||SC.root.hidden)return;
   let busy=tween(now);busy=fades(now)||busy;if(SC.ctl.update())busy=true;
   if(busy||SC.need){SC.r.render(SC.scene,SC.cam);SC.need=false}}
+function lights(){
+  SC.scene.add(new THREE.HemisphereLight(0xffffff,0x3c4658,.55),new THREE.AmbientLight(0xffffff,.16));
+  const key=new THREE.DirectionalLight(0xffffff,1.2);key.position.set(-5,14,9);const rim=new THREE.DirectionalLight(0xdfe8ff,.45);rim.position.set(9,6,-12);SC.scene.add(key,rim)}
 function scInit(host){
   SC.root=host;SC.dying=[];
   if(!THREE){host.innerHTML='<p class="l3off">The 3D pictures need three.js, which loads from the internet. Connect and reload the page; the text and the other tabs work without it.</p>';return}
   try{
     host.innerHTML='<p class="l3hint">Drag to turn the picture</p>';
     const r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setPixelRatio(Math.min(2,devicePixelRatio||1));r.setClearColor(0x000000,0);r.outputColorSpace=THREE.SRGBColorSpace;
+    if(THREE.NeutralToneMapping!==undefined){r.toneMapping=THREE.NeutralToneMapping;r.toneMappingExposure=1.05}
     host.prepend(r.domElement);SC.r=r;SC.scene=new THREE.Scene();SC.cam=new THREE.PerspectiveCamera(26,1,.1,400);SC.col=readColors();
-    SC.scene.add(new THREE.HemisphereLight(0xffffff,0x3c4658,.6));SC.scene.add(new THREE.AmbientLight(0xffffff,.18));const sun=new THREE.DirectionalLight(0xffffff,1.15);sun.position.set(6,14,9);SC.scene.add(sun);
-    const ctl=new OrbitControls(SC.cam,r.domElement);ctl.enableDamping=true;ctl.dampingFactor=.09;ctl.enableZoom=false;ctl.enablePan=false;ctl.minPolarAngle=0;ctl.maxPolarAngle=Math.PI*.49;ctl.rotateSpeed=.8;
+    SC.scene.fog=new THREE.Fog(SC.col.panel.clone(),20,40);lights();
+    const ctl=new OrbitControls(SC.cam,r.domElement);ctl.enableDamping=true;ctl.dampingFactor=.08;ctl.enableZoom=false;ctl.enablePan=false;ctl.minPolarAngle=0;ctl.maxPolarAngle=Math.PI*.49;ctl.rotateSpeed=.75;
     ctl.addEventListener('start',()=>{SC.tw=null;host.classList.add('moved')});SC.ctl=ctl;
     const size=()=>{SC.W=host.clientWidth||760;SC.H=host.clientHeight||470;r.setSize(SC.W,SC.H,false);SC.cam.aspect=SC.W/SC.H;SC.cam.updateProjectionMatrix();camApply()};
-    new ResizeObserver(size).observe(host);size();SC.ok=true;camApply();
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{SC.col=readColors();for(const e of [...SC.items.values()]){SC.scene.remove(e.o);disposeObj(e.o)}SC.items.clear();show()});
+    new ResizeObserver(size).observe(host);SC.ok=true;size();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{SC.col=readColors();SC.scene.fog.color.copy(SC.col.panel);for(const e of [...SC.items.values()]){SC.scene.remove(e.o);disposeObj(e.o)}SC.items.clear();show()});
     requestAnimationFrame(loop);
   }catch(e){SC.ok=false;host.innerHTML='<p class="l3off">This browser could not start WebGL, so the 3D pictures are not shown. The text and the other tabs work.</p>'}
 }
@@ -604,7 +634,8 @@ function points(layers=[0],rx=8.6,ry=6.6){const out=[];
   for(const l of layers)for(let i=-9;i<=9;i++)for(let j=-9;j<=9;j++){const p=comb(i,j,l);if(Math.abs(p[0])<=rx&&Math.abs(p[1])<=ry)out.push({i,j,l,p})}
   return out}
 const dots=(pts,cls)=>pts.map(w=>P(pid(w.p),w.p,(cls||'')+(w.p[0]===0&&w.p[1]===0&&!w.p[2]?' org':''),Math.round(len(w.p)*45)));
-const floor=(rx=9.2,ry=7.2)=>[quad('floor',[-rx,-ry,0],[2*rx,0,0],[0,2*ry,0],'floor'),...rod('axx',[-rx,0,0],[rx,0,0],'axis',1.2),...rod('axy',[0,-ry,0],[0,ry,0],'axis',1.2)];
+// the table: graph paper that fades out at the edges, with the two axes drawn on it
+const floor=(rx=10,ry=8)=>[quad('floor',[-rx,-ry,0],[2*rx,0,0],[0,2*ry,0],'floor')];
 // a + b as a path of arrows, for "2b₁ − b₂" and the like
 function path(id,steps,cls){const out=[];let at=[0,0,0];steps.forEach((s,i)=>{const nx=addv(at,s);out.push(...arrow(id+i,at,nx,cls,2.4));at=nx});return out}
 const coords2=(t,u,v)=>{const d=det2(u,v);return[(t[0]*v[1]-t[1]*v[0])/d,(u[0]*t[1]-u[1]*t[0])/d]};
@@ -621,7 +652,7 @@ T.lat={n:()=>4,
     if(k>=3)sc.push(quad('cell',[0,0,0],B1,B2,'cell'),...[[-1,-1],[1,0],[0,1],[-1,1],[2,-1],[-2,1],[1,-1]].map(([i,j])=>quad('cell'+i+j,comb(i,j),B1,B2,'cell2')),lab('la',[2.1,1.55,0],'area 5','cellab'));
     sc.push(...goodBasis());
     if(k===1)sc.push(...path('pa',[B1,B1,[-B2[0],-B2[1],0]],'pth'),P('hl',[5,0,0],'hl'),lab('lhl',[5.3,-.75,0],'2b₁ − b₂ = (5, 0)','pth'));
-    const cam=[{yaw:-14,pitch:50,zoom:1.18,cx:1.6,cy:1.2},{yaw:-10,pitch:46,zoom:1.12,cx:2.6,cy:.6},{yaw:-18,pitch:52,zoom:.98,cx:0,cy:0},{yaw:-22,pitch:48,zoom:1.12,cx:1.6,cy:1.4}][k];
+    const cam=[{yaw:-16,pitch:48,zoom:1.75,cx:1.5,cy:1.1},{yaw:-10,pitch:46,zoom:1.45,cx:2.7,cy:.6},{yaw:-18,pitch:52,zoom:1.02,cx:0,cy:0},{yaw:-22,pitch:48,zoom:1.3,cx:1.7,cy:1.4}][k];
     let h='';
     if(k===0)h=bench(bt('b₁','v1c','(3, 1)'),op('and'),bt('b₂','v2c','(1, 2)'));
     if(k===1)h=bench(bt('2 · b₁','v1c','(6, 2)'),op('−'),bt('1 · b₂','v2c','(1, 2)'),op('='),bt('a lattice point','pthc','(5, 0)'));
