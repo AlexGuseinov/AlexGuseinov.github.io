@@ -313,6 +313,7 @@ svg.pic.gq{max-width:560px}
 .pic .tk{font:11.5px var(--mono);fill:var(--muted);text-anchor:middle}
 .pic .axn{font:italic 13px var(--math);fill:var(--muted)}
 .pic .cv{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linejoin:round}
+.pic .cvd{fill:var(--accent)}
 .pic .ln{stroke:var(--muted);stroke-width:1.8;fill:none}
 .pic .ln.sec{stroke:var(--n2)}.pic .ln.tan{stroke:var(--n2)}.pic .ln.neg{stroke:var(--n4)}
 .pic .ln.dash{stroke-dasharray:5 5;stroke:var(--faint)}
@@ -508,15 +509,18 @@ function roots(a,b){const r=[];let pv=f3(-30,a,b);
   for(let i=-2999;i<=3000;i++){const x=i/100,v=f3(x,a,b);
     if(v===0)r.push(x);else if(pv!==0&&pv*v<0){let lo=x-.01,hi=x;for(let j=0;j<60;j++){const m=(lo+hi)/2;if(f3(lo,a,b)*f3(m,a,b)<=0)hi=m;else lo=m}r.push((lo+hi)/2)}pv=v}
   return r}
-// the curve as SVG paths: a closed oval between the first two roots, and an open arc from the last root to the right
+// the curve as SVG paths: a closed oval between the first two roots (when there are three different roots), and an open arc to the right.
+// When 4a³ + 27b² = 0 two roots fall together at d = −3b/(2a) and the third is s = 3b/a: if d > s the arc from s loops back through (d, 0) and crosses itself there; if d < s, (d, 0) is a lone point of the curve.
 function curvePath(G,a,b){
   const r=roots(a,b),E=G.V.x1+1,y=x=>Math.sqrt(Math.max(0,f3(x,a,b))),P=(x,s)=>`${G.sx(x).toFixed(1)} ${G.sy(s*y(x)).toFixed(1)}`;
-  let d='';
-  if(r.length>=3&&r[1]-r[0]>1e-6){const u=range(0,160).map(i=>r[0]+(r[1]-r[0])*(1-Math.cos(Math.PI*i/160))/2);
+  const sing=4*a**3+27*b*b===0&&a!==0,dd=sing?-3*b/(2*a):null,ss=sing?3*b/a:null;
+  let d='',iso=null;
+  if(!sing&&r.length>=3&&r[1]-r[0]>1e-6){const u=range(0,160).map(i=>r[0]+(r[1]-r[0])*(1-Math.cos(Math.PI*i/160))/2);
     d+='M'+u.map(x=>P(x,1)).join(' L')+' L'+u.slice().reverse().map(x=>P(x,-1)).join(' L')+'Z'}
-  const s=r.at(-1),u=range(0,240).map(i=>s+(E-s)*(i/240)**2);
+  if(sing&&dd<ss)iso=dd;
+  const s=sing?ss:r.at(-1),u=range(0,320).map(i=>s+(E-s)*(i/320)**2);
   d+='M'+u.slice().reverse().map(x=>P(x,-1)).join(' L')+' L'+u.map(x=>P(x,1)).join(' L');
-  return{d,r}}
+  return{d,r,iso}}
 const dot=(G,x,y,cls,lab,o={})=>`<g class="pt ${cls}${o.nw?' nw':''}"><circle cx="${G.sx(x)}" cy="${G.sy(y)}" r="${o.r||6.5}"/>${lab?`<text x="${G.sx(x)+(o.dx??10)}" y="${G.sy(y)+(o.dy??-10)}"${o.end?' text-anchor="end"':''}>${lab}</text>`:''}</g>`;
 function lineThrough(G,x,y,l,cls){const X0=G.V.x0-1,X1=G.V.x1+1;
   return`<line class="ln ${cls||''}" pathLength="1" x1="${G.sx(X0)}" y1="${G.sy(y+l*(X0-x))}" x2="${G.sx(X1)}" y2="${G.sy(y+l*(X1-x))}"/>`}
@@ -549,11 +553,11 @@ const segB=(key,cur,opts)=>`<div class="seg">${opts.map(o=>`<button data-set="${
 const fx=(rows,k0)=>`<div class="fxs">${rows.map((r,i)=>`<div class="fx${i===rows.length-1&&k0?' nw':''}">${r}</div>`).join('')}</div>`;
 
 /* ---------- 1 · the curve over the real numbers ---------- */
-const V1={x0:-5,x1:5,y0:-8,y1:8,dx:1,dy:2};
+const V1={x0:-4,x1:4,y0:-3,y1:3,dx:1,dy:1},H1=12+26+(640-34-12)*(V1.y1-V1.y0)/(V1.x1-V1.x0);   // 1 on the x-axis is as long as 1 on the y-axis, so the curve keeps its true shape (round ends, no fake corners)
 function cvS(){
-  const a=ST.ca,b=ST.cb,G=plane(V1),C=curvePath(G,a,b),r=C.r,disc=4*a**3+27*b*b;
-  let x0=null;for(let x=Math.ceil(r.at(-1)+.2);x<=4;x++){const f=f3(x,a,b);if(f>.2&&Math.sqrt(f)<=7){x0=x;break}}
-  if(x0===null)x0=Math.ceil(r.at(-1)+.2);
+  const a=ST.ca,b=ST.cb,G=plane(V1,640,H1),C=curvePath(G,a,b),r=C.r,disc=4*a**3+27*b*b;
+  let x0=null;for(let x=Math.ceil((r.at(-1)+.2)*2)/2;x<=V1.x1-.5;x+=.5){const f=f3(x,a,b);if(f>.2&&Math.sqrt(f)<=V1.y1-.4){x0=x;break}}
+  if(x0===null){let lo=r.at(-1),hi=lo+5;for(let j=0;j<60;j++){const m=(lo+hi)/2;if(f3(m,a,b)<4)lo=m;else hi=m}x0=Math.round(lo*100)/100}   // a point with y = ±2 that stays inside the picture
   const pieces=disc<0?2:1,sx=disc===0?[0,1,-1].map(s=>s*Math.sqrt(Math.max(0,-a/3))).find(x=>Math.abs(f3(x,a,b))<1e-9):null;
   return{a,b,G,C,r,disc,x0,f0:f3(x0,a,b),pieces,sx}}
 const EX1=[[-2,1,'two pieces'],[-1,1,'one piece'],[0,7,'Bitcoin’s curve'],[-3,2,'crosses itself'],[0,0,'a sharp point']];
@@ -562,23 +566,23 @@ T.cv={n:()=>4,
     `<div class="fld"><span class="flh">Examples</span><div class="row">${EX1.map(e=>loadBtn(`ca=${e[0]},cb=${e[1]}`,`${eqn(e[0],e[1])} <small>${e[2]}</small>`)).join('')}</div></div><div class="err" id="err"></div><p class="hint2">a and b are whole numbers from −10 to 10. A calculation such as 2*3 − 7 works too.</p>`,
   view(k){
     const S=cvS(),{a,b,G,C,r,disc,x0,f0,sx}=S;
-    let body=`<path class="cv${k===0?' draw':''}" d="${C.d}" pathLength="1"/>`;
-    if(k===1){const y0=Math.sqrt(f0);body+=vline(G,x0,'dash draw')+dot(G,x0,y0,'pP',`P = (${x0}, ${fr(y0,2)})`,{nw:1})+dot(G,x0,-y0,'pN',`−P = (${x0}, ${fr(-y0,2)})`,{nw:1,dy:22})}
+    let body=`<path class="cv${k===0?' draw':''}" d="${C.d}" pathLength="1"/>`+(C.iso!=null?`<circle class="cvd" cx="${G.sx(C.iso)}" cy="${G.sy(0)}" r="3.6"/>`:'');
+    if(k===1){const y0=Math.sqrt(f0);body+=vline(G,x0,'dash draw')+dot(G,x0,y0,'pP',`P = (${fr(x0,2)}, ${fr(y0,2)})`,{nw:1})+dot(G,x0,-y0,'pN',`−P = (${fr(x0,2)}, ${fr(-y0,2)})`,{nw:1,dy:22})}
     if(k===2)body+=r.map((x,i)=>dot(G,x,0,'pR',fr(x,2),{nw:1,r:5.5,dy:i%2?24:-12,dx:-4,end:1})).join('');
     if(k===3&&disc===0&&sx!=null)body+=`<circle class="ring nw" cx="${G.sx(sx)}" cy="${G.sy(0)}" r="15"/>`;
     let h=svgWrap(G,body,'The curve '+eqn(a,b));
     if(k===0)h+=bench(bt('','','y²'),op('='),bt('','','x³'),op('+'),bt('a','ra',pn(a)),op('·'),bt('','','x'),op('+'),bt('b','rb',pn(b)));
-    if(k===1){const y0=Math.sqrt(f0);h+=bench(bt('x','ra',x0),op('→'),bt('x³ + a·x + b','',fr(f0)),op('→'),bt('y = ±√ of it','rr','±'+fr(y0,3)))}
+    if(k===1){const y0=Math.sqrt(f0);h+=bench(bt('x','ra',fr(x0,2)),op('→'),bt('x³ + a·x + b','',fr(f0)),op('→'),bt('y = ±√ of it','rr','±'+fr(y0,3)))}
     if(k===2)h+=bench(bt('x³ + a·x + b = 0 at','',r.map(x=>fr(x,3)).join(', ')),op('→'),bt('pieces','rq',disc===0?'touching':S.pieces));
     if(k===3)h+=bench(bt('4a³ + 27b²','',`4·${pn(a)}³ + 27·${pn(b)}²`),op('='),bt('','',nm(disc)),op(disc?'≠':'='),bt('','','0'),op('→'),bt('','',disc?'<span class="cy">smooth</span>':'<span class="cn">not allowed</span>'));
     return h},
   say(k){
     const{a,b,r,disc,x0,f0,pieces,sx}=cvS(),E=eqn(a,b);
     if(k===0)return say('The equation','The curves used in cryptography have the form'+fm('y² = x³ + a·x + b'),`Here a = ${nm(a)} and b = ${nm(b)}. Every point (x, y) on the line in the picture satisfies ${E}.`,'Type other values for a and b above the picture, or press <b>Step</b>.');
-    if(k===1){const y0=Math.sqrt(f0);return say('Step 1 · two points for one x',`Take x = ${x0}. Then x³ + a·x + b = ${fr(f0)}, and y² = ${fr(f0)} has two solutions: y = ${fr(y0,3)} and y = ${fr(-y0,3)}.`,'So the curve is symmetric about the x-axis. The mirror image of a point P = (x, y) is the point (x, −y). It is written −P.')}
+    if(k===1){const y0=Math.sqrt(f0);return say('Step 1 · two points for one x',`Take x = ${fr(x0,2)}. Then x³ + a·x + b = ${fr(f0)}, and y² = ${fr(f0)} has two solutions: y = ${fr(y0,3)} and y = ${fr(-y0,3)}.`,'So the curve is symmetric about the x-axis. The mirror image of a point P = (x, y) is the point (x, −y). It is written −P.')}
     if(k===2)return say('Step 2 · one piece or two',`x³ + a·x + b is 0 at x = ${list(r.map(x=>fr(x,3)))}${disc===0?' and once more where the curve touches itself':''}. Where it is negative, y² would be negative, and the curve has no point there.`,disc<0?'It has three zeros, so the curve has two pieces: a closed oval and an open arc to the right.':disc>0?'It has one zero, so the curve is one piece, open to the right.':'Two of its zeros fall together, so the pieces touch.');
     return disc?say('Step 3 · smooth, with no sharp points',`The curve must not cross itself and must not have a sharp point. That is the condition 4a³ + 27b² ≠ 0.`,`Here 4·${pn(a)}³ + 27·${pn(b)}² = ${nm(disc)}. It is not 0, so ${E} is an <b>elliptic curve</b>.`,'Try a = −3, b = 2 or a = 0, b = 0 to see what goes wrong.')
-      :say('Step 3 · smooth, with no sharp points',`Here 4·${pn(a)}³ + 27·${pn(b)}² = 0. The curve ${a===0&&b===0?'has a sharp point (a cusp)':'crosses itself'} at (${fr(sx??0,2)}, 0), circled in the picture.`,'There the tangent line is not defined, and the addition of points in tab 2 breaks. <b>This is not an elliptic curve</b>, and it is not used in cryptography.')},
+      :say('Step 3 · smooth, with no sharp points',`Here 4·${pn(a)}³ + 27·${pn(b)}² = 0. ${a===0&&b===0?'The curve has a sharp point (a cusp)':b<0?'The curve has a lone point, away from the rest of it,':'The curve crosses itself'} at (${fr(sx??0,2)}, 0), circled in the picture.`,'There the tangent line is not defined, and the addition of points in tab 2 breaks. <b>This is not an elliptic curve</b>, and it is not used in cryptography.')},
   extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>Elliptic curve</dt><dd>The points (x, y) with y² = x³ + a·x + b, where 4a³ + 27b² ≠ 0, plus one extra point O (tab 2).</dd><dt>−P</dt><dd>The mirror image of P = (x, y): the point (x, −y).</dd><dt>Smooth</dt><dd>No sharp point and no crossing: at every point the curve has one tangent line.</dd></dl>`};
 
 /* ---------- 2 · adding two points ---------- */
