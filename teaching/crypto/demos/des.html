@@ -2179,7 +2179,7 @@ document.addEventListener('keydown',e=>{
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(ENG.tab==='des')return;if(!ENG.anim){if(ENG.tab==='ks')$('ks-ring')&&($('ks-ring').innerHTML='');cur().render();panel();}});
 window.DF={FE,FS,EX,SB,IPX,FC,KS,ENG,startStage,switchTab,SDEP,ALLDEP,PDIST,PC1,PC2,SHIFTS};
 FE.init();FE.render();panel();
-switchTab('fc');            // the page opens on the overview
+switchTab(['fc','feistel','f','e','s','ks','des','ip'].includes(location.hash.slice(1))?location.hash.slice(1):'fc');   // the overview, or the tab named in the link (#feistel, #s, …)
 /* ================= tab 7: encrypt / decrypt, step by step ================= */
 window.T4=(function(){
 'use strict';

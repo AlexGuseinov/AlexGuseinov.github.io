@@ -1032,7 +1032,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
 });
-let startTab='lf';try{const t=localStorage.getItem('lfsr-tab');if(t&&T[t])startTab=t}catch(e){}
+let startTab='lf';try{const h=location.hash.slice(1),t=localStorage.getItem('lfsr-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 setTab(startTab);
 
 </script>

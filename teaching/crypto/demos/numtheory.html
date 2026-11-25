@@ -1317,7 +1317,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
 });
-let startTab='gcd';try{const t=localStorage.getItem('nt-tab');if(t&&T[t])startTab=t}catch(e){}
+let startTab='gcd';try{const h=location.hash.slice(1),t=localStorage.getItem('nt-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
 compute();buildBar();calc();show();
 </script>

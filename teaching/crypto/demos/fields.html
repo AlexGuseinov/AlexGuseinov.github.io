@@ -974,7 +974,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&T[ST.tab].n()>1){$('#bPlay').click();e.preventDefault()}
 });
-let startTab='num';try{const t=localStorage.getItem('fields-tab');if(t&&T[t])startTab=t}catch(e){}
+let startTab='num';try{const h=location.hash.slice(1),t=localStorage.getItem('fields-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 setTab(startTab);
 </script>
 </body>

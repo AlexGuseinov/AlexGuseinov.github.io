@@ -1149,7 +1149,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowLeft'){$('#bBack').click();e.preventDefault()}
   else if(e.key===' '&&curN()>1){$('#bPlay').click();e.preventDefault()}
 });
-let startTab='ov';try{const t=localStorage.getItem('prot-tab');if(t&&T[t])startTab=t}catch(e){}
+let startTab='ov';try{const h=location.hash.slice(1),t=localStorage.getItem('prot-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
 compute();show();
 </script>

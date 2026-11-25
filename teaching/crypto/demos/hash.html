@@ -1108,7 +1108,7 @@ document.addEventListener('keydown',e=>{
 $('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="custom" disabled>Your own text</option>';
 $('#pre').onchange=e=>{redo();loadPreset(e.target.value)};
 let mT=0;$('#mI').oninput=()=>{clearTimeout(mT);mT=setTimeout(()=>{redo();onInput()},120)};
-let startTab='ov';try{const t=localStorage.getItem('hash-tab');if(t&&T[t])startTab=t}catch(e){}
+let startTab='ov';try{const h=location.hash.slice(1),t=localStorage.getItem('hash-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
 loadPreset('abc');
 </script>

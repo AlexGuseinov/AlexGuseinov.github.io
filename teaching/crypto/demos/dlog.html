@@ -1614,7 +1614,7 @@ document.addEventListener('keydown',e=>{
 $('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="custom" disabled>Your own numbers</option>';
 $('#pre').onchange=e=>loadPreset(e.target.value);
 ['#pI','#gI','#aI','#bI','#mI'].forEach(i=>{$(i).oninput=onInput});
-let startTab='ov';try{const t=localStorage.getItem('dlog-tab');if(t&&T[t])startTab=t}catch(e){}
+let startTab='ov';try{const h=location.hash.slice(1),t=localStorage.getItem('dlog-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
 fillRounds();loadPreset('tiny');
 

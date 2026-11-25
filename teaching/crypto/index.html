@@ -20,8 +20,39 @@
 <main class="wrap">
 <h1>Fundamentals of Cryptography</h1>
 <p class="muted">MSc course · AzTU Cybersecurity Department · Fall 2026 · Teaching Assistant: Ali Huseynli</p>
+<nav class="toc"><a href="#syllabus">Syllabus and slides</a><a href="#reading">Reading</a><a href="#explainers">Interactive explainers</a></nav>
 
-<h2>Interactive algorithm explainers</h2>
+
+<!-- syllabus:start -->
+<h2 id="syllabus">Syllabus and slides</h2>
+<p>The course week by week. Open a week to read its slides in the browser. Slides that have an interactive explainer link straight to it, and you can present them full screen or download the PDF.</p>
+<ol class="syl">
+  <li><span class="wk">1</span><div class="bd"><a class="tp" href="slides/#01">Basic concepts of cryptography. Classical ciphers</a><div class="mt">Lecture 01 · 50 slides · Textbook pp. 62–66, 83–106</div><div class="dm"><span>Interactive:</span><a href="demos/classic.html#caesar">Classical ciphers</a></div></div><a class="op" href="slides/#01" aria-label="Slides for week 1">Slides →</a></li>
+  <li><span class="wk">2</span><div class="bd"><a class="tp" href="slides/#02">Introduction to cryptanalysis. Cryptanalysis of substitution ciphers</a><div class="mt"><a href="slides/#02">Lecture 02</a> · 76 slides · <a href="slides/#kasiski">Kasiski examples</a> · 28 slides</div><div class="dm"><span>Interactive:</span><a href="demos/classic.html#kasiski">Kasiski: breaking Vigenère</a></div></div><a class="op" href="slides/#02" aria-label="Slides for week 2">Slides →</a></li>
+  <li><span class="wk">3</span><div class="bd"><a class="tp" href="slides/#03">Stream ciphers</a><div class="mt">Lecture 03 · 40 slides · Textbook pp. 331–351</div><div class="dm"><span>Interactive:</span><a href="demos/classic.html#vernam">Vernam cipher</a><a href="demos/lfsr.html#sc">LFSR</a><a href="demos/a51.html">A5/1</a></div></div><a class="op" href="slides/#03" aria-label="Slides for week 3">Slides →</a></li>
+  <li><span class="wk">4</span><div class="bd"><a class="tp" href="slides/#04">DES (Data Encryption Standard)</a><div class="mt">Lecture 04 · 36 slides · Textbook pp. 217–236, 239–247</div><div class="dm"><span>Interactive:</span><a href="demos/des.html#fc">DES</a></div></div><a class="op" href="slides/#04" aria-label="Slides for week 4">Slides →</a></li>
+  <li><span class="wk">5</span><div class="bd"><a class="tp" href="slides/#05">AES (Advanced Encryption Standard)</a><div class="mt">Lecture 05 · 45 slides · Textbook pp. 259–272</div><div class="dm"><span>Interactive:</span><a href="demos/aes.html#ov">AES</a><a href="demos/fields.html#field">Fields</a></div></div><a class="op" href="slides/#05" aria-label="Slides for week 5">Slides →</a></li>
+  <li><span class="wk">6</span><div class="bd"><a class="tp" href="slides/#06">Block cipher modes of operation</a><div class="mt">Lecture 06 · 41 slides</div><div class="dm"><span>Interactive:</span><a href="demos/modes.html#ov">Modes</a></div></div><a class="op" href="slides/#06" aria-label="Slides for week 6">Slides →</a></li>
+  <li><span class="wk">7</span><div class="bd"><a class="tp" href="slides/#07">Public-key cryptography</a><div class="mt">Lecture 07 · 41 slides · Textbook pp. 357–359</div><div class="dm"><span>Interactive:</span><a href="demos/rsa.html#ov">RSA</a><a href="demos/numtheory.html#phi">Number theory</a><a href="demos/euclid.html#euc">Euclid</a></div></div><a class="op" href="slides/#07" aria-label="Slides for week 7">Slides →</a></li>
+  <li><span class="wk">8</span><div class="bd"><a class="tp" href="slides/#08">The RSA cryptosystem</a><div class="mt">Lecture 08 · 32 slides · Textbook pp. 360–369</div><div class="dm"><span>Interactive:</span><a href="demos/rsa.html#kg">RSA</a></div></div><a class="op" href="slides/#08" aria-label="Slides for week 8">Slides →</a></li>
+  <li><span class="wk">9</span><div class="bd"><a class="tp" href="slides/#09">Discrete logarithm cryptosystems</a><div class="mt">Lecture 09 · 41 slides · Textbook pp. 414–426</div><div class="dm"><span>Interactive:</span><a href="demos/dlog.html#ov">Discrete log</a></div></div><a class="op" href="slides/#09" aria-label="Slides for week 9">Slides →</a></li>
+  <li><span class="wk">10</span><div class="bd"><a class="tp" href="slides/#10">Cryptographic hash functions</a><div class="mt">Lecture 10 · 44 slides · Textbook pp. 482–502</div><div class="dm"><span>Interactive:</span><a href="demos/hash.html#ov">Hash functions</a><a href="demos/signatures.html#ov">Signatures</a></div></div><a class="op" href="slides/#10" aria-label="Slides for week 10">Slides →</a></li>
+  <li><span class="wk">11</span><div class="bd"><a class="tp" href="slides/#11">Digital signature schemes</a><div class="mt">Lecture 11 · 42 slides · Textbook pp. 522–551</div><div class="dm"><span>Interactive:</span><a href="demos/signatures.html#ov">Signatures</a></div></div><a class="op" href="slides/#11" aria-label="Slides for week 11">Slides →</a></li>
+  <li><span class="wk">12</span><div class="bd"><a class="tp" href="slides/#12">Cryptographic protocols</a><div class="mt">Lecture 12 · 33 slides · Textbook pp. 555–599</div><div class="dm"><span>Interactive:</span><a href="demos/protocols.html#ov">Protocols</a></div></div><a class="op" href="slides/#12" aria-label="Slides for week 12">Slides →</a></li>
+  <li><span class="wk">13</span><div class="bd"><a class="tp" href="slides/#13">Cryptocurrencies and blockchains</a><div class="mt">Lecture 13 · 41 slides · İmamverdiyev (2019), pp. 18–32</div><div class="dm"><span>Interactive:</span><a href="demos/blockchain.html#why">Blockchain</a><a href="demos/ecc.html#cv">Elliptic curves</a></div></div><a class="op" href="slides/#13" aria-label="Slides for week 13">Slides →</a></li>
+  <li><span class="wk">14</span><div class="bd"><a class="tp" href="slides/#14">Post-quantum cryptography</a><div class="mt">Lecture 14 · 28 slides</div><div class="dm"><span>Interactive:</span><a href="demos/lattice.html#lat">Lattices</a></div></div><a class="op" href="slides/#14" aria-label="Slides for week 14">Slides →</a></li>
+  <li class="nos"><span class="wk">15</span><div class="bd"><span class="tp">Final projects and presentations</span><div class="mt">No slides: project presentations</div></div></li>
+</ol>
+
+<h3 id="reading">Reading</h3>
+<ul class="refs">
+  <li><b>Course textbook.</b> Əliquliyev R.M., İmamverdiyev Y.N. <cite>Kriptoqrafiyanın əsasları</cite>. Bakı: İnformasiya Texnologiyaları, 2006. The page numbers above are from this book.</li>
+  <li><b>Week 13.</b> İmamverdiyev Y.N. Blokçeyn texnologiyaları: komponentləri, tətbiqləri və problemləri. <cite>İnformasiya cəmiyyəti problemləri</cite>, 2019, №2, pp. 18–32. <a href="https://doi.org/10.25045/jpis.v10.i2.02" target="_blank" rel="noopener">doi:10.25045/jpis.v10.i2.02</a></li>
+  <li><b>Further reading.</b> Paar, Pelzl, Güneysu, <cite>Understanding Cryptography</cite>, 2nd ed. (Springer, 2024). Stallings, <cite>Cryptography and Network Security</cite>, 6th ed. (Pearson, 2013).</li>
+</ul>
+<!-- syllabus:end -->
+
+<h2 id="explainers">Interactive algorithm explainers</h2>
 <p>Step-by-step visual walkthroughs of the algorithms covered in lectures. They run in the browser, no installation needed.</p>
 
 <h3>Mathematical background</h3>

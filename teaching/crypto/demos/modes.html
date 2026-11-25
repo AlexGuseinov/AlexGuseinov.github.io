@@ -2237,7 +2237,7 @@ $('#pre').innerHTML=PRE.map(p=>`<option value="${p.id}">${p.name}</option>`).joi
 $('#pre').onchange=e=>loadPreset(e.target.value);
 $('#mI').oninput=$('#kI').oninput=$('#ivI').oninput=$('#aI').oninput=onInput;
 $('#mF').onclick=e=>{const b=e.target.closest('button');if(b)setFmt(b.dataset.f)};
-let startTab='ov';try{const t=localStorage.getItem('modes-tab');if(t&&T[t])startTab=t}catch(e){}
+let startTab='ov';try{const h=location.hash.slice(1),t=localStorage.getItem('modes-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
 fillRounds();loadPreset('rep');
 

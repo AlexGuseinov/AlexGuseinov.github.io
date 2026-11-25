@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Lecture slides · Fundamentals of Cryptography</title>
+<link rel="stylesheet" href="../../../assets/style.css">
+<style>
+.sv{max-width:1280px;margin:0 auto;padding:0 16px}
+.crumb{font-size:14px;display:inline-block;margin-bottom:10px}
+.sv-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 24px;margin-bottom:16px}
+.sv-head .tt{flex:1 1 420px;min-width:0}
+.sv-head .k{font-size:13px;color:var(--muted)}
+.sv-head h1{font-size:24px;margin:2px 0 0}
+.pick{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:100%;flex:0 1 360px}
+.pick:focus-visible,.ib:focus-visible,.btn:focus-visible,.th:focus-visible,.go:focus-visible,.stage:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.sv-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-areas:"stage side" "bar side" "thumbs side";gap:12px 28px;align-items:start}
+.stage{grid-area:stage}.bar{grid-area:bar}.thumbs{grid-area:thumbs}.side{grid-area:side}
+
+.stage,.bar,.thumbs{justify-self:center;width:min(100%,calc((100vh - 250px) * var(--arn,1.3333)));width:min(100%,calc((100svh - 250px) * var(--arn,1.3333)));min-width:min(100%,300px)}
+.stage{position:relative;aspect-ratio:var(--ar,4/3);background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.page{position:absolute;left:0;top:0;width:100%;height:100%}
+.page canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .18s ease}
+.page canvas.on{opacity:1}
+.lk{position:absolute;inset:0;z-index:3;pointer-events:none}
+.lk a{position:absolute;pointer-events:auto;border-radius:3px}
+.lk a:hover{background:rgba(29,95,166,.12);outline:1px solid rgba(29,95,166,.45)}
+.edge{position:absolute;top:0;bottom:0;width:22%;z-index:2;border:0;background:none;cursor:pointer;padding:0;color:#fff;opacity:0;transition:opacity .15s}
+.edge.prev{left:0}.edge.next{right:0}
+.edge::after{content:"";position:absolute;top:50%;width:38px;height:38px;margin-top:-19px;border-radius:50%;background:rgba(20,20,22,.55) no-repeat center/16px;}
+.edge.prev::after{left:12px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 5 8l5 5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.edge.next::after{right:12px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m6 3 5 5-5 5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+@media (hover:hover){.stage:hover .edge:not([disabled]){opacity:.85}.edge:hover{opacity:1!important}}
+.edge[disabled]{cursor:default}
+.msg{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center;padding:20px;font-size:15px;color:var(--muted);background:var(--panel)}
+.msg[hidden]{display:none}
+.msg .pg{width:min(240px,60%);height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.msg .pg i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+
+.stage.full{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;max-height:none;min-width:0;aspect-ratio:auto;border:0;border-radius:0;background:#000;z-index:100;cursor:default}
+.stage.full .msg{background:#000}
+.stage.full .edge::after{display:none}
+.stage.full .edge{width:33%}.stage.full .edge.next{width:67%}
+.fsbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:5;display:none;align-items:center;gap:6px;max-width:calc(100% - 24px);padding:6px 8px;border-radius:999px;background:rgba(20,20,22,.82);color:#ececec;font-size:14px;opacity:0;transition:opacity .25s}
+.stage.full .fsbar{display:flex}
+.stage.full.ui .fsbar{opacity:1}
+.fsbar button,.fsbar a{font:inherit;color:#ececec;background:none;border:0;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+.fsbar button:hover,.fsbar a:hover{background:rgba(255,255,255,.14);text-decoration:none}
+.fsbar .n{font-variant-numeric:tabular-nums;padding:0 4px;white-space:nowrap}
+.fsbar .try{display:flex;gap:4px;min-width:0;overflow:hidden;border-left:1px solid rgba(255,255,255,.2);padding-left:6px}
+.fsbar .try:empty{display:none}
+.fsbar .try a{background:rgba(138,184,238,.18);color:#bcd6f5;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ib{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer;padding:0}
+.ib:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}
+.ib[disabled]{opacity:.4;cursor:default}
+.ib svg{width:16px;height:16px}
+.num{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.go{width:3.2em;font:inherit;font-size:14px;text-align:center;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 2px}
+.prog{flex:1 1 80px;height:4px;border-radius:2px;background:var(--line);overflow:hidden;min-width:60px}
+.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s ease}
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+.btn svg{width:15px;height:15px}
+
+.thumbs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x proximity;scrollbar-width:thin}
+.th{flex:none;width:128px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--panel);cursor:pointer;position:relative;overflow:hidden;scroll-snap-align:start}
+.th canvas{display:block;width:100%;aspect-ratio:var(--ar,4/3);background:var(--line)}
+.th span{position:absolute;left:4px;bottom:4px;font-size:11px;line-height:1;padding:3px 5px;border-radius:4px;background:rgba(20,20,22,.7);color:#fff;font-variant-numeric:tabular-nums}
+.th.has::after{content:"";position:absolute;right:5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--panel)}
+.th.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.th:hover{border-color:var(--accent)}
+
+.side section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.side h2{font-size:14px;margin:0 0 8px;padding:0;border:0;color:var(--muted);font-weight:600}
+.here .none{font-size:14px;color:var(--faint);margin:0}
+.dl{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
+.dl li{display:flex;align-items:baseline;gap:8px;padding:6px 8px;margin:0 -8px;border-radius:6px}
+.dl li.on{background:var(--accentBg)}
+.dl a.d{flex:1;min-width:0;font-size:15px;line-height:1.35}
+.dl a.d .ar{font-size:12px;color:var(--faint);margin-left:3px}
+.dl .pg{flex:none;font:inherit;font-size:12px;color:var(--muted);background:none;border:0;padding:0;cursor:pointer;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dl .pg:hover{color:var(--accent);text-decoration:underline}
+.dl .f{display:block;font-size:12px;color:var(--faint)}
+.here .dl a.d{font-weight:600}
+.meta p{font-size:14px;margin:0 0 6px;color:var(--muted)}
+.meta p:last-child{margin-bottom:0}
+.meta .nx{display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:14px}
+.kbd{font-size:12px;color:var(--faint);margin-top:8px}
+kbd{font:inherit;font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--bg)}
+
+@media (max-width:900px){
+  .sv-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "bar" "here" "thumbs" "all" "meta";gap:12px}
+  .side{display:contents}
+  .side .here{grid-area:here;margin:0}.side .all{grid-area:all;margin:0}.side .meta{grid-area:meta;margin:0}
+  .stage,.bar,.thumbs{width:100%;min-width:0}
+  .kbd{display:none}
+}
+@media (max-width:560px){
+  .sv-head h1{font-size:20px}
+  .btn .lb{display:none}.btn{padding:0 10px}
+  .th{width:104px}
+}
+@media (prefers-reduced-motion:reduce){.page canvas,.prog i,.fsbar,.edge{transition:none}}
+</style>
+</head>
+<body>
+<nav class="top"><div class="wrap">
+  <span class="name">Ali Huseynli</span>
+  <a href="../../../">Home</a>
+  <a href="../../../publications.html">Publications</a>
+  <a href="../../" class="on">Teaching</a>
+</div></nav>
+
+<main class="sv">
+  <a class="crumb" href="../#syllabus">← Fundamentals of Cryptography · Syllabus</a>
+  <div class="sv-head">
+    <div class="tt"><div class="k" id="kick">&nbsp;</div><h1 id="title">Lecture slides</h1></div>
+    <select class="pick" id="pick" aria-label="Choose a lecture"></select>
+  </div>
+
+  <div class="sv-grid">
+    <div class="stage" id="stage" tabindex="0" role="region" aria-roledescription="slide viewer" aria-label="Slides">
+      <div class="page" id="page"><canvas id="c0" role="img"></canvas><canvas id="c1" role="img"></canvas><div class="lk" id="lk"></div></div>
+      <button class="edge prev" id="ePrev" aria-label="Previous slide"></button>
+      <button class="edge next" id="eNext" aria-label="Next slide"></button>
+      <div class="fsbar" id="fsbar">
+        <button id="fPrev" aria-label="Previous slide">‹</button><span class="n" id="fNum"></span><button id="fNext" aria-label="Next slide">›</button>
+        <span class="try" id="fTry"></span>
+        <button id="fExit" aria-label="Leave presentation">✕</button>
+      </div>
+      <div class="msg" id="msg"><span id="msgT">Loading slides…</span><div class="pg"><i id="msgP"></i></div></div>
+    </div>
+
+    <div class="bar">
+      <button class="ib" id="bPrev" aria-label="Previous slide"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="num"><input class="go" id="go" inputmode="numeric" aria-label="Slide number" value="1"> / <span id="tot">–</span></span>
+      <button class="ib" id="bNext" aria-label="Next slide"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="prog" aria-hidden="true"><i id="pfill"></i></div>
+      <button class="btn" id="bFull" title="Present full screen (F)"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lb">Present</span></button>
+      <a class="btn" id="bPdf" href="#" download title="Download the PDF"><svg viewBox="0 0 16 16"><path d="M8 2v8m-3.5-3L8 10.5 11.5 7M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lb">PDF</span></a>
+    </div>
+
+    <aside class="side">
+      <section class="here" aria-live="polite">
+        <h2 id="hereH">Try it on this slide</h2>
+        <div id="hereL"></div>
+      </section>
+      <section class="all">
+        <h2>Interactive pages for this lecture</h2>
+        <ul class="dl" id="allL"></ul>
+        <div class="kbd"><kbd>←</kbd> <kbd>→</kbd> change slide · <kbd>F</kbd> present</div>
+      </section>
+      <section class="meta" id="meta"></section>
+    </aside>
+
+    <div class="thumbs" id="thumbs" aria-label="All slides"></div>
+  </div>
+  <noscript><p>This viewer needs JavaScript. The PDFs are in this folder: <a href="lecture-01.pdf">lecture-01.pdf</a> … <a href="lecture-14.pdf">lecture-14.pdf</a>.</p></noscript>
+</main>
+
+<footer class="wrap">© 2026 Ali Huseynli</footer>
+
+<script type="module">
+"use strict";
+const DECKS=[{"id":"01","f":"lecture-01.pdf","dl":"Lecture 01 - Basic Concepts of Cryptography and Classical Ciphers.pdf","t":"Basic Concepts of Cryptography and Classical Ciphers","n":50,"pw":720,"ph":540,"mb":"1.4","kick":"Week 1 · Lecture 01","short":"Lecture 01","w":1,"wt":"Basic concepts of cryptography. Classical ciphers","rd":"Textbook pp. 62–66, 83–106","links":[{"h":"rsa.html#ov","l":"Why public key","p":"RSA","r":[[19,20]]},{"h":"hash.html#ov","l":"What a hash does","p":"Hash functions","r":[[21,21]]},{"h":"signatures.html#ov","l":"Why signatures (MAC vs signature)","p":"Signatures","r":[[22,23]]},{"h":"classic.html#caesar","l":"Caesar cipher","p":"Classical ciphers","r":[[29,34]]},{"h":"classic.html#affine","l":"Affine cipher","p":"Classical ciphers","r":[[35,40]]},{"h":"euclid.html#inv","l":"Inverse mod n","p":"Euclid","r":[[39,40]]},{"h":"classic.html#vigenere","l":"Vigenère cipher","p":"Classical ciphers","r":[[41,48]]}]},{"id":"02","f":"lecture-02.pdf","dl":"Lecture 02 - Introduction to Cryptanalysis.pdf","t":"Introduction to Cryptanalysis","n":76,"pw":720,"ph":540,"mb":"4.2","kick":"Week 2 · Lecture 02","short":"Lecture 02","w":2,"wt":"Introduction to cryptanalysis. Cryptanalysis of substitution ciphers","rd":"","links":[{"h":"classic.html#caesar","l":"Caesar cipher","p":"Classical ciphers","r":[[16,21]]},{"h":"classic.html#kasiski","l":"Kasiski: breaking Vigenère","p":"Classical ciphers","r":[[40,75]]},{"h":"classic.html#vigenere","l":"Vigenère cipher","p":"Classical ciphers","r":[[65,68]]}]},{"id":"kasiski","f":"kasiski-examples.pdf","dl":"Kasiski Test Examples.pdf","t":"Kasiski Test: Worked Examples","n":28,"pw":960,"ph":540,"mb":"0.9","kick":"Week 2 · extra slides","short":"Kasiski examples","w":2,"wt":"Introduction to cryptanalysis. Cryptanalysis of substitution ciphers","rd":"","links":[{"h":"classic.html#vigenere","l":"Vigenère cipher","p":"Classical ciphers","r":[[2,3]]},{"h":"classic.html#kasiski","l":"Kasiski: breaking Vigenère","p":"Classical ciphers","r":[[1,28]]}]},{"id":"03","f":"lecture-03.pdf","dl":"Lecture 03 - Stream Ciphers.pdf","t":"Stream Ciphers","n":40,"pw":720,"ph":540,"mb":"0.5","kick":"Week 3 · Lecture 03","short":"Lecture 03","w":3,"wt":"Stream ciphers","rd":"Textbook pp. 331–351","links":[{"h":"classic.html#vernam","l":"Vernam cipher (one-time pad)","p":"Classical ciphers","r":[[2,5]]},{"h":"lfsr.html#sc","l":"LFSR as a stream cipher","p":"LFSR","r":[[6,12]]},{"h":"lfsr.html#lf","l":"The LFSR register","p":"LFSR","r":[[13,22]]},{"h":"lfsr.html#bm","l":"Berlekamp–Massey","p":"LFSR","r":[[23,24]]},{"h":"a51.html","l":"A5/1 in GSM","p":"A5/1","r":[[25,30]]}]},{"id":"04","f":"lecture-04.pdf","dl":"Lecture 04 - DES (Data Encryption Standard).pdf","t":"DES (Data Encryption Standard)","n":36,"pw":720,"ph":540,"mb":"1.3","kick":"Week 4 · Lecture 04","short":"Lecture 04","w":4,"wt":"DES (Data Encryption Standard)","rd":"Textbook pp. 217–236, 239–247","links":[{"h":"present.html","l":"PRESENT, an SP-network","p":"PRESENT","r":[[6,6],[8,8]]},{"h":"des.html#fc","l":"DES overview","p":"DES","r":[[9,11]]},{"h":"des.html#ip","l":"IP and IP⁻¹","p":"DES","r":[[12,12]]},{"h":"des.html#feistel","l":"Feistel rounds","p":"DES","r":[[7,7],[13,15]]},{"h":"des.html#f","l":"Inside f","p":"DES","r":[[16,16],[18,18],[20,20]]},{"h":"des.html#e","l":"Expansion E","p":"DES","r":[[17,17]]},{"h":"des.html#s","l":"DES S-boxes","p":"DES","r":[[19,19]]},{"h":"des.html#ks","l":"DES key schedule","p":"DES","r":[[21,23]]},{"h":"des.html#des","l":"DES encrypt and decrypt","p":"DES","r":[[24,24]]}]},{"id":"05","f":"lecture-05.pdf","dl":"Lecture 05 - AES (Advanced Encryption Standard).pdf","t":"AES (Advanced Encryption Standard)","n":45,"pw":720,"ph":540,"mb":"1.9","kick":"Week 5 · Lecture 05","short":"Lecture 05","w":5,"wt":"AES (Advanced Encryption Standard)","rd":"Textbook pp. 259–272","links":[{"h":"aes.html#ov","l":"AES overview","p":"AES","r":[[3,10]]},{"h":"aes.html#rd","l":"One AES round","p":"AES","r":[[9,9]]},{"h":"aes.html#sb","l":"SubBytes","p":"AES","r":[[11,13]]},{"h":"aes.html#df","l":"Diffusion in AES","p":"AES","r":[[14,14]]},{"h":"aes.html#sr","l":"ShiftRows","p":"AES","r":[[15,16]]},{"h":"aes.html#mc","l":"MixColumns","p":"AES","r":[[17,18]]},{"h":"aes.html#ark","l":"AddRoundKey","p":"AES","r":[[19,19]]},{"h":"aes.html#ke","l":"AES key expansion","p":"AES","r":[[20,23]]},{"h":"aes.html#x","l":"AES encrypt and decrypt","p":"AES","r":[[24,28]]},{"h":"fields.html#field","l":"Group, ring, field","p":"Fields","r":[[32,34]]},{"h":"aes.html#gf","l":"Bytes in GF(2⁸)","p":"AES","r":[[35,42]]},{"h":"fields.html#gf2","l":"GF(2ᵐ)","p":"Fields","r":[[35,42]]}]},{"id":"06","f":"lecture-06.pdf","dl":"Lecture 06 - Block Cipher Modes of Operation.pdf","t":"Block Cipher Modes of Operation","n":41,"pw":720,"ph":540,"mb":"1.2","kick":"Week 6 · Lecture 06","short":"Lecture 06","w":6,"wt":"Block cipher modes of operation","rd":"","links":[{"h":"modes.html#ov","l":"Modes overview","p":"Modes","r":[[6,10]]},{"h":"modes.html#ecb","l":"ECB","p":"Modes","r":[[11,15]]},{"h":"modes.html#cbc","l":"CBC","p":"Modes","r":[[16,19]]},{"h":"modes.html#fl","l":"Flip a bit","p":"Modes","r":[[20,21]]},{"h":"modes.html#cf","l":"CFB and OFB","p":"Modes","r":[[22,31]]},{"h":"modes.html#ctr","l":"CTR","p":"Modes","r":[[32,34]]},{"h":"modes.html#gcm","l":"GCM","p":"Modes","r":[[35,37]]},{"h":"modes.html#iv","l":"Why an IV","p":"Modes","r":[]},{"h":"modes.html#atk","l":"Attacks on modes","p":"Modes","r":[]},{"h":"modes.html#cmp","l":"Compare the modes","p":"Modes","r":[]}]},{"id":"07","f":"lecture-07.pdf","dl":"Lecture 07 - Public-Key Cryptography.pdf","t":"Public-Key Cryptography","n":41,"pw":720,"ph":540,"mb":"1.9","kick":"Week 7 · Lecture 07","short":"Lecture 07","w":7,"wt":"Public-key cryptography","rd":"Textbook pp. 357–359","links":[{"h":"rsa.html#ov","l":"Why public key","p":"RSA","r":[[5,21]]},{"h":"numtheory.html#phi","l":"Euler’s φ(n)","p":"Number theory","r":[[24,28]]},{"h":"numtheory.html#fe","l":"Fermat and Euler","p":"Number theory","r":[[29,30]]},{"h":"euclid.html#euc","l":"Euclid’s algorithm","p":"Euclid","r":[[31,33]]},{"h":"euclid.html#ext","l":"Extended Euclid","p":"Euclid","r":[[34,39]]},{"h":"numtheory.html#eea","l":"Extended Euclid table","p":"Number theory","r":[[34,39]]},{"h":"euclid.html#inv","l":"Inverse mod n","p":"Euclid","r":[[34,39]]},{"h":"euclid.html#calc","l":"Calculator: remainder, gcd, inverse","p":"Euclid","r":[]}]},{"id":"08","f":"lecture-08.pdf","dl":"Lecture 08 - The RSA Cryptosystem.pdf","t":"The RSA Cryptosystem","n":32,"pw":720,"ph":540,"mb":"2.7","kick":"Week 8 · Lecture 08","short":"Lecture 08","w":8,"wt":"The RSA cryptosystem","rd":"Textbook pp. 360–369","links":[{"h":"rsa.html#kg","l":"RSA key generation","p":"RSA","r":[[3,6]]},{"h":"rsa.html#ed","l":"RSA encrypt and decrypt","p":"RSA","r":[[7,11]]},{"h":"rsa.html#sm","l":"Square and multiply","p":"RSA","r":[[12,16]]},{"h":"numtheory.html#fe","l":"Fermat and Euler","p":"Number theory","r":[[24,25]]},{"h":"rsa.html#atk","l":"Attacks on RSA","p":"RSA","r":[[27,30]]},{"h":"rsa.html#fa","l":"Factoring","p":"RSA","r":[[28,29]]},{"h":"rsa.html#oa","l":"OAEP padding","p":"RSA","r":[]}]},{"id":"09","f":"lecture-09.pdf","dl":"Lecture 09 - Discrete Logarithm Cryptosystems.pdf","t":"Discrete Logarithm Cryptosystems","n":41,"pw":720,"ph":540,"mb":"2.3","kick":"Week 9 · Lecture 09","short":"Lecture 09","w":9,"wt":"Discrete logarithm cryptosystems","rd":"Textbook pp. 414–426","links":[{"h":"dlog.html#ov","l":"The discrete log idea","p":"Discrete log","r":[[4,4]]},{"h":"dlog.html#grp","l":"Cyclic groups","p":"Discrete log","r":[[5,8]]},{"h":"dlog.html#dl","l":"Breaking the log (baby-step giant-step)","p":"Discrete log","r":[[9,16]]},{"h":"dlog.html#dh","l":"Diffie–Hellman","p":"Discrete log","r":[[17,25]]},{"h":"dlog.html#mm","l":"Man in the middle","p":"Discrete log","r":[[22,23]]},{"h":"dlog.html#eg","l":"ElGamal encryption","p":"Discrete log","r":[[33,39]]},{"h":"dlog.html#ph","l":"Pohlig–Hellman","p":"Discrete log","r":[]},{"h":"ecc.html#dh","l":"Diffie–Hellman on a curve","p":"Elliptic curves","r":[]}]},{"id":"10","f":"lecture-10.pdf","dl":"Lecture 10 - Cryptographic Hash Functions.pdf","t":"Cryptographic Hash Functions","n":44,"pw":720,"ph":540,"mb":"1.5","kick":"Week 10 · Lecture 10","short":"Lecture 10","w":10,"wt":"Cryptographic hash functions","rd":"Textbook pp. 482–502","links":[{"h":"hash.html#ov","l":"What a hash does","p":"Hash functions","r":[[5,9]]},{"h":"hash.html#props","l":"Three properties","p":"Hash functions","r":[[10,11]]},{"h":"hash.html#md","l":"Merkle–Damgård and padding","p":"Hash functions","r":[[12,17],[24,25]]},{"h":"hash.html#bday","l":"Birthday attack","p":"Hash functions","r":[[18,21]]},{"h":"hash.html#sched","l":"SHA-1 message schedule","p":"Hash functions","r":[[26,28]]},{"h":"hash.html#rnd","l":"SHA-1 rounds","p":"Hash functions","r":[[26,28]]},{"h":"hash.html#today","l":"MD5 to SHA-3","p":"Hash functions","r":[[29,36]]},{"h":"signatures.html#ov","l":"Why signatures (MAC vs signature)","p":"Signatures","r":[[37,41]]}]},{"id":"11","f":"lecture-11.pdf","dl":"Lecture 11 - Digital Signature Schemes.pdf","t":"Digital Signature Schemes","n":42,"pw":720,"ph":540,"mb":"1.7","kick":"Week 11 · Lecture 11","short":"Lecture 11","w":11,"wt":"Digital signature schemes","rd":"Textbook pp. 522–551","links":[{"h":"signatures.html#ov","l":"Why signatures (MAC vs signature)","p":"Signatures","r":[[5,11]]},{"h":"signatures.html#rsa","l":"RSA signature","p":"Signatures","r":[[12,16]]},{"h":"signatures.html#hf","l":"Forgeries and hashing first","p":"Signatures","r":[[17,18]]},{"h":"signatures.html#dsa","l":"DSA","p":"Signatures","r":[[19,25]]},{"h":"signatures.html#ec","l":"ECDSA","p":"Signatures","r":[[26,30]]},{"h":"ecc.html#add","l":"Adding points","p":"Elliptic curves","r":[[27,27]]},{"h":"ecc.html#fp","l":"Curve over GF(p)","p":"Elliptic curves","r":[[28,28]]},{"h":"signatures.html#eg","l":"Elgamal signature","p":"Signatures","r":[]},{"h":"signatures.html#nr","l":"Same k twice","p":"Signatures","r":[]}]},{"id":"12","f":"lecture-12.pdf","dl":"Lecture 12 - Cryptographic Protocols.pdf","t":"Cryptographic Protocols","n":33,"pw":720,"ph":540,"mb":"0.8","kick":"Week 12 · Lecture 12","short":"Lecture 12","w":12,"wt":"Cryptographic protocols","rd":"Textbook pp. 555–599","links":[{"h":"protocols.html#ov","l":"What a protocol is","p":"Protocols","r":[[5,8]]},{"h":"protocols.html#kinds","l":"Who takes part","p":"Protocols","r":[[9,11]]},{"h":"protocols.html#pw","l":"Passwords","p":"Protocols","r":[[12,15]]},{"h":"protocols.html#lam","l":"Lamport one-time passwords","p":"Protocols","r":[[16,18]]},{"h":"protocols.html#zk","l":"Zero-knowledge cave","p":"Protocols","r":[[19,23]]},{"h":"protocols.html#fs","l":"Fiat–Shamir","p":"Protocols","r":[[24,30]]}]},{"id":"13","f":"lecture-13.pdf","dl":"Lecture 13 - Cryptocurrencies and Blockchains.pdf","t":"Cryptocurrencies and Blockchains","n":41,"pw":720,"ph":540,"mb":"0.8","kick":"Week 13 · Lecture 13","short":"Lecture 13","w":13,"wt":"Cryptocurrencies and blockchains","rd":"İmamverdiyev (2019), pp. 18–32","links":[{"h":"blockchain.html#why","l":"Why a blockchain","p":"Blockchain","r":[[5,9]]},{"h":"blockchain.html#pow","l":"Proof of work","p":"Blockchain","r":[[10,10]]},{"h":"blockchain.html#pos","l":"Proof of stake","p":"Blockchain","r":[[10,10]]},{"h":"blockchain.html#chain","l":"Blocks and hash pointers","p":"Blockchain","r":[[11,12],[14,17]]},{"h":"blockchain.html#merkle","l":"Merkle tree","p":"Blockchain","r":[[13,13]]},{"h":"blockchain.html#tx","l":"Transactions","p":"Blockchain","r":[[18,18]]},{"h":"blockchain.html#ethereum","l":"Ethereum and smart contracts","p":"Blockchain","r":[[19,25]]},{"h":"signatures.html#ec","l":"ECDSA","p":"Signatures","r":[[26,26]]},{"h":"ecc.html#cv","l":"The elliptic curve","p":"Elliptic curves","r":[[27,27]]},{"h":"ecc.html#fp","l":"Curve over GF(p)","p":"Elliptic curves","r":[[28,29]]},{"h":"blockchain.html#bitcoin","l":"Bitcoin","p":"Blockchain","r":[[30,36]]},{"h":"blockchain.html#attack","l":"51% attack","p":"Blockchain","r":[[37,38]]},{"h":"blockchain.html#net","l":"Network and forks","p":"Blockchain","r":[]}]},{"id":"14","f":"lecture-14.pdf","dl":"Lecture 14 - Post-Quantum Cryptography.pdf","t":"Post-Quantum Cryptography","n":28,"pw":720,"ph":540,"mb":"1.2","kick":"Week 14 · Lecture 14","short":"Lecture 14","w":14,"wt":"Post-quantum cryptography","rd":"","links":[{"h":"rsa.html#fa","l":"Factoring","p":"RSA","r":[[17,18]]},{"h":"lattice.html#lat","l":"A lattice","p":"Lattices","r":[[20,21]]},{"h":"lattice.html#cvp","l":"Hard lattice problems","p":"Lattices","r":[[21,21]]},{"h":"lattice.html#kem","l":"ML-KEM (Kyber)","p":"Lattices","r":[[22,24]]},{"h":"lattice.html#lwe","l":"Learning with errors","p":"Lattices","r":[[24,25]]}]}];
+const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const ORDER=DECKS.map(d=>d.id), BY=Object.fromEntries(DECKS.map(d=>[d.id,d]));
+const rng=r=>r[0]===r[1]?`slide ${r[0]}`:`slides ${r[0]}–${r[1]}`;
+const inR=(l,k)=>l.r.some(r=>k>=r[0]&&k<=r[1]);
+
+const S={d:null,pdf:null,k:1,n:0,tok:0,front:0,W:0,H:0,cache:new Map(),ann:new Map(),busy:Promise.resolve(),full:false};
+let lib=null;
+
+/* ---------- lecture picker ---------- */
+$('pick').innerHTML=DECKS.map(d=>`<option value="${d.id}">${esc(d.kick)} · ${esc(d.t)}</option>`).join('');
+$('pick').onchange=e=>open(e.target.value,1);
+
+function parseHash(){
+  const [a,b]=decodeURIComponent(location.hash.slice(1)).split('/');
+  const id=BY[a]?a:(BY[String(a).padStart(2,'0')]?String(a).padStart(2,'0'):ORDER[0]);
+  return {id,k:Math.max(1,parseInt(b,10)||1)};
+}
+function setHash(){
+  const h=`#${S.d.id}/${S.k}`;
+  if(location.hash!==h)history.replaceState(null,'',h);
+}
+
+/* ---------- pdf.js ---------- */
+async function getLib(){
+  if(lib)return lib;
+  lib=await import(PDFJS+'legacy/build/pdf.min.mjs');
+  lib.GlobalWorkerOptions.workerSrc=PDFJS+'legacy/build/pdf.worker.min.mjs';
+  return lib;
+}
+function msg(t,p){
+  $('msg').hidden=t===null;
+  if(t!==null){$('msgT').innerHTML=t;$('msgP').parentNode.hidden=p===undefined;$('msgP').style.width=(p||0)+'%';}
+}
+
+async function open(id,k){
+  const d=BY[id]; if(!d)return;
+  const tok=++S.tok;
+  if(S.pdf){try{S.pdf.destroy()}catch(e){}}
+  S.d=d;S.pdf=null;S.n=d.n;S.k=Math.min(Math.max(1,k),d.n);S.cache.clear();S.ann.clear();
+  document.documentElement.style.setProperty('--ar',`${d.pw}/${d.ph}`);
+  document.documentElement.style.setProperty('--arn',(d.pw/d.ph).toFixed(4));
+  $('pick').value=id;$('kick').textContent=d.kick;$('title').textContent=d.t;
+  document.title=`${d.short} · ${d.t} · Slides`;
+  $('tot').textContent=d.n;$('bPdf').href=d.f;$('bPdf').setAttribute('download',d.dl);
+  for(const c of [$('c0'),$('c1')]){c.classList.remove('on');c.width=c.height=0;}
+  $('lk').innerHTML='';
+  fillSide();buildThumbs();setHash();ui();
+  msg(`Loading ${esc(d.short)} (${d.mb} MB)…`,0);
+  try{
+    const L=await getLib();
+    const task=L.getDocument({url:d.f,cMapUrl:PDFJS+'cmaps/',cMapPacked:true,standardFontDataUrl:PDFJS+'standard_fonts/'});
+    task.onProgress=p=>{if(tok===S.tok&&p.total)msg(`Loading ${esc(d.short)} (${d.mb} MB)…`,Math.round(p.loaded/p.total*100))};
+    const pdf=await task.promise;
+    if(tok!==S.tok){pdf.destroy();return;}
+    S.pdf=pdf;S.n=pdf.numPages;$('tot').textContent=S.n;
+    measure();await show(S.k,true);
+    msg(null);
+    observeThumbs();
+  }catch(err){
+    if(tok!==S.tok)return;
+    console.error(err);
+    msg(`The slides could not be shown here. <a href="${esc(d.f)}">Open the PDF</a> instead.`);
+  }
+}
+
+/* page box in CSS px, fitted into the stage */
+function measure(){
+  const st=$('stage'),pg=$('page'),d=S.d;
+  const cw=st.clientWidth,ch=st.clientHeight,ar=d.pw/d.ph;
+  let w=cw,h=cw/ar; if(h>ch){h=ch;w=ch*ar}
+  w=Math.round(w);h=Math.round(h);
+  pg.style.width=w+'px';pg.style.height=h+'px';
+  pg.style.left=Math.round((cw-w)/2)+'px';pg.style.top=Math.round((ch-h)/2)+'px';
+  if(w!==S.W||h!==S.H){S.W=w;S.H=h;S.cache.clear();return true}
+  return false;
+}
+const dpr=()=>Math.min(window.devicePixelRatio||1,2.5);
+
+async function bitmap(k){
+  const key=`${k}@${S.W}`;
+  if(S.cache.has(key)){const v=S.cache.get(key);S.cache.delete(key);S.cache.set(key,v);return v}
+  const pdf=S.pdf,page=await pdf.getPage(k);
+  const v1=page.getViewport({scale:1}),sc=S.W*dpr()/v1.width,vp=page.getViewport({scale:sc});
+  const cv=document.createElement('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
+  await page.render({canvasContext:cv.getContext('2d',{alpha:false}),viewport:vp}).promise;
+  if(!S.ann.has(k)){
+    try{
+      const an=await page.getAnnotations({intent:'display'});
+      S.ann.set(k,an.filter(a=>a.subtype==='Link'&&a.url).map(a=>{
+        const r=v1.convertToViewportRectangle(a.rect);
+        const x=Math.min(r[0],r[2]),y=Math.min(r[1],r[3]);
+        return {u:a.url,x:x/v1.width*100,y:y/v1.height*100,w:Math.abs(r[2]-r[0])/v1.width*100,h:Math.abs(r[3]-r[1])/v1.height*100};
+      }));
+    }catch(e){S.ann.set(k,[])}
+  }
+  S.cache.set(key,cv);
+  while(S.cache.size>8)S.cache.delete(S.cache.keys().next().value);
+  return cv;
+}
+
+async function show(k,first){
+  if(!S.pdf||!S.W){S.k=Math.min(Math.max(1,k),S.n||S.d.n);ui();setHash();return}   // not loaded yet, or the box has no size yet (the resize observer draws it)
+  k=Math.min(Math.max(1,k),S.n);
+  const tok=S.tok,want=k;S.k=k;ui();setHash();
+  let done;S.busy=new Promise(r=>done=r);
+  try{
+    const src=await bitmap(k);
+    if(tok!==S.tok||S.k!==want||!src.width)return;
+    const back=S.front?$('c0'):$('c1'),front=S.front?$('c1'):$('c0');
+    back.width=src.width;back.height=src.height;back.getContext('2d',{alpha:false}).drawImage(src,0,0);
+    back.setAttribute('aria-label',`Slide ${k} of ${S.n}`);
+    back.classList.add('on');front.classList.remove('on');S.front^=1;
+    $('lk').innerHTML=(S.ann.get(k)||[]).map(a=>`<a href="${esc(a.u)}" target="_blank" rel="noopener" style="left:${a.x}%;top:${a.y}%;width:${a.w}%;height:${a.h}%" aria-label="Link on the slide"></a>`).join('');
+  }finally{done()}
+  warm(want,tok);
+}
+async function warm(k,tok){   // draw the neighbours ahead, so the next click is instant
+  for(const j of [k+1,k-1,k+2]){
+    await S.busy;
+    if(S.k!==k||tok!==S.tok)return;
+    if(j>=1&&j<=S.n){try{await bitmap(j)}catch(e){}}
+  }
+}
+
+/* ---------- side panel ---------- */
+function demoItem(l,k,withRange){
+  const ranges=l.r.map(r=>`<button class="pg" data-go="${r[0]}">${rng(r)}</button>`).join(' ');
+  return `<li class="${inR(l,k)?'on':''}"><a class="d" href="../demos/${esc(l.h)}" target="_blank" rel="noopener">${esc(l.l)}<span class="ar" aria-hidden="true">↗</span><span class="f">${esc(l.p)}</span></a>${withRange?ranges:''}</li>`;
+}
+function fillSide(){
+  const d=S.d;
+  const seen=new Set(),list=[];
+  for(const l of d.links){if(!seen.has(l.h)){seen.add(l.h);list.push(l)}}
+  $('allL').innerHTML=list.map(l=>demoItem(l,S.k,true)).join('')||'<li class="none">No interactive page for this lecture yet.</li>';
+  const i=ORDER.indexOf(d.id),pv=BY[ORDER[i-1]],nx=BY[ORDER[i+1]];
+  const sib=DECKS.filter(x=>x.w===d.w&&x.id!==d.id);
+  $('meta').innerHTML=`<h2>Syllabus</h2>
+    <p><b style="color:var(--ink)">Week ${d.w}</b> · ${esc(d.wt)}</p>
+    ${d.rd?`<p>Reading: ${esc(d.rd)}</p>`:''}
+    ${sib.map(x=>`<p>Also this week: <a href="#${x.id}/1" data-open="${x.id}">${esc(x.t)}</a></p>`).join('')}
+    <p><a href="${esc(d.f)}" download="${esc(d.dl)}">Download the PDF</a> · ${d.mb} MB</p>
+    <div class="nx"><span>${pv?`<a href="#${pv.id}/1" data-open="${pv.id}">← ${esc(pv.short)}</a>`:''}</span><span>${nx?`<a href="#${nx.id}/1" data-open="${nx.id}">${esc(nx.short)} →</a>`:''}</span></div>`;
+}
+function ui(){
+  const d=S.d,k=S.k,n=S.n||d.n;
+  $('go').value=k;$('pfill').style.width=(k/n*100)+'%';
+  $('bPrev').disabled=$('ePrev').disabled=k<=1;$('bNext').disabled=$('eNext').disabled=k>=n;
+  $('fNum').textContent=`${k} / ${n}`;
+  const here=d.links.filter(l=>inR(l,k));
+  const uniq=[...new Map(here.map(l=>[l.h,l])).values()];
+  $('hereL').innerHTML=uniq.length?`<ul class="dl">${uniq.map(l=>demoItem(l,k,false)).join('')}</ul>`
+    :`<p class="none">Nothing interactive for slide ${k}. The pages for the whole lecture are listed below.</p>`;
+  $('fTry').innerHTML=uniq.slice(0,3).map(l=>`<a href="../demos/${esc(l.h)}" target="_blank" rel="noopener">Try it: ${esc(l.l)} ↗</a>`).join('');
+  document.querySelectorAll('#allL li').forEach((li,i)=>{const a=li.querySelector('a.d');if(!a)return;const h=a.getAttribute('href').slice(9);li.classList.toggle('on',d.links.some(l=>l.h===h&&inR(l,k)))});
+  document.querySelectorAll('.th.on').forEach(t=>t.classList.remove('on'));
+  const th=$('thumbs').children[k-1];
+  if(th){th.classList.add('on');const s=$('thumbs');const L=th.offsetLeft-s.offsetLeft-(s.clientWidth-th.offsetWidth)/2;s.scrollTo({left:Math.max(0,L),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+}
+
+/* ---------- thumbnails ---------- */
+let io=null,tq=[],trun=false;
+function buildThumbs(){
+  if(io)io.disconnect();tq=[];
+  const d=S.d,has=new Set();
+  for(const l of d.links)for(const r of l.r)for(let i=r[0];i<=r[1];i++)has.add(i);
+  $('thumbs').innerHTML=Array.from({length:d.n},(_,i)=>`<button class="th${has.has(i+1)?' has':''}" data-k="${i+1}" aria-label="Slide ${i+1}${has.has(i+1)?', has an interactive page':''}"><canvas></canvas><span>${i+1}</span></button>`).join('');
+}
+function observeThumbs(){
+  const tok=S.tok;
+  io=new IntersectionObserver(es=>{for(const e of es)if(e.isIntersecting){io.unobserve(e.target);tq.push([e.target,tok]);pump()}},{root:$('thumbs'),rootMargin:'0px 600px'});
+  [...$('thumbs').children].forEach(t=>io.observe(t));
+}
+async function pump(){
+  if(trun)return;trun=true;
+  while(tq.length){
+    const [el,tok]=tq.shift();
+    if(tok!==S.tok||!S.pdf)continue;
+    await S.busy;
+    try{
+      const page=await S.pdf.getPage(+el.dataset.k);
+      const v1=page.getViewport({scale:1}),w=el.clientWidth||128,vp=page.getViewport({scale:w*Math.min(window.devicePixelRatio||1,2)/v1.width});
+      const cv=el.querySelector('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
+      await page.render({canvasContext:cv.getContext('2d',{alpha:false}),viewport:vp}).promise;
+    }catch(e){}
+  }
+  trun=false;
+}
+
+/* ---------- moving around ---------- */
+const go=k=>{if(S.d&&k>=1&&k<=(S.n||S.d.n)&&k!==S.k)show(k)};
+const next=()=>go(S.k+1),prev=()=>go(S.k-1);
+$('bNext').onclick=$('eNext').onclick=$('fNext').onclick=next;
+$('bPrev').onclick=$('ePrev').onclick=$('fPrev').onclick=prev;
+$('go').onchange=e=>{const v=parseInt(e.target.value,10);if(v)go(Math.min(Math.max(1,v),S.n||S.d.n));else e.target.value=S.k};
+$('go').onkeydown=e=>{if(e.key==='Enter')e.target.blur()};
+$('thumbs').onclick=e=>{const t=e.target.closest('.th');if(t)go(+t.dataset.k)};
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');if(g){e.preventDefault();go(+g.dataset.go);if(innerWidth<=900)$('stage').scrollIntoView({block:'start',behavior:'smooth'});return}
+  const o=e.target.closest('[data-open]');if(o){e.preventDefault();open(o.dataset.open,1);window.scrollTo({top:0,behavior:'smooth'})}
+});
+document.addEventListener('keydown',e=>{
+  if(e.altKey||e.ctrlKey||e.metaKey)return;
+  const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA'))return;
+  const K=e.key;
+  if(K==='ArrowRight'||K==='PageDown'||(K===' '&&S.full)||K==='n'){e.preventDefault();next()}
+  else if(K==='ArrowLeft'||K==='PageUp'||K==='p'){e.preventDefault();prev()}
+  else if(K==='Home'&&S.full){e.preventDefault();go(1)}
+  else if(K==='End'&&S.full){e.preventDefault();go(S.n)}
+  else if(K==='f'||K==='F'){e.preventDefault();toggleFull()}
+  else if(K==='Escape'&&S.full&&!document.fullscreenElement&&!document.webkitFullscreenElement)setFull(false);
+});
+// swipe
+let sx=null,sy=0;
+$('stage').addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){sx=e.clientX;sy=e.clientY}});
+$('stage').addEventListener('pointerup',e=>{if(sx===null)return;const dx=e.clientX-sx,dy=e.clientY-sy;sx=null;if(Math.abs(dx)>45&&Math.abs(dy)<60)(dx<0?next:prev)()});
+$('stage').addEventListener('pointercancel',()=>sx=null);
+
+/* ---------- present (full screen) ---------- */
+function setFull(on){
+  S.full=on;$('stage').classList.toggle('full',on);document.body.style.overflow=on?'hidden':'';
+  requestAnimationFrame(()=>{measure();if(S.pdf)show(S.k)});
+  if(on)poke();
+}
+function toggleFull(){
+  const st=$('stage');
+  if(S.full){
+    if(document.fullscreenElement)document.exitFullscreen();else if(document.webkitFullscreenElement)document.webkitExitFullscreen();else setFull(false);
+    return;
+  }
+  const rq=st.requestFullscreen||st.webkitRequestFullscreen;
+  if(rq){try{const p=rq.call(st);if(p&&p.catch)p.catch(()=>setFull(true))}catch(e){setFull(true)}}
+  setFull(true);
+  st.focus({preventScroll:true});
+}
+const onFs=()=>{if(!(document.fullscreenElement||document.webkitFullscreenElement)&&S.full)setFull(false)};
+document.addEventListener('fullscreenchange',onFs);document.addEventListener('webkitfullscreenchange',onFs);
+$('bFull').onclick=toggleFull;$('fExit').onclick=toggleFull;
+let pokeT=0;
+function poke(){$('stage').classList.add('ui');clearTimeout(pokeT);pokeT=setTimeout(()=>$('stage').classList.remove('ui'),2600)}
+$('stage').addEventListener('pointermove',()=>{if(S.full)poke()});
+$('stage').addEventListener('pointerdown',()=>{if(S.full)poke()});
+
+/* ---------- resize ---------- */
+let rzT=0;
+new ResizeObserver(()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(S.d&&measure()&&S.pdf)show(S.k)},120)}).observe($('stage'));
+addEventListener('hashchange',()=>{const h=parseHash();if(!S.d||h.id!==S.d.id)open(h.id,h.k);else if(h.k!==S.k)go(h.k)});
+
+const h0=parseHash();open(h0.id,h0.k);
+window.__sv={S,DECKS,go,open};
+</script>
+</body>
+</html>
