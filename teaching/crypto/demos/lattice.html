@@ -390,6 +390,8 @@ svg.wheel{display:block;width:100%;max-width:300px;margin:0 auto}
 .uses div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 2px 0 var(--line)}
 .uses b{display:block;font-size:14.5px}.uses span{font-size:13.5px;color:var(--muted)}
 .inbar .hint2{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+.l3 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.l3off{position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted);font-size:14.5px}
 </style>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
@@ -428,9 +430,10 @@ svg.wheel{display:block;width:100%;max-width:300px;margin:0 auto}
   </aside>
   <section class="card doc" id="doc" hidden></section>
 </main>
-<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Drag a picture to turn it. Works offline: every point and number on this page is computed in your browser.</footer>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Drag a picture to turn it. Every point and number on this page is computed in your browser; the 3D pictures use three.js.</footer>
 
-<script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/"}}</script>
+<script type="module">
 "use strict";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -448,71 +451,133 @@ function inv(x,q){let r0=q,r1=md(x,q),t0=0,t1=1;while(r1){const k=Math.floor(r0/
 // a small seeded generator, so that "new numbers" can be repeated
 function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 
-/* ---------- the 3D scene: HTML parts in CSS 3D, so text stays sharp ----------
+/* ---------- the 3D scene, drawn with three.js ----------
    World units: x to the right, y away from the reader on the table, z up out of the table.
-   A camera turns the whole world; points and labels turn back so that they always face the reader. */
+   Every step lists the parts it shows (points, rods, arrow heads, flat cells, labels).
+   Parts with the same id stay; new ones fade in; missing ones fade out. */
 const RM=matchMedia('(prefers-reduced-motion: reduce)'),NARROW=matchMedia('(max-width:1000px)');
-const SC={U:46,W:760,H:460,root:null,cam:null,items:new Map(),pose:{yaw:-18,pitch:52,zoom:1,cx:0,cy:0,cz:0},tw:null,drag:null};
+const SC={U:46,W:760,H:470,ok:false,root:null,items:new Map(),pose:{yaw:-18,pitch:52,zoom:1,cx:0,cy:0,cz:0},tw:null,need:true,col:null};
 const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],addv=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],len=a=>Math.hypot(a[0],a[1],a[2]),unit=a=>mul(a,1/(len(a)||1));
-// world → CSS pixels: CSS y grows downwards, and the table's "away" direction is CSS −y before the camera tilts it
-const px=p=>[p[0]*SC.U,-p[1]*SC.U,(p[2]||0)*SC.U];
-const m3=(c1,c2,c3,o)=>`matrix3d(${c1.join(',')},0,${c2.join(',')},0,${c3.join(',')},0,${o.join(',')},1)`;
-function scInit(host){
-  host.innerHTML='<div class="l3cam"></div><p class="l3hint">Drag to turn the picture</p>';
-  SC.root=host;SC.cam=host.firstChild;
-  host.addEventListener('pointerdown',e=>{if(e.button)return;SC.drag={x:e.clientX,y:e.clientY,yaw:SC.pose.yaw,pitch:SC.pose.pitch};host.setPointerCapture(e.pointerId);host.classList.add('grab');if(SC.tw){cancelAnimationFrame(SC.tw);SC.tw=null}});
-  host.addEventListener('pointermove',e=>{if(!SC.drag)return;SC.pose.yaw=SC.drag.yaw+(e.clientX-SC.drag.x)*.35;SC.pose.pitch=clamp(SC.drag.pitch-(e.clientY-SC.drag.y)*.3,0,88);camApply();host.classList.add('moved')});
-  const end=()=>{SC.drag=null;host.classList.remove('grab')};host.addEventListener('pointerup',end);host.addEventListener('pointercancel',end);
-  new ResizeObserver(()=>{SC.W=host.clientWidth;SC.H=host.clientHeight;camApply()}).observe(host);
-}
+const px=p=>[p[0]*SC.U,-p[1]*SC.U,(p[2]||0)*SC.U];               // only used to measure arrows in screen-sized units
+let THREE=null,OrbitControls=null;
+try{THREE=await import('three');({OrbitControls}=await import('three/addons/controls/OrbitControls.js'))}catch(e){THREE=null}
+const V3=p=>new THREE.Vector3(p[0],p[2]||0,-p[1]);
+const has=(c,k)=>(' '+(c||'')+' ').includes(' '+k+' ');
+function readColors(){const cs=getComputedStyle(document.documentElement),g=n=>new THREE.Color((cs.getPropertyValue(n).trim()||'#888888'));
+  return{ink:g('--ink'),muted:g('--muted'),line2:g('--line2'),n0:g('--n0'),n1:g('--n1'),n2:g('--n2'),n3:g('--n3'),xor:g('--xor')}}
+const hexOf=c=>'#'+c.getHexString();
+// the colour of a part comes from the same role names as the bench under the picture
+function roleColor(c){const K=SC.col;
+  if(has(c,'v1')||has(c,'cellab'))return K.n0;if(has(c,'v2'))return K.n3;if(has(c,'v3'))return K.n1;
+  if(has(c,'w1')||has(c,'w2')||has(c,'nod')||has(c,'no')||has(c,'noc'))return K.xor;
+  if(has(c,'pth')||has(c,'pin')||has(c,'tgt')||has(c,'hl')||has(c,'tgc'))return K.n2;
+  if(has(c,'sv')||has(c,'okp')||has(c,'okd')||has(c,'ok')||has(c,'okc')||has(c,'up')||has(c,'pedge'))return K.n1;
+  if(has(c,'org'))return K.ink;if(has(c,'axis'))return K.line2;if(has(c,'muted')||has(c,'blab'))return K.muted;return null}
+const GEO={};const geo=(n,f)=>GEO[n]||(GEO[n]=f());
+const UP=()=>new THREE.Vector3(0,1,0);
+function material(color,o={}){return new THREE.MeshStandardMaterial({color,roughness:o.rough??.4,metalness:.04,transparent:true,opacity:0,side:o.side??THREE.FrontSide,depthWrite:o.depthWrite??true})}
+// a label: text drawn large on a canvas, so it stays sharp on a sprite
+function labelSprite(it){
+  const c=it.cls||'',lines=String(it.t).replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,'').split('\n'),s=4,fs=(has(c,'blab')?27:30)*s,lh=fs*1.22;
+  const font=`${has(c,'bval')?'700':'600'} ${fs}px ${has(c,'bval')?'ui-monospace, SFMono-Regular, Menlo, monospace':'system-ui, -apple-system, Segoe UI, Roboto, sans-serif'}`;
+  const cv=document.createElement('canvas'),g=cv.getContext('2d');g.font=font;
+  const w=Math.max(...lines.map(l=>g.measureText(l).width))+26*s,h=lh*lines.length+16*s;cv.width=Math.ceil(w);cv.height=Math.ceil(h);
+  g.font=font;const plain=has(c,'muted');
+  if(!plain){g.fillStyle='rgba(255,255,255,0.92)';g.beginPath();g.roundRect(0,0,cv.width,cv.height,11*s);g.fill()}
+  const col=roleColor(c)||new THREE.Color('#1c1b19'),hx=plain?hexOf(SC.col.muted):(col.getHSL({}).l>.62?'#1c1b19':hexOf(col));
+  if(has(c,'tag')){g.strokeStyle=hx;g.lineWidth=3*s;g.beginPath();g.roundRect(1.5*s,1.5*s,cv.width-3*s,cv.height-3*s,10*s);g.stroke()}
+  g.fillStyle=hx;g.textAlign='center';g.textBaseline='middle';lines.forEach((l,i)=>g.fillText(l,cv.width/2,8*s+lh*(i+.5)+1));
+  const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,transparent:true,opacity:0}));
+  const H=(has(c,'blab')?.46:has(c,'bval')?.56:.54)*(lines.length>1?1.75:1);sp.userData.size=[H*cv.width/cv.height,H];sp.renderOrder=10;sp.position.copy(V3(it.p));return sp}
+function build(it){
+  const c=it.cls||'',K=SC.col;let o,base=1;
+  if(it.k==='pt'){
+    const tg=has(c,'tgt'),r=has(c,'org')?.2:has(c,'hl')?.23:(has(c,'ok')||has(c,'no'))?.25:.16;
+    o=new THREE.Mesh(tg?geo('box',()=>new THREE.BoxGeometry(1,1,1)):geo('sph',()=>new THREE.SphereGeometry(1,28,18)),material(roleColor(c)||K.n0,{rough:.32}));
+    o.scale.setScalar(tg?.34:r);o.userData.ps=tg?.34:r;o.position.copy(V3(it.p))}
+  else if(it.k==='rod'){
+    const a=V3(it.a),b=V3(it.b),d=b.clone().sub(a),L=d.length();if(L<1e-6)return null;
+    base=has(c,'axis')?.75:1;o=new THREE.Mesh(geo('cyl',()=>new THREE.CylinderGeometry(1,1,1,16)),material(roleColor(c)||K.muted,{rough:.45}));
+    const r=Math.max(.014,(it.w||3)/SC.U*.58);o.scale.set(r,L,r);o.position.copy(a).addScaledVector(d,.5);o.quaternion.setFromUnitVectors(UP(),d.normalize())}
+  else if(it.k==='head'){
+    const a=V3(it.a),b=V3(it.b),u=b.clone().sub(a).normalize(),h=.42;
+    o=new THREE.Mesh(geo('cone',()=>new THREE.ConeGeometry(1,1,28)),material(roleColor(c)||K.muted,{rough:.38}));
+    o.scale.set(.15,h,.15);o.position.copy(b).addScaledVector(u,-h/2);o.quaternion.setFromUnitVectors(UP(),u)}
+  else if(it.k==='quad'){
+    if(has(c,'ring')){const ctr=addv(it.o,mul(addv(it.u,it.v),.5)),r=len(it.u)/2;
+      o=new THREE.Mesh(new THREE.RingGeometry(r-.035,r+.035,128),material(K.n1,{side:THREE.DoubleSide,depthWrite:false}));o.rotation.x=-Math.PI/2;o.position.copy(V3(ctr)).add(new THREE.Vector3(0,.012,0));base=.95}
+    else{const A=V3(it.o),Bq=V3(addv(it.o,it.u)),Cq=V3(addv(addv(it.o,it.u),it.v)),D=V3(addv(it.o,it.v)),g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.Float32BufferAttribute([A,Bq,Cq,A,Cq,D].flatMap(p=>[p.x,p.y,p.z]),3));g.computeVertexNormals();
+      const bar=has(c,'top')||has(c,'side1')||has(c,'side2');
+      const col=bar?(has(c,'hi')?K.n1:has(c,'ec')?K.n3:has(c,'rsa')?K.n2:K.n0):has(c,'floor')?K.ink:has(c,'bcell')?K.xor:has(c,'pcell')?K.n1:K.n0;
+      base=bar?1:has(c,'floor')?.05:has(c,'cell')?.22:has(c,'cell2')?.07:has(c,'bcell')?.2:has(c,'pcell')?.16:.15;
+      o=new THREE.Mesh(g,material(col,{side:THREE.DoubleSide,depthWrite:bar,rough:bar?.55:.9}));o.userData.own=true;if(!bar)o.renderOrder=-1}}
+  else if(it.k==='lab'){o=labelSprite(it)}
+  else return null;
+  o.userData.base=base;return o}
+function disposeObj(o){if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}if(o.userData.own&&o.geometry)o.geometry.dispose()}
+const sig=it=>JSON.stringify([it.k,it.cls,it.p,it.a,it.b,it.o,it.u,it.v,it.t,it.w]);
+function scSet(list){
+  if(!SC.ok)return;const now=performance.now(),seen=new Set();
+  for(const it of list){
+    if(it.k==='rod2'||it.k==='head2')continue;
+    seen.add(it.id);const s=sig(it);let e=SC.items.get(it.id);
+    if(e&&e.sig!==s){e.tf=0;e.dead=true;SC.items.delete(it.id);SC.dying.push(e);e=null}
+    if(!e){const o=build(it);if(!o)continue;SC.scene.add(o);e={o,sig:s,f:0,tf:1,t0:now+(it.delay||0),base:o.userData.base};SC.items.set(it.id,e)}
+    else e.tf=1;
+  }
+  for(const[id,e]of SC.items)if(!seen.has(id)){e.tf=0;e.dead=true;SC.items.delete(id);SC.dying.push(e)}
+  fitScale();SC.need=true}
+// fades: in over 300 ms, out over 200 ms (instantly with reduced motion)
+function fades(now){
+  let busy=false;const step=(e,dt)=>{const sp=RM.matches?1e9:(e.tf>e.f?1/300:1/200);if(now<e.t0)return true;const f=e.tf>e.f?Math.min(e.tf,e.f+dt*sp):Math.max(e.tf,e.f-dt*sp);
+    if(f!==e.f){e.f=f;e.o.material.opacity=e.base*f;e.o.material.transparent=f<1||e.base<1;return true}return false};
+  const dt=Math.min(250,now-(SC.last||now));SC.last=now;
+  for(const e of SC.items.values())busy=step(e,dt)||busy;
+  SC.dying=SC.dying.filter(e=>{step(e,dt);if(e.f<=0){SC.scene.remove(e.o);disposeObj(e.o);return false}busy=true;return true});
+  return busy}
+function fitScale(){const fit=clamp(SC.W/760,.45,1);
+  // on a narrow screen the camera moves back; labels and points shrink less, so they stay readable
+  const ls=fit**-.55,ps=fit**-.45;
+  for(const e of [...SC.items.values(),...SC.dying]){const o=e.o;if(o.isSprite)o.scale.set(o.userData.size[0]*ls,o.userData.size[1]*ls,1);else if(o.userData.ps)o.scale.setScalar(o.userData.ps*ps)}
+  return fit}
 function camApply(){
-  if(SC.root&&SC.root.clientWidth){SC.W=SC.root.clientWidth;SC.H=SC.root.clientHeight}
-  const p=SC.pose,c=px([p.cx,p.cy,p.cz]);
-  const fit=clamp(SC.W/760,.55,1);
-  SC.cam.style.setProperty('--yaw',p.yaw+'deg');SC.cam.style.setProperty('--pitch',p.pitch+'deg');
-  // on a narrow screen the world shrinks; labels and points shrink less, so they stay readable
-  SC.cam.style.setProperty('--ls',String(fit**-.8));SC.cam.style.setProperty('--ps',String(1/Math.sqrt(fit)));
-  SC.cam.style.transform=`translate3d(${SC.W/2}px,${SC.H/2}px,0) rotateX(${p.pitch}deg) rotateZ(${p.yaw}deg) scale(${p.zoom*fit}) translate3d(${-c[0]}px,${-c[1]}px,${-c[2]}px)`;
-}
+  if(!SC.ok)return;const p=SC.pose,fit=fitScale(),R=SC.H/(2*SC.U*p.zoom*fit*Math.tan(SC.cam.fov*Math.PI/360)),ph=p.pitch*Math.PI/180,th=-p.yaw*Math.PI/180,t=V3([p.cx,p.cy,p.cz]);
+  SC.ctl.target.copy(t);SC.cam.position.set(t.x+R*Math.sin(ph)*Math.sin(th),t.y+R*Math.cos(ph),t.z+R*Math.sin(ph)*Math.cos(th));SC.cam.lookAt(t);SC.need=true}
+// the pose as the reader left it after turning the picture
+function readPose(){const t=SC.ctl.target,d=SC.cam.position.clone().sub(t),R=d.length();
+  return{...SC.pose,pitch:Math.acos(clamp(d.y/R,-1,1))*180/Math.PI,yaw:-Math.atan2(d.x,d.z)*180/Math.PI,cx:t.x,cy:-t.z,cz:t.y}}
 // the camera moves with one long ease between steps: a teaching move, longer than the 300 ms of the page chrome
 function camTo(to,dur=900){
-  const from={...SC.pose},T0=performance.now(),keys=['yaw','pitch','zoom','cx','cy','cz'];
-  const goal={...from,zoom:1,cx:0,cy:0,cz:0,...to};if(keys.every(k=>Math.abs(goal[k]-from[k])<1e-3))return;
-  if(SC.tw)cancelAnimationFrame(SC.tw);
-  if(RM.matches||document.hidden){Object.assign(SC.pose,goal);camApply();return}
-  const ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
-  const tick=now=>{const u=Math.min(1,(now-T0)/dur),e=ease(u);for(const k of keys)SC.pose[k]=from[k]+(goal[k]-from[k])*e;camApply();SC.tw=u<1?requestAnimationFrame(tick):null};
-  SC.tw=requestAnimationFrame(tick);
-}
-// a part that always faces the reader: a point or a label
-const face=(p,v)=>{const c=px(p);return`translate3d(${c[0]}px,${c[1]}px,${c[2]}px) rotateZ(calc(var(--yaw)*-1)) rotateX(calc(var(--pitch)*-1)) scale(var(${v},1)) translate(-50%,-50%)`};
-// a thin rod from A to B: two crossed strips, so it never vanishes when seen edge on
-function rodT(A,B,w,second){
-  const a=px(A),d=sub(px(B),a),L=len(d);if(L<1e-6)return'scale(0)';
-  const up=Math.abs(d[2])<.95*L?[0,0,1]:[1,0,0],p1=unit(cross(d,up)),p2=unit(cross(d,p1)),p=second?p2:p1,q=second?p1:p2;
-  return m3(d,mul(p,w),q,sub(a,mul(p,w/2)))}
-// an arrow head at B, pointing from A to B
-function headT(A,B,h,wd,second){
-  const a=px(A),b=px(B),d=unit(sub(b,a)),up=Math.abs(d[2])<.95?[0,0,1]:[1,0,0],p1=unit(cross(d,up)),p2=unit(cross(d,p1)),p=second?p2:p1,q=second?p1:p2;
-  return m3(mul(d,h),mul(p,wd),q,sub(sub(b,mul(d,h)),mul(p,wd/2)))}
-// a flat parallelogram o + s·u + t·v, s and t from 0 to 1
-// (drawn on a 100 px square, so rounded corners and borders stay sharp when it is stretched)
-function quadT(o,u,v){const a=px(o),U2=sub(px(addv(o,u)),a),V2=sub(px(addv(o,v)),a);return m3(mul(U2,.01),mul(V2,.01),unit(cross(U2,V2)),a)}
-// Every step lists the parts it shows. Parts with the same id stay and move; new ones fade in; missing ones fade out.
-function scSet(list){
-  const seen=new Set();
-  for(const it of list){
-    seen.add(it.id);let e=SC.items.get(it.id);
-    if(!e){e=document.createElement('div');SC.cam.appendChild(e);SC.items.set(it.id,e);if(it.delay)e.style.animationDelay=it.delay+'ms'}
-    else if(e.classList.contains('out')){clearTimeout(e._gone)}
-    e.className=`o ${it.k} ${it.cls||''}`;
-    if(it.k==='pt'||it.k==='lab'){e.style.transform=face(it.p,it.k==='pt'?'--ps':'--ls');if(it.k==='lab'&&e._t!==it.t){e.innerHTML=it.t;e._t=it.t}}
-    else if(it.k==='rod'||it.k==='rod2')e.style.transform=rodT(it.a,it.b,it.w||3,it.k==='rod2');
-    else if(it.k==='head'||it.k==='head2')e.style.transform=headT(it.a,it.b,it.h||12,it.wd||11,it.k==='head2');
-    else if(it.k==='quad')e.style.transform=quadT(it.o,it.u,it.v);
-  }
-  for(const[id,e]of SC.items)if(!seen.has(id)&&!e.classList.contains('out')){e.classList.add('out');e._gone=setTimeout(()=>{e.remove();SC.items.delete(id)},RM.matches?0:220)}
+  if(!SC.ok)return;const from=readPose(),keys=['yaw','pitch','zoom','cx','cy','cz'],goal={...from,zoom:1,cx:0,cy:0,cz:0,...to};
+  while(goal.yaw-from.yaw>180)goal.yaw-=360;while(goal.yaw-from.yaw<-180)goal.yaw+=360;
+  if(keys.every(k=>Math.abs(goal[k]-from[k])<1e-3)){Object.assign(SC.pose,goal);return}
+  if(RM.matches||document.hidden){Object.assign(SC.pose,goal);camApply();SC.tw=null;return}
+  SC.tw={from,goal,t0:performance.now(),dur,keys}}
+const ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+function tween(now){const w=SC.tw;if(!w)return false;const u=Math.min(1,(now-w.t0)/w.dur),e=ease(u);
+  for(const k of w.keys)SC.pose[k]=w.from[k]+(w.goal[k]-w.from[k])*e;camApply();if(u>=1)SC.tw=null;return true}
+function loop(now){
+  requestAnimationFrame(loop);if(!SC.ok||SC.root.hidden)return;
+  let busy=tween(now);busy=fades(now)||busy;if(SC.ctl.update())busy=true;
+  if(busy||SC.need){SC.r.render(SC.scene,SC.cam);SC.need=false}}
+function scInit(host){
+  SC.root=host;SC.dying=[];
+  if(!THREE){host.innerHTML='<p class="l3off">The 3D pictures need three.js, which loads from the internet. Connect and reload the page; the text and the other tabs work without it.</p>';return}
+  try{
+    host.innerHTML='<p class="l3hint">Drag to turn the picture</p>';
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setPixelRatio(Math.min(2,devicePixelRatio||1));r.setClearColor(0x000000,0);r.outputColorSpace=THREE.SRGBColorSpace;
+    host.prepend(r.domElement);SC.r=r;SC.scene=new THREE.Scene();SC.cam=new THREE.PerspectiveCamera(26,1,.1,400);SC.col=readColors();
+    SC.scene.add(new THREE.HemisphereLight(0xffffff,0x3c4658,.6));SC.scene.add(new THREE.AmbientLight(0xffffff,.18));const sun=new THREE.DirectionalLight(0xffffff,1.15);sun.position.set(6,14,9);SC.scene.add(sun);
+    const ctl=new OrbitControls(SC.cam,r.domElement);ctl.enableDamping=true;ctl.dampingFactor=.09;ctl.enableZoom=false;ctl.enablePan=false;ctl.minPolarAngle=0;ctl.maxPolarAngle=Math.PI*.49;ctl.rotateSpeed=.8;
+    ctl.addEventListener('start',()=>{SC.tw=null;host.classList.add('moved')});SC.ctl=ctl;
+    const size=()=>{SC.W=host.clientWidth||760;SC.H=host.clientHeight||470;r.setSize(SC.W,SC.H,false);SC.cam.aspect=SC.W/SC.H;SC.cam.updateProjectionMatrix();camApply()};
+    new ResizeObserver(size).observe(host);size();SC.ok=true;camApply();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{SC.col=readColors();for(const e of [...SC.items.values()]){SC.scene.remove(e.o);disposeObj(e.o)}SC.items.clear();show()});
+    requestAnimationFrame(loop);
+  }catch(e){SC.ok=false;host.innerHTML='<p class="l3off">This browser could not start WebGL, so the 3D pictures are not shown. The text and the other tabs work.</p>'}
 }
 // building blocks for the steps
 const P=(id,p,cls,delay)=>({id,k:'pt',p,cls,delay});
@@ -627,7 +692,7 @@ T.d3={n:()=>5,
       f.forEach(([oo,u,v],i)=>sc.push(quad('pf'+i,oo,u,v,'pcell')));
       const V=[o,B1,B2,B3,addv(B1,B2),addv(B1,B3),addv(B2,B3),addv(addv(B1,B2),B3)],E=[[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,7],[5,7],[6,7]];
       E.forEach(([a,b],i)=>sc.push(...rod('pe'+i,V[a],V[b],'pedge',1.6)));
-      sc.push(lab('lvol',[2.6,1.8,2.9],'volume 10','cellab'))}
+      sc.push(lab('lvol',[3.6,1.6,3.7],'volume 10','cellab'))}
     const cam=[{yaw:-18,pitch:52,zoom:1.05,cx:.5,cy:.5,cz:0},{yaw:-38,pitch:66,zoom:1.08,cx:.8,cy:.6,cz:1},{yaw:-44,pitch:70,zoom:.92,cx:.6,cy:.4,cz:2},{yaw:-56,pitch:66,zoom:1.25,cx:2.2,cy:1.6,cz:1.4},{yaw:22,pitch:76,zoom:.95,cx:.6,cy:.4,cz:2}][k];
     let h='';
     if(k===0)h=bench(bt('the plane lattice','','x · b₁ + y · b₂'),op('lies on'),bt('the table','','z = 0'));
@@ -841,6 +906,7 @@ document.addEventListener('keydown',e=>{
 let startTab='lat';
 try{const h=location.hash.slice(1),t=localStorage.getItem('lattice-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
 setTab(startTab);
+window.__lat={T,ST,SC,show,setTab,camApply,scSet,lweS};
 </script>
 </body>
 </html>
