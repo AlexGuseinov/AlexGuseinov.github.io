@@ -381,7 +381,15 @@ table.xt.da td:last-child{font-weight:600}
 .ccard p{margin:0 0 4px;font-size:13.5px;overflow-wrap:anywhere}
 .ccard p.use{color:var(--muted)}
 table.xt.ks td,table.xt.ks th{text-align:right}table.xt.ks td:nth-child(2),table.xt.ks th:nth-child(2){text-align:left}
+.tor3{position:relative;height:480px;border-radius:10px;overflow:hidden;touch-action:none;cursor:grab;background:radial-gradient(130% 95% at 50% 0%,color-mix(in srgb,var(--accent) 9%,var(--panel)),var(--panel) 70%)}
+.tor3 canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.t3hint{position:absolute;left:12px;bottom:8px;margin:0;font-size:12.5px;color:var(--muted);pointer-events:none;transition:opacity .3s ease-in}
+.tor3.moved .t3hint{opacity:0}
+.t3off{position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14.5px;text-align:center;padding:20px}
+.pthc{color:var(--n2)}.kBc{color:var(--n3)}
+@media (max-width:620px){.tor3{height:380px}}
 </style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/"}}</script>
 </head>
 <body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
 <header class="wrap">
@@ -393,8 +401,9 @@ table.xt.ks td,table.xt.ks th{text-align:right}table.xt.ks td:nth-child(2),table
     <button data-tab="add">2 · Adding points</button>
     <button data-tab="fp">3 · Over GF(p)</button>
     <button data-tab="mul">4 · Multiples of a point</button>
-    <button data-tab="dh">5 · Key exchange</button>
-    <button data-tab="real">6 · Real curves</button>
+    <button data-tab="tor">5 · On a torus</button>
+    <button data-tab="dh">6 · Key exchange</button>
+    <button data-tab="real">7 · Real curves</button>
   </nav>
 </header>
 
@@ -636,7 +645,7 @@ function fpS(){
 const EX3=[[17,2,2,'Paar’s example'],[11,1,6,'Stinson’s example'],[23,1,1,''],[97,2,3,'']];
 T.fp={n:()=>4,
   bar:()=>numIn('fp','<b>p</b> · a prime',ST.fp)+numIn('fa','<b>a</b>',ST.fa)+numIn('fb','<b>b</b>',ST.fb)+
-    `<div class="fld"><span class="flh">Examples</span><div class="row">${EX3.map(e=>loadBtn(`fp=${e[0]},fa=${e[1]},fb=${e[2]}`,`${eqnc(e[1],e[2],e[0])}${e[3]?` <small>${e[3]}</small>`:''}`)).join('')}</div></div><div class="err" id="err"></div><p class="hint2">p is a prime from 5 to 97. Tabs 4 and 5 use this curve.</p>`,
+    `<div class="fld"><span class="flh">Examples</span><div class="row">${EX3.map(e=>loadBtn(`fp=${e[0]},fa=${e[1]},fb=${e[2]}`,`${eqnc(e[1],e[2],e[0])}${e[3]?` <small>${e[3]}</small>`:''}`)).join('')}</div></div><div class="err" id="err"></div><p class="hint2">p is a prime from 5 to 97. Tabs 4, 5 and 6 use this curve.</p>`,
   view(k){
     const S=fpS(),{c,p,a,b,PT,n,N,sq}=S,Gq=grid(c);
     let body='';
@@ -779,6 +788,164 @@ T.real={n:()=>1,
   say:()=>say('The curves in real use','The same rules as on the 17 × 17 grid, with a prime p of 78 digits. Nothing else changes.',`The private key is a random number k below the order n of the base point G. The public key is Q = kG, computed with double-and-add.`,'Press <b>New key</b> for another one. Finding k from Q is the ECDLP: about 2¹²⁸ steps for these curves.'),
   extra:()=>`<h3>Why curves instead of RSA?</h3><p>The best attack on a curve is generic (about √n steps), while RSA can be attacked by factoring, which is much faster than trying. So curves need far shorter keys: 256 bits against 3072.</p><p>Shorter keys mean faster key exchange and smaller signatures, which is why TLS, Bitcoin and phone apps use curves.</p>`};
 
+/* ---------- 5 · the grid of tab 3, glued into a doughnut (three.js, loaded when this tab opens) ----------
+   x and y are taken mod p, so the right edge of the grid touches the left one and the top touches the bottom.
+   The sheet first rolls into a tube (top to bottom), then the tube bends into a torus (left to right).
+   Rolling and bending keep lengths, so every square of the grid stays the same size on the surface. */
+const TOR={host:null,ready:false,failed:false,T:null,m:0,mGoal:0,mFrom:0,tw0:0,ctw:null,parts:{},hops:[],need:true,key:''};
+const TRB=2.65,TRs=1.45,LU=2*Math.PI*TRB,LV=2*Math.PI*TRs;
+const torA=m=>Math.min(1,Math.max(0,m)),torB=m=>Math.min(1,Math.max(0,m-1));
+// where the point (u, v) of the unit square sits after rolling (a) and bending (b); lift moves it out of the surface
+function torPos(u,v,m,lift=0){
+  const a=torA(m),b=torB(m),X=(u-.5)*LU,s=(v-.5)*LV;
+  if(a<1e-4)return[X,s,lift];
+  const ang=a*2*Math.PI,rho=LV/ang,ph=s/rho,oy=(rho+lift)*Math.sin(ph),oz=(rho+lift)*Math.cos(ph);
+  if(b<1e-4)return[X,oy,oz-rho];
+  const Rb=LU/(b*2*Math.PI),th=X/Rb;
+  return[Rb*Math.sin(th)+oz*Math.sin(th),oy,-TRs-Rb+Rb*Math.cos(th)+oz*Math.cos(th)]}
+// the middle of the shape, for the camera to look at
+const torMid=m=>{const a=torA(m),b=torB(m);return a<1?[0,0,-TRs*a*.62]:[0,0,-TRs-TRB*b]};
+async function torLoad(){
+  if(TOR.ready||TOR.failed)return;
+  try{const T=await import('three'),{OrbitControls}=await import('three/addons/controls/OrbitControls.js');TOR.T=T;torInit(T,OrbitControls)}
+  catch(e){TOR.failed=true;if(TOR.host)TOR.host.innerHTML='<p class="t3off">The doughnut needs three.js, which loads from the internet. Connect and reload the page; every other tab works without it.</p>'}}
+function torColors(){const cs=getComputedStyle(document.documentElement),T=TOR.T,g=n=>new T.Color(cs.getPropertyValue(n).trim()||'#888');
+  return{ink:g('--ink'),panel:g('--panel'),n0:g('--n0'),n1:g('--n1'),n2:g('--n2'),n3:g('--n3'),xor:g('--xor'),accent:g('--accent'),muted:g('--muted')}}
+function torInit(T,OrbitControls){
+  const host=TOR.host;host.innerHTML='<p class="t3hint">Drag to turn the doughnut</p>';
+  const r=new T.WebGLRenderer({antialias:true,alpha:true});r.setPixelRatio(Math.min(2,devicePixelRatio||1));r.setClearColor(0,0);r.outputColorSpace=T.SRGBColorSpace;
+  if(T.NeutralToneMapping!==undefined)r.toneMapping=T.NeutralToneMapping;host.prepend(r.domElement);
+  const scene=new T.Scene(),cam=new T.PerspectiveCamera(30,1,.1,200);
+  scene.add(new T.HemisphereLight(0xffffff,0x3c4658,.6),new T.AmbientLight(0xffffff,.15));
+  const key=new T.DirectionalLight(0xffffff,1.15);key.position.set(-6,12,10);const rim=new T.DirectionalLight(0xdfe8ff,.5);rim.position.set(8,5,-14);scene.add(key,rim);
+  const ctl=new OrbitControls(cam,r.domElement);ctl.enableDamping=true;ctl.dampingFactor=.08;ctl.enableZoom=false;ctl.enablePan=false;ctl.rotateSpeed=.8;
+  ctl.addEventListener('start',()=>{TOR.ctw=null;host.classList.add('moved')});
+  Object.assign(TOR,{r,scene,c3:cam,ctl,ready:true,col:torColors()});
+  const size=()=>{const W=host.clientWidth||700,H=host.clientHeight||480;r.setSize(W,H,false);cam.aspect=W/H;cam.updateProjectionMatrix();TOR.need=true};
+  new ResizeObserver(size).observe(host);size();
+  cam.position.set(0,1.2,22);ctl.target.set(0,0,0);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{TOR.col=torColors();TOR.key='';if(ST.tab==='tor')torShow(ST.step.tor||0,true)});
+  requestAnimationFrame(torLoop);
+  if(ST.tab==='tor')torShow(ST.step.tor||0,true);
+}
+/* the parts of the picture, rebuilt when the curve, the point or the colours change */
+function torBuild(){
+  const T=TOR.T,K=TOR.col,S=mulS(),c=S.c,p=c.p,pts=points(c).list;
+  for(const o of Object.values(TOR.parts))if(o){TOR.scene.remove(o);o.traverse(x=>{if(x.geometry)x.geometry.dispose();if(x.material){if(x.material.map)x.material.map.dispose();x.material.dispose()}})}
+  TOR.parts={};TOR.hops=[];
+  const nu=Math.max(72,p*4),nv=Math.max(36,p*2),geo=new T.BufferGeometry(),idx=[];
+  geo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array((nu+1)*(nv+1)*3),3));
+  for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){const a=i*(nv+1)+j,b=a+nv+1;idx.push(a,b,a+1,b,b+1,a+1)}
+  geo.setIndex(idx);geo.userData={nu,nv};
+  TOR.parts.skin=new T.Mesh(geo,new T.MeshPhysicalMaterial({color:K.accent,roughness:.5,clearcoat:.4,transparent:true,opacity:.2,side:T.DoubleSide,depthWrite:false}));
+  // the grid lines: every square of tab 3, or every few for a large p
+  const every=p<=31?1:p<=61?2:4,lines=[];
+  const line=(f,n,col,op,w)=>{const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(new Float32Array((n+1)*3),3));const l=new T.Line(g,new T.LineBasicMaterial({color:col,transparent:true,opacity:op}));l.userData={f,n};return l};
+  const grid=new T.Group();
+  for(let i=0;i<=p;i+=every){grid.add(line(t=>[i/p,t],48,K.ink,.16));grid.add(line(t=>[t,i/p],96,K.ink,.16))}
+  TOR.parts.grid=grid;
+  // the two pairs of edges that get glued: top and bottom, left and right
+  // (drawn as thin tubes, rebuilt while the sheet moves, so they stay visible: WebGL lines are always 1 pixel wide)
+  const edges=new T.Group(),tubeEdge=(f,col,pair)=>{const m=new T.Mesh(new T.BufferGeometry(),new T.MeshPhysicalMaterial({color:col,roughness:.35,clearcoat:.5,transparent:true,opacity:1}));m.userData={f,pair,edge:true};return m};
+  edges.add(tubeEdge(t=>[t,0],K.n2,'v'),tubeEdge(t=>[t,1],K.n2,'v'),tubeEdge(t=>[0,t],K.n3,'u'),tubeEdge(t=>[1,t],K.n3,'u'));TOR.parts.edges=edges;
+  // the points of the curve, glossy, with P in its own colour
+  const rr=Math.max(.06,Math.min(.15,2.2/p)),sph=new T.SphereGeometry(1,24,16),dots=new T.Group();
+  for(const Q of pts){const isP=sameP(Q,S.P),m=new T.Mesh(sph,new T.MeshPhysicalMaterial({color:isP?K.n0:K.ink.clone().lerp(K.accent,.55),roughness:.3,clearcoat:.8,clearcoatRoughness:.2}));
+    m.scale.setScalar(isP?rr*1.45:rr);m.userData.uv=[(Q[0]+.5)/p,(Q[1]+.5)/p];dots.add(m)}
+  TOR.parts.dots=dots;
+  // P, 2P, 3P, …: each hop goes the short way around, so on the doughnut it is one unbroken arc
+  const hops=new T.Group(),seq=S.seq;
+  for(let j=1;j<S.N-1;j++){const A=seq[j-1],B=seq[j];let dx=B[0]-A[0],dy=B[1]-A[1];if(dx>p/2)dx-=p;if(dx<-p/2)dx+=p;if(dy>p/2)dy-=p;if(dy<-p/2)dy+=p;
+    const pts3=[];for(let s=0;s<=40;s++){const t=s/40,u=((A[0]+t*dx+.5)/p%1+1)%1,v=((A[1]+t*dy+.5)/p%1+1)%1,q=torPos(u,v,2,.1+.3*Math.sin(Math.PI*t)*Math.min(1,Math.hypot(dx,dy)/p*2.2));pts3.push(new T.Vector3(...q))}
+    const curve=new T.CatmullRomCurve3(pts3),g=new T.TubeGeometry(curve,80,Math.max(.022,rr*.28),10,false);
+    const mt=new T.MeshPhysicalMaterial({color:K.n2,roughness:.35,clearcoat:.6,transparent:true,opacity:0});const tube=new T.Mesh(g,mt);
+    const tip=pts3.at(-1),dir=tip.clone().sub(pts3.at(-4)).normalize(),cone=new T.Mesh(new T.ConeGeometry(rr*.75,rr*2.2,20),mt);
+    cone.position.copy(tip).addScaledVector(dir,-rr*1.1);cone.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),dir);
+    const h=new T.Group();h.add(tube,cone);h.visible=false;h.userData={j,f:0,goal:0};hops.add(h);TOR.hops.push(h)}
+  TOR.parts.hops=hops;
+  // labels for P, 2P, 3P on the doughnut
+  const lab=(t,col)=>{const s=4,cv=document.createElement('canvas'),g=cv.getContext('2d'),fs=30*s;g.font=`700 ${fs}px system-ui,-apple-system,Segoe UI,sans-serif`;
+    cv.width=Math.ceil(g.measureText(t).width+30*s);cv.height=Math.ceil(fs*1.6);g.font=`700 ${fs}px system-ui,-apple-system,Segoe UI,sans-serif`;
+    const pc=K.panel.clone().convertLinearToSRGB(),tc=col.clone().convertLinearToSRGB(),rgb=(c,a)=>`rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},${a})`;
+    g.fillStyle=rgb(pc,.9);g.beginPath();g.roundRect(2*s,2*s,cv.width-4*s,cv.height-4*s,cv.height/2);g.fill();g.strokeStyle=rgb(tc,.5);g.lineWidth=2*s;g.stroke();
+    g.fillStyle=rgb(tc,1);g.textAlign='center';g.textBaseline='middle';g.fillText(t,cv.width/2,cv.height/2+s);
+    const tx=new T.CanvasTexture(cv);tx.colorSpace=T.SRGBColorSpace;const sp=new T.Sprite(new T.SpriteMaterial({map:tx,depthTest:false,transparent:true,opacity:0}));
+    const H=.62;sp.scale.set(H*cv.width/cv.height,H,1);sp.renderOrder=20;return sp};
+  const labs=new T.Group();
+  [1,2,3].filter(j=>j<S.N).forEach(j=>{const Q=seq[j-1],sp=lab(j===1?'P':j+'P',j===1?K.n0:K.n2);sp.userData={uv:[(Q[0]+.5)/p,(Q[1]+.5)/p],j};labs.add(sp)});
+  TOR.parts.labs=labs;
+  for(const o of Object.values(TOR.parts))TOR.scene.add(o);
+  TOR.key=curveKey(c)+'|'+S.P+'|'+ST.step.tor}
+// move every part to the current shape m (0 flat sheet, 1 tube, 2 doughnut)
+function torShape(){
+  const m=TOR.m,{skin,grid,edges,dots,labs}=TOR.parts,pos=skin.geometry.attributes.position,{nu,nv}=skin.geometry.userData;
+  let k=0;for(let i=0;i<=nu;i++)for(let j=0;j<=nv;j++){const q=torPos(i/nu,j/nv,m);pos.array[k++]=q[0];pos.array[k++]=q[1];pos.array[k++]=q[2]}
+  pos.needsUpdate=true;skin.geometry.computeVertexNormals();skin.geometry.computeBoundingSphere();
+  for(const e of edges.children){const pts=[];for(let s=0;s<=96;s++){const[u,v]=e.userData.f(s/96);pts.push(new TOR.T.Vector3(...torPos(u,v,m,.02)))}e.geometry.dispose();e.geometry=new TOR.T.TubeGeometry(new TOR.T.CatmullRomCurve3(pts),120,.05,8,false)}
+  for(const g of [grid])for(const l of g.children){const a=l.geometry.attributes.position,{f,n}=l.userData;for(let s=0;s<=n;s++){const[u,v]=f(s/n),q=torPos(u,v,m,.006);a.array[s*3]=q[0];a.array[s*3+1]=q[1];a.array[s*3+2]=q[2]}a.needsUpdate=true;l.geometry.computeBoundingSphere()}
+  for(const d of dots.children){const[u,v]=d.userData.uv;d.position.set(...torPos(u,v,m,d.scale.x*.9))}
+  for(const s of labs.children){const[u,v]=s.userData.uv;s.position.set(...torPos(u,v,m,.55))}}
+const TCAM=[{az:0,el:6,R:22},{az:-22,el:22,R:21},{az:-30,el:40,R:20},{az:-24,el:46,R:18.5},{az:-36,el:56,R:19.5},{az:32,el:30,R:19.5}];
+function torShow(k,snap){
+  if(!TOR.ready)return;const T=TOR.T,S=mulS();
+  if(snap||TOR.key.split('|').slice(0,2).join('|')!==curveKey(S.c)+'|'+S.P)torBuild();
+  TOR.mFrom=TOR.m;TOR.mGoal=k===0?0:k===1?1:2;TOR.tw0=performance.now();
+  if(snap||RM.matches){TOR.m=TOR.mGoal;TOR.mFrom=TOR.mGoal}
+  const shown=k<3?0:k===3?Math.min(3,S.N-2):S.N-2;
+  TOR.hops.forEach(h=>h.userData.goal=h.userData.j<=shown?1:0);
+  TOR.parts.labs.children.forEach(s=>s.userData.goal=k>=3?1:0);
+  TOR.parts.edges.children.forEach(l=>{l.visible=k===0||(k===1&&l.userData.pair==='v')||(k===2&&l.userData.pair==='u')});
+  const c=TCAM[k],mid=torMid(TOR.mGoal),el=c.el*Math.PI/180,az=c.az*Math.PI/180,W=TOR.host.clientWidth||700,fit=Math.max(1,700/W)**.6;
+  const p1=new T.Vector3(mid[0]+c.R*fit*Math.cos(el)*Math.sin(az),mid[1]+c.R*fit*Math.sin(el),mid[2]+c.R*fit*Math.cos(el)*Math.cos(az));
+  TOR.ctw={p0:TOR.c3.position.clone(),t0:TOR.ctl.target.clone(),p1,t1:new T.Vector3(...mid),s:performance.now(),dur:snap||RM.matches?0:1300};
+  TOR.need=true}
+const tEase=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+function torLoop(now){
+  requestAnimationFrame(torLoop);
+  if(!TOR.ready||ST.tab!=='tor'||!TOR.host||!TOR.host.isConnected)return;
+  let busy=false;
+  if(TOR.m!==TOR.mGoal){const u=Math.min(1,(now-TOR.tw0)/(1300*Math.max(1,Math.abs(TOR.mGoal-TOR.mFrom)))),e=tEase(u);TOR.m=TOR.mFrom+(TOR.mGoal-TOR.mFrom)*e;if(u>=1)TOR.m=TOR.mGoal;busy=true}
+  if(busy||TOR.need)torShape();
+  const w=TOR.ctw;
+  if(w){const u=w.dur?Math.min(1,(now-w.s)/w.dur):1,e=tEase(u);TOR.c3.position.lerpVectors(w.p0,w.p1,e);TOR.ctl.target.lerpVectors(w.t0,w.t1,e);TOR.c3.lookAt(TOR.ctl.target);if(u>=1)TOR.ctw=null;busy=true}
+  for(const h of TOR.hops){const d=h.userData;if(d.f!==d.goal){d.f=RM.matches?d.goal:Math.max(0,Math.min(1,d.f+(d.goal>d.f?1:-1)*.06));h.children[0].material.opacity=d.f;h.visible=d.f>0;busy=true}}
+  for(const s of TOR.parts.labs.children){const g=s.userData.goal??0,f=s.material.opacity;if(f!==g){s.material.opacity=RM.matches?g:Math.max(0,Math.min(1,f+(g>f?1:-1)*.08));busy=true}}
+  if(TOR.ctl.update())busy=true;
+  if(busy||TOR.need){TOR.r.render(TOR.scene,TOR.c3);TOR.need=false}}
+
+/* the tab itself: the picture lives in one element that moves into each step's slot, so the 3D scene is never rebuilt by a step */
+function torWrap(S){const p=S.c.p;for(let j=1;j<S.N-1;j++){const A=S.seq[j-1],B=S.seq[j];if(Math.abs(B[0]-A[0])>p/2||Math.abs(B[1]-A[1])>p/2)return j}return 0}
+T.tor={n:()=>6,
+  bar:()=>{const S=mulS();return`<p class="hint2">The curve ${eqnc(S.c.a,S.c.b,S.c.p)} and the point P = ${pt(S.P)} come from tabs 3 and 4. Drag the picture to turn it.</p>`},
+  view(k){
+    const S=mulS(),{c,N,seq}=S,p=c.p;let h='<div id="torSlot"></div>';
+    if(k===0)h+=bench(bt('the grid of tab 3','',`${p} × ${p} squares`),op('with'),bt('points of the curve','',points(c).list.length));
+    if(k===1)h+=bench(bt('the top row','',`y = ${p-1}`),op('+ 1 ='),bt('','',`${p} ≡ 0`),op('→'),bt('','pthc','next to the bottom row'));
+    if(k===2)h+=bench(bt('the right column','',`x = ${p-1}`),op('+ 1 ='),bt('','',`${p} ≡ 0`),op('→'),bt('','kBc','next to the left column'));
+    if(k===3)h+=fx(range(1,Math.min(3,N-1)).map(j=>`${j===1?'P':j+'P'} = ${pt(seq[j-1])}`),false);
+    if(k===4)h+=bench(bt('arcs','',N-2),op('·'),bt(`${N-1}P`,'',pt(seq[N-2])),op('+ P ='),bt(`${N}P`,'rr','O'));
+    if(k===5)h+=bench(bt('given','','P and Q = kP'),op('find'),bt('k','rr','?'));
+    return h},
+  after(k){
+    if(!TOR.host){TOR.host=document.createElement('div');TOR.host.className='tor3';TOR.host.innerHTML='<p class="t3off">Loading the 3D picture…</p>'}
+    const slot=$('#torSlot');if(slot)slot.replaceWith(TOR.host);
+    if(TOR.failed)return;if(!TOR.ready){torLoad();return}torShow(k)},
+  say(k){
+    const S=mulS(),{c,N,seq}=S,p=c.p,w=torWrap(S);
+    if(k===0)return say('The grid of tab 3, in 3D',`Every point (x, y) of the curve sits in one square of a ${p} × ${p} grid.`,`But x and y are remainders mod ${p}: after ${p-1} comes 0 again. So the edges of the grid are not really edges. The next two steps glue them.`);
+    if(k===1)return say('Step 1 · glue the top to the bottom',`Above y = ${p-1} comes y = 0. Rolling the sheet brings these two rows (orange) together, and the grid becomes a tube.`,'Every square keeps its size: the sheet is rolled, not stretched.');
+    if(k===2)return say('Step 2 · glue the left to the right',`After x = ${p-1} comes x = 0. Bending the tube joins the two purple columns, and the tube closes into a doughnut: a <b>torus</b>.`,'Now no square lies at an edge. This is the honest picture of the pairs (x mod p, y mod p).');
+    if(k===3)return say('Step 3 · P, 2P, 3P on the doughnut',`P = ${pt(seq[0])}, 2P = ${pt(seq[1])}${N>3?`, 3P = ${pt(seq[2])}`:''}. Each arc goes the short way round, as the arithmetic mod ${p} does.`,'Drag to look at the doughnut from below as well.');
+    if(k===4)return say('Step 4 · all the multiples',`All ${N-2} arcs from P to ${N-1}P.`+(w?` Some, like ${w}P → ${w+1}P, run across a glued edge: on the flat grid of tab 4 that arrow had to jump to the other side.`:''),`One more step gives ${N}P = O, the point at infinity, which is not on the doughnut.`);
+    return say('Step 5 · still no pattern','Turn the doughnut: the path winds around it in no visible order. That is the ECDLP again: from P and kP alone, k cannot be read off the picture.','On a 256-bit curve the doughnut would have about 2²⁵⁶ squares in each direction.')},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>Torus</dt><dd>The surface of a doughnut: a square whose opposite edges are glued.</dd><dt>Wrap-around</dt><dd>Mod p, the number after p − 1 is 0. That is why opposite edges belong together.</dd></dl>`,
+  doc:()=>`<h2>Why a doughnut?</h2>
+<p class="lead">The points of a curve over GF(p) are pairs of remainders mod p. Remainders wrap around: after p − 1 comes 0. A grid whose top touches its bottom and whose right side touches its left side is a torus.</p>
+<p>The same happens with a clock: the hours 0 to 11 lie on a circle, not on a line, because after 11 comes 0. One remainder gives a circle; a pair of remainders gives a circle of circles, the torus.</p>
+${EX(`On the ${17} × ${17} grid of Paar’s curve, 6P = (16, 13) and 7P = (0, 6). On the flat grid the arrow jumps from the right edge to the left. On the doughnut, 16 and 0 are neighbours and the arc is short.`)}
+${NO('The doughnut is a way to draw the wrap-around, not a new kind of addition. Points are still added with the formulas of tab 2, mod p, and the order of the multiples is the same as in tab 4.')}
+${USE('Over the complex numbers an elliptic curve is a torus in a much deeper sense: it is the plane ℂ divided by a lattice, the same kind of lattice as on the <a href="lattice.html">lattices page</a>, with opposite sides of a cell glued. Adding points on the curve then becomes adding numbers in ℂ.')}`};
+
 /* ---------- a typed number may also be a short calculation: 7*25, 2^10 + 1, (3 × 26 + 5) ---------- */
 function evalInt(raw){
   const s=String(raw).replace(/[\s_,]/g,'').replace(/[×·∙⋅xX]/g,'*').replace(/[−–]/g,'-').replace(/[÷:]/g,'/').replace(/\*\*/g,'^');
@@ -912,6 +1079,7 @@ function show(){
   const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
   stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
   const dc=$('#doc');dc.hidden=!t.doc;dc.innerHTML=t.doc?t.doc(k):'';
+  if(t.after)t.after(k);
   holdRoom(t,n,k);
   $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
   $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
@@ -957,6 +1125,7 @@ document.addEventListener('input',e=>{
   if(key==='fp'||key==='fa'||key==='fb'){ST.P=null;fixSecrets()}
   show();
 });
+QZ.tor={q:'On a 17 × 17 grid, which columns are next to x = 16?',o:['x = 15 only','x = 15 and x = 0','x = 0 only'],a:1,why:'16 − 1 = 15, and 16 + 1 = 17 ≡ 0 (mod 17). That is why the right edge is glued to the left one.'};
 document.addEventListener('keydown',e=>{
   if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.target.closest&&e.target.closest('button,a')&&(e.key==='Enter'||e.key===' '))return;
