@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLS 1.3, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
+  --n0:#2f6fd0;--n1:#2f9e6a;--n2:#b8690f;--n3:#7d55c7;--n4:#c8372d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --cs:32px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
+  --n0:#5a8fe8;--n1:#45b882;--n2:#f0a35e;--n3:#b49aec;--n4:#f07a70;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:25px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text],input[type=number]{font:14px var(--mono);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:70px;text-transform:uppercase}input[type=number]{width:74px}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.note{display:block;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.warn{display:block;padding:8px 10px;border-radius:7px;background:var(--xorBg);font-size:14px;border-left:3px solid var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.inbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.err{color:var(--xor);font-size:13px;flex-basis:100%}
+.err:empty{display:none}
+.sec{margin-top:22px}
+.pics-s{font-size:13px;color:var(--muted);max-width:68ch;margin:0 0 10px}
+.scroll{overflow-x:auto;max-width:100%}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+@keyframes come{from{opacity:0;transform:translateY(4px)}}
+.nw{animation:come .35s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.chk{list-style:none;margin:14px auto 0;padding:0;max-width:440px;font-size:14.5px}
+.chk li{display:flex;gap:10px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line)}
+.chk li.todo{color:var(--faint)}
+.chk li b{flex:none;width:18px;text-align:center}
+.chk li.now{background:var(--ambBg)}
+.verdict{margin:14px auto 0;max-width:560px;text-align:center}
+.verdict span{display:inline-block;padding:7px 14px;border-radius:999px;font-weight:600;font-size:14.5px}
+.verdict .y{background:var(--okBg);color:var(--ok)}.verdict .n{background:var(--xorBg);color:var(--xor)}
+.calc{margin:14px auto 0;max-width:560px;display:grid;gap:6px}
+.calc div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);font:13.5px var(--mono)}
+.calc div b{font:600 13px var(--sans);color:var(--muted)}
+.calc div.now{background:var(--ambBg)}
+table.map{border-collapse:collapse;width:100%;font-size:14.5px}
+table.map th,table.map td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.map th{font-size:13px;color:var(--muted);font-weight:600}
+table.map td:first-child{white-space:nowrap;font-weight:600}
+table.map .ex{font:14px var(--mono)}
+.tag{display:inline-block;font:600 11.5px var(--sans);padding:2px 8px;border-radius:10px;margin-right:6px}
+.tag.g{background:var(--accentBg);color:var(--accent)}.tag.r{background:var(--ambBg);color:var(--amb)}.tag.f{background:var(--okBg);color:var(--ok)}
+dl.words{margin:0}
+dl.words dt{font-weight:700;margin-top:8px}
+dl.words dt:first-child{margin-top:0}
+dl.words dd{margin:0;color:var(--muted)}
+.chk li[data-step]{cursor:pointer}
+.chk li[data-step]:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.pickline{margin:10px auto 0;max-width:600px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+/* one colour per job a number has in a division */
+.ra{color:var(--n0)}.rb{color:var(--n3)}.rq{color:var(--n2)}.rr{color:var(--n1)}.rz{color:var(--faint)}.rx{color:var(--n4)}
+input[type=text].num{width:180px;text-transform:none;font:500 17px/1.3 var(--mono);padding:8px 11px;border-radius:9px;transition:border-color .15s,box-shadow .15s}
+input[type=text].num:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line2))}
+input[type=text].num:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent)}
+input[type=text].num::placeholder{font:400 14px var(--sans);color:var(--faint)}
+.inbar .flh{font-size:14px;min-height:22px}
+.eqv{display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;background:var(--ink);color:var(--bg);font:600 13px/20px var(--mono);white-space:nowrap;vertical-align:middle}
+.eqv:empty{display:none}
+.inbar .hint2{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+@media (max-width:560px){input[type=text].num{width:150px}}
+.inbar .row button{font-size:13px;padding:6px 10px}
+.doc a,#explain a,#extra a{color:var(--accent)}
+.doc ul,.doc ol{max-width:72ch;font-size:15.5px;margin:0 0 10px;padding-left:22px}
+.doc li{margin:0 0 5px}
+.exb.bk{border-color:var(--key);background:var(--keyBg)}.exb.bk>b{color:var(--key)}
+.exb ul{margin:0;padding-left:18px;font-size:14.5px}
+/* a step's computation: the words on top, the numbers under them */
+.bench{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;justify-content:center;margin:16px auto 0;padding:10px 16px 12px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);max-width:660px}
+.bench .bt{display:flex;flex-direction:column;align-items:center;gap:1px}
+.bench .bt i{font:12px var(--sans);font-style:normal;color:var(--muted)}
+.bench .bt b{font:700 23px var(--mono)}
+.bench .op{font:22px var(--mono);color:var(--muted);padding-bottom:1px}
+.bench.sm .bt b,.bench.sm .op{font-size:18px}
+.bnote{font-size:14px;color:var(--muted);text-align:center;margin:8px auto 0;max-width:660px}
+.bnote b{color:var(--ink);font-family:var(--mono);font-weight:600}
+@media (max-width:560px){.bench .bt b,.bench .op{font-size:19px}.bench.sm .bt b,.bench.sm .op{font-size:16px}.bench{gap:6px 8px;padding:9px 10px 10px}}
+/* a number as rows of dots */
+svg.dots{display:block;width:100%;height:auto;margin:0 auto}
+.dots .d{fill:var(--n0)}
+.dots .d.r{fill:var(--n1)}
+.dots .grp{fill:color-mix(in srgb,var(--n3) 9%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.dots .rem{fill:color-mix(in srgb,var(--n1) 12%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.dots .gl{font:13px var(--mono);fill:var(--n3)}
+.dots .rl{font:700 13px var(--mono);fill:var(--n1)}
+.dots .al{font:700 13px var(--mono);fill:var(--n0)}
+.dots g[data-step]{cursor:pointer}
+.dots g[data-step]:hover .grp,.dots g[data-step]:hover .rem{stroke-width:2.6}
+/* a number as a length */
+svg.nl{display:block;width:100%;max-width:720px;height:auto;margin:0 auto}
+.nl .whole{fill:color-mix(in srgb,var(--n0) 14%,var(--panel));stroke:var(--n0);stroke-width:1.4}
+.nl .seg{fill:color-mix(in srgb,var(--n3) 12%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.nl .rem{fill:color-mix(in srgb,var(--n1) 24%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.nl [data-step]{cursor:pointer}
+.nl .ax{stroke:var(--line2);stroke-width:1.4}
+.nl .tk{font:11.5px var(--mono);fill:var(--muted);text-anchor:middle}
+.nl .lb{font:700 13px var(--mono);text-anchor:middle}
+.nl .lb.b{fill:var(--n3)}.nl .lb.r{fill:var(--n1)}.nl .lb.a{fill:var(--n0)}.nl .lb.x{fill:var(--n4)}
+.nl .arc{fill:none;stroke-width:2}
+.nl .arc.r{stroke:var(--n1)}.nl .arc.x{stroke:var(--n4);stroke-dasharray:4 4}
+.nl .pt{fill:var(--n0);stroke:var(--panel);stroke-width:2}
+/* divisors */
+.strip{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin:0 auto;max-width:700px}
+.strip i{font-style:normal;min-width:36px;text-align:center;border-radius:6px;background:color-mix(in srgb,var(--ink) 5%,transparent);padding:3px 4px 4px;font:700 14px/1.25 var(--mono)}
+.strip i small{display:block;font:11px var(--mono);color:var(--muted);font-weight:400}
+.strip i.z{background:var(--okBg);color:var(--ok)}
+.strip i.one{background:var(--okBg);color:var(--ok);outline:2px solid var(--ok);outline-offset:-2px}
+.strip i.mg{background:var(--xorBg);color:var(--xor)}
+.cap2{font-size:13.5px;color:var(--muted);text-align:center;margin:0 0 8px}
+.cap2 b{color:var(--ink)}
+.dvr{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 12px;align-items:start;margin:0 0 12px}
+.dvr .dl{font-size:13.5px;color:var(--muted);padding-top:5px}
+.dvr .dl b{color:var(--ink);font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chips button,.chips i{font:600 13.5px var(--mono);font-style:normal;padding:4px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+.chips i.more{border-style:dashed;color:var(--muted);font-weight:400}
+.chips .c{background:var(--ambBg);border-color:var(--amb);color:var(--amb)}
+.chips .g{background:var(--okBg);border-color:var(--ok);color:var(--ok);font-size:16px;padding:4px 12px}
+.chips .pk{outline:2px solid var(--accent);outline-offset:1px}
+@media (max-width:700px){.dvr{grid-template-columns:minmax(0,1fr);gap:4px}.dvr .dl{padding:0}}
+/* Euclid: the lines of divisions, and the rectangle cut into squares */
+.duo2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:center}
+.duo2.one{grid-template-columns:minmax(0,1fr)}
+@media (max-width:1180px){.duo2{grid-template-columns:minmax(0,1fr)}}
+.lad{display:grid;grid-template-columns:repeat(7,auto);justify-content:center;gap:2px 8px;font:700 20px var(--mono);align-items:center}
+.lad .row{display:contents;cursor:pointer}
+.lad .n{text-align:right;padding:3px 7px;border-radius:7px}
+.lad .o{color:var(--muted);font-weight:400}
+.lad .arw{color:var(--faint);font:400 17px var(--sans);text-align:center;line-height:1.05}
+.lad .row.cur .n{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.lad .row:hover .n{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.lad .row.fut>*,.lad .arw.fut{visibility:hidden}
+.lad .n.g{outline:2.5px solid var(--n1);outline-offset:1px;background:var(--okBg);color:var(--n1)}
+.lad.sm{font-size:16px}
+@media (max-width:560px){.lad{font-size:16px;gap:2px 4px}.lad .n{padding:3px 4px}.lad.sm{font-size:13.5px}}
+svg.til{display:block;width:100%;max-width:580px;height:auto;margin:0 auto}
+.til rect.sq{stroke-width:1.5;cursor:pointer}
+.til rect.sq:hover{stroke-width:3}
+.til .c0{fill:color-mix(in srgb,var(--n0) 16%,var(--panel));stroke:var(--n0)}
+.til .c1{fill:color-mix(in srgb,var(--n3) 16%,var(--panel));stroke:var(--n3)}
+.til .c2{fill:color-mix(in srgb,var(--n2) 18%,var(--panel));stroke:var(--n2)}
+.til .c3{fill:color-mix(in srgb,var(--n4) 14%,var(--panel));stroke:var(--n4)}
+.til rect.gq{fill:color-mix(in srgb,var(--n1) 32%,var(--panel));stroke:var(--n1)}
+.til .rest{fill:none;stroke:var(--muted);stroke-dasharray:6 5;stroke-width:1.5}
+.til .frame{fill:none;stroke:var(--line2);stroke-width:1.2}
+.til text{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.til text.dm{font:12.5px var(--mono);fill:var(--muted)}
+.til text.rs{font:12.5px var(--mono);fill:var(--muted);font-weight:400}
+table.pairs{border-collapse:collapse;margin:14px auto 0;font:14px var(--mono)}
+table.pairs th,table.pairs td{padding:5px 14px;border-bottom:1px solid var(--line);text-align:left}
+table.pairs th{font:600 12.5px var(--sans);color:var(--muted)}
+/* extended Euclid: the table, and the lines of the backward way */
+table.xt{border-collapse:collapse;margin:0 auto;font:15.5px var(--mono)}
+table.xt th,table.xt td{padding:7px 16px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.xt th{font:600 12.5px var(--sans);color:var(--muted);vertical-align:bottom}
+table.xt th small{display:block;font-weight:400}
+table.xt tr[data-step]{cursor:pointer}
+table.xt tr[data-step]:hover td{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+table.xt tr.cur td{background:var(--ambBg)}
+table.xt tr.ans td{background:var(--okBg);font-weight:700}
+table.xt tr.zero td{color:var(--faint)}
+table.xt tr.fut td{visibility:hidden}
+table.xt td.ck{color:var(--muted);font-size:13px;text-align:left}
+table.xt .hid{visibility:hidden}
+table.xt td.pick{outline:2.5px solid var(--n1);outline-offset:-3px}
+/* tab 8: the calculator */
+.cxw .blk{padding:4px 0 18px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.cxw .blk:last-child{border-bottom:0;margin-bottom:0;padding-bottom:4px}
+.cxw h3{font:600 14px var(--sans);color:var(--muted);text-align:center;margin:0}
+.cxw .bench{margin-top:10px}
+.elines{font:15px/1.75 var(--mono);text-align:center;margin:10px auto 0;max-height:250px;overflow:auto;overflow-wrap:anywhere}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:660px;margin:12px auto 0}
+.two>div{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);min-width:0}
+.two>div.main{border-color:var(--n1);box-shadow:inset 0 0 0 1px var(--n1)}
+.two small{display:block;font:600 12.5px var(--sans);color:var(--muted)}
+.two .big{display:block;font:700 26px var(--mono);color:var(--n1);margin:2px 0}
+.two .ck{font:13.5px/1.5 var(--mono);overflow-wrap:anywhere}
+.two .from{display:inline-block;font:600 11.5px var(--sans);padding:1px 8px;border-radius:10px;background:var(--ambBg);color:var(--amb);margin-top:6px}
+details.how{max-width:660px;margin:14px auto 0}
+details.how summary{cursor:pointer;color:var(--accent);font-size:14px;text-align:center;margin-bottom:10px}
+@media (max-width:560px){.two{grid-template-columns:minmax(0,1fr)}.elines{font-size:13.5px}}
+@media (max-width:640px){table.xt{font-size:13.5px}table.xt th,table.xt td{padding:6px 8px}table.xt .ck{display:none}}
+.calc div{grid-template-columns:118px minmax(0,1fr)}
+.bw{max-width:620px;margin:0 auto;display:grid;gap:6px}
+.bw .h3{margin:10px 0 0}
+.bw .h3:first-child{margin-top:0}
+.bw div.ln{font:15.5px var(--mono);padding:7px 12px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);overflow-wrap:anywhere}
+.bw div.ln.cur{background:var(--ambBg)}
+.bw div.ln.ans{background:var(--okBg);font-weight:700}
+.bw div.ln.fut{visibility:hidden}
+.bw div.ln small{display:block;font:12px var(--sans);color:var(--muted);font-weight:400}
+.bw mark{background:none;color:var(--n4);font-weight:700}
+@media (max-width:560px){.bw div.ln{font-size:13.5px;padding:6px 9px}}
+/* your turn */
+.ex{max-width:640px;margin:0 auto}
+.ex h3{font-size:18px;margin:0 0 4px}
+.ex .task{font-size:15px;color:var(--muted);margin:0 0 14px}
+.exl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font:700 20px var(--mono);margin:0 0 8px}
+.exl input[type=text]{width:78px;font:700 18px var(--mono);text-align:center;padding:5px 6px;text-transform:none}
+.exl input[type=text].w{width:120px}
+.exl .o{color:var(--muted);font-weight:400}
+.exl.done{opacity:.8}
+.exl .n{padding:2px 4px}
+.fb{margin:10px 0 0;padding:9px 12px;border-radius:8px;font-size:14.5px}
+.fb.ok{background:var(--okBg);border-left:3px solid var(--ok)}
+.fb.no{background:var(--xorBg);border-left:3px solid var(--xor)}
+.exb2{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.score{font-size:13.5px;color:var(--muted);margin-top:12px}
+@media (max-width:560px){.exl{font-size:17px}.exl input[type=text]{width:64px;font-size:16px}}
+table.map td:first-child{white-space:normal}
+table.map td .m{white-space:nowrap}
+/* ---------- the TLS 1.3 page ---------- */
+:root{--plain:var(--amb);--hsk:var(--accent);--app:var(--ok)}
+.fine{font-size:13px;color:var(--muted)}
+#extra .fine{font-size:13px}
+.none{color:var(--faint)}
+code.hx{font:12.5px var(--mono);padding:1px 5px;border-radius:5px;background:color-mix(in srgb,var(--ink) 6%,transparent);white-space:nowrap}
+code.hx.kA{background:color-mix(in srgb,var(--n0) 14%,transparent)}
+code.hx.kB{background:color-mix(in srgb,var(--n3) 14%,transparent)}
+code.hx.kZ{background:color-mix(in srgb,var(--n1) 16%,transparent)}
+code.hx.kH{background:var(--accentBg)}
+code.hx.kP{background:var(--okBg)}
+code.hx.scr{background:var(--xorBg)}
+
+/* the handshake ladder */
+.hskw{max-width:720px;margin:0 auto}
+svg.hsk{display:block;width:100%;height:auto;overflow:visible}
+.hsk .dev rect{fill:color-mix(in srgb,var(--ink) 3%,var(--panel));stroke:var(--line2);stroke-width:1.2}
+.hsk .ico rect,.hsk .ico path{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linejoin:round}
+.hsk .dn{font:600 14px var(--sans);fill:var(--ink);text-anchor:middle}
+.hsk .life{stroke:var(--line2);stroke-width:1.4;stroke-dasharray:3 5}
+.hsk .msg{--c:var(--plain)}
+.hsk .msg.e1{--c:var(--hsk)}
+.hsk .msg.e2{--c:var(--app)}
+.hsk .msg .ar{stroke:var(--c);stroke-width:2.2}
+.hsk .msg .ah{fill:var(--c)}
+.hsk .msg text{font:600 13.5px var(--mono);fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round}
+.hsk .msg:not(.cur) text{fill:var(--muted)}
+.hsk .msg.cur text{fill:var(--c)}
+.hsk .ar.draw{stroke-dasharray:1;animation:hskDraw .85s cubic-bezier(.45,0,.3,1) both}
+@keyframes hskDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.hsk .pk{fill:var(--c);stroke:var(--panel);stroke-width:2}
+.hsk .kband rect{fill:var(--keyBg);stroke:var(--key);stroke-width:1.2}
+.hsk .kband text{font:600 13px var(--sans);fill:var(--key)}
+.hsk .kband:not(.cur) rect{fill:none;stroke:color-mix(in srgb,var(--key) 45%,transparent)}
+.hsk .kband:not(.cur) text{fill:var(--muted)}
+.hsk .lock rect{fill:var(--c);stroke:none}
+.hsk .lock path{stroke:var(--c);stroke-width:1.8}
+.hsk .msg.nw,.hsk .kband.nw{animation:come .35s ease-out both}
+@media (prefers-reduced-motion:reduce){.hsk .ar.draw{animation:none;stroke-dasharray:none}.hsk .pk{display:none}}
+
+/* the message as a card of fields */
+.mcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;max-width:760px;margin:14px auto 0}
+.mcard{border:1px solid var(--line);border-left:4px solid var(--hsk);border-radius:10px;padding:10px 14px;background:var(--panel);animation:come .35s ease-out both;min-width:0}
+.mcard.bad{border-left-color:var(--xor);background:var(--xorBg)}
+.mcard .mt{font:600 14.5px var(--mono);margin-bottom:6px;overflow-wrap:anywhere}
+.mcard .mt small{font:400 12.5px var(--sans);color:var(--muted);margin-left:4px}
+.fd{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;padding:4px 0;border-top:1px solid var(--line);font-size:14px}
+.fd:first-of-type{border-top:0}
+.fd>span{font-size:12.5px;color:var(--muted)}
+.fd>b{font-weight:400;overflow-wrap:anywhere}
+.fd code{font:12.5px var(--mono)}
+
+/* who knows what */
+.knows{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr) minmax(0,1fr);gap:12px;max-width:760px;margin:16px auto 0;font-size:13.5px}
+.knows>div{border-radius:10px;padding:9px 11px;background:color-mix(in srgb,var(--ink) 3%,transparent);min-width:0}
+.knows h4{margin:0 0 6px;font:600 13px var(--sans);color:var(--muted)}
+.knows .eve{border:1.5px dashed var(--line2);background:none;text-align:center}
+.knows .eve p{margin:0;color:var(--muted)}
+.chip{display:inline-flex;flex-direction:column;gap:1px;margin:0 6px 6px 0;padding:4px 8px;border-radius:7px;font:12px var(--mono);background:var(--panel);border:1px solid var(--line);max-width:100%;overflow-wrap:anywhere}
+.chip i{font:11.5px var(--sans);font-style:normal;color:var(--muted)}
+.chip.scr{border-color:color-mix(in srgb,var(--xor) 45%,var(--line))}
+.chip.kA{border-color:color-mix(in srgb,var(--n0) 50%,var(--line))}
+.chip.kB{border-color:color-mix(in srgb,var(--n3) 50%,var(--line))}
+.chip.kZ{border-color:color-mix(in srgb,var(--n1) 55%,var(--line))}
+.chip.kH{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.chip.kP{border-color:color-mix(in srgb,var(--ok) 55%,var(--line))}
+
+/* the key exchange in three columns */
+.trio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr);gap:12px;max-width:820px;margin:0 auto}
+.trio .who{border-radius:10px;padding:10px 12px;background:color-mix(in srgb,var(--ink) 3%,transparent);min-width:0}
+.trio .who.mid{background:none;border:1.5px dashed var(--line2);text-align:center}
+.trio h4{margin:0 0 8px;font:600 14px var(--sans)}
+.trio p{margin:0 0 8px;font-size:14px;overflow-wrap:anywhere}
+.trio p.eve{color:var(--muted);font-size:13px}
+.trio p.gone{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--xor)}
+
+/* the key schedule as a tree */
+.kstree{display:flex;flex-direction:column;align-items:stretch;max-width:780px;margin:0 auto}
+.ksb{border:1px solid var(--line);border-left:4px solid var(--line2);border-radius:10px;padding:8px 12px;background:var(--panel);min-width:0}
+.ksb.hs{border-left-color:var(--accent)}
+.ksb.ms{border-left-color:var(--key)}
+.ksb.cli{border-left-color:var(--n0)}
+.ksb.srv{border-left-color:var(--n3)}
+.ksb .kn{font:600 14.5px var(--sans)}
+.ksb .kf{font:12.5px var(--mono);color:var(--muted);margin:2px 0 5px;overflow-wrap:anywhere}
+.ksb .kv{font-size:13px;line-height:1.7}
+.ksb.nw,.kspair.nw,.ksin.nw{animation:come .35s ease-out both}
+.kspair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.ksin{align-self:center;font-size:13.5px;color:var(--ink);padding:4px 10px;border-radius:999px;background:color-mix(in srgb,var(--n1) 12%,transparent)}
+.ksarr{height:16px;width:2px;margin:2px auto;background:var(--line2);position:relative}
+.ksarr::after{content:"";position:absolute;left:-4px;bottom:-2px;border:5px solid transparent;border-top-color:var(--line2);border-bottom:0}
+.rfcres{max-width:780px;margin:16px auto 0;padding:10px 14px;border-radius:10px;background:var(--okBg)}
+.rfcres h4{margin:0 0 6px;font:600 14px var(--sans)}
+.rfcres p{margin:2px 0;font-size:14px}
+
+/* the certificate chain */
+.chain{display:flex;flex-direction:column;align-items:center;gap:0;max-width:520px;margin:0 auto}
+.cert{width:100%;border:1px solid var(--line);border-top:5px solid var(--line2);border-radius:10px;padding:10px 14px;background:var(--panel);min-width:0}
+.cert.root{border-top-color:var(--key)}
+.cert.mid{border-top-color:var(--n0)}
+.cert.leaf{border-top-color:var(--ok)}
+.cert.nw{animation:come .35s ease-out both}
+.cert .cn1{font:600 15px var(--sans)}
+.cert .cs{font-size:13px;color:var(--muted)}
+.cert .cf{margin-top:8px}
+.sigarr{font-size:12.5px;color:var(--muted);padding:5px 0}
+
+/* the record, byte by byte */
+.recw{display:flex;flex-direction:column;gap:9px;max-width:820px;margin:0 auto}
+.rrow{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;align-items:baseline}
+.rrow.nw{animation:come .35s ease-out both}
+.rl{font-size:13px;color:var(--muted);text-align:right}
+.rv{font-size:13.5px;line-height:1.9;overflow-wrap:anywhere;min-width:0}
+.rv small{color:var(--muted)}
+code.txt{font:13.5px var(--mono);white-space:pre-wrap}
+code.txt b{color:var(--faint);font-weight:400}
+.br{font:12.5px var(--mono);padding:2px 6px;border-radius:5px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.br.ty{background:var(--ambBg);color:var(--amb);font-weight:700}
+.br.iv{background:var(--keyBg)}
+.br.hd{background:var(--accentBg)}
+.br.ct{background:var(--xorBg)}
+.br.tg{background:var(--okBg)}
+ul.plainl{margin:6px 0;padding-left:18px;font-size:14px}
+ul.plainl li{margin:3px 0}
+
+/* post-quantum: harvest now, decrypt later, and the sizes */
+.hndl{display:flex;align-items:stretch;gap:8px;max-width:820px;margin:0 auto 6px}
+.hn{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel);font-size:14px}
+.hn b{display:block;margin-bottom:3px}
+.hn.bad{border-color:color-mix(in srgb,var(--xor) 55%,var(--line));background:var(--xorBg)}
+.ha{align-self:center;color:var(--faint);font-size:18px}
+.pqb{max-width:760px;margin:14px auto 0}
+.pqt{font-size:14px;margin-bottom:5px}
+.pqr{display:flex;height:30px;gap:2px;border-radius:7px;overflow:hidden;transform-origin:left;animation:pqGrow .6s ease-out both}
+@keyframes pqGrow{from{transform:scaleX(.04);opacity:.3}}
+.pqs{flex-basis:0;min-width:7px}
+.pqs.k,.sw.k{background:var(--n3)}
+.pqs.x,.sw.x{background:var(--n0)}
+.pql{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:5px;font-size:13px;color:var(--muted)}
+.pql b{color:var(--ink);font-weight:600}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+@media (prefers-reduced-motion:reduce){.pqr{animation:none}}
+
+@media (max-width:700px){
+  .knows,.trio{grid-template-columns:minmax(0,1fr)}
+  .knows .eve,.trio .who.mid{order:0}
+  .kspair{grid-template-columns:minmax(0,1fr)}
+  .rrow{grid-template-columns:minmax(0,1fr);gap:2px}
+  .rl{text-align:left}
+  .hndl{flex-direction:column}
+  .ha{transform:rotate(90deg)}
+}
+svg.hsk.ph .msg text{font-size:14px;stroke-width:4px}
+svg.hsk.ph .dn{font-size:13.5px}
+svg.hsk.ph .kband text{font-size:12.5px}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>TLS 1.3, step by step</h1>
+  <p class="sub">What happens when a browser opens an https:// page: the handshake, the X25519 key exchange, the HKDF key schedule, certificates, encrypted records and the post-quantum hybrid</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="hs" class="on">1 · The handshake</button>
+    <button data-tab="kx">2 · Key exchange</button>
+    <button data-tab="ks">3 · Key schedule</button>
+    <button data-tab="cert">4 · Certificates</button>
+    <button data-tab="rec">5 · Encrypted records</button>
+    <button data-tab="pq">6 · Post-quantum</button>
+  </nav>
+</header>
+
+<main class="wrap layout">
+  <div class="card stage" id="stage"></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Every key, signature and record on this page is computed in your browser; nothing is sent anywhere.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
+const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a.at(-1):String(a[0]);
+
+/* ---------- bytes ---------- */
+const hexb=h=>Uint8Array.from((h.match(/../g)||[]).map(x=>parseInt(x,16)));
+const bhex=b=>[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+const cat=(...a)=>{const n=a.reduce((s,x)=>s+x.length,0),o=new Uint8Array(n);let i=0;for(const x of a){o.set(x,i);i+=x.length}return o};
+const utf=s=>new TextEncoder().encode(s);
+const rand=n=>crypto.getRandomValues(new Uint8Array(n));
+// a long hex value shortened for a picture: the first and last bytes, and how many there are
+const short=(b,k=6)=>{const h=bhex(b);return h.length<=4*k+2?h:`${h.slice(0,2*k)}…${h.slice(-2*k)}`};
+const grp=h=>h.replace(/(.{8})(?=.)/g,'$1 ');
+
+/* ---------- SHA-256, HMAC and HKDF (RFC 5869), from the browser's own Web Crypto ---------- */
+const sha256=async d=>new Uint8Array(await crypto.subtle.digest('SHA-256',d));
+async function hmac(key,data){const k=await crypto.subtle.importKey('raw',key,{name:'HMAC',hash:'SHA-256'},false,['sign']);return new Uint8Array(await crypto.subtle.sign('HMAC',k,data))}
+const hkdfExtract=(salt,ikm)=>hmac(salt,ikm);
+async function hkdfExpand(prk,info,n){let t=new Uint8Array(0),o=new Uint8Array(0);for(let c=1;o.length<n;c++){t=await hmac(prk,cat(t,info,Uint8Array.of(c)));o=cat(o,t)}return o.slice(0,n)}
+// TLS 1.3 (RFC 9846, section 7.1): the label is "tls13 " + label, with the output length and the context in front
+async function expandLabel(secret,label,ctx,n){const full=utf('tls13 '+label);return hkdfExpand(secret,cat(Uint8Array.of(n>>8,n&255,full.length),full,Uint8Array.of(ctx.length),ctx),n)}
+const deriveSecret=(secret,label,hash)=>expandLabel(secret,label,hash,32);
+
+/* ---------- X25519 (RFC 7748) with whole numbers of any size ---------- */
+const P25=2n**255n-19n,A24=121665n;
+const le2big=b=>{let x=0n;for(let i=b.length-1;i>=0;i--)x=(x<<8n)|BigInt(b[i]);return x};
+const big2le=x=>{const o=new Uint8Array(32);for(let i=0;i<32;i++){o[i]=Number(x&255n);x>>=8n}return o};
+const pmod=(x,m)=>{x%=m;return x<0n?x+m:x};
+function powm(b,e,m){let r=1n;b=pmod(b,m);while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n}return r}
+// the private key becomes a scalar: clear the 3 lowest bits, clear the top bit, set bit 254
+function clampScalar(k){const b=Uint8Array.from(k);b[0]&=248;b[31]&=127;b[31]|=64;return le2big(b)}
+function x25519(k,u){
+  const n=clampScalar(k),x1=pmod(le2big(Uint8Array.from(u).map((v,i)=>i===31?v&127:v)),P25);
+  let x2=1n,z2=0n,x3=x1,z3=1n,swap=0n;
+  for(let t=254n;t>=0n;t--){const kt=(n>>t)&1n;swap^=kt;if(swap){[x2,x3]=[x3,x2];[z2,z3]=[z3,z2]}swap=kt;
+    const A=(x2+z2)%P25,AA=A*A%P25,B=pmod(x2-z2,P25),BB=B*B%P25,E=pmod(AA-BB,P25),C=(x3+z3)%P25,D=pmod(x3-z3,P25),DA=D*A%P25,CB=C*B%P25;
+    x3=(DA+CB)%P25;x3=x3*x3%P25;z3=pmod(DA-CB,P25);z3=z3*z3%P25*x1%P25;x2=AA*BB%P25;z2=E*((AA+A24*E)%P25)%P25}
+  if(swap){[x2,x3]=[x3,x2];[z2,z3]=[z3,z2]}
+  return big2le(x2*powm(z2,P25-2n,P25)%P25)}
+const BASE9=(()=>{const b=new Uint8Array(32);b[0]=9;return b})();
+
+/* ---------- the official example values, to check the code above in the reader's own browser ---------- */
+const RFC7748={a:'77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a',A:'8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a',
+  b:'5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb',B:'de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f',K:'4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742'};
+const RFC8448={ikm:'8bd4054fb55b9d63fdfbacf9f04b9f0d35e6d63f537563efd46272900f89492d',hello:'860c06edc07858ee8e78f0e7428c58edd6b43f2ca3e6e95f02ed063cf0e1cad8',
+  early:'33ad0a1c607ec03b09e6cd9893680ce210adf300aa1f2660e1b22e10f170f92a',derived:'6f2615a108c702c5678f54fc9dbab69716c076189c48250cebeac3576c3611ba',
+  hs:'1dc826e93606aa6fdc0aadc12f741b01046aa6b99f691ed221a9f0ca043fbeac',c_hs:'b3eddb126e067f35a780b3abf45e2d8f3b1a950738f52e9600746a0e27a55a21',
+  s_hs:'b67b7d690cc16c4e75e54213cb2d37b4e9c912bcded9105d42befd59d391ad38',s_key:'3fce516009c21727d0f2e4e86ee403bc',s_iv:'5d313eb2671276ee13000b30',
+  master:'18df06843d13a08bf2a449844c5f8a478001bc4d4c627984d5a41da8d0402919'};
+async function checkRFCs(){
+  const r=[],ok=(n,a,b)=>r.push([n,bhex(a)===b]);
+  ok('X25519: Alice’s public key',x25519(hexb(RFC7748.a),BASE9),RFC7748.A);ok('X25519: Bob’s public key',x25519(hexb(RFC7748.b),BASE9),RFC7748.B);
+  ok('X25519: the shared secret',x25519(hexb(RFC7748.a),hexb(RFC7748.B)),RFC7748.K);
+  const z=new Uint8Array(32),e=await hkdfExtract(z,z);ok('Early Secret',e,RFC8448.early);
+  const d=await deriveSecret(e,'derived',await sha256(new Uint8Array(0)));ok('derived',d,RFC8448.derived);
+  const hs=await hkdfExtract(d,hexb(RFC8448.ikm));ok('Handshake Secret',hs,RFC8448.hs);
+  const ch=await deriveSecret(hs,'c hs traffic',hexb(RFC8448.hello)),sh=await deriveSecret(hs,'s hs traffic',hexb(RFC8448.hello));
+  ok('client handshake traffic secret',ch,RFC8448.c_hs);ok('server handshake traffic secret',sh,RFC8448.s_hs);
+  ok('server handshake key',await expandLabel(sh,'key',new Uint8Array(0),16),RFC8448.s_key);ok('server handshake IV',await expandLabel(sh,'iv',new Uint8Array(0),12),RFC8448.s_iv);
+  const d2=await deriveSecret(hs,'derived',await sha256(new Uint8Array(0)));ok('Master Secret',await hkdfExtract(d2,z),RFC8448.master);
+  return r}
+
+/* ---------- what the reader has chosen, and one whole handshake computed in the browser ---------- */
+const ST={tab:'hs',step:{},q:{},tamper:false,rfc:null,playT:null,playing:false};
+const T={};
+const stage=$('#stage');
+let D=null;                                                     // every value of the current handshake
+const SUITES=['TLS_AES_128_GCM_SHA256','TLS_AES_256_GCM_SHA384','TLS_CHACHA20_POLY1305_SHA256'];
+const HOST='bank.example',REQ='GET / HTTP/1.1\r\nHost: bank.example\r\n\r\n';
+// The messages are hashed as short text versions here; real TLS hashes their exact bytes. Every formula is the real one.
+async function computeAll(){
+  const d={};d.cr=rand(32);d.sr=rand(32);d.a=rand(32);d.b=rand(32);
+  d.A=x25519(d.a,BASE9);d.B=x25519(d.b,BASE9);d.Za=x25519(d.a,d.B);d.Zb=x25519(d.b,d.A);
+  d.kp=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+  d.pub=new Uint8Array(await crypto.subtle.exportKey('raw',d.kp.publicKey));
+  d.msg={};const M=d.msg;
+  M.ch=`ClientHello\nrandom: ${bhex(d.cr)}\ncipher_suites: ${SUITES.join(', ')}\nserver_name: ${HOST}\nsupported_groups: x25519, secp256r1\nsignature_algorithms: ecdsa_secp256r1_sha256, rsa_pss_rsae_sha256\nkey_share: x25519 ${bhex(d.A)}`;
+  M.sh=`ServerHello\nrandom: ${bhex(d.sr)}\ncipher_suite: ${SUITES[0]}\nkey_share: x25519 ${bhex(d.B)}`;
+  M.ee=`EncryptedExtensions\napplication_layer_protocol: http/1.1`;
+  M.crt=`Certificate\nsubject: ${HOST}\nissuer: Example Intermediate CA\nsubject_public_key: ecdsa P-256 ${bhex(d.pub)}`;
+  const th=async(...ks)=>sha256(utf(ks.map(k=>M[k]).join('\n')));
+  const z=new Uint8Array(32),e0=new Uint8Array(0);
+  d.early=await hkdfExtract(z,z);d.der1=await deriveSecret(d.early,'derived',await sha256(e0));
+  d.hs=await hkdfExtract(d.der1,d.Za);d.thSH=await th('ch','sh');
+  d.chs=await deriveSecret(d.hs,'c hs traffic',d.thSH);d.shs=await deriveSecret(d.hs,'s hs traffic',d.thSH);
+  d.chsKey=await expandLabel(d.chs,'key',e0,16);d.chsIv=await expandLabel(d.chs,'iv',e0,12);
+  d.shsKey=await expandLabel(d.shs,'key',e0,16);d.shsIv=await expandLabel(d.shs,'iv',e0,12);
+  // CertificateVerify signs 64 spaces, a context string, a zero byte and the transcript hash (RFC 9846, section 4.5.2)
+  d.thCV=await th('ch','sh','ee','crt');
+  d.cvIn=cat(new Uint8Array(64).fill(32),utf('TLS 1.3, server CertificateVerify'),Uint8Array.of(0),d.thCV);
+  d.sig=new Uint8Array(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},d.kp.privateKey,d.cvIn));
+  d.sigOk=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},d.kp.publicKey,d.sig,d.cvIn);
+  const bad=Uint8Array.from(d.cvIn);bad[bad.length-1]^=1;d.sigBad=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},d.kp.publicKey,d.sig,bad);
+  M.cv=`CertificateVerify\nalgorithm: ecdsa_secp256r1_sha256\nsignature: ${bhex(d.sig)}`;
+  // Finished: an HMAC of the transcript under a key derived from the handshake traffic secret (section 4.5.3)
+  d.thSF=await th('ch','sh','ee','crt','cv');d.sfKey=await expandLabel(d.shs,'finished',e0,32);d.sfv=await hmac(d.sfKey,d.thSF);
+  M.sf=`Finished\nverify_data: ${bhex(d.sfv)}`;
+  d.thCF=await th('ch','sh','ee','crt','cv','sf');d.cfKey=await expandLabel(d.chs,'finished',e0,32);d.cfv=await hmac(d.cfKey,d.thCF);
+  M.cf=`Finished\nverify_data: ${bhex(d.cfv)}`;
+  d.der2=await deriveSecret(d.hs,'derived',await sha256(e0));d.ms=await hkdfExtract(d.der2,z);
+  d.cap=await deriveSecret(d.ms,'c ap traffic',d.thCF);d.sap=await deriveSecret(d.ms,'s ap traffic',d.thCF);
+  d.capKey=await expandLabel(d.cap,'key',e0,16);d.capIv=await expandLabel(d.cap,'iv',e0,12);
+  // the first application record from the client: AES-128-GCM, nonce = IV XOR sequence number, the record header as AAD (section 5.2)
+  d.pt=cat(utf(REQ),Uint8Array.of(0x17));const L=d.pt.length+16;d.aad=Uint8Array.of(0x17,0x03,0x03,L>>8,L&255);
+  d.nonce0=Uint8Array.from(d.capIv);d.nonce1=Uint8Array.from(d.capIv);d.nonce1[11]^=1;
+  const key=await crypto.subtle.importKey('raw',d.capKey,'AES-GCM',false,['encrypt','decrypt']);
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv:d.nonce0,additionalData:d.aad,tagLength:128},key,d.pt));
+  d.ct=ct.slice(0,ct.length-16);d.tag=ct.slice(ct.length-16);
+  const back=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:d.nonce0,additionalData:d.aad,tagLength:128},key,ct));d.backOk=bhex(back)===bhex(d.pt);
+  const t2=Uint8Array.from(ct);t2[3]^=0x01;try{await crypto.subtle.decrypt({name:'AES-GCM',iv:d.nonce0,additionalData:d.aad,tagLength:128},key,t2);d.tamperRejected=false}catch(err){d.tamperRejected=true}
+  return d}
+async function renew(){D=null;show();D=await computeAll();show()}
+
+/* ---------- pieces shared by the tabs ---------- */
+const bt=(word,cls,v)=>`<span class="bt"><i>${word}</i><b class="${cls}">${v}</b></span>`;
+const op=s=>`<span class="op">${s}</span>`;
+const bench=(...xs)=>`<div class="bench">${xs.join('')}</div>`;
+const hx=(b,cls='',k=6)=>`<code class="hx ${cls}" title="${bhex(b)}">${short(b,k)}</code>`;
+const waiting='<p class="cap2">Computing the handshake in your browser…</p>';
+const field=(name,val,cls='')=>`<div class="fd ${cls}"><span>${name}</span><b>${val}</b></div>`;
+const card=(title,body,cls='')=>`<div class="mcard ${cls}"><div class="mt">${title}</div>${body}</div>`;
+const link=(href,t)=>`<a href="${href}">${t}</a>`;
+
+/* ---------- the handshake as a ladder: the browser on the left, the server on the right ---------- */
+const MSGS=[
+  {id:'ch',to:'r',name:'ClientHello',enc:0},
+  {id:'sh',to:'l',name:'ServerHello',enc:0},
+  {id:'keys',to:'k',name:'both compute the handshake keys'},
+  {id:'ee',to:'l',name:'EncryptedExtensions',enc:1},
+  {id:'crt',to:'l',name:'Certificate',enc:1},
+  {id:'cv',to:'l',name:'CertificateVerify',enc:1},
+  {id:'sf',to:'l',name:'Finished',enc:1},
+  {id:'cf',to:'r',name:'Finished',enc:1},
+  {id:'app',to:'r',name:'Application data',enc:2}];
+const HSTEP=[[],['ch'],['sh'],['keys'],['ee'],['crt'],['cv'],['sf','cf'],['app']];
+const PHONE=matchMedia('(max-width:560px)');
+const lockIco=(x,y,cls)=>`<g class="lock ${cls}" transform="translate(${x} ${y})"><rect x="-6" y="-2" width="12" height="9" rx="2"/><path d="M-3.5 -2v-2.5a3.5 3.5 0 0 1 7 0v2.5" fill="none"/></g>`;
+function ladder(k){
+  // a phone gets a narrower drawing, so the names stay readable
+  const ph=PHONE.matches,W=ph?360:720,X1=ph?66:150,X2=ph?294:570,dw=ph?112:124;
+  const shown=HSTEP.slice(1,k+1).flat(),now=HSTEP[k]||[],top=104,gap=ph?38:40,H=top+gap*MSGS.length+18;
+  let s=`<svg class="hsk${ph?' ph':''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="The TLS 1.3 handshake, message by message">`;
+  // the two machines
+  s+=`<g class="dev"><rect x="${X1-dw/2}" y="14" width="${dw}" height="58" rx="12"/><g class="ico" transform="translate(${X1-17} 22)"><rect x="4" y="2" width="26" height="17" rx="2"/><path d="M0 22h34l-3 4H3z"/></g><text x="${X1}" y="66" class="dn">Browser</text></g>`;
+  s+=`<g class="dev"><rect x="${X2-dw/2}" y="14" width="${dw}" height="58" rx="12"/><g class="ico" transform="translate(${X2-12} 20)"><rect x="0" y="0" width="24" height="9" rx="2"/><rect x="0" y="11" width="24" height="9" rx="2"/><rect x="0" y="22" width="24" height="9" rx="2"/></g><text x="${X2}" y="66" class="dn">${HOST}</text></g>`;
+  s+=`<line class="life" x1="${X1}" y1="78" x2="${X1}" y2="${H-8}"/><line class="life" x1="${X2}" y1="78" x2="${X2}" y2="${H-8}"/>`;
+  MSGS.forEach((m,i)=>{
+    if(!shown.includes(m.id))return;const y=top+gap*i,cur=now.includes(m.id),cls=`msg ${cur?'cur':''} e${m.enc||0}`;
+    if(m.to==='k'){s+=`<g class="${cls} kband${cur?' nw':''}"><rect x="${X1-50}" y="${y-13}" width="${X2-X1+100}" height="26" rx="13"/><text x="${(X1+X2)/2}" y="${y+4}">${m.name}</text></g>`;return}
+    const a=m.to==='r'?X1:X2,b=m.to==='r'?X2:X1,dir=m.to==='r'?1:-1,lab=m.enc===1?`{${m.name}}`:m.enc===2?`[${m.name}]`:m.name;
+    s+=`<g class="${cls}"><line class="ar${cur?' draw':''}" pathLength="1" x1="${a}" y1="${y}" x2="${b-8*dir}" y2="${y}"/><path class="ah" d="M${b} ${y}l${-10*dir} -5v10z"/>`;
+    if(m.to==='b')s+=`<path class="ah" d="M${a} ${y}l${10*dir} -5v10z"/>`;
+    s+=`<text x="${(X1+X2)/2}" y="${y-8}">${lab}</text>${m.enc?lockIco((X1+X2)/2+lab.length*(ph?4.25:4.15)+13,y-15,m.enc===2?'ap':'hs'):''}`;
+    if(cur)s+=`<circle class="pk" r="6"><animateMotion dur="0.85s" fill="freeze" path="M${a} ${y}L${b-8*dir} ${y}" calcMode="spline" keySplines="0.45 0 0.3 1" keyTimes="0;1"/></circle>`;
+    s+='</g>'});
+  return s+'</svg>'}
+// what each side knows so far
+function knows(k){
+  if(!D)return'';const c=[],s=[];
+  if(k>=1){c.push(['private a','scr',D.a],['public A','kA',D.A])}
+  if(k>=2){s.push(['private b','scr',D.b],['public B','kB',D.B]);c.push(['public B','kB',D.B]);s.push(['public A','kA',D.A])}
+  if(k>=3){c.push(['shared secret','kZ',D.Za]);s.push(['shared secret','kZ',D.Zb]);c.push(['Handshake Secret','kH',D.hs]);s.push(['Handshake Secret','kH',D.hs])}
+  if(k>=8){c.push(['application keys','kP',D.capKey]);s.push(['application keys','kP',D.capKey])}
+  const chips=a=>a.map(([n,cl,v])=>`<span class="chip ${cl}"><i>${n}</i>${short(v,4)}</span>`).join('');
+  const eve=k===0?'nothing yet':k<3?'ClientHello and ServerHello, in plain text':'the two Hellos, and after them only encrypted records';
+  return`<div class="knows"><div><h4>Browser knows</h4>${chips(c)||'<span class="none">—</span>'}</div><div class="eve"><h4>Eve on the network sees</h4><p>${eve}</p></div><div><h4>Server knows</h4>${chips(s)||'<span class="none">—</span>'}</div></div>`}
+const msgFields={
+  ch:()=>card('ClientHello <small>plain text</small>',field('random',hx(D.cr))+field('cipher suites',SUITES.map(s=>`<code>${s}</code>`).join(' '))+field('server name',`<code>${HOST}</code>`)+field('key share','x25519 '+hx(D.A,'kA'))+field('signature algorithms','<code>ecdsa_secp256r1_sha256</code> <code>rsa_pss_rsae_sha256</code>')),
+  sh:()=>card('ServerHello <small>plain text</small>',field('random',hx(D.sr))+field('cipher suite',`<code>${SUITES[0]}</code>`)+field('key share','x25519 '+hx(D.B,'kB'))),
+  keys:()=>card('Both sides, separately',field('X25519(a, B)',hx(D.Za,'kZ'))+field('X25519(b, A)',hx(D.Zb,'kZ'))+field('equal?',bhex(D.Za)===bhex(D.Zb)?Y:N)+field('client handshake key',hx(D.chsKey,'kH'))+field('server handshake key',hx(D.shsKey,'kH'))),
+  ee:()=>card('{EncryptedExtensions} <small>encrypted with the server handshake key</small>',field('protocol','<code>http/1.1</code>')),
+  crt:()=>card('{Certificate}',field('subject',`<code>${HOST}</code>`)+field('issuer','<code>Example Intermediate CA</code>')+field('public key','ECDSA P-256 '+hx(D.pub))),
+  cv:()=>card('{CertificateVerify}',field('signs','64 spaces ‖ “TLS 1.3, server CertificateVerify” ‖ 00 ‖ transcript hash')+field('transcript hash',hx(D.thCV))+field('signature (r ‖ s)',hx(D.sig))+field('the browser checks it',D.sigOk?Y+' valid':N)),
+  sf:()=>card('{Finished} from the server',field('verify_data = HMAC(finished key, transcript hash)',hx(D.sfv))),
+  cf:()=>card('{Finished} from the browser',field('verify_data',hx(D.cfv))),
+  app:()=>card('[Application data] <small>encrypted with the application keys</small>',field('plain text',`<code>${REQ.replace(/\r\n/g,'⏎ ')}</code>`)+field('on the wire',hx(cat(D.aad,D.ct,D.tag),'',8)))};
+T.hs={n:()=>9,
+  view(k){
+    if(!D)return waiting;
+    let h=`<div class="hskw">${ladder(k)}</div>`;
+    const ids=HSTEP[k];if(ids.length)h+=`<div class="mcards">${ids.map(id=>msgFields[id]()).join('')}</div>`;
+    return h+knows(k)},
+  say(k){
+    if(k===0)return say('One round trip to a secret channel','The browser wants to talk to '+HOST+' over a network that anyone can read, like a café Wi-Fi.','In one round trip TLS 1.3 agrees on fresh keys, proves that the server is really '+HOST+', and starts encrypting. Press <b>Step</b>.');
+    if(k===1)return say('Step 1 · ClientHello','The browser sends a random number, the cipher suites it supports, the name of the site, and already a key share: its X25519 public key A.','It guesses that the server supports X25519, so the key exchange starts in the very first message.');
+    if(k===2)return say('Step 2 · ServerHello','The server picks one cipher suite, TLS_AES_128_GCM_SHA256, and answers with its own key share B.','These two messages are the only ones that travel unencrypted.');
+    if(k===3)return say('Step 3 · the shared secret',`Each side combines its own private key with the other’s public key. Both get the same 32 bytes. This is Diffie–Hellman on Curve25519 (${link('ecc.html#dh','elliptic curves')}).`,'From it, and from a hash of the two Hellos, the key schedule derives separate handshake keys for each direction.');
+    if(k===4)return say('Step 4 · now encrypted','Everything the server sends from here is encrypted with the server handshake key. The curly brackets mark that.','EncryptedExtensions carries the remaining settings, for example the protocol (HTTP/1.1).');
+    if(k===5)return say('Step 5 · Certificate','The server sends its certificate: its name and its public signing key, signed by a certificate authority the browser trusts.','A certificate alone proves nothing: anyone can copy it. The next message proves that the server holds the matching private key.');
+    if(k===6)return say('Step 6 · CertificateVerify','The server signs a hash of everything sent so far with its private key. The browser checks the signature with the public key from the certificate.','A man in the middle could not do this: the hash includes the key shares, and he does not have the private key.');
+    if(k===7)return say('Step 7 · Finished, both ways','Each side sends an HMAC of the whole transcript. If anyone changed a single byte on the way, the HMACs do not match and the connection stops.','Then both derive the application keys.');
+    return say('Step 8 · application data','The browser sends its request, encrypted with AES-128-GCM under the client application key. One round trip after the first message, the data flows.','Square brackets mark records under the application keys.')},
+  extra:()=>`<h3>The three kinds of brackets</h3><dl class="words"><dt>ClientHello</dt><dd>Plain text: anyone on the network can read it.</dd><dt>{Certificate}</dt><dd>Encrypted with a handshake key.</dd><dt>[Application data]</dt><dd>Encrypted with an application key.</dd></dl><p class="fine"><button data-act="renew">New handshake</button> makes fresh keys; every value on this page is recomputed.</p>`};
+
+/* ---------- 2 · the key exchange on Curve25519 ---------- */
+T.kx={n:()=>5,
+  view(k){
+    if(!D)return waiting;const eq=bhex(D.Za)===bhex(D.Zb);
+    const col=(t,rows,cls)=>`<div class="who ${cls}"><h4>${t}</h4>${rows.join('')}</div>`;
+    const c=[],m=[],s=[];
+    if(k>=0){c.push(`<p>private a = ${hx(D.a,'scr')}</p>`);s.push(`<p>private b = ${hx(D.b,'scr')}</p>`)}
+    if(k>=1){c.push(`<p class="${k===1?'nw':''}">A = X25519(a, 9) = ${hx(D.A,'kA')}</p>`);s.push(`<p class="${k===1?'nw':''}">B = X25519(b, 9) = ${hx(D.B,'kB')}</p>`)}
+    if(k>=2){m.push(`<p class="${k===2?'nw':''}">A = ${hx(D.A,'kA')} →</p>`,`<p class="${k===2?'nw':''}">← B = ${hx(D.B,'kB')}</p>`,`<p class="eve${k===2?' nw':''}">Eve sees A and B</p>`)}
+    if(k>=3){c.push(`<p class="${k===3?'nw':''}">X25519(a, B) = ${hx(D.Za,'kZ')}</p>`);s.push(`<p class="${k===3?'nw':''}">X25519(b, A) = ${hx(D.Zb,'kZ')}</p>`)}
+    if(k>=4){c.push(`<p class="gone nw">a is deleted after the handshake</p>`);s.push(`<p class="gone nw">b is deleted after the handshake</p>`)}
+    let h=`<div class="trio">${col('Browser',c,'al')}${col('The network',m.length?m:['<p class="none">nothing sent yet</p>'],'mid')}${col('Server',s,'bo')}</div>`;
+    if(k===1)h+=bench(bt('public key','kA','A'),op('='),bt('a times the base point 9 on Curve25519','','X25519(a, 9)'));
+    if(k===3)h+=bench(bt('browser','kZ','X25519(a, B)'),op(eq?'=':'≠'),bt('server','kZ','X25519(b, A)'),op('='),bt('','',eq?'x of a · b · P':'?'));
+    if(k===4)h+=bench(bt('recorded traffic, later','','A, B, ciphertext'),op('+'),bt('stolen server key','','RSA or ECDSA key'),op('→'),bt('','cy','still no a or b'));
+    return h},
+  say(k){
+    if(!D)return say('Key exchange','Computing…');
+    if(k===0)return say('Two private numbers','The browser picks 32 random bytes a, the server picks b. They never leave the machines.','A fresh pair is made for every connection: these keys are <b>ephemeral</b>.');
+    if(k===1)return say('Step 1 · public keys','Each side multiplies the base point P of Curve25519 (the point with x = 9) by its private number: A = X25519(a, 9), B = X25519(b, 9).',`This is scalar multiplication on an elliptic curve, the double-and-add of ${link('ecc.html#mul','the elliptic curve page')}, here with 255-bit numbers.`);
+    if(k===2)return say('Step 2 · swap them','A travels in the ClientHello, B in the ServerHello. Eve sees both.','To get the secret from A and B she would have to solve the elliptic-curve discrete logarithm problem.');
+    if(k===3)return say('Step 3 · the same secret',`The browser computes X25519(a, B), the server X25519(b, A). Both are the x-coordinate of the same point a · b · P, where P is the base point: ${bhex(D.Za)===bhex(D.Zb)?'equal, as the picture shows':'not equal'}.`,`This shared secret is the input of the key schedule (tab 3). Press <b>New handshake</b> in the side panel to see it change completely.`);
+    return say('Step 4 · forward secrecy','After the handshake both sides delete a and b. Even if the server’s certificate key is stolen years later, recorded connections stay secret: that key only signs, it never encrypted the secret.','TLS 1.2 also allowed RSA key transport without this property. TLS 1.3 removed it.')},
+  extra:()=>`<h3>Why Curve25519?</h3><p>It was designed so that the fast way to compute is also the safe way: no secret-dependent branches, and every 32-byte string is accepted as a public key. The TLS 1.3 standard (RFC 9846) requires every implementation to support key exchange with secp256r1 (P-256) and recommends X25519 (${link('ecc.html#real','real curves')}).</p><p class="fine">This page’s X25519 is about 30 lines of JavaScript with whole numbers. Tab 3 checks it against the test values of RFC 7748.</p>`};
+
+/* ---------- 3 · the key schedule: HKDF turns one shared secret into many keys ---------- */
+const ksBox=(name,formula,val,cls,isNew)=>`<div class="ksb ${cls||''}${isNew?' nw':''}"><div class="kn">${name}</div><div class="kf">${formula}</div><div class="kv">${val}</div></div>`;
+T.ks={n:()=>7,
+  view(k){
+    if(!D)return waiting;const z='0 (32 zero bytes)',rows=[];
+    rows.push(ksBox('Early Secret','HKDF-Extract(salt = 0, IKM = 0)',hx(D.early),'',k===0));
+    if(k>=1)rows.push(ksBox('derived','Derive-Secret(Early Secret, "derived", "")',hx(D.der1),'',k===1));
+    if(k>=2)rows.push(`<div class="ksin${k===2?' nw':''}">+ the X25519 shared secret ${hx(D.Za,'kZ')}</div>`,ksBox('Handshake Secret','HKDF-Extract(salt = derived, IKM = shared secret)',hx(D.hs),'hs',k===2));
+    if(k>=3)rows.push(`<div class="kspair${k===3?' nw':''}">${ksBox('client handshake traffic secret','Derive-Secret(HS, "c hs traffic", H(ClientHello … ServerHello))',hx(D.chs),'cli')}${ksBox('server handshake traffic secret','Derive-Secret(HS, "s hs traffic", H(ClientHello … ServerHello))',hx(D.shs),'srv')}</div>`);
+    if(k>=4)rows.push(`<div class="kspair${k===4?' nw':''}">${ksBox('client key · IV','HKDF-Expand-Label(secret, "key" / "iv", "", 16 / 12)',hx(D.chsKey,'kH')+' · '+hx(D.chsIv),'cli')}${ksBox('server key · IV','HKDF-Expand-Label(secret, "key" / "iv", "", 16 / 12)',hx(D.shsKey,'kH')+' · '+hx(D.shsIv),'srv')}</div>`);
+    if(k>=5)rows.push(ksBox('Master Secret','HKDF-Extract(salt = Derive-Secret(HS, "derived", ""), IKM = 0)',hx(D.ms),'ms',k===5));
+    if(k>=6)rows.push(`<div class="kspair nw">${ksBox('client application traffic secret','Derive-Secret(MS, "c ap traffic", H(ClientHello … server Finished))',hx(D.cap)+'<br>key '+hx(D.capKey,'kP'),'cli')}${ksBox('server application traffic secret','Derive-Secret(MS, "s ap traffic", H(ClientHello … server Finished))',hx(D.sap),'srv')}</div>`);
+    let h=`<div class="kstree">${rows.join('<div class="ksarr" aria-hidden="true"></div>')}</div>`;
+    if(ST.rfc)h+=`<div class="rfcres nw"><h4>The same code on the official example values</h4>${ST.rfc.map(([n,ok])=>`<p>${ok?Y:N} ${n}</p>`).join('')}<p class="fine">RFC 7748, section 6.1 (X25519) and RFC 8448, section 3 (a TLS 1.3 handshake).</p></div>`;
+    return h},
+  say(k){
+    if(k===0)return say('One secret in, many keys out','TLS 1.3 never uses the shared secret directly. A chain of HKDF steps (an HMAC-based key derivation function) turns it into separate keys for each direction and each phase.','It starts from zero: the Early Secret is HKDF-Extract of 32 zero bytes. (With a pre-shared key from an earlier visit, that key would go in here.)');
+    if(k===1)return say('Step 1 · derived','Before a new secret is mixed in, the current one is passed through Derive-Secret with the label "derived".','Each label gives an unrelated output, so keys for different purposes never coincide.');
+    if(k===2)return say('Step 2 · mix in the shared secret','HKDF-Extract takes the X25519 shared secret as input key material and “derived” as salt. The result is the Handshake Secret.','Only the two endpoints can compute it: Eve does not have the shared secret.');
+    if(k===3)return say('Step 3 · one secret per direction','Derive-Secret binds each traffic secret to a hash of ClientHello and ServerHello. Changing one bit of either message changes every key that follows.','Client and server get different secrets, so a message can never be reflected back to its sender.');
+    if(k===4)return say('Step 4 · AES keys and IVs','HKDF-Expand-Label with the labels "key" and "iv" gives a 16-byte AES-128 key and a 12-byte IV for each direction.','These encrypt the rest of the handshake: EncryptedExtensions, Certificate, CertificateVerify and Finished.');
+    if(k===5)return say('Step 5 · the Master Secret','One more "derived" step and an extract with zeros gives the Master Secret.','No new secret goes in here in TLS 1.3. The step keeps the structure uniform.');
+    return say('Step 6 · application keys','The application traffic secrets are bound to the whole handshake, up to the server’s Finished. The HTTP data travels under these keys.','Press <b>Check against the RFCs</b> in the side panel: the same functions reproduce the official example values of RFC 7748 and RFC 8448.')},
+  extra:()=>`<h3>Check it yourself</h3><p>This page computes HKDF with your browser’s Web Crypto (HMAC-SHA-256) and X25519 in JavaScript.</p><p><button data-act="rfc">Check against the RFCs</button></p><p class="fine">Here the transcript hash is taken over short text versions of the messages, so these values differ from a real connection; the RFC check uses the real ones.</p>`};
+
+/* ---------- 4 · certificates and CertificateVerify ---------- */
+const CHAIN=[['Example Root CA','stored in the browser and the operating system','root'],['Example Intermediate CA','signed by the root','mid'],[HOST,'signed by the intermediate','leaf']];
+T.cert={n:()=>5,
+  view(k){
+    if(!D)return waiting;
+    let h='<div class="chain">'+CHAIN.map(([n,s,c],i)=>`<div class="cert ${c}${k===0?' nw':''}" style="animation-delay:${i*120}ms"><div class="cn1">${n}</div><div class="cs">${s}</div>${c==='leaf'&&k>=1?`<div class="cf">${field('public key','ECDSA P-256 '+hx(D.pub))}${field('valid','2026-11-01 to 2027-01-30')}${field('name',`<code>${HOST}</code>`)}</div>`:''}</div>${i<2?'<div class="sigarr" aria-hidden="true">signs ↓</div>':''}`).join('')+'</div>';
+    if(k===2)h+=`<ul class="chk nw">${['the name in the certificate is the site the browser asked for','today is inside the validity dates','each certificate is signed by the next one up','the top one is a root the browser already trusts'].map(t=>`<li>${Y} ${t}</li>`).join('')}</ul>`;
+    if(k>=3)h+=`<div class="mcards">${card('CertificateVerify, computed now',field('signed bytes',`64 × 20 ‖ “TLS 1.3, server CertificateVerify” ‖ 00 ‖ ${hx(D.thCV)}`)+field('signature (r ‖ s)',hx(D.sig))+field('checked with the public key of the certificate',D.sigOk?Y+' valid':N+' invalid'))}${k>=4?card('The same signature, the transcript hash changed in one bit',field('checked',D.sigBad?Y+' valid':N+' rejected'),'bad nw'):''}</div>`;
+    return h},
+  say(k){
+    if(k===0)return say('A chain of signatures',`How does the browser know the public key really belongs to ${HOST}? A certificate authority signs a statement “this key belongs to this name”.`,'The browser and the operating system keep a list of trusted root certificates. Every server certificate must lead back to one of them.');
+    if(k===1)return say('Step 1 · the server’s certificate','It names the site, gives the validity dates and the server’s public key (here an ECDSA P-256 key, made in your browser just now), and carries the issuer’s signature.','Certificates are public. Sending one proves nothing by itself.');
+    if(k===2)return say('Step 2 · the browser checks the chain','The name, the dates, every signature up the chain, and a trusted root at the top.',`Each of these signatures is an ordinary digital signature (${link('signatures.html#ec','ECDSA')} or RSA).`);
+    if(k===3)return say('Step 3 · proof of the private key','In CertificateVerify the server signs the hash of the whole handshake so far, including both key shares. The browser verifies it with the key from the certificate.','Only the holder of the private key can do this, and the signature is bound to this one connection.');
+    return say('Step 4 · change one bit','If a man in the middle changes anything, even one bit of the ClientHello, the transcript hash changes and the signature no longer verifies.','That is why a forged key share cannot be slipped in: the server’s signature covers it.')},
+  extra:()=>`<h3>What is real here</h3><p>The ECDSA key, the signature and both checks are computed by your browser’s Web Crypto. The certificate chain is drawn: real certificates are X.509 files signed by real authorities.</p>`};
+
+/* ---------- 5 · the encrypted record ---------- */
+const bytesRow=(b,cls,max=48)=>`<span class="br ${cls}">${grp(bhex(b.length>max?b.slice(0,max):b))}${b.length>max?` … <small>(${b.length} bytes)</small>`:''}</span>`;
+T.rec={n:()=>6,
+  view(k){
+    if(!D)return waiting;const req=utf(REQ);let h='<div class="recw">';
+    h+=`<div class="rrow"><span class="rl">request</span><span class="rv"><code class="txt">${REQ.replace(/\r\n/g,'<b>⏎</b>')}</code></span></div>`;
+    h+=`<div class="rrow"><span class="rl">bytes</span><span class="rv">${bytesRow(req,'pt')}</span></div>`;
+    if(k>=1)h+=`<div class="rrow${k===1?' nw':''}"><span class="rl">+ content type</span><span class="rv">${bytesRow(req.slice(-6),'pt')} <span class="br ty">17</span> <small>(17 = application data)</small></span></div>`;
+    if(k>=2)h+=`<div class="rrow${k===2?' nw':''}"><span class="rl">nonce</span><span class="rv">IV ${bytesRow(D.capIv,'iv')} ⊕ sequence 0 = ${bytesRow(D.nonce0,'iv')}<br><small>the next record: sequence 1 → </small>${bytesRow(D.nonce1,'iv')}</span></div>`;
+    if(k>=3)h+=`<div class="rrow${k===3?' nw':''}"><span class="rl">header (AAD)</span><span class="rv">${bytesRow(D.aad,'hd')} <small>type 17, version 03 03, length ${D.pt.length+16}</small></span></div>`;
+    if(k>=4)h+=`<div class="rrow${k===4?' nw':''}"><span class="rl">on the wire</span><span class="rv">${bytesRow(D.aad,'hd')} ${bytesRow(D.ct,'ct',24)} ${bytesRow(D.tag,'tg')}</span></div>`;
+    if(k>=5)h+=`<div class="rrow nw"><span class="rl">one bit flipped</span><span class="rv">${D.tamperRejected?N+' the tag does not match: the record is rejected and the connection closes':Y+' accepted'}</span></div>`;
+    h+='</div>';
+    if(k===4)h+=bench(bt('header','',D.aad.length+' B'),op('+'),bt('ciphertext','',D.ct.length+' B'),op('+'),bt('tag','',D.tag.length+' B'),op('='),bt('record','',(D.aad.length+D.ct.length+D.tag.length)+' B'));
+    return h},
+  say(k){
+    if(k===0)return say('The request, in plain text','The browser has keys. Now it sends its HTTP request: '+REQ.length+' bytes.','TLS splits data into records of at most 16 KB and encrypts each one separately.');
+    if(k===1)return say('Step 1 · hide the content type','One byte with the real content type (17 for application data) is added at the end, before encryption.','From outside, every TLS 1.3 record says “application data”, even alerts and handshake messages.');
+    if(k===2)return say('Step 2 · a fresh nonce for each record','The 12-byte IV from the key schedule is XORed with the record’s sequence number. Record 0, 1, 2, … each get a different nonce, and the nonce itself is never sent.','A repeated nonce would break GCM; counting makes that impossible.');
+    if(k===3)return say('Step 3 · the header is authenticated','The 5-byte record header is not encrypted, but it goes into GCM as additional authenticated data. Changing the length or type is detected.');
+    if(k===4)return say('Step 4 · AES-128-GCM',`Counter mode encrypts the bytes; GHASH adds a 16-byte tag over the header and the ciphertext (${link('modes.html#gcm','GCM')}). The record on the wire is header, ciphertext and tag.`,'Your browser just computed this with Web Crypto, using the client application key from tab 3.');
+    return say('Step 5 · tampering is caught','Flip one bit anywhere in the ciphertext and the tag check fails. The receiver drops the record and closes the connection.','Encryption hides; the tag proves the bytes are unchanged. TLS 1.3 allows only such authenticated ciphers.')},
+  extra:()=>`<h3>Cipher suites of TLS 1.3</h3><ul class="plainl"><li><code>TLS_AES_128_GCM_SHA256</code> (must be supported)</li><li><code>TLS_AES_256_GCM_SHA384</code> (should be)</li><li><code>TLS_CHACHA20_POLY1305_SHA256</code> (should be)</li></ul><p class="fine">The name says the AEAD cipher and the hash of the key schedule. The key exchange and the signature are negotiated separately.</p>`};
+
+/* ---------- 6 · post-quantum: X25519MLKEM768 ---------- */
+const PQ={cs:[['ML-KEM-768 encapsulation key',1184,'k'],['X25519 public key',32,'x']],ss:[['ML-KEM-768 ciphertext',1088,'k'],['X25519 public key',32,'x']],z:[['ML-KEM shared secret',32,'k'],['X25519 shared secret',32,'x']]};
+// one scale for every bar: the full width is the 1216-byte client share
+const pqBar=(parts,title)=>{const tot=parts.reduce((s,p)=>s+p[1],0);return`<div class="pqb"><div class="pqt">${title} <b>${tot} bytes</b></div><div class="pqr" style="width:${(100*tot/1216).toFixed(2)}%">${parts.map(([n,b,c])=>`<span class="pqs ${c}" style="flex-grow:${b}" title="${n}: ${b} bytes"></span>`).join('')}</div><div class="pql">${parts.map(([n,b,c])=>`<span><i class="sw ${c}"></i>${n} <b>${b}</b></span>`).join('')}</div></div>`};
+T.pq={n:()=>5,
+  view(k){
+    let h='';
+    if(k===0)h=`<div class="hndl"><div class="hn nw"><b>Today</b><span>Eve records the encrypted traffic.</span></div><div class="ha" aria-hidden="true">→</div><div class="hn nw" style="animation-delay:150ms"><b>Years later</b><span>A large quantum computer runs Shor’s algorithm on the recorded X25519 keys.</span></div><div class="ha" aria-hidden="true">→</div><div class="hn bad nw" style="animation-delay:300ms"><b>Then</b><span>She has the shared secret, so every key and every record.</span></div></div>`;
+    if(k>=1)h+=pqBar(PQ.cs,'ClientHello key share');
+    if(k>=2)h+=pqBar(PQ.ss,'ServerHello key share');
+    if(k>=3)h+=`<div class="nw">${pqBar(PQ.z,'Shared secret, the input of the key schedule')}</div>`;
+    if(k>=4)h+=bench(bt('X25519 alone','','32 + 32 bytes'),op('vs'),bt('X25519MLKEM768','','1216 + 1120 bytes'),op('→'),bt('safe if','cy','either part holds')).replace('class="bench"','class="bench sm"');
+    return h},
+  say(k){
+    if(k===0)return say('Harvest now, decrypt later','X25519 is safe against today’s computers, but not against a large quantum computer: Shor’s algorithm solves the elliptic-curve discrete log.','Traffic recorded today could be decrypted then. That is why browsers already add a post-quantum key exchange.');
+    if(k===1)return say('Step 1 · two key shares in one','With the group X25519MLKEM768 the browser sends an ML-KEM-768 encapsulation key and an X25519 public key, one after the other: 1216 bytes.',`ML-KEM is the lattice scheme of ${link('lattice.html#kem','the lattices page')}. The ML-KEM part comes first in the bytes, although the name puts X25519 first.`);
+    if(k===2)return say('Step 2 · the server answers','The server encapsulates a secret to the ML-KEM key (a 1088-byte ciphertext) and adds its own X25519 public key: 1120 bytes.');
+    if(k===3)return say('Step 3 · one combined secret','The two 32-byte secrets are joined, ML-KEM first, and the 64 bytes enter HKDF-Extract exactly where the X25519 secret went in tab 3. Nothing else in the handshake changes.');
+    return say('Step 4 · a hybrid','To break it, an attacker must break both X25519 and ML-KEM. If ML-KEM had an unexpected flaw, X25519 still protects; if a quantum computer arrives, ML-KEM still protects.','The price is about 2.3 kB more per handshake.')},
+  extra:()=>`<h3>Where it is used</h3><p>Chrome since version 131 and Firefox since version 132 send X25519MLKEM768 by default. The group is standardised in RFC 10024 (August 2026).</p>`};
+
+/* ---------- the longer read under each picture ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const MORE=xs=>box('Read more','<ul>'+xs.map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk');
+const R9846='E. Rescorla, RFC 9846, “The Transport Layer Security (TLS) Protocol Version 1.3”, July 2026. It replaces RFC 8446 (August 2018).';
+const R8448='M. Thomson, RFC 8448, “Example Handshake Traces for TLS 1.3”, January 2019.';
+const R5869='H. Krawczyk, P. Eronen, RFC 5869, “HMAC-based Extract-and-Expand Key Derivation Function (HKDF)”, May 2010.';
+const R7748='A. Langley, M. Hamburg, S. Turner, RFC 7748, “Elliptic Curves for Security”, 2016.';
+T.hs.doc=()=>`<h2>TLS 1.3 in one page</h2>
+<p class="lead">TLS (Transport Layer Security) is the protocol behind every <span class="m">https://</span> address. It gives a connection three things: confidentiality, integrity, and the proof that the server is who it claims to be.</p>
+<h3>From SSL to TLS 1.3</h3>
+<p>Netscape’s SSL 3.0 (1996) became TLS 1.0 (RFC 2246, 1999), then TLS 1.1 (2006) and TLS 1.2 (RFC 5246, 2008). TLS 1.3 (RFC 8446, August 2018) is a redesign, not a patch. In July 2026 RFC 9846 replaced RFC 8446 with a revised text of the same version 1.3.</p>
+<ul><li>Only authenticated encryption (AEAD) is left: AES-GCM and ChaCha20-Poly1305.</li><li>Static RSA and static Diffie–Hellman key exchange are gone: every connection has forward secrecy.</li><li>Everything after the ServerHello is encrypted, including the certificate.</li><li>The key derivation is rebuilt on HKDF.</li><li>A full handshake takes one round trip instead of two.</li></ul>
+${EX(`In tab 1 of this page the browser sends its ClientHello with a key share, gets the ServerHello with the server’s share, and from then on the server’s messages are encrypted. After the two Finished messages the HTTP request goes out: one round trip.`)}
+${NO('The lock in the address bar says the connection is encrypted and the server holds a certificate for that name. It does not say the site is honest: a phishing site can have a valid certificate for its own name.')}
+${MORE([R9846,R8448])}`;
+T.kx.doc=()=>`<h2>Ephemeral Diffie–Hellman</h2>
+<p class="lead">TLS 1.3 agrees on a secret with Diffie–Hellman on an elliptic curve, using fresh keys for every connection. The certificate key is only used to sign.</p>
+<p>If the server does not support the group the browser guessed, it answers with a HelloRetryRequest naming one it does support, and the browser sends a new key share. That costs one extra round trip, so browsers guess the most common groups first.</p>
+${EX('Curve25519 works with 32-byte strings. The private key is 32 random bytes; three low bits are cleared and bit 254 is set before it is used. The public key is the x-coordinate of a · P, where P is the base point with x = 9.')}
+${NO('Without authentication Diffie–Hellman is open to a man in the middle, who runs one exchange with each side. In TLS the CertificateVerify signature over both key shares closes this gap.')}
+${USE(`Forward secrecy: the session keys depend only on the deleted a and b. Stealing the server’s long-term key later reveals nothing about old sessions. See also ${link('dlog.html#mm','the man in the middle')} on the discrete-log page.`)}
+${MORE([R7748,R9846+' Section 4.3.8 (key share).'])}`;
+T.ks.doc=()=>`<h2>The TLS 1.3 key schedule</h2>
+<p class="lead">HKDF has two halves. ${M('HKDF-Extract(salt, IKM)')} squeezes input key material into a uniform pseudorandom key; ${M('HKDF-Expand(PRK, info, L)')} stretches it into as many bytes as needed, different for every info string.</p>
+<p>TLS 1.3 wraps Expand into ${M('HKDF-Expand-Label(Secret, Label, Context, Length)')}, whose info is the length, "tls13 " + the label, and the context. ${M('Derive-Secret(Secret, Label, Messages)')} uses the transcript hash of the messages as the context.</p>
+${EX('The labels on this page are the real ones: "derived", "c hs traffic", "s hs traffic", "c ap traffic", "s ap traffic", "key", "iv" and "finished". The check in the side panel reproduces the Early Secret, the Handshake Secret, both handshake traffic secrets, the server key and IV, and the Master Secret of RFC 8448.')}
+${NO('Here the transcript hash is taken over a short text version of each message, so the values are not those of a real connection. In real TLS it is the SHA-256 of the exact bytes of the messages, including their type and length fields.')}
+${USE(`Binding every key to the transcript means an attacker who changes any message ends up with different keys from the honest side, and the Finished check fails. HKDF runs on HMAC with SHA-256 (${link('hash.html#today','hash functions')}).`)}
+${MORE([R5869,R9846+' Section 7.1 (key schedule).',R8448])}`;
+T.cert.doc=()=>`<h2>Certificates and CertificateVerify</h2>
+<p class="lead">A certificate binds a public key to a name, signed by a certificate authority (CA). The browser trusts a short list of root CAs and accepts a server certificate if a chain of signatures leads from it to one of them.</p>
+<h3>What the browser checks</h3>
+<ul><li>The name in the certificate matches the site.</li><li>The dates are valid.</li><li>Each signature in the chain verifies with the issuer’s public key.</li><li>The chain ends at a trusted root.</li></ul>
+${EX('In TLS 1.3 the server signs 64 bytes of 0x20, the text “TLS 1.3, server CertificateVerify”, a zero byte and the transcript hash. The spaces and the text make sure that this signature can never be confused with a signature made for another purpose.')}
+${NO('A copied certificate is harmless without its private key. A stolen private key lets an attacker pose as the server until the certificate expires or is revoked; short certificate lifetimes limit that damage.')}
+${USE(`ECDSA with P-256 and RSA-PSS are the usual signature algorithms (${link('signatures.html#ec','ECDSA, step by step')}).`)}
+${MORE([R9846+' Sections 4.5.1 (Certificate) and 4.5.2 (CertificateVerify).'])}`;
+T.rec.doc=()=>`<h2>The record layer</h2>
+<p class="lead">After the handshake, data travels in records: a 5-byte header, the encrypted data with its content type, and a 16-byte authentication tag.</p>
+<ul><li>At most 2¹⁴ bytes (16 KB) of data per record.</li><li>The nonce is the IV XOR the sequence number, so it never repeats and never has to be sent.</li><li>The header is authenticated as additional data.</li></ul>
+${EX(`This page’s request is ${REQ.length} bytes. With the content-type byte it is ${REQ.length+1}; with the tag ${REQ.length+17}; with the header ${REQ.length+22} bytes on the wire.`)}
+${NO('Reusing a GCM nonce under the same key reveals the XOR of two plaintexts and allows forging tags. TLS 1.3 avoids it by counting, and both sides change keys long before the counter could wrap.')}
+${USE(`AES-GCM is described step by step on ${link('modes.html#gcm','the modes page')}.`)}
+${MORE([R9846+' Section 5 (record protocol).'])}`;
+T.pq.doc=()=>`<h2>Post-quantum TLS</h2>
+<p class="lead">A hybrid key exchange runs a classical and a post-quantum key exchange side by side and feeds both secrets into the key schedule. The connection is safe as long as either one is unbroken.</p>
+${box('X25519MLKEM768 in numbers','<table class="cmp3"><tr><th></th><th>ML-KEM-768</th><th>X25519</th><th>total</th></tr><tr><td>client key share</td><td>1184</td><td>32</td><td>1216 bytes</td></tr><tr><td>server key share</td><td>1088</td><td>32</td><td>1120 bytes</td></tr><tr><td>shared secret</td><td>32</td><td>32</td><td>64 bytes</td></tr></table>')}
+${NO('Only the key exchange is post-quantum so far. Certificates and CertificateVerify still use ECDSA or RSA. That is less urgent: a signature only has to resist attacks during the handshake, while recorded key exchanges can be attacked years later.')}
+${USE(`ML-KEM is standardised in FIPS 203 (August 2024); see ${link('lattice.html#kem','ML-KEM on the lattices page')}.`)}
+${MORE(['K. Kwiatkowski, P. Kampanakis, B. E. Westerbaan, D. Stebila, RFC 10024, “Post-Quantum Traditional (PQ/T) Hybrid Key Agreement Mechanisms for TLS 1.3”, August 2026.','NIST, FIPS 203, “Module-Lattice-Based Key-Encapsulation Mechanism Standard”, August 2024.'])}`;
+
+/* ---------- one question per tab ---------- */
+const QZ={
+  hs:{q:'Which TLS 1.3 handshake messages travel unencrypted?',o:['All of them','ClientHello and ServerHello','Only Finished'],a:1,why:'From EncryptedExtensions on, everything is encrypted with the handshake keys, including the certificate.'},
+  kx:{q:'The server’s certificate key is stolen a year later. Can recorded TLS 1.3 sessions be decrypted?',o:['Yes, with that key','No, the session keys came from the deleted a and b','Only if the certificate expired'],a:1,why:'The certificate key only signs. The secret came from ephemeral Diffie–Hellman: forward secrecy.'},
+  ks:{q:'Why do the client and the server have different traffic secrets?',o:['To save time','So a message cannot be reflected back to its sender','Because their hash functions differ'],a:1,why:'Different labels ("c hs traffic", "s hs traffic") give independent keys for the two directions.'},
+  cert:{q:'What does CertificateVerify prove?',o:['That the certificate is not expired','That the server holds the private key of the certificate','That the browser is trusted'],a:1,why:'It is a signature over the transcript, made with the private key that matches the certificate.'},
+  rec:{q:'Where does the 12-byte nonce of a record come from?',o:['It is sent with every record','The IV XOR the sequence number','A new random value each time'],a:1,why:'Both sides know the IV and count records, so the nonce never has to be sent and never repeats.'},
+  pq:{q:'How big is the X25519MLKEM768 shared secret?',o:['32 bytes','64 bytes','1216 bytes'],a:1,why:'32 bytes from ML-KEM followed by 32 bytes from X25519.'}};
+function quiz(id){
+  const z=QZ[id];if(!z)return'';const p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`}
+
+/* ---------- the walkthrough ---------- */
+const NARROW=matchMedia('(max-width:1000px)'),RM=matchMedia('(prefers-reduced-motion: reduce)'),ROOM={k:'',h:0};
+const speed=()=>+$('#spd').value;
+function holdRoom(t,n,k){
+  const ex=$('#explain');ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2)return;
+  const ck=[ST.tab,ex.clientWidth,!!D].join('|');
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){ex.innerHTML=t.say(j);h=Math.max(h,ex.offsetHeight)}ex.innerHTML=t.say(k);ROOM.k=ck;ROOM.h=h}
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function show(){
+  const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
+  stage.innerHTML=t.view(k);$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  const dc=$('#doc');dc.hidden=!t.doc;dc.innerHTML=t.doc?t.doc(k):'';
+  holdRoom(t,n,k);
+  $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
+}
+function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
+function tickPlay(){ST.playT=setTimeout(()=>{ST.playT=null;const n=T[ST.tab].n(),k=ST.step[ST.tab]||0;if(k>=n-1){setPlaying(false);return}ST.step[ST.tab]=k+1;show();if(k+1>=n-1)setPlaying(false);else tickPlay()},(RM.matches?900:2300)/speed())}
+function setTab(id){
+  setPlaying(false);ST.tab=id;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));show();
+  try{localStorage.setItem('tls-tab',id);history.replaceState(null,'','#'+id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)+1;show()};
+$('#bBack').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)-1;show()};
+$('#bReset').onclick=()=>{setPlaying(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const n=T[ST.tab].n();if(n<2)return;if((ST.step[ST.tab]||0)>=n-1){ST.step[ST.tab]=0;show()}setPlaying(true)};
+document.addEventListener('click',async e=>{
+  const ac=e.target.closest('[data-act]');
+  if(ac){if(ac.dataset.act==='renew'){setPlaying(false);ST.rfc=null;await renew()}else if(ac.dataset.act==='rfc'){ST.rfc=await checkRFCs();if(ST.tab!=='ks')setTab('ks');ST.step.ks=6;show()}return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.target.closest&&e.target.closest('button,a')&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'){if(!$('#bStep').disabled)$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&T[ST.tab].n()>1){$('#bPlay').click();e.preventDefault()}
+});
+PHONE.addEventListener('change',()=>{if(ST.tab==='hs')show()});
+let startTab='hs';
+try{const h=location.hash.slice(1),t=localStorage.getItem('tls-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
+ST.tab=startTab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===startTab));
+renew();
+</script>
+</body>
+</html>
