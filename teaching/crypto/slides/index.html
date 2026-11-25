@@ -222,7 +222,7 @@ async function open(id,k){
   try{
     const L=await getLib();
     const task=L.getDocument({url:d.f,cMapUrl:PDFJS+'cmaps/',cMapPacked:true,standardFontDataUrl:PDFJS+'standard_fonts/'});
-    task.onProgress=p=>{if(tok===S.tok&&p.total)msg(`Loading ${esc(d.short)} (${d.mb} MB)…`,Math.round(p.loaded/p.total*100))};
+    task.onProgress=p=>{if(tok===S.tok&&!S.pdf&&p.total)msg(`Loading ${esc(d.short)} (${d.mb} MB)…`,Math.min(100,Math.round(p.loaded/p.total*100)))};   // pdf.js keeps loading the rest of the file after it opens; those late events must not bring the cover back
     const pdf=await task.promise;
     if(tok!==S.tok){pdf.destroy();return;}
     S.pdf=pdf;S.n=pdf.numPages;$('tot').textContent=S.n;
