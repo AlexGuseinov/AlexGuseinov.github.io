@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lattices and post-quantum cryptography, step by step</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#5f5e58;--faint:#9a988f;--line:#e3e1d9;--line2:#c4c1b6;
+  --accent:#1d5fa6;--accentBg:#e8f0fa;--onAccent:#ffffff;--okBg:#e3f2e8;--ok:#1f7a45;
+  --xor:#c8372d;--xorBg:#fbe9e7;--key:#7d55c7;--keyBg:#f0eafb;--amb:#b8690f;--ambBg:#fbefdc;
+  --n0:#2f6fd0;--n1:#2f9e6a;--n2:#b8690f;--n3:#7d55c7;--n4:#c8372d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --math:"STIX Two Text",Cambria,Georgia,"Times New Roman",serif;
+  --cs:32px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141416;--panel:#1d1d20;--ink:#ecebe6;--muted:#a9a8a1;--faint:#6d6c67;--line:#2c2c31;--line2:#4d4d55;
+  --accent:#8ab8ee;--accentBg:#1c2a3b;--onAccent:#0d1722;--okBg:#173323;--ok:#5fd08f;
+  --xor:#f07a70;--xorBg:#3a1f1d;--key:#b49aec;--keyBg:#272036;--amb:#f0a35e;--ambBg:#3a2716;
+  --n0:#5a8fe8;--n1:#45b882;--n2:#f0a35e;--n3:#b49aec;--n4:#f07a70;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px}
+header.wrap{padding-top:18px;padding-bottom:4px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px}
+.sub{margin:0;color:var(--muted);font-size:14px}
+.by{margin:4px 0 0;color:var(--muted);font-size:14px}
+.by b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px}
+.tabs button{font-size:15px;padding:8px 14px}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+.panel{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{padding:16px;min-width:0}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.panel{display:contents}.c-ctrl{order:1}#explain{order:2}.stage{order:3}#extra{order:4}}
+@media (max-width:560px){:root{--cs:25px}.stage{padding:12px 10px}}
+
+button{font:inherit;font-size:14px;padding:7px 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--accent);color:var(--onAccent)}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.row+.row{margin-top:10px}
+[hidden]{display:none!important}
+select,input[type=text],input[type=number]{font:14px var(--mono);padding:6px 8px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:70px;text-transform:uppercase}input[type=number]{width:74px}
+label.inl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+input[type=range]{width:110px;accent-color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+#explain{font-size:16px}
+#explain p{margin:0 0 8px}
+#explain p:last-child{margin-bottom:0}
+#explain .step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+#extra{font-size:14px}
+#extra h3,.h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+#extra p{margin:0 0 8px}
+.fm{display:block;font:12.5px/1.6 var(--mono);padding:7px 10px;margin:6px 0;border-radius:7px;background:color-mix(in srgb,var(--ink) 6%,transparent);overflow-wrap:anywhere}
+.note{display:block;padding:8px 10px;border-radius:7px;background:var(--okBg);font-size:14px;border-left:3px solid var(--ok)}
+.warn{display:block;padding:8px 10px;border-radius:7px;background:var(--xorBg);font-size:14px;border-left:3px solid var(--xor)}
+.cy{color:var(--ok);font-weight:700}.cn{color:var(--xor);font-weight:700}
+.inbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-bottom:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.flh{font-size:13px;color:var(--muted)}
+.flh b{color:var(--ink)}
+.err{color:var(--xor);font-size:13px;flex-basis:100%}
+.err:empty{display:none}
+.sec{margin-top:22px}
+.pics-s{font-size:13px;color:var(--muted);max-width:68ch;margin:0 0 10px}
+.scroll{overflow-x:auto;max-width:100%}
+footer.wrap{color:var(--faint);font-size:12px;padding-top:16px;padding-bottom:24px}
+.qz{margin-top:12px;padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent);background:var(--accentBg)}
+.qzt{font:700 12.5px var(--sans);color:var(--accent);margin-bottom:3px}
+.qz p{margin:0 0 7px;font-size:14px}
+.qzo{display:flex;flex-direction:column;gap:5px}
+.qzo button{text-align:left;font-size:13.5px;padding:5px 10px;background:var(--panel)}
+.qzo button:disabled{opacity:1}
+.qzo button.ok{background:var(--okBg);border-color:var(--ok);font-weight:600}
+.qzo button.no{background:var(--xorBg);border-color:var(--xor)}
+.qzo button.dim{opacity:.5}
+.qz .qzw{margin:8px 0 0}
+@keyframes come{from{opacity:0;transform:translateY(4px)}}
+.nw{animation:come .35s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.chk{list-style:none;margin:14px auto 0;padding:0;max-width:440px;font-size:14.5px}
+.chk li{display:flex;gap:10px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line)}
+.chk li.todo{color:var(--faint)}
+.chk li b{flex:none;width:18px;text-align:center}
+.chk li.now{background:var(--ambBg)}
+.verdict{margin:14px auto 0;max-width:560px;text-align:center}
+.verdict span{display:inline-block;padding:7px 14px;border-radius:999px;font-weight:600;font-size:14.5px}
+.verdict .y{background:var(--okBg);color:var(--ok)}.verdict .n{background:var(--xorBg);color:var(--xor)}
+.calc{margin:14px auto 0;max-width:560px;display:grid;gap:6px}
+.calc div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:7px 10px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);font:13.5px var(--mono)}
+.calc div b{font:600 13px var(--sans);color:var(--muted)}
+.calc div.now{background:var(--ambBg)}
+table.map{border-collapse:collapse;width:100%;font-size:14.5px}
+table.map th,table.map td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.map th{font-size:13px;color:var(--muted);font-weight:600}
+table.map td:first-child{white-space:nowrap;font-weight:600}
+table.map .ex{font:14px var(--mono)}
+.tag{display:inline-block;font:600 11.5px var(--sans);padding:2px 8px;border-radius:10px;margin-right:6px}
+.tag.g{background:var(--accentBg);color:var(--accent)}.tag.r{background:var(--ambBg);color:var(--amb)}.tag.f{background:var(--okBg);color:var(--ok)}
+dl.words{margin:0}
+dl.words dt{font-weight:700;margin-top:8px}
+dl.words dt:first-child{margin-top:0}
+dl.words dd{margin:0;color:var(--muted)}
+.chk li[data-step]{cursor:pointer}
+.chk li[data-step]:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.pickline{margin:10px auto 0;max-width:600px;text-align:center;font:13.5px var(--mono);color:var(--muted);min-height:22px}
+.pickline b{color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* the longer read under the picture */
+.doc{padding:22px 26px 26px}
+.doc h2{font:700 24px/1.25 var(--math);margin:0 0 8px}
+.doc h3{font-size:16px;font-weight:700;margin:22px 0 6px}
+.doc p,.doc .pts{max-width:72ch;font-size:15.5px;margin:0 0 10px}
+.doc .lead{font-size:17px}
+.doc .pts{padding-left:22px}.doc .pts li{margin:0 0 6px}
+.doc .fine{font-size:13.5px;color:var(--muted)}
+.exb{margin:8px 0 12px;padding:9px 12px;border-radius:8px;border-left:3px solid var(--accent);background:var(--accentBg);font-size:15px;max-width:72ch;overflow-wrap:anywhere}
+.exb>b{display:block;font-size:12.5px;color:var(--accent);margin-bottom:2px}
+.exb.no{border-color:var(--xor);background:var(--xorBg)}.exb.no>b{color:var(--xor)}
+.exb.use{border-color:var(--ok);background:var(--okBg)}.exb.use>b{color:var(--ok)}
+.m{font:13.5px/1.7 var(--mono)}
+.pl{font:italic 16px var(--math)}.pl sup{font-style:normal;font-size:.68em}
+table.cmp3{border-collapse:collapse;font-size:14.5px;margin:6px 0 4px}
+table.cmp3 th,table.cmp3 td{padding:7px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.cmp3 th{font-size:13px;color:var(--muted);font-weight:600}
+table.cmp3 td:first-child{color:var(--muted);white-space:nowrap}
+/* wide screens: the documentation follows the picture directly, and the side panel runs along both */
+@media (min-width:1001px){.layout{grid-template-rows:auto 1fr}.stage{grid-column:1;grid-row:1}.doc{grid-column:1;grid-row:2}.panel{grid-column:2;grid-row:1/span 2}}
+@media (max-width:1000px){.doc{order:4}#extra{order:5}}
+@media (max-width:560px){.doc{padding:16px 16px 18px}}
+/* one colour per job a number has in a division */
+.ra{color:var(--n0)}.rb{color:var(--n3)}.rq{color:var(--n2)}.rr{color:var(--n1)}.rz{color:var(--faint)}.rx{color:var(--n4)}
+input[type=text].num{width:180px;text-transform:none;font:500 17px/1.3 var(--mono);padding:8px 11px;border-radius:9px;transition:border-color .15s,box-shadow .15s}
+input[type=text].num:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line2))}
+input[type=text].num:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent)}
+input[type=text].num::placeholder{font:400 14px var(--sans);color:var(--faint)}
+.inbar .flh{font-size:14px;min-height:22px}
+.eqv{display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;background:var(--ink);color:var(--bg);font:600 13px/20px var(--mono);white-space:nowrap;vertical-align:middle}
+.eqv:empty{display:none}
+.inbar .hint2{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+@media (max-width:560px){input[type=text].num{width:150px}}
+.inbar .row button{font-size:13px;padding:6px 10px}
+.doc a,#explain a,#extra a{color:var(--accent)}
+.doc ul,.doc ol{max-width:72ch;font-size:15.5px;margin:0 0 10px;padding-left:22px}
+.doc li{margin:0 0 5px}
+.exb.bk{border-color:var(--key);background:var(--keyBg)}.exb.bk>b{color:var(--key)}
+.exb ul{margin:0;padding-left:18px;font-size:14.5px}
+/* a step's computation: the words on top, the numbers under them */
+.bench{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;justify-content:center;margin:16px auto 0;padding:10px 16px 12px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent);max-width:660px}
+.bench .bt{display:flex;flex-direction:column;align-items:center;gap:1px}
+.bench .bt i{font:12px var(--sans);font-style:normal;color:var(--muted)}
+.bench .bt b{font:700 23px var(--mono)}
+.bench .op{font:22px var(--mono);color:var(--muted);padding-bottom:1px}
+.bench.sm .bt b,.bench.sm .op{font-size:18px}
+.bnote{font-size:14px;color:var(--muted);text-align:center;margin:8px auto 0;max-width:660px}
+.bnote b{color:var(--ink);font-family:var(--mono);font-weight:600}
+@media (max-width:560px){.bench .bt b,.bench .op{font-size:19px}.bench.sm .bt b,.bench.sm .op{font-size:16px}.bench{gap:6px 8px;padding:9px 10px 10px}}
+/* a number as rows of dots */
+svg.dots{display:block;width:100%;height:auto;margin:0 auto}
+.dots .d{fill:var(--n0)}
+.dots .d.r{fill:var(--n1)}
+.dots .grp{fill:color-mix(in srgb,var(--n3) 9%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.dots .rem{fill:color-mix(in srgb,var(--n1) 12%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.dots .gl{font:13px var(--mono);fill:var(--n3)}
+.dots .rl{font:700 13px var(--mono);fill:var(--n1)}
+.dots .al{font:700 13px var(--mono);fill:var(--n0)}
+.dots g[data-step]{cursor:pointer}
+.dots g[data-step]:hover .grp,.dots g[data-step]:hover .rem{stroke-width:2.6}
+/* a number as a length */
+svg.nl{display:block;width:100%;max-width:720px;height:auto;margin:0 auto}
+.nl .whole{fill:color-mix(in srgb,var(--n0) 14%,var(--panel));stroke:var(--n0);stroke-width:1.4}
+.nl .seg{fill:color-mix(in srgb,var(--n3) 12%,var(--panel));stroke:var(--n3);stroke-width:1.4}
+.nl .rem{fill:color-mix(in srgb,var(--n1) 24%,var(--panel));stroke:var(--n1);stroke-width:1.6}
+.nl [data-step]{cursor:pointer}
+.nl .ax{stroke:var(--line2);stroke-width:1.4}
+.nl .tk{font:11.5px var(--mono);fill:var(--muted);text-anchor:middle}
+.nl .lb{font:700 13px var(--mono);text-anchor:middle}
+.nl .lb.b{fill:var(--n3)}.nl .lb.r{fill:var(--n1)}.nl .lb.a{fill:var(--n0)}.nl .lb.x{fill:var(--n4)}
+.nl .arc{fill:none;stroke-width:2}
+.nl .arc.r{stroke:var(--n1)}.nl .arc.x{stroke:var(--n4);stroke-dasharray:4 4}
+.nl .pt{fill:var(--n0);stroke:var(--panel);stroke-width:2}
+/* divisors */
+.strip{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin:0 auto;max-width:700px}
+.strip i{font-style:normal;min-width:36px;text-align:center;border-radius:6px;background:color-mix(in srgb,var(--ink) 5%,transparent);padding:3px 4px 4px;font:700 14px/1.25 var(--mono)}
+.strip i small{display:block;font:11px var(--mono);color:var(--muted);font-weight:400}
+.strip i.z{background:var(--okBg);color:var(--ok)}
+.strip i.one{background:var(--okBg);color:var(--ok);outline:2px solid var(--ok);outline-offset:-2px}
+.strip i.mg{background:var(--xorBg);color:var(--xor)}
+.cap2{font-size:13.5px;color:var(--muted);text-align:center;margin:0 0 8px}
+.cap2 b{color:var(--ink)}
+.dvr{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 12px;align-items:start;margin:0 0 12px}
+.dvr .dl{font-size:13.5px;color:var(--muted);padding-top:5px}
+.dvr .dl b{color:var(--ink);font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chips button,.chips i{font:600 13.5px var(--mono);font-style:normal;padding:4px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+.chips i.more{border-style:dashed;color:var(--muted);font-weight:400}
+.chips .c{background:var(--ambBg);border-color:var(--amb);color:var(--amb)}
+.chips .g{background:var(--okBg);border-color:var(--ok);color:var(--ok);font-size:16px;padding:4px 12px}
+.chips .pk{outline:2px solid var(--accent);outline-offset:1px}
+@media (max-width:700px){.dvr{grid-template-columns:minmax(0,1fr);gap:4px}.dvr .dl{padding:0}}
+/* Euclid: the lines of divisions, and the rectangle cut into squares */
+.duo2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:center}
+.duo2.one{grid-template-columns:minmax(0,1fr)}
+@media (max-width:1180px){.duo2{grid-template-columns:minmax(0,1fr)}}
+.lad{display:grid;grid-template-columns:repeat(7,auto);justify-content:center;gap:2px 8px;font:700 20px var(--mono);align-items:center}
+.lad .row{display:contents;cursor:pointer}
+.lad .n{text-align:right;padding:3px 7px;border-radius:7px}
+.lad .o{color:var(--muted);font-weight:400}
+.lad .arw{color:var(--faint);font:400 17px var(--sans);text-align:center;line-height:1.05}
+.lad .row.cur .n{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.lad .row:hover .n{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.lad .row.fut>*,.lad .arw.fut{visibility:hidden}
+.lad .n.g{outline:2.5px solid var(--n1);outline-offset:1px;background:var(--okBg);color:var(--n1)}
+.lad.sm{font-size:16px}
+@media (max-width:560px){.lad{font-size:16px;gap:2px 4px}.lad .n{padding:3px 4px}.lad.sm{font-size:13.5px}}
+svg.til{display:block;width:100%;max-width:580px;height:auto;margin:0 auto}
+.til rect.sq{stroke-width:1.5;cursor:pointer}
+.til rect.sq:hover{stroke-width:3}
+.til .c0{fill:color-mix(in srgb,var(--n0) 16%,var(--panel));stroke:var(--n0)}
+.til .c1{fill:color-mix(in srgb,var(--n3) 16%,var(--panel));stroke:var(--n3)}
+.til .c2{fill:color-mix(in srgb,var(--n2) 18%,var(--panel));stroke:var(--n2)}
+.til .c3{fill:color-mix(in srgb,var(--n4) 14%,var(--panel));stroke:var(--n4)}
+.til rect.gq{fill:color-mix(in srgb,var(--n1) 32%,var(--panel));stroke:var(--n1)}
+.til .rest{fill:none;stroke:var(--muted);stroke-dasharray:6 5;stroke-width:1.5}
+.til .frame{fill:none;stroke:var(--line2);stroke-width:1.2}
+.til text{font:600 13px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.til text.dm{font:12.5px var(--mono);fill:var(--muted)}
+.til text.rs{font:12.5px var(--mono);fill:var(--muted);font-weight:400}
+table.pairs{border-collapse:collapse;margin:14px auto 0;font:14px var(--mono)}
+table.pairs th,table.pairs td{padding:5px 14px;border-bottom:1px solid var(--line);text-align:left}
+table.pairs th{font:600 12.5px var(--sans);color:var(--muted)}
+/* extended Euclid: the table, and the lines of the backward way */
+table.xt{border-collapse:collapse;margin:0 auto;font:15.5px var(--mono)}
+table.xt th,table.xt td{padding:7px 16px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.xt th{font:600 12.5px var(--sans);color:var(--muted);vertical-align:bottom}
+table.xt th small{display:block;font-weight:400}
+table.xt tr[data-step]{cursor:pointer}
+table.xt tr[data-step]:hover td{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+table.xt tr.cur td{background:var(--ambBg)}
+table.xt tr.ans td{background:var(--okBg);font-weight:700}
+table.xt tr.zero td{color:var(--faint)}
+table.xt tr.fut td{visibility:hidden}
+table.xt td.ck{color:var(--muted);font-size:13px;text-align:left}
+table.xt .hid{visibility:hidden}
+table.xt td.pick{outline:2.5px solid var(--n1);outline-offset:-3px}
+/* tab 8: the calculator */
+.cxw .blk{padding:4px 0 18px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.cxw .blk:last-child{border-bottom:0;margin-bottom:0;padding-bottom:4px}
+.cxw h3{font:600 14px var(--sans);color:var(--muted);text-align:center;margin:0}
+.cxw .bench{margin-top:10px}
+.elines{font:15px/1.75 var(--mono);text-align:center;margin:10px auto 0;max-height:250px;overflow:auto;overflow-wrap:anywhere}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:660px;margin:12px auto 0}
+.two>div{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);min-width:0}
+.two>div.main{border-color:var(--n1);box-shadow:inset 0 0 0 1px var(--n1)}
+.two small{display:block;font:600 12.5px var(--sans);color:var(--muted)}
+.two .big{display:block;font:700 26px var(--mono);color:var(--n1);margin:2px 0}
+.two .ck{font:13.5px/1.5 var(--mono);overflow-wrap:anywhere}
+.two .from{display:inline-block;font:600 11.5px var(--sans);padding:1px 8px;border-radius:10px;background:var(--ambBg);color:var(--amb);margin-top:6px}
+details.how{max-width:660px;margin:14px auto 0}
+details.how summary{cursor:pointer;color:var(--accent);font-size:14px;text-align:center;margin-bottom:10px}
+@media (max-width:560px){.two{grid-template-columns:minmax(0,1fr)}.elines{font-size:13.5px}}
+@media (max-width:640px){table.xt{font-size:13.5px}table.xt th,table.xt td{padding:6px 8px}table.xt .ck{display:none}}
+.calc div{grid-template-columns:118px minmax(0,1fr)}
+.bw{max-width:620px;margin:0 auto;display:grid;gap:6px}
+.bw .h3{margin:10px 0 0}
+.bw .h3:first-child{margin-top:0}
+.bw div.ln{font:15.5px var(--mono);padding:7px 12px;border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,transparent);overflow-wrap:anywhere}
+.bw div.ln.cur{background:var(--ambBg)}
+.bw div.ln.ans{background:var(--okBg);font-weight:700}
+.bw div.ln.fut{visibility:hidden}
+.bw div.ln small{display:block;font:12px var(--sans);color:var(--muted);font-weight:400}
+.bw mark{background:none;color:var(--n4);font-weight:700}
+@media (max-width:560px){.bw div.ln{font-size:13.5px;padding:6px 9px}}
+/* your turn */
+.ex{max-width:640px;margin:0 auto}
+.ex h3{font-size:18px;margin:0 0 4px}
+.ex .task{font-size:15px;color:var(--muted);margin:0 0 14px}
+.exl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font:700 20px var(--mono);margin:0 0 8px}
+.exl input[type=text]{width:78px;font:700 18px var(--mono);text-align:center;padding:5px 6px;text-transform:none}
+.exl input[type=text].w{width:120px}
+.exl .o{color:var(--muted);font-weight:400}
+.exl.done{opacity:.8}
+.exl .n{padding:2px 4px}
+.fb{margin:10px 0 0;padding:9px 12px;border-radius:8px;font-size:14.5px}
+.fb.ok{background:var(--okBg);border-left:3px solid var(--ok)}
+.fb.no{background:var(--xorBg);border-left:3px solid var(--xor)}
+.exb2{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.score{font-size:13.5px;color:var(--muted);margin-top:12px}
+@media (max-width:560px){.exl{font-size:17px}.exl input[type=text]{width:64px;font-size:16px}}
+table.map td:first-child{white-space:normal}
+table.map td .m{white-space:nowrap}
+/* ---------- the lattice page: a 3D table of points ---------- */
+.l3{position:relative;height:470px;perspective:1300px;perspective-origin:50% 38%;overflow:hidden;border-radius:10px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(130% 95% at 50% 0%,color-mix(in srgb,var(--accent) 9%,var(--panel)),var(--panel) 70%)}
+.l3.grab{cursor:grabbing}
+.l3cam{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d}
+.l3hint{position:absolute;left:12px;bottom:8px;margin:0;font-size:12.5px;color:var(--muted);pointer-events:none;transition:opacity .3s ease-in}
+.l3.moved .l3hint{opacity:0}
+.l3cam .o{position:absolute;left:0;top:0;transform-origin:0 0;animation:oin .3s ease-out both;transition:opacity .2s ease-in;backface-visibility:visible}
+.l3cam .o.out{opacity:0}
+@keyframes oin{from{opacity:0}}
+.o.rod,.o.rod2,.o.head,.o.head2{width:1px;height:1px;background:var(--muted)}
+.o.head,.o.head2{clip-path:polygon(0 0,100% 50%,0 100%)}
+.o.quad{width:100px;height:100px}
+.o.pt{--pc:color-mix(in srgb,var(--accent) 80%,var(--ink));width:11px;height:11px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,color-mix(in srgb,#fff 65%,var(--pc)) 0,var(--pc) 58%,color-mix(in srgb,var(--pc) 62%,#000) 100%);box-shadow:0 1px 2px rgba(0,0,0,.28)}
+.o.pt.org{--pc:var(--ink);width:13px;height:13px}
+.o.pt.up{--pc:color-mix(in srgb,var(--n1) 75%,var(--ink))}
+.o.pt.hl{--pc:var(--n2);width:16px;height:16px}
+.o.pt.tgt{--pc:var(--n2);width:15px;height:15px;border-radius:3px}
+.o.pt.ok{--pc:var(--n1);width:17px;height:17px}
+.o.pt.no{--pc:var(--xor);width:17px;height:17px}
+.o.lab{font:600 13px/1.2 var(--sans);white-space:nowrap;color:var(--ink);padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--panel) 84%,transparent)}
+.o.lab.muted{color:var(--muted);background:none}
+.o.lab.tag{font-size:12px;padding:2px 9px;border:1.5px solid currentColor}
+.o.lab.cellab{color:var(--n0)}
+.o.lab.bval{font:700 13px var(--mono)}
+.o.lab.blab{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.25}
+.o:not(.lab).v1{background:var(--n0)}.o.lab.v1{color:var(--n0)}
+.o:not(.lab).v2{background:var(--n3)}.o.lab.v2{color:var(--n3)}
+.o:not(.lab).v3{background:var(--n1)}.o.lab.v3{color:var(--n1)}
+.o:not(.lab).w1,.o:not(.lab).w2{background:var(--xor)}.o.lab.w1,.o.lab.w2{color:var(--xor)}
+.o:not(.lab).pth{background:var(--n2)}.o.lab.pth{color:var(--n2)}
+.o:not(.lab).sv{background:var(--n1)}.o.lab.sv{color:var(--n1)}
+.o:not(.lab).okp,.o:not(.lab).okd{background:var(--n1)}.o.lab.okc{color:var(--n1)}
+.o:not(.lab).nod{background:var(--xor)}.o.lab.noc{color:var(--xor)}
+.o:not(.lab).pin{background:var(--n2)}.o.lab.tgc{color:var(--n2)}
+.o:not(.lab).axis{background:var(--line2)}
+.o:not(.lab).pedge{background:color-mix(in srgb,var(--n1) 70%,var(--ink))}
+.o.quad.floor{background:color-mix(in srgb,var(--ink) 4%,transparent);border-radius:3px}
+.o.quad.cell{background:color-mix(in srgb,var(--n0) 24%,transparent)}
+.o.quad.cell2{background:color-mix(in srgb,var(--n0) 8%,transparent)}
+.o.quad.bcell{background:color-mix(in srgb,var(--xor) 20%,transparent)}
+.o.quad.pcell{background:color-mix(in srgb,var(--n1) 13%,transparent)}
+.o.quad.ring{border:2.5px solid var(--n1);border-radius:50%}
+.o.quad.top.ec{background:color-mix(in srgb,var(--n3) 70%,#fff)}.o.quad.ec.side1{background:var(--n3)}.o.quad.ec.side2{background:color-mix(in srgb,var(--n3) 75%,#000)}
+.o.quad.top.rsa{background:color-mix(in srgb,var(--n2) 70%,#fff)}.o.quad.rsa.side1{background:var(--n2)}.o.quad.rsa.side2{background:color-mix(in srgb,var(--n2) 75%,#000)}
+.o.quad.top.kem{background:color-mix(in srgb,var(--n0) 60%,#fff)}.o.quad.kem.side1{background:var(--n0)}.o.quad.kem.side2{background:color-mix(in srgb,var(--n0) 72%,#000)}
+.o.quad.top.kem.hi{background:color-mix(in srgb,var(--n1) 60%,#fff)}.o.quad.kem.hi.side1{background:var(--n1)}.o.quad.kem.hi.side2{background:color-mix(in srgb,var(--n1) 72%,#000)}
+@media (max-width:620px){.l3{height:360px}}
+/* bench colours that match the picture */
+.v1c{color:var(--n0)}.v2c{color:var(--n3)}.v3c{color:var(--n1)}.w1c{color:var(--xor)}.pthc{color:var(--n2)}.svc{color:var(--n1)}.okc{color:var(--n1)}.noc{color:var(--xor)}.tgc{color:var(--n2)}.scr{color:var(--xor)}
+#below .bench{margin-top:14px}
+.cap2{font-size:13.5px;color:var(--muted);text-align:center;margin:8px 0}
+.cap2 b{color:var(--ink)}
+/* learning with errors: the table and the wheel */
+.lw{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.lw{grid-template-columns:minmax(0,1fr)}}
+table.mx{border-collapse:collapse;margin:0 auto;font:14px var(--mono)}
+table.mx th{font:600 12px var(--sans);color:var(--muted);padding:4px 8px;text-align:right}
+table.mx td{padding:4px 8px;text-align:right;border-bottom:1px solid var(--line)}
+table.mx td.rn{color:var(--faint);text-align:left}
+table.mx td.eqs{color:var(--faint);text-align:center}
+table.mx td.bb{font-weight:700;color:var(--n0)}
+table.mx td.ee{color:var(--xor);font-weight:700}
+table.mx tr.pk td{background:var(--ambBg)}
+table.mx tr.sol td{background:var(--accentBg)}
+table.mx.kt td,table.mx.kt th{padding:5px 10px;white-space:nowrap}
+.fxs{max-width:640px;margin:12px auto 0;display:flex;flex-direction:column;gap:5px}
+.fx{font:14px/1.55 var(--mono);padding:7px 12px;border-radius:8px;background:color-mix(in srgb,var(--ink) 4%,transparent);overflow-wrap:anywhere}
+svg.wheel{display:block;width:100%;max-width:300px;margin:0 auto}
+.wheel .wr{fill:none;stroke:var(--line2);stroke-width:2}
+.wheel .z0,.wheel .z1{fill:none;stroke-width:9;stroke-linecap:round;opacity:.5}
+.wheel .z0{stroke:var(--n1)}.wheel .z1{stroke:var(--n0)}
+.wheel .wt{stroke:var(--line2);stroke-width:1.2}
+.wheel .wl{font:12px var(--mono);fill:var(--muted);text-anchor:middle}
+.wheel .zl{font:600 12px var(--sans);text-anchor:middle}.wheel .z0t{fill:var(--n1)}.wheel .z1t{fill:var(--n0)}
+.wheel .wn{stroke:var(--n2);stroke-width:2.5}
+.wheel .wp{fill:var(--n2);stroke:var(--panel);stroke-width:3}
+.wheel .wv{font:700 22px var(--mono);fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:var(--panel);stroke-width:5px}
+.wheel .nw{animation:come .3s ease-out both}
+.lwnote{margin-top:40px}
+.uses{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
+.uses div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 2px 0 var(--line)}
+.uses b{display:block;font-size:14.5px}.uses span{font-size:13.5px;color:var(--muted)}
+.inbar .hint2{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body><div style="font:14px/1.4 system-ui,-apple-system,sans-serif;padding:8px 16px;border-bottom:1px solid rgba(128,128,128,.25)"><a href="../" style="color:inherit;opacity:.75;text-decoration:none">&larr; Fundamentals of Cryptography</a></div>
+<header class="wrap">
+  <h1>Lattices and post-quantum cryptography, step by step</h1>
+  <p class="sub">What a lattice is, good and bad bases, the hard problems SVP and CVP, the same in 3D, learning with errors with small numbers, and ML-KEM, the standard that replaces RSA and elliptic curves for key exchange</p>
+  <p class="by">Fundamentals of Cryptography · <b>Ali Huseynli</b>, Teaching Assistant · AzTU Cybersecurity Department · Fall 2026</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="lat" class="on">1 · A lattice</button>
+    <button data-tab="bas">2 · Good and bad bases</button>
+    <button data-tab="cvp">3 · Hard problems</button>
+    <button data-tab="d3">4 · Into 3D</button>
+    <button data-tab="lwe">5 · Learning with errors</button>
+    <button data-tab="kem">6 · ML-KEM</button>
+  </nav>
+</header>
+
+<section class="wrap"><div class="card inbar" id="bar" hidden></div></section>
+
+<main class="wrap layout">
+  <div class="card stage" id="stage"></div>
+  <aside class="panel">
+    <div class="card c-ctrl" id="ctrl">
+      <div class="row">
+        <button id="bReset" title="Back to the start">⟲</button>
+        <button id="bBack" title="One step back (← key)">◀ Back</button>
+        <button id="bStep" title="One step forward (→ key)">Step ▶</button>
+        <button id="bPlay" class="pri" title="Play / pause (space)">▶ Play</button>
+      </div>
+      <div class="row"><label class="inl">Speed <input type="range" id="spd" min="0.5" max="2.5" step="0.25" value="1"></label></div>
+      <div class="prog" id="prog" style="margin-top:8px"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card" id="extra"></div>
+  </aside>
+  <section class="card doc" id="doc" hidden></section>
+</main>
+<footer class="wrap">© 2026 Ali Huseynli · AzTU Cybersecurity Department · Keys: → step, ← back, space play/pause. Drag a picture to turn it. Works offline: every point and number on this page is computed in your browser.</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const say=(h,...ps)=>`<div class="step">${h}</div>`+ps.filter(Boolean).map(p=>`<p>${p}</p>`).join('');
+const fm=s=>`<span class="fm">${s}</span>`;
+const Y='<b class="cy">✓</b>',N='<b class="cn">✗</b>';
+const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a.at(-1):String(a[0]);
+const nm=v=>(v<0?'−':'')+Math.abs(v);
+const pn=v=>v<0?`(${nm(v)})`:nm(v);
+const fr=(v,d=2)=>{const s=(Math.round(v*10**d)/10**d).toFixed(d).replace(/\.?0+$/,'');return s==='-0'?'0':s.replace('-','−')};
+const vec=v=>`(${v.map(nm).join(', ')})`;
+const md=(x,q)=>((x%q)+q)%q;
+function inv(x,q){let r0=q,r1=md(x,q),t0=0,t1=1;while(r1){const k=Math.floor(r0/r1);[r0,r1]=[r1,r0-k*r1];[t0,t1]=[t1,t0-k*t1]}return r0===1?md(t0,q):null}
+// a small seeded generator, so that "new numbers" can be repeated
+function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- the 3D scene: HTML parts in CSS 3D, so text stays sharp ----------
+   World units: x to the right, y away from the reader on the table, z up out of the table.
+   A camera turns the whole world; points and labels turn back so that they always face the reader. */
+const RM=matchMedia('(prefers-reduced-motion: reduce)'),NARROW=matchMedia('(max-width:1000px)');
+const SC={U:46,W:760,H:460,root:null,cam:null,items:new Map(),pose:{yaw:-18,pitch:52,zoom:1,cx:0,cy:0,cz:0},tw:null,drag:null};
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],addv=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],len=a=>Math.hypot(a[0],a[1],a[2]),unit=a=>mul(a,1/(len(a)||1));
+// world → CSS pixels: CSS y grows downwards, and the table's "away" direction is CSS −y before the camera tilts it
+const px=p=>[p[0]*SC.U,-p[1]*SC.U,(p[2]||0)*SC.U];
+const m3=(c1,c2,c3,o)=>`matrix3d(${c1.join(',')},0,${c2.join(',')},0,${c3.join(',')},0,${o.join(',')},1)`;
+function scInit(host){
+  host.innerHTML='<div class="l3cam"></div><p class="l3hint">Drag to turn the picture</p>';
+  SC.root=host;SC.cam=host.firstChild;
+  host.addEventListener('pointerdown',e=>{if(e.button)return;SC.drag={x:e.clientX,y:e.clientY,yaw:SC.pose.yaw,pitch:SC.pose.pitch};host.setPointerCapture(e.pointerId);host.classList.add('grab');if(SC.tw){cancelAnimationFrame(SC.tw);SC.tw=null}});
+  host.addEventListener('pointermove',e=>{if(!SC.drag)return;SC.pose.yaw=SC.drag.yaw+(e.clientX-SC.drag.x)*.35;SC.pose.pitch=clamp(SC.drag.pitch-(e.clientY-SC.drag.y)*.3,0,88);camApply();host.classList.add('moved')});
+  const end=()=>{SC.drag=null;host.classList.remove('grab')};host.addEventListener('pointerup',end);host.addEventListener('pointercancel',end);
+  new ResizeObserver(()=>{SC.W=host.clientWidth;SC.H=host.clientHeight;camApply()}).observe(host);
+}
+function camApply(){
+  if(SC.root&&SC.root.clientWidth){SC.W=SC.root.clientWidth;SC.H=SC.root.clientHeight}
+  const p=SC.pose,c=px([p.cx,p.cy,p.cz]);
+  const fit=clamp(SC.W/760,.55,1);
+  SC.cam.style.setProperty('--yaw',p.yaw+'deg');SC.cam.style.setProperty('--pitch',p.pitch+'deg');
+  // on a narrow screen the world shrinks; labels and points shrink less, so they stay readable
+  SC.cam.style.setProperty('--ls',String(fit**-.8));SC.cam.style.setProperty('--ps',String(1/Math.sqrt(fit)));
+  SC.cam.style.transform=`translate3d(${SC.W/2}px,${SC.H/2}px,0) rotateX(${p.pitch}deg) rotateZ(${p.yaw}deg) scale(${p.zoom*fit}) translate3d(${-c[0]}px,${-c[1]}px,${-c[2]}px)`;
+}
+// the camera moves with one long ease between steps: a teaching move, longer than the 300 ms of the page chrome
+function camTo(to,dur=900){
+  const from={...SC.pose},T0=performance.now(),keys=['yaw','pitch','zoom','cx','cy','cz'];
+  const goal={...from,zoom:1,cx:0,cy:0,cz:0,...to};if(keys.every(k=>Math.abs(goal[k]-from[k])<1e-3))return;
+  if(SC.tw)cancelAnimationFrame(SC.tw);
+  if(RM.matches||document.hidden){Object.assign(SC.pose,goal);camApply();return}
+  const ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+  const tick=now=>{const u=Math.min(1,(now-T0)/dur),e=ease(u);for(const k of keys)SC.pose[k]=from[k]+(goal[k]-from[k])*e;camApply();SC.tw=u<1?requestAnimationFrame(tick):null};
+  SC.tw=requestAnimationFrame(tick);
+}
+// a part that always faces the reader: a point or a label
+const face=(p,v)=>{const c=px(p);return`translate3d(${c[0]}px,${c[1]}px,${c[2]}px) rotateZ(calc(var(--yaw)*-1)) rotateX(calc(var(--pitch)*-1)) scale(var(${v},1)) translate(-50%,-50%)`};
+// a thin rod from A to B: two crossed strips, so it never vanishes when seen edge on
+function rodT(A,B,w,second){
+  const a=px(A),d=sub(px(B),a),L=len(d);if(L<1e-6)return'scale(0)';
+  const up=Math.abs(d[2])<.95*L?[0,0,1]:[1,0,0],p1=unit(cross(d,up)),p2=unit(cross(d,p1)),p=second?p2:p1,q=second?p1:p2;
+  return m3(d,mul(p,w),q,sub(a,mul(p,w/2)))}
+// an arrow head at B, pointing from A to B
+function headT(A,B,h,wd,second){
+  const a=px(A),b=px(B),d=unit(sub(b,a)),up=Math.abs(d[2])<.95?[0,0,1]:[1,0,0],p1=unit(cross(d,up)),p2=unit(cross(d,p1)),p=second?p2:p1,q=second?p1:p2;
+  return m3(mul(d,h),mul(p,wd),q,sub(sub(b,mul(d,h)),mul(p,wd/2)))}
+// a flat parallelogram o + s·u + t·v, s and t from 0 to 1
+// (drawn on a 100 px square, so rounded corners and borders stay sharp when it is stretched)
+function quadT(o,u,v){const a=px(o),U2=sub(px(addv(o,u)),a),V2=sub(px(addv(o,v)),a);return m3(mul(U2,.01),mul(V2,.01),unit(cross(U2,V2)),a)}
+// Every step lists the parts it shows. Parts with the same id stay and move; new ones fade in; missing ones fade out.
+function scSet(list){
+  const seen=new Set();
+  for(const it of list){
+    seen.add(it.id);let e=SC.items.get(it.id);
+    if(!e){e=document.createElement('div');SC.cam.appendChild(e);SC.items.set(it.id,e);if(it.delay)e.style.animationDelay=it.delay+'ms'}
+    else if(e.classList.contains('out')){clearTimeout(e._gone)}
+    e.className=`o ${it.k} ${it.cls||''}`;
+    if(it.k==='pt'||it.k==='lab'){e.style.transform=face(it.p,it.k==='pt'?'--ps':'--ls');if(it.k==='lab'&&e._t!==it.t){e.innerHTML=it.t;e._t=it.t}}
+    else if(it.k==='rod'||it.k==='rod2')e.style.transform=rodT(it.a,it.b,it.w||3,it.k==='rod2');
+    else if(it.k==='head'||it.k==='head2')e.style.transform=headT(it.a,it.b,it.h||12,it.wd||11,it.k==='head2');
+    else if(it.k==='quad')e.style.transform=quadT(it.o,it.u,it.v);
+  }
+  for(const[id,e]of SC.items)if(!seen.has(id)&&!e.classList.contains('out')){e.classList.add('out');e._gone=setTimeout(()=>{e.remove();SC.items.delete(id)},RM.matches?0:220)}
+}
+// building blocks for the steps
+const P=(id,p,cls,delay)=>({id,k:'pt',p,cls,delay});
+const L=(id,p,t,cls)=>({id,k:'lab',p,t,cls});
+const rod=(id,a,b,cls,w)=>[{id:id+'a',k:'rod',a,b,cls,w},{id:id+'b',k:'rod2',a,b,cls,w}];
+const arrow=(id,a,b,cls,w=3.2)=>{const d=sub(b,a),l=len(px(d)),t=l>16?addv(a,mul(d,(l-11)/l)):b;return[...rod(id,a,t,cls,w),{id:id+'h',k:'head',a,b,cls},{id:id+'h2',k:'head2',a,b,cls}]};
+const quad=(id,o,u,v,cls)=>({id,k:'quad',o,u,v,cls});
+const p3=v=>[v[0],v[1],v[2]||0];
+
+/* ---------- what the reader has chosen ---------- */
+const ST={tab:'lat',step:{},bit:1,seed:20261125,q:{},playT:null,playing:false};
+const T={};
+const bt=(word,cls,v)=>`<span class="bt"><i>${word}</i><b class="${cls}">${v}</b></span>`;
+const op=s=>`<span class="op">${s}</span>`;
+const bench=(...xs)=>`<div class="bench">${xs.join('')}</div>`;
+const segB=(key,cur,opts)=>`<div class="seg">${opts.map(o=>`<button data-set="${key}:${o[0]}" class="${String(cur)===String(o[0])?'on':''}">${o[1]}</button>`).join('')}</div>`;
+
+/* ---------- one lattice for tabs 1 to 4 ---------- */
+const B1=[3,1,0],B2=[1,2,0],B3=[1,1,2],C1=[7,4,0],C2=[4,3,0],TG=[5.2,3.3,0];
+const det2=(u,v)=>u[0]*v[1]-u[1]*v[0];
+const comb=(i,j,l=0)=>[i*B1[0]+j*B2[0]+l*B3[0],i*B1[1]+j*B2[1]+l*B3[1],l*B3[2]];
+const pid=p=>`p${p[0]},${p[1]},${p[2]||0}`;
+function points(layers=[0],rx=8.6,ry=6.6){const out=[];
+  for(const l of layers)for(let i=-9;i<=9;i++)for(let j=-9;j<=9;j++){const p=comb(i,j,l);if(Math.abs(p[0])<=rx&&Math.abs(p[1])<=ry)out.push({i,j,l,p})}
+  return out}
+const dots=(pts,cls)=>pts.map(w=>P(pid(w.p),w.p,(cls||'')+(w.p[0]===0&&w.p[1]===0&&!w.p[2]?' org':''),Math.round(len(w.p)*45)));
+const floor=(rx=9.2,ry=7.2)=>[quad('floor',[-rx,-ry,0],[2*rx,0,0],[0,2*ry,0],'floor'),...rod('axx',[-rx,0,0],[rx,0,0],'axis',1.2),...rod('axy',[0,-ry,0],[0,ry,0],'axis',1.2)];
+// a + b as a path of arrows, for "2b₁ − b₂" and the like
+function path(id,steps,cls){const out=[];let at=[0,0,0];steps.forEach((s,i)=>{const nx=addv(at,s);out.push(...arrow(id+i,at,nx,cls,2.4));at=nx});return out}
+const coords2=(t,u,v)=>{const d=det2(u,v);return[(t[0]*v[1]-t[1]*v[0])/d,(u[0]*t[1]-u[1]*t[0])/d]};
+const near=(t,u,v)=>{const[x,y]=coords2(t,u,v),i=Math.round(x),j=Math.round(y);return{x,y,i,j,p:[i*u[0]+j*v[0],i*u[1]+j*v[1],0]}};
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],(a[2]||0)-(b[2]||0));
+const lab=(id,p,t,cls)=>L(id,p,t,cls);
+const goodBasis=()=>[...arrow('b1',[0,0,0],B1,'v1'),...arrow('b2',[0,0,0],B2,'v2'),lab('lb1',[B1[0]+.55,B1[1]-.45,0],'b₁ = (3, 1)','v1'),lab('lb2',[B2[0]-.7,B2[1]+.5,0],'b₂ = (1, 2)','v2')];
+
+/* ---------- 1 · what a lattice is ---------- */
+T.lat={n:()=>4,
+  view(k){
+    const sc=[...floor(),P(pid([0,0,0]),[0,0,0],'org'),lab('l0',[-.6,-.6,0],'0','muted')];
+    if(k>=2)sc.push(...dots(points()));
+    if(k>=3)sc.push(quad('cell',[0,0,0],B1,B2,'cell'),...[[-1,-1],[1,0],[0,1],[-1,1],[2,-1],[-2,1],[1,-1]].map(([i,j])=>quad('cell'+i+j,comb(i,j),B1,B2,'cell2')),lab('la',[2.1,1.55,0],'area 5','cellab'));
+    sc.push(...goodBasis());
+    if(k===1)sc.push(...path('pa',[B1,B1,[-B2[0],-B2[1],0]],'pth'),P('hl',[5,0,0],'hl'),lab('lhl',[5.3,-.75,0],'2b₁ − b₂ = (5, 0)','pth'));
+    const cam=[{yaw:-14,pitch:50,zoom:1.18,cx:1.6,cy:1.2},{yaw:-10,pitch:46,zoom:1.12,cx:2.6,cy:.6},{yaw:-18,pitch:52,zoom:.98,cx:0,cy:0},{yaw:-22,pitch:48,zoom:1.12,cx:1.6,cy:1.4}][k];
+    let h='';
+    if(k===0)h=bench(bt('b₁','v1c','(3, 1)'),op('and'),bt('b₂','v2c','(1, 2)'));
+    if(k===1)h=bench(bt('2 · b₁','v1c','(6, 2)'),op('−'),bt('1 · b₂','v2c','(1, 2)'),op('='),bt('a lattice point','pthc','(5, 0)'));
+    if(k===2)h=bench(bt('every point','','x · b₁ + y · b₂'),op('with'),bt('x and y','','whole numbers'));
+    if(k===3)h=bench(bt('area of the cell','','|3 · 2 − 1 · 1|'),op('='),bt('det','pthc','5'));
+    return{scene:sc,cam,html:h}},
+  say(k){
+    if(k===0)return say('Two arrows','Start with two arrows (vectors) in the plane: b₁ = (3, 1) and b₂ = (1, 2). They are the <b>basis</b>.','The picture is in 3D: drag it to turn the table. The lattice itself lies flat on it.');
+    if(k===1)return say('Step 1 · whole steps only','From the origin, walk along the arrows, but only in whole steps: forward or backward, any number of times.','2 steps of b₁ and one step back along b₂ land at 2b₁ − b₂ = (5, 0).');
+    if(k===2)return say('Step 2 · every place you can reach','All the points you can reach this way form a <b>lattice</b>: the points x · b₁ + y · b₂ with whole numbers x and y.','They form a regular pattern, like atoms in a crystal, but a lattice can be slanted and stretched.');
+    return say('Step 3 · the cell that repeats','The parallelogram spanned by b₁ and b₂ contains no other lattice point. Copies of it, shifted to every lattice point, tile the whole plane.','Its area is |det| = |3 · 2 − 1 · 1| = 5: on average there is one lattice point per 5 square units.')},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>Lattice</dt><dd>All whole-number combinations x · b₁ + y · b₂ of the basis vectors.</dd><dt>Basis</dt><dd>The arrows that generate the lattice.</dd><dt>Determinant</dt><dd>The area (in 3D the volume) of the cell. It does not depend on which basis you pick.</dd></dl>`};
+
+/* ---------- 2 · the same lattice from a good and a bad basis ---------- */
+const badBasis=()=>[...arrow('c1',[0,0,0],C1,'w1'),...arrow('c2',[0,0,0],C2,'w2'),lab('lc1',[C1[0]+.5,C1[1]+.3,0],'c₁ = (7, 4)','w1'),lab('lc2',[C2[0]-1.1,C2[1]+.55,0],'c₂ = (4, 3)','w2')];
+T.bas={n:()=>4,
+  view(k){
+    const sc=[...floor(),...dots(points()),...goodBasis(),quad('cell',[0,0,0],B1,B2,'cell')];
+    if(k>=1)sc.push(...badBasis(),quad('bcell',[0,0,0],C1,C2,'bcell'));
+    if(k===2)sc.push(...path('pc',[C1,[-C2[0],-C2[1],0]],'pth'),lab('lpc',[3.4,.15,0],'c₁ − c₂ = b₁','pth'));
+    if(k===3){sc.push(lab('pub',[C1[0]+.5,C1[1]+1.1,0],'public','w1 tag'),lab('prv',[B2[0]-1.6,B2[1]+1.15,0],'private','v1 tag'))}
+    const cam=[{yaw:-16,pitch:50,zoom:1.1,cx:1.6,cy:1.2},{yaw:-10,pitch:44,zoom:.96,cx:3,cy:2},{yaw:-10,pitch:44,zoom:.96,cx:3,cy:2},{yaw:-24,pitch:54,zoom:.92,cx:2.6,cy:1.8}][k];
+    let h='';
+    if(k===0)h=bench(bt('good basis','v1c','(3, 1), (1, 2)'),op('→'),bt('cell area','','5'));
+    if(k===1)h=bench(bt('c₁ = 2b₁ + b₂','w1c','(7, 4)'),op(','),bt('c₂ = b₁ + b₂','w1c','(4, 3)'),op('→'),bt('cell area','','|7 · 3 − 4 · 4| = 5'));
+    if(k===2)h=bench(bt('c₁ − c₂','pthc','(3, 1) = b₁'),op('and'),bt('2c₂ − c₁','pthc','(1, 2) = b₂'));
+    if(k===3)h=bench(bt('public key','w1c','the bad basis'),op('·'),bt('private key','v1c','the good basis'));
+    return{scene:sc,cam,html:h}},
+  say(k){
+    if(k===0)return say('A good basis','b₁ = (3, 1) and b₂ = (1, 2) are short and point in quite different directions. Their cell is almost a square.','Such a basis is called <b>good</b>.');
+    if(k===1)return say('Step 1 · a bad basis of the same lattice','c₁ = 2b₁ + b₂ = (7, 4) and c₂ = b₁ + b₂ = (4, 3) are long and nearly parallel. Their cell is a thin sliver.','Its area is still 5. That is the first hint that both describe the same lattice.');
+    if(k===2)return say('Step 2 · the same points','Whole steps along c₁ and c₂ reach b₁ = c₁ − c₂ and b₂ = 2c₂ − c₁. So they reach every point the good basis reaches, and no others.','A lattice has infinitely many bases. All have the same cell area.');
+    return say('Step 3 · a trapdoor','Publishing a bad basis reveals the lattice but hides the good one. Recovering a good basis from a bad one is easy here and very hard in hundreds of dimensions.','The next tab shows what the good basis is good for. This idea (GGH, 1997) started lattice-based encryption.')},
+  extra:()=>`<h3>Changing the basis</h3><p>Two bases give the same lattice exactly when one is the other times a whole-number matrix with determinant ±1. Here (c₁, c₂) comes from (b₁, b₂) by the matrix with rows (2, 1) and (1, 1): 2 · 1 − 1 · 1 = 1.</p>`};
+
+/* ---------- 3 · the two hard problems ---------- */
+T.cvp={n:()=>5,
+  view(k){
+    const sc=[...floor(),...dots(points())];const r=Math.sqrt(5),G=near(TG,B1,B2),Bd=near(TG,C1,C2);
+    if(k===0)sc.push(quad('ring',[-r,-r,0],[2*r,0,0],[0,2*r,0],'ring'),...arrow('s1',[0,0,0],B2,'sv'),...arrow('s2',[0,0,0],[2,-1,0],'sv'),lab('ls',[2.6,-1.6,0],'length √5 ≈ 2.24','sv'));
+    if(k>=1)sc.push(P('tgt',TG,'tgt'),...rod('pin',TG,[TG[0],TG[1],1.6],'pin',1.6),lab('ltg',[TG[0],TG[1],2.05],'t = (5.2, 3.3)','tgc'));
+    if(k===2||k>=4)sc.push(...goodBasis().filter(x=>!x.id.startsWith('lb')),...path('gp',[B1,B2],'okp'),P('gok',G.p,'ok'),...rod('gd',TG,G.p,'okd',2),lab('lgok',[G.p[0]-.2,G.p[1]-.85,0],`(4, 3), ${fr(dist(TG,G.p))} away`,'okc'));
+    if(k>=3)sc.push(...badBasis().filter(x=>!x.id.startsWith('lc')),P('bno',Bd.p,'no'),...rod('bd',TG,Bd.p,'nod',2),lab('lbno',[-1.4,-.85,0],`(0, 0), ${fr(dist(TG,Bd.p))} away`,'noc'));
+    const cam=[{yaw:-14,pitch:50,zoom:1.25,cx:.4,cy:.4},{yaw:-20,pitch:56,zoom:1.15,cx:3.2,cy:2.2},{yaw:-16,pitch:52,zoom:1.2,cx:3.4,cy:2.4},{yaw:-12,pitch:48,zoom:1.02,cx:2.6,cy:2},{yaw:-26,pitch:58,zoom:1.0,cx:2.6,cy:2}][k];
+    let h='';
+    if(k===0)h=bench(bt('shortest vectors','svc','±(1, 2), ±(2, −1)'),op('length'),bt('','','√5'));
+    if(k===1)h=bench(bt('a point that is not in the lattice','tgc','t = (5.2, 3.3)'),op('→'),bt('nearest lattice point','','?'));
+    if(k===2)h=bench(bt('t in the good basis','',`${fr(G.x)} · b₁ + ${fr(G.y)} · b₂`),op('round'),bt('','',`${G.i} · b₁ + ${G.j} · b₂`),op('='),bt('','okc','(4, 3)'));
+    if(k===3)h=bench(bt('t in the bad basis','',`${fr(Bd.x)} · c₁ + ${fr(Bd.y)} · c₂`),op('round'),bt('','',`${Bd.i} · c₁ + ${Bd.j} · c₂`),op('='),bt('','noc','(0, 0)'));
+    if(k===4)h=bench(bt('good basis','okc','(4, 3), right'),op('·'),bt('bad basis','noc','(0, 0), far off'));
+    return{scene:sc,cam,html:h}},
+  say(k){
+    const G=near(TG,B1,B2),Bd=near(TG,C1,C2);
+    if(k===0)return say('The shortest vector problem (SVP)','Which lattice point other than 0 is closest to 0? Here the answer is easy to see: ±(1, 2) and ±(2, −1), both of length √5.','In hundreds of dimensions no known algorithm, classical or quantum, finds it fast.');
+    if(k===1)return say('The closest vector problem (CVP)','Now take a point t = (5.2, 3.3) that is not in the lattice. Which lattice point is closest to it?','In 2D the eye finds it at once. Watch what each basis does.');
+    if(k===2)return say('Step 1 · round with the good basis',`Write t in the good basis: t = ${fr(G.x)} · b₁ + ${fr(G.y)} · b₂. Round both numbers to whole ones: ${G.i} · b₁ + ${G.j} · b₂ = (4, 3).`,`That is the closest lattice point, ${fr(dist(TG,G.p))} away. This trick is called Babai’s rounding.`);
+    if(k===3)return say('Step 2 · round with the bad basis',`In the bad basis t = ${fr(Bd.x)} · c₁ + ${fr(Bd.y)} · c₂. Rounding gives 0 · c₁ + 0 · c₂ = (0, 0).`,`That is ${fr(dist(TG,Bd.p))} away, far from the right answer. With long, nearly parallel vectors, rounding goes wrong.`);
+    return say('Step 3 · why this is a trapdoor','Encrypt by adding a small error to a lattice point: that is t. Whoever holds the good basis rounds back to the point. Whoever has only the bad basis cannot.','In two dimensions anyone can draw the picture. In 768 dimensions nobody can.')},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>SVP</dt><dd>Find the shortest non-zero lattice vector.</dd><dt>CVP</dt><dd>Find the lattice point closest to a given point.</dd><dt>Lattice reduction</dt><dd>Turning a bad basis into a better one. LLL (1982) does it in polynomial time, but in high dimensions its vectors are only roughly short.</dd></dl>`};
+
+/* ---------- 4 · the same in three dimensions ---------- */
+T.d3={n:()=>5,
+  view(k){
+    const sc=[...floor(),...dots(points([0],7.6,6.2)),...goodBasis()];
+    if(k>=1)sc.push(...arrow('b3',[0,0,0],B3,'v3'),lab('lb3',[B3[0]+.3,B3[1]+.3,B3[2]+.45],'b₃ = (1, 1, 2)','v3'));
+    if(k>=2)sc.push(...dots(points([1,2],7.6,6.2),'up'));
+    if(k>=3){const o=[0,0,0],f=[[o,B1,B2],[B3,B1,B2],[o,B1,B3],[B2,B1,B3],[o,B2,B3],[B1,B2,B3]];
+      f.forEach(([oo,u,v],i)=>sc.push(quad('pf'+i,oo,u,v,'pcell')));
+      const V=[o,B1,B2,B3,addv(B1,B2),addv(B1,B3),addv(B2,B3),addv(addv(B1,B2),B3)],E=[[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,7],[5,7],[6,7]];
+      E.forEach(([a,b],i)=>sc.push(...rod('pe'+i,V[a],V[b],'pedge',1.6)));
+      sc.push(lab('lvol',[2.6,1.8,2.9],'volume 10','cellab'))}
+    const cam=[{yaw:-18,pitch:52,zoom:1.05,cx:.5,cy:.5,cz:0},{yaw:-38,pitch:66,zoom:1.08,cx:.8,cy:.6,cz:1},{yaw:-44,pitch:70,zoom:.92,cx:.6,cy:.4,cz:2},{yaw:-56,pitch:66,zoom:1.25,cx:2.2,cy:1.6,cz:1.4},{yaw:22,pitch:76,zoom:.95,cx:.6,cy:.4,cz:2}][k];
+    let h='';
+    if(k===0)h=bench(bt('the plane lattice','','x · b₁ + y · b₂'),op('lies on'),bt('the table','','z = 0'));
+    if(k===1)h=bench(bt('a third vector','v3c','b₃ = (1, 1, 2)'),op('points'),bt('','','up, out of the table'));
+    if(k===2)h=bench(bt('every point','','x · b₁ + y · b₂ + z · b₃'),op('→'),bt('layers','','z = 0, 2, 4, …'));
+    if(k===3)h=bench(bt('volume of the cell','','|det(b₁, b₂, b₃)|'),op('='),bt('','pthc','5 · 2 = 10'));
+    if(k===4)h=bench(bt('this picture','','3 dimensions'),op('·'),bt('ML-KEM-768','pthc','768 dimensions'));
+    return{scene:sc,cam,html:h}},
+  say(k){
+    if(k===0)return say('From the plane into space','The lattice of tab 1 lies on the table. Lattice cryptography works in many more dimensions, so take one more.','Drag the picture at any time to look from another side.');
+    if(k===1)return say('Step 1 · a third basis vector','b₃ = (1, 1, 2) leaves the table: its third coordinate is 2.','Whole steps along b₃ lift the whole plane lattice up, and shift it sideways by (1, 1).');
+    if(k===2)return say('Step 2 · layers','Every point is now x · b₁ + y · b₂ + z · b₃. The lattice is a stack of copies of the plane lattice, one layer every 2 units up.','From the side the points line up in rows and columns; from other angles the pattern looks random. Turn it and see.');
+    if(k===3)return say('Step 3 · the cell is now a box','b₁, b₂ and b₃ span a slanted box, a parallelepiped. Its copies fill space with no gaps.','Its volume is |det| = 10: the cell area 5 of the plane times the height 2 of each layer.');
+    return say('Step 4 · now imagine 768 dimensions','In 3D you can still turn the picture until the nearest point is easy to see. Every new dimension multiplies the places to look.','ML-KEM-768 hides its secret in a lattice problem with 768 dimensions (3 · 256). No picture and no known algorithm helps there, not even on a quantum computer.')},
+  extra:()=>`<h3>What changes with the dimension</h3><p>The rules stay the same: whole-number combinations, a cell that tiles space, a volume equal to |det|. What explodes is the work. For ML-KEM-512 the best known attacks are estimated to be as hard as searching for an AES-128 key; ML-KEM-768 is at the level of AES-192.</p>`};
+
+/* ---------- 5 · learning with errors, with small numbers ---------- */
+const LQ=97,LN=4,LM=8,HALF=48;
+// Gauss–Jordan elimination modulo q: the s that fits the equations exactly, or null
+function solve(M,y){
+  const n=M.length,a=M.map((row,i)=>[...row,y[i]]);
+  for(let c=0;c<n;c++){let p=-1;for(let r=c;r<n;r++)if(md(a[r][c],LQ)){p=r;break}if(p<0)return null;
+    [a[c],a[p]]=[a[p],a[c]];const iv=inv(a[c][c],LQ);a[c]=a[c].map(x=>md(x*iv,LQ));
+    for(let r=0;r<n;r++)if(r!==c&&a[r][c]){const f=a[r][c];a[r]=a[r].map((x,i)=>md(x-f*a[c][i],LQ))}}
+  return a.map(row=>row[n])}
+const dotq=(x,y)=>md(x.reduce((t,v,i)=>t+v*y[i],0),LQ);
+const cen=x=>x>LQ/2?x-LQ:x;                                      // a remainder written between −48 and 48
+const LW=new Map();
+function lweS(){
+  const key=ST.seed+'|'+ST.bit;if(LW.has(key))return LW.get(key);
+  const r=rng(ST.seed),ri=(a,b)=>a+Math.floor(r()*(b-a+1));
+  const s=range(1,LN).map(()=>ri(0,LQ-1)),A=range(1,LM).map(()=>range(1,LN).map(()=>ri(0,LQ-1))),e=range(1,LM).map(()=>ri(-2,2));
+  const b0=A.map(row=>dotq(row,s)),b=A.map((row,j)=>md(b0[j]+e[j],LQ));
+  let pick;do{pick=range(0,LM-1).filter(()=>r()<.5)}while(pick.length<3||pick.length>5);
+  const u=range(0,LN-1).map(i=>md(pick.reduce((t,j)=>t+A[j][i],0),LQ)),es=pick.reduce((t,j)=>t+e[j],0);
+  const v=md(pick.reduce((t,j)=>t+b[j],0)+ST.bit*HALF,LQ),us=dotq(u,s),w=md(v-us,LQ),dec=w>LQ/4&&w<3*LQ/4?1:0;
+  const sol0=solve(A.slice(0,4),b0.slice(0,4)),sol1=solve(A.slice(0,4),b.slice(0,4));
+  const left=sol=>sol?A.map((row,j)=>cen(md(b[j]-dotq(row,sol),LQ))):null;
+  const out={s,A,e,b0,b,pick,u,v,us,w,dec,es,sol0,sol1,lt:left(s),lf:left(sol1)};LW.set(key,out);return out}
+function newSeed(){let sd=ST.seed;do{sd=(sd*48271+7)%2147483647}while(!solve((ST.seed=sd,lweS()).A.slice(0,4),[0,0,0,0]));}
+// the remainders mod 97 as a wheel: 0 at the top, 48 at the bottom
+function wheel(w,bit,k){
+  const R=104,c=130,ang=x=>x/LQ*2*Math.PI-Math.PI/2,P2=(x,r)=>[c+r*Math.cos(ang(x)),c+r*Math.sin(ang(x))],arc=(a0,a1,cls)=>{const[x0,y0]=P2(a0,R),[x1,y1]=P2(a1,R);return`<path class="${cls}" d="M${x0} ${y0}A${R} ${R} 0 ${(a1-a0)>LQ/2?1:0} 1 ${x1} ${y1}"/>`};
+  let g=`<circle class="wr" cx="${c}" cy="${c}" r="${R}"/>`+arc(LQ-24,LQ+24,'z0')+arc(24,73,'z1');
+  for(let x=0;x<LQ;x+=8){const[x0,y0]=P2(x,R-6),[x1,y1]=P2(x,R+6);g+=`<line class="wt" x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}"/>`}
+  for(const[x,t]of[[0,'0'],[24,'24'],[48,'48'],[73,'73']]){const[x0,y0]=P2(x,R+20);g+=`<text class="wl" x="${x0}" y="${y0+4}">${t}</text>`}
+  g+=`<text class="zl z0t" x="${c}" y="${c-38}">near 0: bit 0</text><text class="zl z1t" x="${c}" y="${c+46}">near 48: bit 1</text>`;
+  if(k>=4){const[x0,y0]=P2(w,R);g+=`<g class="nw"><line class="wn" x1="${c}" y1="${c}" x2="${x0}" y2="${y0}"/><circle class="wp" cx="${x0}" cy="${y0}" r="9"/><text class="wv" x="${c}" y="${c+6}">${w}</text></g>`}
+  return`<svg class="wheel" viewBox="0 0 260 260" role="img" aria-label="Remainders modulo 97 on a wheel">${g}</svg>`}
+T.lwe={n:()=>6,
+  bar:()=>`<div class="fld"><span class="flh">The bit to send</span>${segB('bit',ST.bit,[[0,'0'],[1,'1']])}</div><div class="fld"><span class="flh">&nbsp;</span><button data-act="seed">New numbers</button></div><p class="hint2">q = 97, a secret of 4 numbers, 8 equations, errors from −2 to 2.</p>`,
+  view(k){
+    const S=lweS(),{s,A,e,b0,b,pick}=S,showB=k>=1,err=k>=2,pk=k>=3;
+    const head=`<tr><th></th>${range(1,LN).map(i=>`<th>a<sub>${i}</sub></th>`).join('')}<th></th><th>b${err?' = a·s + e':' = a·s'}</th>${err?'<th>e</th>':''}</tr>`;
+    const rows=A.map((row,j)=>`<tr class="${pk&&pick.includes(j)?'pk':''}${k===1&&j<4?' sol':''}"><td class="rn">${j+1}</td>${row.map(x=>`<td>${x}</td>`).join('')}<td class="eqs">${showB?'→':''}</td><td class="bb">${showB?(err?b[j]:b0[j]):''}</td>${err?`<td class="ee">${nm(e[j])}</td>`:''}</tr>`).join('');
+    let h=`<div class="lw"><div class="lwL"><p class="cap2">the secret <b class="scr">s = ${vec(s)}</b>, ${LM} random rows a</p><div class="scroll"><table class="mx">${head}${rows}</table></div>`;
+    if(k===1)h+=bench(bt('solve rows 1 to 4 mod 97','',vec(S.sol0)),op(S.sol0+''===s+''?'=':'≠'),bt('s','scr',vec(s)));
+    if(k===2)h+=bench(bt('solve rows 1 to 4 now','noc',vec(S.sol1)),op('≠'),bt('s','scr',vec(s)))+`<p class="cap2">What rows 5 to 8 leave over, b − a·s mod 97 written from −48 to 48: with the true s <b class="okc">${S.lt.slice(4).map(nm).join(', ')}</b>, with the wrong one <b class="noc">${S.lf.slice(4).map(nm).join(', ')}</b></p>`;
+    if(k>=3)h+=`<div class="fxs"><div class="fx">rows ${pick.map(j=>j+1).join(', ')}: u = their a’s added = <b>${vec(S.u)}</b></div><div class="fx">v = their b’s added + ${ST.bit} · 48 = <b>${S.v}</b> (mod 97)</div>${k>=4?`<div class="fx nw">v − u·s = ${S.v} − ${S.us} ≡ <b class="${S.dec===ST.bit?'okc':'noc'}">${S.w}</b> (mod 97) → bit <b>${S.dec}</b></div>`:''}${k>=5?`<div class="fx nw">the errors of those rows add up to ${nm(S.es)}: ${S.w} = ${ST.bit} · 48 ${S.es<0?'−':'+'} ${Math.abs(S.es)}</div>`:''}</div>`;
+    h+=`</div><div class="lwR">${k>=3?wheel(S.w,ST.bit,k):`<p class="cap2 lwnote">${k===0?'b is computed in the next step.':k===1?'Without errors, 4 equations give s back.':'With errors, the same algebra gives nonsense.'}</p>`}</div></div>`;
+    return{scene:null,html:h}},
+  say(k){
+    const S=lweS();
+    if(k===0)return say('Learning with errors (LWE)',`Choose a secret s of ${LN} numbers mod ${LQ}, here ${vec(S.s)}, and ${LM} random rows a.`,'For each row, compute a · s: multiply the numbers pairwise, add, and take the remainder mod 97.');
+    if(k===1)return say('Step 1 · without errors it is easy',`Publish the rows and their b = a · s. Then s is the solution of ${LM} linear equations mod 97.`,`Gaussian elimination on rows 1 to 4 gives ${vec(S.sol0)}: the secret, recovered in an instant.`);
+    if(k===2)return say('Step 2 · add a small error to each b',`Now b = a · s + e, with e between −2 and 2 (column e, kept secret). The same elimination gives ${vec(S.sol1)}, which is wrong.`,'Rows 5 to 8 show why: with the true s, what is left is tiny. With any wrong guess, it is random. But the attacker never sees e, and trying all 97⁴ secrets is the only obvious way. With hundreds of numbers instead of 4, nobody can.');
+    if(k===3)return say('Step 3 · encrypt one bit',`The table (rows a, numbers b) is the public key; s is the private key. To send the bit ${ST.bit}, add up a random set of rows: here ${list(S.pick.map(j=>String(j+1)))}.`,`u is the sum of their a’s, v is the sum of their b’s plus ${ST.bit} · 48. The pair (u, v) is the ciphertext.`);
+    if(k===4)return say('Step 4 · decrypt with s',`Compute v − u · s mod 97 = ${S.w}. Near 0 means 0, near 48 means 1.`,`${S.w} is in the ${S.dec?'lower':'upper'} zone of the wheel, so the bit is <b>${S.dec}</b>${S.dec===ST.bit?' ✓':''}.`);
+    return say('Step 5 · why the errors do not hurt',`v − u · s is the bit times 48 plus the errors of the chosen rows: ${nm(S.es)} here. At most 5 errors of size 2 add up to 10, far from the edge of a zone at 24.`,'So decryption is always right, while the errors still hide s from everyone else. ML-KEM is this idea, made fast and compact.')},
+  extra:()=>`<h3>Words you will meet</h3><dl class="words"><dt>LWE</dt><dd>Given many pairs (a, a · s + e mod q) with small e, find s.</dd><dt>Error, noise</dt><dd>The small e that turns easy algebra into a hard problem.</dd><dt>Why “lattice”?</dt><dd>The vectors A · s mod q form a lattice; b is a point near one of its points. Finding s is a closest vector problem.</dd></dl>`};
+
+/* ---------- 6 · ML-KEM, the standard ---------- */
+const KEM=[['ML-KEM-512',2,3,800,1632,768,'AES-128'],['ML-KEM-768',3,2,1184,2400,1088,'AES-192'],['ML-KEM-1024',4,2,1568,3168,1568,'AES-256']];
+const SIZES=[['X25519','32 + 32',64,'ec'],['RSA-3072','384 + 384',768,'rsa'],['ML-KEM-512','800 + 768',1568,'kem'],['ML-KEM-768','1184 + 1088',2272,'kem'],['ML-KEM-1024','1568 + 1568',3136,'kem']];
+const twoLine=n=>n.startsWith('ML-KEM')?'ML-KEM<br>'+n.slice(7):n;
+function bar3(id,x,y,w,d,h,cls){const o=[x-w/2,y-d/2,0];return[quad(id+'t',[o[0],o[1],h],[w,0,0],[0,d,0],cls+' top'),quad(id+'f',o,[w,0,0],[0,0,h],cls+' side1'),quad(id+'s',[o[0]+w,o[1],0],[0,d,0],[0,0,h],cls+' side2'),quad(id+'b',[o[0],o[1]+d,0],[w,0,0],[0,0,h],cls+' side1'),quad(id+'l',o,[0,d,0],[0,0,h],cls+' side2')]}
+T.kem={n:()=>3,
+  view(k){
+    const sc=[quad('floor',[-9.2,-4,0],[18.4,0,0],[0,8,0],'floor')];
+    SIZES.forEach(([n,t,bytes,c],i)=>{const x=-7.2+i*3.6,h=Math.max(.06,bytes/520);sc.push(...bar3('bx'+i,x,0,1.7,1.7,h,c+(k>=1&&n==='ML-KEM-768'?' hi':'')),lab('bl'+i,[x,-1.85,0],twoLine(n),'blab'),lab('bv'+i,[x,0,h+.55],`${bytes} B`,'bval'))});
+    const cam=[{yaw:-24,pitch:62,zoom:.86,cx:0,cy:0,cz:1.6},{yaw:-12,pitch:54,zoom:.88,cx:.4,cy:0,cz:2.8},{yaw:-34,pitch:70,zoom:.84,cx:0,cy:0,cz:1.4}][k];
+    let h=`<p class="cap2">Bytes sent in one key exchange: public key + ciphertext (for X25519 two public keys)</p>`;
+    if(k>=1)h+=`<div class="scroll"><table class="mx kt"><tr><th></th><th>n</th><th>q</th><th>k</th><th>η₁</th><th>public key</th><th>private key</th><th>ciphertext</th><th>as hard as</th></tr>${KEM.map(r=>`<tr class="${r[0]==='ML-KEM-768'?'pk':''}"><td class="rn">${r[0]}</td><td>256</td><td>3329</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]} B</td><td>${r[4]} B</td><td>${r[5]} B</td><td>${r[6]}</td></tr>`).join('')}</table></div><p class="hint">From FIPS 203, tables 2 and 3. The shared secret is always 32 bytes.</p>`;
+    if(k>=2)h+=`<div class="uses"><div><b>Firefox with Cloudflare</b><span>X25519MLKEM768: a hybrid of a curve and ML-KEM in one TLS handshake</span></div><div><b>Signal</b><span>PQXDH, added in 2023, puts a Kyber key into the start of every chat</span></div><div><b>AWS KMS</b><span>hybrid post-quantum TLS since 2020</span></div></div>`;
+    return{scene:sc,cam,html:h}},
+  say(k){
+    if(k===0)return say('From the toy to the standard','ML-KEM (FIPS 203, August 2024) is the LWE idea of tab 5 with two changes: every number becomes a polynomial with 256 coefficients mod 3329, and the 8 × 4 table becomes a small k × k table of such polynomials.','The price is size. The blocks show what one key exchange sends over the network.');
+    if(k===1)return say('Step 1 · three sizes',`n = 256 and q = 3329 never change; k = 2, 3 or 4 sets the strength. ML-KEM-768 has a secret of 3 · 256 = 768 small numbers.`,'NIST recommends ML-KEM-768 as the default. It sends about 2.3 kB per exchange, against 64 bytes for X25519: large for a curve, small for a network.');
+    return say('Step 2 · already in use','For now ML-KEM is usually combined with a curve (a <b>hybrid</b>): the connection stays safe as long as either one holds.','The reason to switch early: traffic recorded today could be decrypted by a quantum computer later (“harvest now, decrypt later”).')},
+  extra:()=>`<h3>Why not just bigger RSA?</h3><p>Shor’s algorithm on a large quantum computer factors numbers and finds discrete logarithms, on elliptic curves too, in polynomial time. Making RSA or the curve bigger does not help. No such algorithm is known for lattice problems.</p>`};
+
+/* ---------- the longer read under each picture ---------- */
+const box=(t,b,c='')=>`<div class="exb ${c}"><b>${t}</b><div>${b}</div></div>`;
+const EX=b=>box('Example',b),NO=b=>box('Careful',b,'no'),USE=b=>box('In cryptography',b,'use');
+const M=s=>`<span class="m">${s}</span>`;
+const MORE=xs=>box('Read more','<ul>'+xs.map(x=>'<li>'+x+'</li>').join('')+'</ul>','bk');
+const FIPS='NIST, FIPS 203, “Module-Lattice-Based Key-Encapsulation Mechanism Standard”, 13 August 2024.';
+const REGEV='O. Regev, “On lattices, learning with errors, random linear codes, and cryptography”, STOC 2005, pp. 84–93.';
+const PEIKERT='C. Peikert, “A Decade of Lattice Cryptography”, <cite>Foundations and Trends in Theoretical Computer Science</cite>, 2016.';
+T.lat.doc=()=>`<h2>What a lattice is</h2>
+<p class="lead">A lattice is the set of all whole-number combinations of a few basis vectors: ${M('x₁·b₁ + x₂·b₂ + … + xₙ·bₙ')}, with every xᵢ a whole number. It is a regular grid of points in n-dimensional space.</p>
+<p>The word comes from the regular pattern, like the lattice of atoms in a crystal or a garden trellis. It has nothing to do with the lattices of order theory in algebra.</p>
+<h3>The cell</h3>
+<p>The basis vectors span a parallelogram (in more dimensions, a parallelepiped). It holds no lattice point except its corners, and its copies fill the whole space without gaps. Its area or volume is the absolute value of the determinant of the basis.</p>
+${EX('b₁ = (3, 1), b₂ = (1, 2): det = 3 · 2 − 1 · 1 = 5. The point (5, 0) = 2b₁ − b₂ is in the lattice; (1, 1) is not, because x · (3, 1) + y · (1, 2) = (1, 1) needs x = 1/5 and y = 2/5.')}
+${NO('A lattice is not every point with whole coordinates. (1, 1) has whole coordinates and is not in this lattice. Only ℤⁿ itself, with the unit vectors as basis, contains all of them.')}
+${USE('Lattice cryptography uses lattices with hundreds of dimensions. The pictures here are 2D and 3D, but every definition carries over word for word.')}
+${MORE([PEIKERT,'M. Ajtai, “Generating hard instances of lattice problems”, STOC 1996, pp. 99–108: the first cryptography built on a lattice problem.'])}`;
+T.bas.doc=()=>`<h2>Good and bad bases</h2>
+<p class="lead">Every lattice has infinitely many bases. A good one has short vectors that point in very different directions; a bad one has long vectors that point almost the same way.</p>
+<h3>When two bases give the same lattice</h3>
+<p>Write the new basis vectors as whole-number combinations of the old ones. The matrix of those numbers must have determinant +1 or −1; then the old vectors are also whole-number combinations of the new ones, and both bases reach exactly the same points. Such a matrix is called <b>unimodular</b>.</p>
+${EX('c₁ = 2b₁ + b₂ and c₂ = b₁ + b₂: the matrix (2 1; 1 1) has determinant 2 − 1 = 1. Going back, b₁ = c₁ − c₂ and b₂ = −c₁ + 2c₂.')}
+<h3>Lattice reduction</h3>
+<p>Turning a bad basis into a good one is called lattice reduction. The LLL algorithm of Lenstra, Lenstra and Lovász (1982) does it in polynomial time, but in high dimensions its result is only somewhat better. Stronger methods (BKZ) cost time that grows exponentially with how good the result must be.</p>
+${NO('GGH (Goldreich, Goldwasser, Halevi, 1997) used exactly this picture: the bad basis public, the good basis private. Phong Nguyen broke the proposed parameters in 1999. Modern schemes keep the lattice idea but build on LWE (tab 5), which comes with a proof that breaking it means solving hard lattice problems.')}
+${MORE(['A. K. Lenstra, H. W. Lenstra, L. Lovász, “Factoring polynomials with rational coefficients”, <cite>Mathematische Annalen</cite> 261, 1982, pp. 515–534.','O. Goldreich, S. Goldwasser, S. Halevi, “Public-key cryptosystems from lattice reduction problems”, CRYPTO ’97.',PEIKERT])}`;
+T.cvp.doc=()=>`<h2>The hard problems: SVP and CVP</h2>
+<p class="lead">Two questions about a lattice are believed to be hard in high dimensions, even for quantum computers. They are what lattice cryptography rests on.</p>
+<ul><li><b>Shortest vector problem (SVP):</b> find the shortest non-zero vector of the lattice.</li><li><b>Closest vector problem (CVP):</b> given a point t, find the lattice point nearest to it.</li></ul>
+<h3>Rounding with a basis</h3>
+<p>To guess the closest point, write t in the basis and round every coefficient to the nearest whole number. With a good, nearly orthogonal basis the guess is right or very close. With a bad basis it can be far off, because rounding each coefficient moves the point along long, nearly parallel vectors.</p>
+${EX(`t = (5.2, 3.3). Good basis: t = 1.42 b₁ + 0.94 b₂ → b₁ + b₂ = (4, 3), ${fr(Math.hypot(1.2,.3))} away, the right answer. Bad basis: t = 0.48 c₁ + 0.46 c₂ → (0, 0), ${fr(Math.hypot(5.2,3.3))} away.`)}
+${NO('In two or three dimensions both problems are easy: you can look. The hardness only appears in high dimensions, and cryptography uses hundreds.')}
+${USE('Encrypt by hiding a lattice point under a small error: the result is a point t near the lattice. The holder of the good basis decodes it by rounding. ML-KEM does not publish a basis, but its security argument is of this kind.')}
+${MORE([PEIKERT])}`;
+T.d3.doc=()=>`<h2>More dimensions</h2>
+<p class="lead">A lattice in n dimensions has n basis vectors and a cell with n-dimensional volume |det|. Nothing else changes, except the difficulty.</p>
+<p>In 3D the lattice of tab 1 becomes a stack of layers. Turn the picture: from some directions the points line up in clear rows, from others they look scattered. In 768 dimensions there is no direction from which the structure becomes visible.</p>
+${EX('b₁ = (3, 1, 0), b₂ = (1, 2, 0), b₃ = (1, 1, 2). The determinant is 5 · 2 = 10: the plane cell has area 5, and the layers are 2 apart.')}
+${NO('Pictures in 3D can mislead: there the nearest point is always easy to find by eye. Attacks on real schemes run in hundreds of dimensions, where the best algorithms need time that grows exponentially with the dimension.')}
+${USE('ML-KEM-512, -768 and -1024 hide secrets of 512, 768 and 1024 small numbers: lattices of at least that dimension.')}
+${MORE([FIPS,PEIKERT])}`;
+T.lwe.doc=()=>{const S=lweS();return`<h2>Learning with errors</h2>
+<p class="lead">LWE asks: given many random rows a and the numbers ${M('b = a·s + e mod q')}, where every e is small, find the secret s. Without the errors this is linear algebra. With them it is believed to be hard, even for quantum computers.</p>
+<h3>Regev’s encryption of one bit</h3>
+<ul><li><b>Private key:</b> s. <b>Public key:</b> the rows a and the numbers b.</li><li><b>Encrypt a bit:</b> add up a random set of rows. u = the sum of their a, v = the sum of their b + bit · ⌊q/2⌋.</li><li><b>Decrypt:</b> v − u·s mod q is the bit · ⌊q/2⌋ plus a small sum of errors. Near 0 gives 0, near q/2 gives 1.</li></ul>
+${EX(`This page’s numbers: q = 97, s = ${vec(S.s)}, rows ${S.pick.map(j=>j+1).join(', ')}. v − u·s = ${S.w}, which decodes to ${S.dec}.`)}
+${NO('The errors must be small compared with q, or decryption fails; and they must not be zero, or the scheme is broken by elimination. Real parameters are chosen so that a decryption error is astronomically unlikely: FIPS 203 gives a failure probability of 2⁻¹³⁸·⁸ for ML-KEM-512.')}
+${USE('Regev proved that breaking LWE is as hard as solving hard lattice problems in the worst case (for a quantum algorithm). He received the Gödel Prize in 2018 for this work.')}
+${MORE([REGEV,PEIKERT])}`};
+T.kem.doc=()=>`<h2>ML-KEM</h2>
+<p class="lead">ML-KEM (Module-Lattice-Based Key-Encapsulation Mechanism), formerly CRYSTALS-Kyber, is the first post-quantum standard of NIST: FIPS 203, published on 13 August 2024.</p>
+<h3>What it adds to the toy of tab 5</h3>
+<ul><li><b>Polynomials instead of numbers.</b> Every entry is a polynomial of degree below 256 with coefficients mod 3329, so one multiplication mixes 256 numbers at once and can be done fast (the number-theoretic transform).</li><li><b>A small matrix.</b> A is k × k with k = 2, 3 or 4. That is the “module” in the name.</li><li><b>Small secrets and errors.</b> Their coefficients are tiny, from −η to η (η = 2 or 3).</li><li><b>A KEM, not encryption of a message.</b> It delivers a random 32-byte shared secret, which then keys AES or ChaCha20.</li></ul>
+${box('The three parameter sets','<table class="cmp3"><tr><th></th><th>k</th><th>public key</th><th>ciphertext</th><th>category</th></tr><tr><td>ML-KEM-512</td><td>2</td><td>800 B</td><td>768 B</td><td>1 (AES-128)</td></tr><tr><td>ML-KEM-768</td><td>3</td><td>1184 B</td><td>1088 B</td><td>3 (AES-192)</td></tr><tr><td>ML-KEM-1024</td><td>4</td><td>1568 B</td><td>1568 B</td><td>5 (AES-256)</td></tr></table>')}
+${NO('Post-quantum does not mean quantum. ML-KEM runs on ordinary computers; it is only designed to resist attackers who have a quantum computer.')}
+${USE('NIST recommends ML-KEM-768 as the default. In TLS it is used together with X25519 (X25519MLKEM768), so a weakness in either one alone does not break the connection.')}
+${MORE([FIPS,'Elliptic curves and the key exchange they replace: <a href="ecc.html#dh">ECDH, step by step</a>.'])}`;
+
+/* ---------- one question per tab ---------- */
+const QZ={
+  lat:{q:'b₁ = (3, 1), b₂ = (1, 2). Which point is in the lattice?',o:['(1, 1)','(4, 3)','(2, 2)'],a:1,why:'(4, 3) = b₁ + b₂. (1, 1) and (2, 2) would need fractions: (1, 1) = ⅕·b₁ + ⅖·b₂.'},
+  bas:{q:'Do (7, 4) and (4, 3) generate the same lattice as (3, 1) and (1, 2)?',o:['Yes','No, the cell is longer','No, they are not orthogonal'],a:0,why:'Both cells have area 5, and (7, 4) = 2b₁ + b₂, (4, 3) = b₁ + b₂ with a matrix of determinant 1.'},
+  cvp:{q:'Why does rounding with the bad basis fail?',o:['The bad basis is not a basis','Its vectors are long and nearly parallel','Rounding never works'],a:1,why:'Rounding each coefficient moves the point by up to half of each vector; with long, nearly parallel vectors that can be very far.'},
+  d3:{q:'b₁, b₂ span a cell of area 5 on the table; b₃ = (1, 1, 2). What is the volume of the 3D cell?',o:['5','7','10'],a:2,why:'Area 5 times height 2. The sideways shift (1, 1) does not change the volume.'},
+  lwe:{q:'What happens to LWE if all errors e are 0?',o:['It gets harder','Gaussian elimination finds s','Decryption fails'],a:1,why:'Then b = a·s exactly, a system of linear equations mod q, and a few rows give s.'},
+  kem:{q:'Which parameter set does NIST recommend by default?',o:['ML-KEM-512','ML-KEM-768','ML-KEM-1024'],a:1,why:'FIPS 203 recommends ML-KEM-768: a large margin at moderate cost.'}};
+function quiz(id){
+  const z=QZ[id];if(!z)return'';const p=ST.q[id];
+  return`<div class="qz" id="qz-${id}"><div class="qzt">Test yourself</div><p>${z.q}</p><div class="qzo">${z.o.map((t,i)=>`<button data-qz="${id},${i}" class="${p==null?'':i===z.a?'ok':i===p?'no':'dim'}"${p==null?'':' disabled'}>${t}</button>`).join('')}</div>${p!=null?`<p class="qzw"><b class="${p===z.a?'cy':'cn'}">${p===z.a?'Right.':'Not quite.'}</b> ${z.why}</p>`:''}</div>`}
+
+/* ---------- the walkthrough ---------- */
+const ROOM={k:'',h:0};
+const speed=()=>+$('#spd').value;
+function holdRoom(t,n,k){
+  const ex=$('#explain');ex.style.minHeight=ex.style.marginBottom='';
+  if(n<2)return;
+  const ck=[ST.tab,ex.clientWidth,ST.bit,ST.seed].join('|');
+  if(ROOM.k!==ck){let h=0;for(let j=0;j<n;j++){ex.innerHTML=t.say(j);h=Math.max(h,ex.offsetHeight)}ex.innerHTML=t.say(k);ROOM.k=ck;ROOM.h=h}
+  if(NARROW.matches)ex.style.minHeight=ROOM.h+'px';else ex.style.marginBottom=Math.max(0,ROOM.h-ex.offsetHeight)+'px';
+}
+function show(){
+  const t=T[ST.tab],n=t.n(),k=clamp(ST.step[ST.tab]||0,0,n-1);ST.step[ST.tab]=k;
+  const v=t.view(k),sc=$('#sc');
+  sc.hidden=!v.scene;if(v.scene){scSet(v.scene);if(v.cam)camTo(v.cam)}else scSet([]);
+  $('#below').innerHTML=v.html;$('#explain').innerHTML=t.say(k);$('#extra').innerHTML=t.extra(k)+quiz(ST.tab);
+  const dc=$('#doc');dc.hidden=!t.doc;dc.innerHTML=t.doc?t.doc(k):'';
+  holdRoom(t,n,k);
+  $('#ctrl').hidden=n<2;$('#prog').textContent=n>1?`Step ${k} of ${n-1}`:'';$('#pfill').style.width=n>1?`${100*k/(n-1)}%`:'0';
+  $('#bBack').disabled=$('#bReset').disabled=k===0;$('#bStep').disabled=k>=n-1;
+}
+function setPlaying(on){ST.playing=on;if(ST.playT){clearTimeout(ST.playT);ST.playT=null}$('#bPlay').textContent=on?'❚❚ Pause':'▶ Play';if(on)tickPlay()}
+function tickPlay(){ST.playT=setTimeout(()=>{ST.playT=null;const n=T[ST.tab].n(),k=ST.step[ST.tab]||0;if(k>=n-1){setPlaying(false);return}ST.step[ST.tab]=k+1;show();if(k+1>=n-1)setPlaying(false);else tickPlay()},(RM.matches?900:2600)/speed())}
+function setBar(){const t=T[ST.tab],b=$('#bar');b.hidden=!t.bar;b.innerHTML=t.bar?t.bar():''}
+function setTab(id){
+  setPlaying(false);ST.tab=id;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));setBar();show();
+  try{localStorage.setItem('lattice-tab',id);history.replaceState(null,'','#'+id)}catch(e){}
+}
+
+/* ---------- events ---------- */
+$('#stage').innerHTML='<div class="l3" id="sc" aria-label="A lattice in 3D. Drag to turn it."></div><div id="below"></div>';
+scInit($('#sc'));
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)};
+$('#bStep').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)+1;show()};
+$('#bBack').onclick=()=>{setPlaying(false);ST.step[ST.tab]=(ST.step[ST.tab]||0)-1;show()};
+$('#bReset').onclick=()=>{setPlaying(false);ST.step[ST.tab]=0;show()};
+$('#bPlay').onclick=()=>{if(ST.playing){setPlaying(false);return}const n=T[ST.tab].n();if(n<2)return;if((ST.step[ST.tab]||0)>=n-1){ST.step[ST.tab]=0;show()}setPlaying(true)};
+document.addEventListener('click',e=>{
+  const st=e.target.closest('[data-set]');if(st){setPlaying(false);const[k,v]=st.dataset.set.split(':');ST[k]=/^\d+$/.test(v)?+v:v;setBar();show();return}
+  const ac=e.target.closest('[data-act]');if(ac&&ac.dataset.act==='seed'){setPlaying(false);newSeed();show();return}
+  const qz=e.target.closest('[data-qz]');if(qz){const[id,i]=qz.dataset.qz.split(',');ST.q[id]=+i;$('#qz-'+id).outerHTML=quiz(id);return}
+});
+document.addEventListener('keydown',e=>{
+  if((e.target.closest&&e.target.closest('input,select,textarea'))||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.target.closest&&e.target.closest('button,a')&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'){if(!$('#bStep').disabled)$('#bStep').click();e.preventDefault()}
+  else if(e.key==='ArrowLeft'){if(!$('#bBack').disabled)$('#bBack').click();e.preventDefault()}
+  else if(e.key===' '&&T[ST.tab].n()>1){$('#bPlay').click();e.preventDefault()}
+});
+let startTab='lat';
+try{const h=location.hash.slice(1),t=localStorage.getItem('lattice-tab');if(T[h])startTab=h;else if(t&&T[t])startTab=t}catch(e){}
+setTab(startTab);
+</script>
+</body>
+</html>
